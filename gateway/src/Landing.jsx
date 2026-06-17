@@ -18,8 +18,9 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
-const SCHOLAR_SYNC_URL = import.meta.env.VITE_SCHOLAR_SYNC_URL || 'http://localhost:5173';
-const SCHOLAR_TRACK_URL = import.meta.env.VITE_SCHOLAR_TRACK_URL || 'http://localhost:5174';
+// Portal URLs — update these after deploying scholar_sync and scholar_track to Vercel
+const SCHOLAR_SYNC_URL = import.meta.env.VITE_SCHOLAR_SYNC_URL || 'https://scholar-sync.vercel.app';
+const SCHOLAR_TRACK_URL = import.meta.env.VITE_SCHOLAR_TRACK_URL || 'https://scholar-track.vercel.app';
 
 const Landing = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
