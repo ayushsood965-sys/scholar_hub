@@ -2162,12 +2162,13 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
             {(() => {
               const reports = milestones.filter(m => m.type === '6_MONTH_REPORT');
               const approvedReports = reports.filter(r => r.status === 'APPROVED').length;
-              const totalReports = reports.length;
-              const isReportsMet = totalReports > 0 && approvedReports === totalReports;
+              const hasMphil = user?.profile?.qualifications?.mphil?.done === true;
+              const requiredReportsCount = hasMphil ? 3 : 6;
+              const isReportsMet = approvedReports >= requiredReportsCount;
               return (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface, #ffffff)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--color-border, #E2E8F0)' }}>
                   <div style={{ fontSize: '0.82rem' }}>
-                    <strong>📄 Progress Reports:</strong> {approvedReports} / {totalReports || 1} Semester Reports Approved
+                    <strong>📄 Progress Reports:</strong> {approvedReports} / {requiredReportsCount} Semester Reports Approved {hasMphil ? '(M.Phil Holder)' : ''}
                   </div>
                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: isReportsMet ? '#065F46' : '#D97706' }}>
                     {isReportsMet ? '✅ All Approved' : '⏳ Pending Reviews'}

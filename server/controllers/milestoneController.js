@@ -57,9 +57,10 @@ const getMilestones = async (req, res) => {
       const requiredMonths = hasMphil ? 18 : 36;
       const hasThreeYearsPassed = diffMonths >= requiredMonths;
 
-      // 2. All 6-month progress reports are approved
+      // 2. All 6-month progress reports are approved (at least 3 for M.Phil holders, 6 for others)
       const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
-      const allReportsApproved = reports.length > 0 && reports.every(r => r.status === 'APPROVED');
+      const requiredReportsCount = hasMphil ? 3 : 6;
+      const allReportsApproved = reports.length >= requiredReportsCount && reports.every(r => r.status === 'APPROVED');
 
       // 3. Required publications are approved (at least 2 verified journals and 2 verified conferences)
       const Publication = require('../models/Publication');
