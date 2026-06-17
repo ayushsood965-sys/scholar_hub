@@ -1,0 +1,29 @@
+# Central Git Ignore for ScholarHub Monorepo
+
+# Dependency folders
+node_modules/
+**/node_modules/
+
+# Production builds
+dist/
+**/dist/
+build/
+**/build/
+
+# Environment files
+.env
+**/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Backup folders
+sh_backup/
+temp_backup/
