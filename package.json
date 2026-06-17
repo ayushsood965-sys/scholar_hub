@@ -1,0 +1,12 @@
+{
+  "name": "scholar-hub-workspace",
+  "version": "1.0.0",
+  "description": "Himachal Pradesh University ScholarHub Portal Workspace",
+  "private": true,
+  "scripts": {
+    "dev:gateway": "cd gateway && npm run dev",
+    "dev:sync": "cd scholar_sync && npm run dev",
+    "dev:track": "cd scholar_track && npm run dev",
+    "dev:server": "cd server && npm run dev"
+  }
+}
