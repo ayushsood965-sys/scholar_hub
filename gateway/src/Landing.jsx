@@ -18,6 +18,9 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
+const SCHOLAR_SYNC_URL = import.meta.env.VITE_SCHOLAR_SYNC_URL || 'http://localhost:5173';
+const SCHOLAR_TRACK_URL = import.meta.env.VITE_SCHOLAR_TRACK_URL || 'http://localhost:5174';
+
 const Landing = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
@@ -209,7 +212,7 @@ const Landing = () => {
             {/* ScholarSync Card */}
             <div 
               className="clay-card project-launch-card"
-              onClick={() => window.location.href = 'http://localhost:5173'}
+              onClick={() => window.location.href = SCHOLAR_SYNC_URL}
             >
               <div className="project-icon-wrapper" style={{ background: 'rgba(26, 90, 59, 0.08)' }}>
                 <GraduationCap size={32} color="#133A26" />
@@ -229,7 +232,7 @@ const Landing = () => {
                 <span className="project-tag">FACULTY Reviews</span>
                 <span className="project-tag">Publications</span>
               </div>
-              <a href="http://localhost:5173" className="btn-primary" style={{ width: '100%', marginTop: 'auto' }}>
+              <a href={SCHOLAR_SYNC_URL} className="btn-primary" style={{ width: '100%', marginTop: 'auto' }}>
                 Launch ScholarSync Portal <ArrowUpRight size={16} />
               </a>
             </div>
@@ -237,7 +240,7 @@ const Landing = () => {
             {/* ScholarTrack Card */}
             <div 
               className="clay-card project-launch-card"
-              onClick={() => window.location.href = 'http://localhost:5174'}
+              onClick={() => window.location.href = SCHOLAR_TRACK_URL}
             >
               <div className="project-icon-wrapper" style={{ background: 'rgba(2, 132, 199, 0.08)' }}>
                 <CalendarRange size={32} color="#0284c7" />
@@ -257,7 +260,7 @@ const Landing = () => {
                 <span className="project-tag" style={{ background: 'rgba(2, 132, 199, 0.06)', color: '#0284c7' }}>HOD Approvals</span>
                 <span className="project-tag" style={{ background: 'rgba(2, 132, 199, 0.06)', color: '#0284c7' }}>Defalcation Alerts</span>
               </div>
-              <a href="http://localhost:5174" className="btn-primary" style={{ width: '100%', marginTop: 'auto', background: 'linear-gradient(135deg, #075985 0%, #0284c7 100%)', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.2)' }}>
+              <a href={SCHOLAR_TRACK_URL} className="btn-primary" style={{ width: '100%', marginTop: 'auto', background: 'linear-gradient(135deg, #075985 0%, #0284c7 100%)', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.2)' }}>
                 Launch ScholarTrack Portal <ArrowUpRight size={16} />
               </a>
             </div>
