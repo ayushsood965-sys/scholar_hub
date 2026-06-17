@@ -218,12 +218,18 @@ const Header = ({ title }) => {
   );
 };
 
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {
-    if (synopsisStatus === 'SUBMITTED') return { text: 'Synopsis Submitted (Under Review)', color: '#2563EB', bg: '#DBEAFE' };
-    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (Awaiting DRC)', color: '#059669', bg: '#D1FAE5' };
+    if (synopsisStatus === 'SUBMITTED') {
+      if (subRole === 'HOD') {
+        return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
+      }
+      return { text: 'Synopsis Submitted (Under Review)', color: '#2563EB', bg: '#DBEAFE' };
+    }
+    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & DRC Pending', color: '#D97706', bg: '#FFFBEB' };
+    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (DRC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
     if (synopsisStatus === 'REVISION_REQUIRED') return { text: 'Synopsis Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
     return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
   }
@@ -1843,7 +1849,7 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
 };
 
 // ── Manage Scholars ──
-const ManageScholars = ({ theses, onSelectThesis, onAction }) => {
+const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
   const [filter, setFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [milestoneMap, setMilestoneMap] = useState({});
@@ -1927,7 +1933,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction }) => {
               <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#6b7280' }}>{t.supervisorId?.name || '—'}</div>
               <div style={{ flex: 1 }}>
                 {(() => {
-                  const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus);
+                  const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole);
                   return (
                     <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
                       {badge.text}
@@ -1937,9 +1943,6 @@ const ManageScholars = ({ theses, onSelectThesis, onAction }) => {
               </div>
               <div className="file-actions" style={{ flex: 1.4, display: 'flex', gap: 6 }}>
                 <button className="btn-action" onClick={() => onSelectThesis(t._id)}>Open</button>
-                {t.status === 'REGISTRATION_PENDING' && (
-                  <button className="btn-action" style={{ background: '#059669', color: 'white' }} onClick={() => onAction(t._id, 'verify')}>Verify</button>
-                )}
               </div>
             </div>
           ))}
@@ -4756,7 +4759,7 @@ const AdminDashboard = () => {
 
     switch (activeTab) {
       case 'overview': return <OverviewPage theses={allTheses} onSelectThesis={handleSelectThesis} user={user} setActiveTab={handleTabChange} />;
-      case 'scholars': return <ManageScholars theses={allTheses} onSelectThesis={handleSelectThesis} onAction={handleAction} />;
+      case 'scholars': return <ManageScholars theses={allTheses} onSelectThesis={handleSelectThesis} onAction={handleAction} subRole={user?.role} />;
       case 'global_transfers': return <GlobalTransfersTab theses={allTheses} onRefresh={fetchAllTheses} />;
       case 'requests': return <HODChangeRequestsTab user={user} />;
       case 'meetings': return <MeetingsTab user={user} />;

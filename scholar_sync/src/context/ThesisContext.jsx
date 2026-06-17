@@ -185,7 +185,18 @@ export const ThesisProvider = ({ children }) => {
   };
 
   const submitCourseworkDetails = async (payload) => {
-    const { data } = await axios.put(`${API}/thesis/me/coursework/submit`, payload, getAuthHeader());
+    const formData = new FormData();
+    formData.append('researchEthics', JSON.stringify(payload.researchEthics));
+    formData.append('researchMethodology', JSON.stringify(payload.researchMethodology));
+    formData.append('elective', JSON.stringify(payload.elective));
+    formData.append('others', JSON.stringify(payload.others));
+    if (payload.proof) {
+      formData.append('proof', payload.proof);
+    }
+    const { data } = await axios.put(`${API}/thesis/me/coursework/submit`, formData, {
+      ...getAuthHeader(),
+      headers: { ...getAuthHeader().headers, 'Content-Type': 'multipart/form-data' },
+    });
     setThesis(data);
     return data;
   };

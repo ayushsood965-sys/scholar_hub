@@ -151,7 +151,20 @@ const reviewMilestone = async (req, res) => {
     const milestone = await Milestone.findById(req.params.id);
     if (!milestone) return res.status(404).json({ message: 'Milestone not found' });
 
-    milestone.status = action === 'APPROVE' ? 'APPROVED' : 'REVISION_REQUIRED';
+    let isSynopsis = milestone.type === 'SYNOPSIS';
+    if (isSynopsis) {
+      if (action === 'APPROVE') {
+        if (milestone.status === 'PENDING_HOD') {
+          milestone.status = 'APPROVED';
+        } else {
+          milestone.status = 'PENDING_HOD';
+        }
+      } else {
+        milestone.status = 'REVISION_REQUIRED';
+      }
+    } else {
+      milestone.status = action === 'APPROVE' ? 'APPROVED' : 'REVISION_REQUIRED';
+    }
     milestone.reviewedAt = new Date();
 
     if (comment) {
@@ -167,19 +180,33 @@ const reviewMilestone = async (req, res) => {
     // If FINAL_SUBMISSION approved → supervisor triggers final approve on thesis (handled via thesis route)
     const thesis = await Thesis.findById(milestone.thesisId);
     if (thesis) {
-      if (milestone.status === 'APPROVED') {
+      if (milestone.status === 'PENDING_HOD') {
+        // Notify HOD
+        await createNotification({
+          roleScope: 'HOD',
+          department: thesis.department,
+          title: '⏳ Synopsis HOD Approval Pending',
+          message: `The synopsis document of Scholar "${thesis.title}" has been approved by supervisor ${req.user.name} and awaits your final HOD approval.`,
+          type: 'PENDING_ACTION',
+          link: 'registrations'
+        });
+      } else if (milestone.status === 'APPROVED') {
         await createNotification({
           recipient: thesis.scholarId,
-          title: '🎉 Milestone Approved!',
-          message: `Your supervisor "${req.user.name}" has APPROVED your submission for milestone "${milestone.title}".`,
+          title: isSynopsis ? '🎉 Synopsis Approved!' : '🎉 Milestone Approved!',
+          message: isSynopsis 
+            ? `Your synopsis document has been officially approved by the department. HOD can now schedule the DRC meeting.`
+            : `Your supervisor "${req.user.name}" has APPROVED your submission for milestone "${milestone.title}".`,
           type: 'SUCCESSFUL_ACTION',
           link: 'overview'
         });
       } else {
         await createNotification({
           recipient: thesis.scholarId,
-          title: '⚠️ Milestone Revision Required',
-          message: `Your supervisor "${req.user.name}" has requested corrections for milestone "${milestone.title}". Feedback: "${comment || 'Please check supervisor comments.'}"`,
+          title: isSynopsis ? '⚠️ Synopsis Revision Required' : '⚠️ Milestone Revision Required',
+          message: isSynopsis
+            ? `Corrections have been requested for your synopsis submission by ${req.user.role === 'HOD' ? 'HOD' : 'supervisor'} "${req.user.name}". Feedback: "${comment || 'Please check comments.'}"`
+            : `Your supervisor "${req.user.name}" has requested corrections for milestone "${milestone.title}". Feedback: "${comment || 'Please check supervisor comments.'}"`,
           type: 'PENDING_ACTION',
           link: 'overview'
         });

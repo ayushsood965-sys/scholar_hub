@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const {
@@ -11,10 +13,19 @@ const {
   approveCourseworkHOD, rejectCourseworkHOD
 } = require('../controllers/thesisController');
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, unique + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+
 // Scholar
 router.post('/', protect, authorize('STUDENT'), createThesis);
 router.get('/me', protect, authorize('STUDENT'), getMyThesis);
-router.put('/me/coursework/submit', protect, authorize('STUDENT'), submitCourseworkDetails);
+router.put('/me/coursework/submit', protect, authorize('STUDENT'), upload.single('proof'), submitCourseworkDetails);
 
 // Admin & HOD Department Admins
 router.get('/all', protect, authorize('ADMIN', 'HOD'), getAllTheses);

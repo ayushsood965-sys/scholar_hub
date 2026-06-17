@@ -12,7 +12,7 @@ const milestoneSchema = new mongoose.Schema(
     sequence: { type: Number, default: 1 },
     status: {
       type: String,
-      enum: ['PENDING', 'SUBMITTED', 'APPROVED', 'REVISION_REQUIRED'],
+      enum: ['PENDING', 'SUBMITTED', 'PENDING_HOD', 'APPROVED', 'REVISION_REQUIRED'],
       default: 'PENDING',
     },
     documentUrl: { type: String, default: null },

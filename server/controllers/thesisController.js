@@ -347,16 +347,6 @@ const drcApprove = async (req, res) => {
     thesis.auditLog.push({ action: 'DRC_APPROVED', note: `DRC approved by HOD ${req.user.name}` });
     await thesis.save();
 
-    // Auto-create first 6-month progress report milestone
-    await Milestone.create({
-      thesisId: thesis._id,
-      type: 'PROGRESS_REPORT',
-      title: '6-Month Progress Report #1',
-      status: 'PENDING',
-      sequence: 1,
-      dueDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-    });
-
     await createNotification({
       recipient: thesis.scholarId,
       title: '✅ DRC Synopsis Approved!',
@@ -943,24 +933,44 @@ const submitCourseworkDetails = async (req, res) => {
       return res.status(400).json({ message: 'Coursework submission is only allowed in the Coursework phase.' });
     }
 
-    const { researchMethodology, researchAnalysis, elective } = req.body;
-    
-    // Validate that we have at least some rows in each section
-    if (!researchMethodology || !Array.isArray(researchMethodology) || researchMethodology.length === 0) {
-      return res.status(400).json({ message: 'Please add at least one subject in Research Methodology.' });
+    let { researchEthics, researchMethodology, elective, others } = req.body;
+
+    // Parse JSON strings since the request is sent via multipart/form-data
+    if (typeof researchEthics === 'string') {
+      try { researchEthics = JSON.parse(researchEthics); } catch (e) { return res.status(400).json({ message: 'Invalid format for Research and Publication Ethics.' }); }
     }
-    if (!researchAnalysis || !Array.isArray(researchAnalysis) || researchAnalysis.length === 0) {
-      return res.status(400).json({ message: 'Please add at least one subject in Research Analysis.' });
+    if (typeof researchMethodology === 'string') {
+      try { researchMethodology = JSON.parse(researchMethodology); } catch (e) { return res.status(400).json({ message: 'Invalid format for Research Methodology.' }); }
     }
-    if (!elective || !Array.isArray(elective) || elective.length === 0) {
-      return res.status(400).json({ message: 'Please add at least one subject in Elective.' });
+    if (typeof elective === 'string') {
+      try { elective = JSON.parse(elective); } catch (e) { return res.status(400).json({ message: 'Invalid format for Discipline-Specific Elective.' }); }
+    }
+    if (typeof others === 'string') {
+      try { others = JSON.parse(others); } catch (e) { return res.status(400).json({ message: 'Invalid format for Others section.' }); }
+    }
+
+    // Validate proof file
+    if (!req.file && !thesis.courseworkUploadProof) {
+      return res.status(400).json({ message: 'Upload Proof is required.' });
     }
 
     // Validate rows
-    const validateSection = (section, name) => {
+    const validateSection = (section, name, isOptional = false) => {
+      if (!section || !Array.isArray(section)) {
+        if (isOptional) return;
+        throw new Error(`Please add at least one subject in ${name}.`);
+      }
+      if (!isOptional && section.length === 0) {
+        throw new Error(`Please add at least one subject in ${name}.`);
+      }
       for (const row of section) {
+        // Skip empty rows in optional sections
+        if (isOptional && !row.subjectName?.trim() && !row.subjectCode?.trim() && !row.marksObtained && !row.maxMarks) {
+          continue;
+        }
+
         if (!row.subjectName?.trim()) {
-          throw new Error(`Subject Name is required in all rows of ${name}.`);
+          throw new Error(`Subject Name is required in all active rows of ${name}.`);
         }
         const obtained = Number(row.marksObtained);
         const max = Number(row.maxMarks);
@@ -977,18 +987,30 @@ const submitCourseworkDetails = async (req, res) => {
     };
 
     try {
+      validateSection(researchEthics, 'Research and Publication Ethics');
       validateSection(researchMethodology, 'Research Methodology');
-      validateSection(researchAnalysis, 'Research Analysis');
-      validateSection(elective, 'Electives');
+      validateSection(elective, 'Discipline-Specific Elective Course');
+      validateSection(others, 'Others', true);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
+    // Clean up empty rows in others
+    const cleanOthers = (others || []).filter(row => 
+      row.subjectName?.trim() || row.subjectCode?.trim() || row.marksObtained || row.maxMarks
+    );
+
     thesis.courseworkDetails = {
+      researchEthics,
       researchMethodology,
-      researchAnalysis,
-      elective
+      elective,
+      others: cleanOthers
     };
+
+    if (req.file) {
+      thesis.courseworkUploadProof = `/uploads/${req.file.filename}`;
+    }
+
     thesis.courseworkStatus = 'PENDING_FACULTY';
     thesis.courseworkApprovals = {
       facultyApproved: false,
@@ -1019,6 +1041,7 @@ const submitCourseworkDetails = async (req, res) => {
 
     res.json(thesis);
   } catch (err) {
+    console.error("COURSEWORK_SUBMIT_ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -1077,6 +1100,7 @@ const rejectCourseworkFaculty = async (req, res) => {
     }
 
     thesis.courseworkStatus = 'REJECTED';
+    thesis.courseworkUploadProof = null;
     thesis.auditLog.push({
       action: 'COURSEWORK_FACULTY_REJECTED',
       note: `Rejected by supervisor ${req.user.name}. Remarks: ${req.body.remarks || 'None'}`
@@ -1166,6 +1190,7 @@ const rejectCourseworkHOD = async (req, res) => {
     }
 
     thesis.courseworkStatus = 'REJECTED';
+    thesis.courseworkUploadProof = null;
     thesis.auditLog.push({
       action: 'COURSEWORK_HOD_REJECTED',
       note: `Rejected by HOD ${req.user.name}. Remarks: ${req.body.remarks || 'None'}`

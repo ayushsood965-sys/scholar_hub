@@ -286,12 +286,18 @@ const Header = ({ title, user }) => {
   );
 };
 
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {
-    if (synopsisStatus === 'SUBMITTED') return { text: 'Synopsis Submitted (Under Review)', color: '#2563EB', bg: '#DBEAFE' };
-    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (Awaiting DRC)', color: '#059669', bg: '#D1FAE5' };
+    if (synopsisStatus === 'SUBMITTED') {
+      if (subRole === 'HOD') {
+        return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
+      }
+      return { text: 'Synopsis Submitted (Under Review)', color: '#2563EB', bg: '#DBEAFE' };
+    }
+    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & DRC Pending', color: '#D97706', bg: '#FFFBEB' };
+    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (DRC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
     if (synopsisStatus === 'REVISION_REQUIRED') return { text: 'Synopsis Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
     return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
   }
@@ -1131,7 +1137,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
           {(() => {
             const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
             const finalSubMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-            const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status);
+            const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole);
             return (
               <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
                 {badge.text}
@@ -1158,16 +1164,39 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
         </div>
         {thesis.status === 'SYNOPSIS_PENDING' && (() => {
             const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
+            const mStatus = synopsisMilestone?.status || 'PENDING';
+            
+            let bg = '#FFF5F5';
+            let border = '#FEB2B2';
+            let color = '#C53030';
+            let text = "⚠️ Synopsis upload is currently pending at the candidate's end. DRC Scheduling is locked.";
+
+            if (mStatus === 'SUBMITTED') {
+              text = '⚠️ Synopsis has been submitted by candidate. Awaiting supervisor provisional approval. DRC Scheduling is locked.';
+            } else if (mStatus === 'PENDING_HOD') {
+              bg = '#FFFBEB';
+              border = '#FDE68A';
+              color = '#B45309';
+              text = '⏳ Synopsis has been provisionally approved by supervisor. Awaiting HOD final approval. DRC Scheduling remains locked.';
+            } else if (mStatus === 'REVISION_REQUIRED') {
+              text = '⚠️ Synopsis revision required. Awaiting updated draft from candidate. DRC Scheduling is locked.';
+            } else if (mStatus === 'APPROVED') {
+              bg = '#F0FDF4';
+              border = '#BBF7D0';
+              color = '#15803D';
+              text = '✅ Synopsis Approved by HOD! Ready for DRC Meeting Scheduling & Review.';
+            }
+
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', marginTop: 8 }}>
-                {synopsisMilestone?.status !== 'APPROVED' ? (
-                  <div style={{ background: '#FFF5F5', border: '1px solid #FEB2B2', color: '#C53030', padding: '10px 14px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
-                    ⚠️ Supervisor has not approved the Synopsis yet (Current Status: {synopsisMilestone?.status || 'PENDING'}). DRC Scheduling is locked until supervisor approval is complete.
+                {mStatus !== 'APPROVED' ? (
+                  <div style={{ background: bg, border: `1px solid ${border}`, color: color, padding: '10px 14px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+                    {text}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-                    <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#15803D', padding: '10px 14px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
-                      ✅ Synopsis Approved by Supervisor! Ready for DRC Meeting Scheduling & Review.
+                    <div style={{ background: bg, border: `1px solid ${border}`, color: color, padding: '10px 14px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+                      {text}
                     </div>
 
                     {/* DRC Meetings List */}
@@ -2175,7 +2204,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
 };
 
 // ── Scholar List ──
-const ScholarList = ({ theses, onSelect, title }) => (
+const ScholarList = ({ theses, onSelect, title, subRole }) => (
   <div className="card documents-card">
     <h3 className="card-title">{title}</h3>
     {theses.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No records found.</div>}
@@ -2188,7 +2217,7 @@ const ScholarList = ({ theses, onSelect, title }) => (
           <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 40)}...</div>
           <div style={{ flex: 1.2 }}>
             {(() => {
-              const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus);
+              const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole);
               return (
                 <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
                   {badge.text}
@@ -2713,13 +2742,23 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
   const totalScholars = theses.length;
   const awaitingReg = theses.filter(t => t.status === 'REGISTRATION_PENDING').length;
   const activeResearch = theses.filter(t => t.status === 'ACTIVE_RESEARCH').length;
-  const pendingReviews = theses.filter(t => ['SYNOPSIS_PENDING', 'PRE_SUBMISSION'].includes(t.status)).length;
+  const pendingReviews = theses.filter(t => {
+    if (t.status === 'SYNOPSIS_PENDING') {
+      return t.synopsisStatus === 'PENDING_HOD';
+    }
+    return t.status === 'PRE_SUBMISSION';
+  }).length;
   const awaitingDRC = theses.filter(t => t.status === 'SYNOPSIS_PENDING' && t.synopsisStatus === 'APPROVED').length;
 
   // Advisor specific metrics
   const myScholars = theses;
   const activeSupervision = myScholars.filter(t => t.status === 'ACTIVE_RESEARCH').length;
-  const myPendingApprovals = myScholars.filter(t => ['SYNOPSIS_PENDING', 'PRE_SUBMISSION'].includes(t.status)).length;
+  const myPendingApprovals = myScholars.filter(t => {
+    if (t.status === 'SYNOPSIS_PENDING') {
+      return t.synopsisStatus === 'SUBMITTED';
+    }
+    return t.status === 'PRE_SUBMISSION';
+  }).length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -2791,7 +2830,7 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {theses.slice(0, 6).map(t => {
-                const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus);
+                const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, user?.subRole);
                 return (
                   <div
                     key={t._id}
@@ -3487,7 +3526,16 @@ const PendingReviewsQueue = ({ theses, user }) => {
       await Promise.all(theses.map(async (t) => {
         // Fetch milestones
         const mRes = await axios.get(`${API_URL}/milestones/${t._id}`, getAuthHeader());
-        const pendingMilestones = mRes.data.filter(m => m.status === 'SUBMITTED');
+        const pendingMilestones = mRes.data.filter(m => {
+          if (m.type === 'SYNOPSIS') {
+            if (user?.subRole === 'HOD') {
+              return m.status === 'PENDING_HOD';
+            } else {
+              return m.status === 'SUBMITTED';
+            }
+          }
+          return m.status === 'SUBMITTED';
+        });
         pendingMilestones.forEach(m => {
           allPendingDocs.push({
             _id: m._id,
@@ -4152,15 +4200,15 @@ const FacultyDashboard = () => {
 
     switch (activeTab) {
       case 'overview': return <OverviewPage theses={allTheses} user={user} onSelect={handleSelectThesis} setActiveTab={handleTabChange} />;
-      case 'registrations': return <ScholarList theses={allTheses.filter(t => t.status === 'REGISTRATION_PENDING')} onSelect={handleSelectThesis} title="Scholars Awaiting Registration Approval" />;
+      case 'registrations': return <ScholarList theses={allTheses.filter(t => t.status === 'REGISTRATION_PENDING')} onSelect={handleSelectThesis} title="Scholars Awaiting Registration Approval" subRole={subRole} />;
       case 'coursework_approvals': {
         const pendingTheses = subRole === 'HOD'
           ? allTheses.filter(t => t.status === 'COURSEWORK' && t.courseworkStatus === 'PENDING_HOD')
           : allTheses.filter(t => t.status === 'COURSEWORK' && t.courseworkStatus === 'PENDING_FACULTY');
-        return <ScholarList theses={pendingTheses} onSelect={handleSelectThesis} title="Scholars Awaiting Coursework Approval" />;
+        return <ScholarList theses={pendingTheses} onSelect={handleSelectThesis} title="Scholars Awaiting Coursework Approval" subRole={subRole} />;
       }
-      case 'scholars': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="My Assigned Scholars" />;
-      case 'dept': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="All Department Scholars" />;
+      case 'scholars': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="My Assigned Scholars" subRole={subRole} />;
+      case 'dept': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="All Department Scholars" subRole={subRole} />;
       case 'meetings': return <MeetingsTab user={user} />;
       case 'reviews': return <PendingReviewsQueue theses={allTheses} user={user} />;
       case 'requests': return <HODChangeRequestsTab user={user} />;

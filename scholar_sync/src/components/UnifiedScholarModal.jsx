@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle2, XCircle, Plus } from 'lucide-react';
+import { CheckCircle2, XCircle, Plus, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 import { AuthContext } from '../context/AuthContext';
@@ -10,13 +10,32 @@ import { useToast } from '../context/ToastContext';
 const API = API_URL;
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
+const formatMonthYear = (val) => {
+  if (!val) return '-';
+  const parts = val.split('-');
+  if (parts.length !== 2) return val;
+  const year = parts[0];
+  const monthIdx = parseInt(parts[1], 10) - 1;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  if (monthIdx >= 0 && monthIdx < 12) {
+    return `${months[monthIdx]} ${year}`;
+  }
+  return val;
+};
+
 // ── Status resolver (shared) ──
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {
-    if (synopsisStatus === 'SUBMITTED') return { text: 'Synopsis Submitted', color: '#2563EB', bg: '#DBEAFE' };
-    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (Awaiting DRC)', color: '#059669', bg: '#D1FAE5' };
+    if (synopsisStatus === 'SUBMITTED') {
+      if (subRole === 'HOD') {
+        return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
+      }
+      return { text: 'Synopsis Submitted', color: '#2563EB', bg: '#DBEAFE' };
+    }
+    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & DRC Pending', color: '#D97706', bg: '#FFFBEB' };
+    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (DRC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
     if (synopsisStatus === 'REVISION_REQUIRED') return { text: 'Synopsis Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
     return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
   }
@@ -426,10 +445,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   // ── Computed values ──
   const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
   const finalSubMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-  const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status);
+  const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole);
   const reports = milestones.filter(m => m.type === '6_MONTH_REPORT');
   const chapters = milestones.filter(m => m.type === 'CHAPTER_DRAFT');
-  const corePendingMilestones = milestones.filter(m => (m.type === 'SYNOPSIS' || m.type === 'FINAL_SUBMISSION' || m.type === 'PRE_SUBMISSION') && (m.status === 'SUBMITTED' || m.status === 'REVISION_REQUIRED'));
+  const corePendingMilestones = milestones.filter(m => (m.type === 'FINAL_SUBMISSION' || m.type === 'PRE_SUBMISSION') && (m.status === 'SUBMITTED' || m.status === 'REVISION_REQUIRED'));
   const verifiedJournals = publications.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
   const verifiedConferences = publications.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
   const pendingOutputsCount = publications.filter(p => p.status === 'PENDING').length;
@@ -671,18 +690,22 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     return (
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: '0.85rem' }}>
         <thead>
-          <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-            <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Subject Name</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '150px' }}>Marks Obtained</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '150px' }}>Maximum Marks</th>
+          <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0', textAlign: 'left' }}>
+            <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Subject Name</th>
+            <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Subject Code</th>
+            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '120px' }}>Marks Obtained</th>
+            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '120px' }}>Maximum Marks</th>
+            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '150px' }}>Exam Month & Year</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, idx) => (
             <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
-              <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1E293B' }}>{item.subject}</td>
+              <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1E293B' }}>{item.subjectName}</td>
+              <td style={{ padding: '10px 12px', color: '#475569' }}>{item.subjectCode || '-'}</td>
               <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#0F172A' }}>{item.marksObtained}</td>
               <td style={{ padding: '10px 12px', textAlign: 'center', color: '#475569' }}>{item.maxMarks}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#475569' }}>{formatMonthYear(item.examinationMonthYear)}</td>
             </tr>
           ))}
         </tbody>
@@ -692,9 +715,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
   const renderCoursework = () => {
     const details = thesis.courseworkDetails || {};
-    const hasDetails = (details.methodology && details.methodology.length > 0) ||
-                       (details.analysis && details.analysis.length > 0) ||
-                       (details.electives && details.electives.length > 0);
+    const hasDetails = (details.researchEthics && details.researchEthics.length > 0) ||
+                       (details.researchMethodology && details.researchMethodology.length > 0) ||
+                       (details.elective && details.elective.length > 0) ||
+                       (details.others && details.others.length > 0);
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -739,19 +763,41 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         ) : (
           <>
             <div className="usm-card" style={{ padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E3A8A', borderBottom: '2px solid #DBEAFE', paddingBottom: 6 }}>1. Research Methodology</div>
-              {renderCourseworkSection('Research Methodology', details.methodology)}
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E3A8A', borderBottom: '2px solid #DBEAFE', paddingBottom: 6 }}>1. Research and Publication Ethics</div>
+              {renderCourseworkSection('Research and Publication Ethics', details.researchEthics)}
             </div>
 
             <div className="usm-card" style={{ padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#065F46', borderBottom: '2px solid #D1FAE5', paddingBottom: 6 }}>2. Research Analysis</div>
-              {renderCourseworkSection('Research Analysis', details.analysis)}
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#065F46', borderBottom: '2px solid #D1FAE5', paddingBottom: 6 }}>2. Research Methodology</div>
+              {renderCourseworkSection('Research Methodology', details.researchMethodology)}
             </div>
 
             <div className="usm-card" style={{ padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#B45309', borderBottom: '2px solid #FEF3C7', paddingBottom: 6 }}>3. Elective Courses</div>
-              {renderCourseworkSection('Elective Courses', details.electives)}
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#B45309', borderBottom: '2px solid #FEF3C7', paddingBottom: 6 }}>3. Discipline-Specific Elective Course</div>
+              {renderCourseworkSection('Discipline-Specific Elective Course', details.elective)}
             </div>
+
+            {details.others && details.others.length > 0 && (
+              <div className="usm-card" style={{ padding: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#475569', borderBottom: '2px solid #CBD5E1', paddingBottom: 6 }}>4. Others</div>
+                {renderCourseworkSection('Others', details.others)}
+              </div>
+            )}
+
+            {thesis.courseworkUploadProof && (
+              <div className="usm-card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#334155' }}>Upload Proof (Grade Sheet / Certificate)</span>
+                <a 
+                  href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="btn-primary"
+                  style={{ fontSize: '0.8rem', padding: '8px 16px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  📎 View Uploaded Proof
+                </a>
+              </div>
+            )}
 
             {/* Approval / Rejection box for Supervisor */}
             {!isReadOnly && subRole !== 'HOD' && thesis.supervisorId?._id === user._id && thesis.courseworkStatus === 'PENDING_FACULTY' && (
@@ -846,7 +892,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const tabs = [
     { key: 'overview', label: 'Overview', icon: '📊' },
     { key: 'profile', label: 'Profile', icon: '👤' },
-    { key: 'coursework', label: 'Coursework', icon: '📚', show: thesis.status === 'COURSEWORK' || thesis.courseworkCompleted || (thesis.courseworkDetails && ((thesis.courseworkDetails.methodology && thesis.courseworkDetails.methodology.length > 0) || (thesis.courseworkDetails.analysis && thesis.courseworkDetails.analysis.length > 0) || (thesis.courseworkDetails.electives && thesis.courseworkDetails.electives.length > 0))) },
+    { key: 'coursework', label: 'Coursework', icon: '📚', show: thesis.status === 'COURSEWORK' || thesis.courseworkCompleted || (thesis.courseworkDetails && ((thesis.courseworkDetails.researchEthics && thesis.courseworkDetails.researchEthics.length > 0) || (thesis.courseworkDetails.researchMethodology && thesis.courseworkDetails.researchMethodology.length > 0) || (thesis.courseworkDetails.elective && thesis.courseworkDetails.elective.length > 0) || (thesis.courseworkDetails.others && thesis.courseworkDetails.others.length > 0))) },
+    { key: 'synopsis', label: 'Synopsis', icon: '📝', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'SYNOPSIS') },
     { key: 'drc', label: 'DRC', icon: '🏛️', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'rac', label: 'RAC', icon: '📋', badge: scheduledRacs || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'reports', label: 'Reports', icon: '📑', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
@@ -857,6 +904,201 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     { key: 'changes', label: 'Changes', icon: '🔄' },
     { key: 'audit', label: 'Audit Log', icon: '📜' },
   ].filter(t => t.show !== false);
+
+  const renderSynopsis = () => {
+    const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
+    if (!synopsisMilestone) {
+      return (
+        <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.85rem', padding: '30px 20px' }}>
+          ⏳ Synopsis milestone has not been generated for this candidate.
+        </div>
+      );
+    }
+
+    const hasUploaded = !!synopsisMilestone.documentUrl && !(subRole === 'HOD' && synopsisMilestone.status === 'SUBMITTED');
+    const isSubmitted = synopsisMilestone.status === 'SUBMITTED';
+    const isPendingHOD = synopsisMilestone.status === 'PENDING_HOD';
+    const isRevision = synopsisMilestone.status === 'REVISION_REQUIRED';
+    const isApproved = synopsisMilestone.status === 'APPROVED';
+
+    const statusBadge = () => {
+      let bg = '#F3F4F6';
+      let color = '#4B5563';
+      let text = 'Pending Upload';
+
+      if (isSubmitted) {
+        if (subRole === 'HOD') {
+          bg = '#F3F4F6';
+          color = '#4B5563';
+          text = 'Pending Upload';
+        } else {
+          bg = '#DBEAFE';
+          color = '#1D4ED8';
+          text = 'Awaiting Supervisor Approval';
+        }
+      } else if (isPendingHOD) {
+        bg = '#FFFBEB';
+        color = '#D97706';
+        text = 'Pending HOD Approval & DRC Pending';
+      } else if (isRevision) {
+        bg = '#FEE2E2';
+        color = '#991B1B';
+        text = 'Revision Required';
+      } else if (isApproved) {
+        if (thesis.status === 'SYNOPSIS_PENDING') {
+          bg = '#FFFBEB';
+          color = '#D97706';
+          text = 'Synopsis Approved (DRC Pending at HOD)';
+        } else {
+          bg = '#D1FAE5';
+          color = '#065F46';
+          text = 'Approved & Verified';
+        }
+      }
+
+      return (
+        <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 700, background: bg, color: color }}>
+          {text}
+        </span>
+      );
+    };
+
+    const canReview = !isReadOnly && (
+      (isSubmitted && subRole !== 'HOD' && thesis.supervisorId?._id === user._id) ||
+      (isPendingHOD && subRole === 'HOD')
+    );
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #E2E8F0', paddingBottom: 10 }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1E293B' }}>📝 Thesis Synopsis Submission</h3>
+          {statusBadge()}
+        </div>
+
+        {/* Scholar Research Details */}
+        <div className="usm-card" style={{ padding: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E3A8A', marginBottom: 12 }}>Research Outline</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
+            <div>
+              <strong>Thesis Title:</strong>
+              <div style={{ background: '#F8FAFC', padding: 10, borderRadius: 8, marginTop: 4, fontWeight: 600, color: '#334155', border: '1px solid #E2E8F0' }}>
+                {thesis.title || 'N/A'}
+              </div>
+            </div>
+            <div>
+              <strong>Abstract:</strong>
+              <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 8, marginTop: 4, color: '#475569', lineHeight: '1.5', border: '1px solid #E2E8F0', whiteSpace: 'pre-line' }}>
+                {thesis.abstract || 'N/A'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Synopsis Document Link */}
+        {hasUploaded ? (
+          <div className="usm-card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+            <div>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#166534' }}>📄 Synopsis Document File</span>
+              {synopsisMilestone.submittedAt && (
+                <div style={{ fontSize: '0.72rem', color: '#15803D', marginTop: 2 }}>
+                  Submitted on: {new Date(synopsisMilestone.submittedAt).toLocaleString()}
+                </div>
+              )}
+            </div>
+            <a 
+              href={`${API_BASE_URL}${synopsisMilestone.documentUrl}`} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="btn-primary"
+              style={{ fontSize: '0.8rem', padding: '8px 16px', background: '#166534', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              📥 Download / View Synopsis
+            </a>
+          </div>
+        ) : (
+          <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.85rem', padding: '20px' }}>
+            ⏳ The candidate has not uploaded the synopsis document yet.
+          </div>
+        )}
+
+        {/* Evaluation/Action Box (Only for HOD/Supervisor when submitted/pending HOD) */}
+        {canReview && (
+          <div className="usm-card" style={{ background: '#FFFDF5', border: '1px solid #FDE68A', padding: 20 }}>
+            <h4 style={{ margin: '0 0 10px', color: '#92400E', fontSize: '0.9rem', fontWeight: 800 }}>📋 Synopsis Evaluation Action</h4>
+            <p style={{ fontSize: '0.8rem', color: '#92400E', marginBottom: 12 }}>
+              {isPendingHOD 
+                ? "Supervisor has verified and provisionally approved the synopsis. Give final clearance to unlock DRC scheduling." 
+                : "Review the synopsis document and title details. You can approve the submission or request a revision with feedback."}
+            </p>
+            <textarea
+              className="form-input"
+              rows="3"
+              placeholder="Enter evaluation remarks or changes required..."
+              value={remarks[synopsisMilestone._id] || ''}
+              onChange={e => setRemarks(r => ({ ...r, [synopsisMilestone._id]: e.target.value }))}
+              style={{ marginBottom: 12, width: '100%', borderColor: '#FCD34D', background: '#FFFFFF' }}
+            />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button 
+                className="btn-primary" 
+                onClick={() => act(() => onReview(synopsisMilestone._id, 'APPROVE', remarks[synopsisMilestone._id]))} 
+                disabled={loading} 
+                style={{ flex: 1, padding: '10px', background: '#059669' }}
+              >
+                {subRole === 'HOD' ? '✓ Grant HOD Final Approval' : '✓ Approve & Forward to HOD'}
+              </button>
+              <button 
+                className="btn-outline" 
+                onClick={() => {
+                  if (!(remarks[synopsisMilestone._id] || '').trim()) {
+                    return toast.warning('Remarks are required to request revision.');
+                  }
+                  act(() => onReview(synopsisMilestone._id, 'REVISION', remarks[synopsisMilestone._id]));
+                }}
+                disabled={loading} 
+                style={{ flex: 1, padding: '10px', borderColor: '#DC2626', color: '#DC2626' }}
+              >
+                ✗ Request Revision
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Read-Only provisional approval notice for supervisor */}
+        {!canReview && isPendingHOD && (
+          <div style={{ background: '#FFF9E6', borderLeft: '4px solid #F59E0B', color: '#B45309', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+            ⏳ Synopsis has been provisionally approved by supervisor. Awaiting HOD final approval and DRC scheduling.
+          </div>
+        )}
+
+        {isApproved && thesis.status === 'SYNOPSIS_PENDING' && (
+          <div style={{ background: '#ECFDF5', borderLeft: '4px solid #10B981', color: '#065F46', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+            ✅ Synopsis approved by HOD! DRC meeting evaluation is now pending. Please proceed to the <strong>DRC</strong> tab to schedule or record the meeting.
+          </div>
+        )}
+
+        {/* Action log / Feedback History */}
+        {synopsisMilestone.comments?.length > 0 && (
+          <div className="usm-card" style={{ padding: 16 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#334155', borderBottom: '1px solid #E2E8F0', paddingBottom: 6, marginBottom: 12 }}>
+              📜 Action & Feedback Log
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {synopsisMilestone.comments.map((c, idx) => (
+                <div key={idx} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 700, color: '#475569' }}>{c.authorName}</span>
+                    <span style={{ color: '#94A3B8', fontSize: '0.72rem' }}>{new Date(c.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div style={{ color: '#1F2937', fontStyle: 'italic' }}>"{c.text}"</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // ══════════════════════════════════════════════════════════
   // TAB CONTENT RENDERERS
@@ -869,12 +1111,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       {/* Quick Actions */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600, background: badge.bg, color: badge.color }}>{badge.text}</span>
-        {!isReadOnly && subRole === 'HOD' && (!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') && (
-          <button className="btn-primary" onClick={() => act(onVerify)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#059669' }}>✓ Verify Enrollment</button>
-        )}
-        {!isReadOnly && thesis.status === 'COURSEWORK' && (
-          <button className="btn-primary" onClick={() => act(onClearCoursework)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#3B82F6' }}>✓ Clear Coursework</button>
-        )}
+
         {!isReadOnly && subRole !== 'HOD' && thesis.status === 'PRE_SUBMISSION' && milestones.find(m => m.type === 'FINAL_SUBMISSION' && (m.status === 'SUBMITTED' || m.status === 'APPROVED')) && (
           <button className="btn-primary" onClick={() => act(onFinalApprove)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#8B5CF6' }}>✓ Final Approval → SUBMITTED</button>
         )}
@@ -893,19 +1130,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           }} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#EA580C' }}>🚀 Advance to Pre-Submission</button>
         )}
       </div>
-
-      {/* HOD: Supervisor assignment */}
-      {!isReadOnly && subRole === 'HOD' && thesis.status !== 'AWARDED' && (
-        <div className="usm-card" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <select className="form-input" style={{ padding: '5px 10px', height: 'auto', fontSize: '0.82rem', flex: 1 }} value={selSupervisor} onChange={e => setSelSupervisor(e.target.value)} disabled={!!thesis.supervisorId}>
-            <option value="">Assign Supervisor...</option>
-            {faculty.filter(f => f.department === thesis.department).map(f => <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Supervisor'})</option>)}
-          </select>
-          <button className="btn-primary" onClick={() => act(() => onAssign(selSupervisor))} disabled={!selSupervisor || !!thesis.supervisorId || loading} style={{ padding: '5px 14px', fontSize: '0.82rem', opacity: thesis.supervisorId ? 0.6 : 1 }}>
-            {thesis.supervisorId ? '✓ Assigned' : 'Assign'}
-          </button>
-        </div>
-      )}
 
       {/* Stats Cards */}
       <div className="usm-stats">
@@ -1056,20 +1280,106 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           )}
         </div>
       )}
+
+      {/* HOD Review, Verify & Assign Supervisor Card */}
+      {!isReadOnly && subRole === 'HOD' && (
+        <div className="usm-card" style={{ borderTop: '2px solid #E2E8F0', paddingTop: '16px', marginTop: '12px', background: '#F8FAFC', padding: '16px', borderRadius: '10px' }}>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', marginBottom: '8px', marginTop: 0 }}>📋 Verification & Supervisor Assignment</h4>
+          <p style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: '16px' }}>
+            Please review the qualifications and credentials above. Verify the scholar and allocate their Research Advisor (Supervisor).
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Enrollment Status:</span>
+              {(!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') ? (
+                <button 
+                  className="btn-primary" 
+                  onClick={() => act(onVerify)} 
+                  disabled={loading} 
+                  style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
+                >
+                  ✓ Verify Enrollment & Move to Coursework
+                </button>
+              ) : (
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>
+                  ✓ Verified
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Supervisor:</span>
+              {thesis.supervisorId ? (
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0369A1', background: '#E0F2FE', padding: '4px 10px', borderRadius: '12px' }}>
+                  {thesis.supervisorId?.name || 'Assigned'}
+                </span>
+              ) : (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
+                  <select 
+                    className="form-input" 
+                    style={{ padding: '6px 10px', height: 'auto', fontSize: '0.82rem', flex: 1 }} 
+                    value={selSupervisor} 
+                    onChange={e => setSelSupervisor(e.target.value)}
+                  >
+                    <option value="">Select Supervisor...</option>
+                    {faculty.filter(f => f.department === thesis.department).map(f => (
+                      <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Faculty'})</option>
+                    ))}
+                  </select>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => act(() => onAssign(selSupervisor))} 
+                    disabled={!selSupervisor || loading} 
+                    style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                  >
+                    Assign
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
   const renderDRC = () => {
     const synopsisApproved = synopsisMilestone?.status === 'APPROVED';
+
+    const drcLockNotice = () => {
+      const mStatus = synopsisMilestone?.status || 'PENDING';
+      let bg = '#FFF5F5';
+      let border = '#FEB2B2';
+      let color = '#C53030';
+      let text = "⚠️ Synopsis upload is currently pending at the candidate's end. DRC scheduling is locked.";
+
+      if (mStatus === 'SUBMITTED') {
+        if (subRole === 'HOD') {
+          text = "⚠️ Synopsis upload is currently pending at the candidate's end. DRC scheduling is locked.";
+        } else {
+          text = '⚠️ Synopsis has been submitted by candidate. Awaiting supervisor provisional approval. DRC scheduling is locked.';
+        }
+      } else if (mStatus === 'PENDING_HOD') {
+        bg = '#FFFBEB';
+        border = '#FDE68A';
+        color = '#B45309';
+        text = '⏳ Synopsis has been provisionally approved by supervisor. Awaiting HOD final approval. DRC scheduling is locked.';
+      } else if (mStatus === 'REVISION_REQUIRED') {
+        text = '⚠️ Synopsis revision required. Awaiting updated draft from candidate. DRC scheduling is locked.';
+      }
+
+      return (
+        <div style={{ background: bg, border: `1px solid ${border}`, color: color, padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}>
+          {text}
+        </div>
+      );
+    };
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="usm-section-title">🏛️ Departmental Research Committee (DRC)</div>
 
-        {!synopsisApproved && thesis.status === 'SYNOPSIS_PENDING' && (
-          <div style={{ background: '#FFF5F5', border: '1px solid #FEB2B2', color: '#C53030', padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}>
-            ⚠️ Synopsis not yet approved by Supervisor (Status: {synopsisMilestone?.status || 'PENDING'}). DRC locked.
-          </div>
-        )}
+        {!synopsisApproved && thesis.status === 'SYNOPSIS_PENDING' && drcLockNotice()}
 
         {(synopsisApproved || thesis.status !== 'SYNOPSIS_PENDING') && (
           <>
@@ -1649,7 +1959,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           <div style={{ fontSize: '0.78rem', color: '#64748B', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg, #F8FAFC)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 10 }}>
             <span>Authorization Level: <strong>{canManageDefense ? 'HOD/Admin (Manage)' : 'Faculty/Scholar (Read-Only)'}</strong></span>
             <span style={{ fontWeight: 700, color: isAwarded ? '#10B981' : '#3B82F6' }}>
-              Current Stage: {resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status).text}
+              Current Stage: {resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole).text}
             </span>
           </div>
         </div>
@@ -2069,6 +2379,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       case 'overview': return renderOverview();
       case 'profile': return renderProfile();
       case 'coursework': return renderCoursework();
+      case 'synopsis': return renderSynopsis();
       case 'drc': return renderDRC();
       case 'rac': return renderRAC();
       case 'reports': return renderReportsOrChapters('reports');
@@ -2119,6 +2430,36 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <button key={tab.key} className={`usm-tab ${activeTab === tab.key ? 'active' : ''}`} onClick={() => setActiveTab(tab.key)}>
                   <span className="usm-tab-icon">{tab.icon}</span>
                   {tab.label}
+                  {tab.key === 'profile' && !isReadOnly && subRole === 'HOD' && (!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') && (
+                    <AlertTriangle 
+                      size={16} 
+                      title="Needs attention: verify credentials"
+                      style={{ marginLeft: '8px', color: '#EF4444', fill: '#FEE2E2', display: 'inline-block', verticalAlign: 'middle', cursor: 'help' }}
+                    />
+                  )}
+                  {tab.key === 'coursework' && !isReadOnly && (
+                    (user.role === 'FACULTY' && thesis.supervisorId?._id === user._id && thesis.courseworkStatus === 'PENDING_FACULTY') ||
+                    (subRole === 'HOD' && thesis.courseworkStatus === 'PENDING_HOD')
+                  ) && (
+                    <AlertTriangle 
+                      size={16} 
+                      title="Needs attention: verify coursework details"
+                      style={{ marginLeft: '8px', color: '#EF4444', fill: '#FEE2E2', display: 'inline-block', verticalAlign: 'middle', cursor: 'help' }}
+                    />
+                  )}
+                  {tab.key === 'synopsis' && !isReadOnly && (() => {
+                    const status = milestones.find(m => m.type === 'SYNOPSIS')?.status;
+                    return (
+                      (subRole === 'HOD' && status === 'PENDING_HOD') ||
+                      (subRole !== 'HOD' && thesis.supervisorId?._id === user._id && status === 'SUBMITTED')
+                    );
+                  })() && (
+                    <AlertTriangle 
+                      size={16} 
+                      title="Needs attention: verify synopsis document"
+                      style={{ marginLeft: '8px', color: '#EF4444', fill: '#FEE2E2', display: 'inline-block', verticalAlign: 'middle', cursor: 'help' }}
+                    />
+                  )}
                   {tab.badge && <span className="usm-tab-badge">{tab.badge}</span>}
                 </button>
               ))}

@@ -14,6 +14,19 @@ import ThemeToggle from '../components/ThemeToggle';
 const API = API_URL;
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
+const formatMonthYear = (val) => {
+  if (!val) return '-';
+  const parts = val.split('-');
+  if (parts.length !== 2) return val;
+  const year = parts[0];
+  const monthIdx = parseInt(parts[1], 10) - 1;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  if (monthIdx >= 0 && monthIdx < 12) {
+    return `${months[monthIdx]} ${year}`;
+  }
+  return val;
+};
+
 const MilestoneTimeline = ({ thesis, milestones = [] }) => {
   const [drcMeetings, setDrcMeetings] = useState([]);
   const [racSessions, setRacSessions] = useState([]);
@@ -123,8 +136,9 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
     if (currentStatus === 'SYNOPSIS_PENDING') {
       const synopsis = milestones?.find(m => m.type === 'SYNOPSIS');
       
-      const step1Uploaded = synopsis && ['SUBMITTED', 'REVISION_REQUIRED', 'APPROVED'].includes(synopsis.status);
+      const step1Uploaded = synopsis && ['SUBMITTED', 'PENDING_HOD', 'REVISION_REQUIRED', 'APPROVED'].includes(synopsis.status);
       const step2Approved = synopsis?.status === 'APPROVED';
+      const step2PendingHOD = synopsis?.status === 'PENDING_HOD';
       const step2Revision = synopsis?.status === 'REVISION_REQUIRED';
       const step2Submitted = synopsis?.status === 'SUBMITTED';
 
@@ -151,13 +165,15 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
         {
           label: 'Supervisor Sign-off',
           desc: step2Approved 
-            ? 'Approved and recommended by your Research Advisor.' 
+            ? 'Approved by Supervisor & HOD.' 
+            : step2PendingHOD 
+            ? 'Approved by Supervisor. Awaiting HOD Final Approval.'
             : step2Revision 
             ? `Correction needed: "${synopsis.comments?.[synopsis.comments.length - 1]?.text || 'Check remarks'}"`
             : step2Submitted 
             ? 'Awaiting your supervisor\'s review and evaluation.' 
             : 'Awaiting synopsis document upload.',
-          status: step2Approved ? 'SUCCESS' : step2Revision ? 'DANGER' : step2Submitted ? 'WARNING' : 'PENDING'
+          status: (step2Approved || step2PendingHOD) ? 'SUCCESS' : step2Revision ? 'DANGER' : step2Submitted ? 'WARNING' : 'PENDING'
         },
         {
           label: 'DRC Meeting Scheduling',
@@ -384,7 +400,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
     { key: 'overview', label: 'Dashboard', Icon: Home },
     { key: 'profile', label: 'Profile', Icon: User },
     { key: 'thesis', label: 'My Thesis', Icon: Book },
-    { key: 'milestones', label: 'Milestones', Icon: Flag },
+    { key: 'workspace', label: 'Workspace', Icon: Flag },
     { key: 'rac', label: 'RAC Progress', Icon: Layers },
     { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
     { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
@@ -410,7 +426,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             if (!thesis || thesis.status === 'REGISTRATION_PENDING') return true;
             
             const status = thesis.status;
-            if (key === 'thesis' || key === 'milestones') {
+            if (key === 'thesis' || key === 'workspace') {
               return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status);
             }
             if ([
@@ -763,18 +779,19 @@ const CourseworkPhase = ({ thesis }) => {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [proofFile, setProofFile] = useState(null);
 
   // Row state helper
-  const createEmptyRow = () => ({ subjectName: '', marksObtained: '', maxMarks: '' });
+  const createEmptyRow = () => ({ subjectName: '', subjectCode: '', marksObtained: '', maxMarks: '', examinationMonthYear: '' });
 
-  const [methodology, setMethodology] = useState(
-    thesis.courseworkDetails?.researchMethodology?.length > 0
-      ? thesis.courseworkDetails.researchMethodology
+  const [researchEthics, setResearchEthics] = useState(
+    thesis.courseworkDetails?.researchEthics?.length > 0
+      ? thesis.courseworkDetails.researchEthics
       : [createEmptyRow()]
   );
-  const [analysis, setAnalysis] = useState(
-    thesis.courseworkDetails?.researchAnalysis?.length > 0
-      ? thesis.courseworkDetails.researchAnalysis
+  const [researchMethodology, setResearchMethodology] = useState(
+    thesis.courseworkDetails?.researchMethodology?.length > 0
+      ? thesis.courseworkDetails.researchMethodology
       : [createEmptyRow()]
   );
   const [elective, setElective] = useState(
@@ -782,26 +799,75 @@ const CourseworkPhase = ({ thesis }) => {
       ? thesis.courseworkDetails.elective
       : [createEmptyRow()]
   );
+  const [others, setOthers] = useState(
+    thesis.courseworkDetails?.others?.length > 0
+      ? thesis.courseworkDetails.others
+      : [createEmptyRow()]
+  );
 
   const handleRowChange = (section, index, field, value) => {
-    const setter = section === 'methodology' ? setMethodology : section === 'analysis' ? setAnalysis : setElective;
-    const getter = section === 'methodology' ? methodology : section === 'analysis' ? analysis : elective;
-    const updated = [...getter];
-    updated[index] = { ...updated[index], [field]: value };
-    setter(updated);
+    const setters = {
+      researchEthics: setResearchEthics,
+      researchMethodology: setResearchMethodology,
+      elective: setElective,
+      others: setOthers
+    };
+    const getters = {
+      researchEthics,
+      researchMethodology,
+      elective,
+      others
+    };
+    const setter = setters[section];
+    const getter = getters[section];
+    if (setter && getter) {
+      const updated = [...getter];
+      updated[index] = { ...updated[index], [field]: value };
+      setter(updated);
+    }
   };
 
   const addRow = (section) => {
-    const setter = section === 'methodology' ? setMethodology : section === 'analysis' ? setAnalysis : setElective;
-    const getter = section === 'methodology' ? methodology : section === 'analysis' ? analysis : elective;
-    setter([...getter, createEmptyRow()]);
+    const setters = {
+      researchEthics: setResearchEthics,
+      researchMethodology: setResearchMethodology,
+      elective: setElective,
+      others: setOthers
+    };
+    const getters = {
+      researchEthics,
+      researchMethodology,
+      elective,
+      others
+    };
+    const setter = setters[section];
+    const getter = getters[section];
+    if (setter && getter) {
+      setter([...getter, createEmptyRow()]);
+    }
   };
 
   const removeRow = (section, index) => {
-    const setter = section === 'methodology' ? setMethodology : section === 'analysis' ? setAnalysis : setElective;
-    const getter = section === 'methodology' ? methodology : section === 'analysis' ? analysis : elective;
-    if (getter.length > 1) {
-      setter(getter.filter((_, i) => i !== index));
+    const setters = {
+      researchEthics: setResearchEthics,
+      researchMethodology: setResearchMethodology,
+      elective: setElective,
+      others: setOthers
+    };
+    const getters = {
+      researchEthics,
+      researchMethodology,
+      elective,
+      others
+    };
+    const setter = setters[section];
+    const getter = getters[section];
+    if (setter && getter) {
+      if (getter.length > 1) {
+        setter(getter.filter((_, i) => i !== index));
+      } else if (section === 'others') {
+        setter([createEmptyRow()]);
+      }
     }
   };
 
@@ -811,10 +877,13 @@ const CourseworkPhase = ({ thesis }) => {
     setError('');
 
     // Pre-validation
-    const checkSection = (sectionRows, name) => {
+    const checkSection = (sectionRows, name, isOptional = false) => {
       for (const row of sectionRows) {
+        if (isOptional && !row.subjectName.trim() && !row.subjectCode.trim() && !row.marksObtained && !row.maxMarks) {
+          continue;
+        }
         if (!row.subjectName.trim()) {
-          throw new Error(`Subject Name is required in all rows of ${name}.`);
+          throw new Error(`Subject Name is required in all active rows of ${name}.`);
         }
         const obtained = Number(row.marksObtained);
         const max = Number(row.maxMarks);
@@ -827,18 +896,28 @@ const CourseworkPhase = ({ thesis }) => {
         if (obtained > max) {
           throw new Error(`Marks Obtained (${obtained}) cannot exceed Maximum Marks (${max}) in ${name}.`);
         }
+        if (!row.examinationMonthYear) {
+          throw new Error(`Examination Month & Year is required in ${name}.`);
+        }
       }
     };
 
     try {
-      checkSection(methodology, 'Research Methodology');
-      checkSection(analysis, 'Research Analysis');
-      checkSection(elective, 'Electives');
+      checkSection(researchEthics, 'Research and Publication Ethics');
+      checkSection(researchMethodology, 'Research Methodology');
+      checkSection(elective, 'Discipline-Specific Elective Course');
+      checkSection(others, 'Others', true);
+
+      if (!proofFile && !thesis.courseworkUploadProof) {
+        throw new Error('Upload Proof is required.');
+      }
 
       await submitCourseworkDetails({
-        researchMethodology: methodology,
-        researchAnalysis: analysis,
-        elective: elective
+        researchEthics,
+        researchMethodology,
+        elective,
+        others,
+        proof: proofFile
       });
       toast.success('Coursework details submitted successfully!');
       fetchMyThesis();
@@ -889,46 +968,61 @@ const CourseworkPhase = ({ thesis }) => {
         <CheckCircle2 size={24} />
         <div>
           <div style={{ fontWeight: 600 }}>Coursework Phase Active</div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Your supervisor ({thesis.supervisorId?.name || 'Assigned Guide'}) is assigned. Please enter your marks below.</div>
+          <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>{thesis.supervisorId?.name || 'Assigned Guide'} has been assigned as your supervisor. Please enter your coursework marks.</div>
         </div>
       </div>
     );
   };
 
-  const renderReadOnlySection = (title, items) => (
-    <div style={{ marginBottom: 20 }}>
-      <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#374151', marginBottom: 8, borderBottom: '1px solid #E5E7EB', paddingBottom: 4 }}>{title}</h4>
-      <div style={{ background: '#F9FAFB', borderRadius: 8, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-          <thead>
-            <tr style={{ background: '#F3F4F6', color: '#4B5563', textAlign: 'left' }}>
-              <th style={{ padding: '8px 12px' }}>Subject Name</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center' }}>Marks Obtained</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center' }}>Max Marks</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((row, idx) => (
-              <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                <td style={{ padding: '8px 12px', color: '#1F2937' }}>{row.subjectName}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{row.marksObtained}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{row.maxMarks}</td>
+  const renderReadOnlySection = (title, items) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#374151', marginBottom: 8, borderBottom: '1px solid #E5E7EB', paddingBottom: 4 }}>{title}</h4>
+        <div style={{ background: '#F9FAFB', borderRadius: 8, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ background: '#F3F4F6', color: '#4B5563', textAlign: 'left' }}>
+                <th style={{ padding: '8px 12px' }}>Subject Name</th>
+                <th style={{ padding: '8px 12px' }}>Subject Code</th>
+                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Marks Obtained</th>
+                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Max Marks</th>
+                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Exam Month & Year</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((row, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                  <td style={{ padding: '8px 12px', color: '#1F2937' }}>{row.subjectName}</td>
+                  <td style={{ padding: '8px 12px', color: '#1F2937' }}>{row.subjectCode || '-'}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{row.marksObtained}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{row.maxMarks}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{formatMonthYear(row.examinationMonthYear)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderEditableSection = (title, section, items) => (
     <div style={{ marginBottom: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottom: '1px solid #E5E7EB', paddingBottom: 6 }}>
-        <h4 style={{ fontSize: '1rem', fontWeight: 600, color: '#374151', margin: 0 }}>{title}</h4>
-        <button type="button" className="btn-secondary" onClick={() => addRow(section)} style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}>
-          + Add Row
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #E2E8F0', paddingBottom: 6 }}>
+        <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>{title}</h4>
       </div>
+
+      {/* Row Table Headers */}
+      <div style={{ display: 'flex', gap: 12, padding: '0 12px 6px 12px', borderBottom: '1px solid #E2E8F0', marginBottom: 8, fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+        <div style={{ flex: 2 }}>Subject Name</div>
+        <div style={{ flex: 1.5 }}>Subject Code</div>
+        <div style={{ flex: 1, textAlign: 'center' }}>Obtained</div>
+        <div style={{ flex: 1, textAlign: 'center' }}>Max Marks</div>
+        <div style={{ flex: 1.5, textAlign: 'center' }}>Exam Month & Year</div>
+        {(items.length > 1 || section === 'others') && <div style={{ width: 24 }} />}
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {items.map((row, idx) => (
           <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -939,7 +1033,16 @@ const CourseworkPhase = ({ thesis }) => {
                 placeholder="Subject Name"
                 value={row.subjectName}
                 onChange={(e) => handleRowChange(section, idx, 'subjectName', e.target.value)}
-                required
+                required={section !== 'others'}
+              />
+            </div>
+            <div style={{ flex: 1.5 }}>
+              <input
+                className="form-input"
+                style={{ padding: '6px 12px', fontSize: '0.88rem' }}
+                placeholder="Code (optional)"
+                value={row.subjectCode}
+                onChange={(e) => handleRowChange(section, idx, 'subjectCode', e.target.value)}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -951,7 +1054,7 @@ const CourseworkPhase = ({ thesis }) => {
                 value={row.marksObtained}
                 onChange={(e) => handleRowChange(section, idx, 'marksObtained', e.target.value)}
                 min="0"
-                required
+                required={section !== 'others'}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -963,10 +1066,20 @@ const CourseworkPhase = ({ thesis }) => {
                 value={row.maxMarks}
                 onChange={(e) => handleRowChange(section, idx, 'maxMarks', e.target.value)}
                 min="1"
-                required
+                required={section !== 'others'}
               />
             </div>
-            {items.length > 1 && (
+            <div style={{ flex: 1.5 }}>
+              <input
+                type="month"
+                className="form-input"
+                style={{ padding: '6px 12px', fontSize: '0.88rem', color: row.examinationMonthYear ? 'inherit' : '#94A3B8' }}
+                value={row.examinationMonthYear}
+                onChange={(e) => handleRowChange(section, idx, 'examinationMonthYear', e.target.value)}
+                required={section !== 'others'}
+              />
+            </div>
+            {(items.length > 1 || section === 'others') && (
               <button
                 type="button"
                 style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 4 }}
@@ -978,6 +1091,28 @@ const CourseworkPhase = ({ thesis }) => {
             )}
           </div>
         ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 12 }}>
+        <button 
+          type="button" 
+          onClick={() => addRow(section)} 
+          style={{ 
+            padding: '6px 12px', 
+            fontSize: '0.75rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 4,
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+            border: '1px solid #BFDBFE',
+            color: '#1E40AF',
+            borderRadius: '6px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.05)'
+          }}
+        >
+          <Plus size={14} /> Add Row
+        </button>
       </div>
     </div>
   );
@@ -1004,19 +1139,87 @@ const CourseworkPhase = ({ thesis }) => {
 
       {isPending ? (
         <div>
+          {renderReadOnlySection('Research and Publication Ethics', thesis.courseworkDetails?.researchEthics || [])}
           {renderReadOnlySection('Research Methodology', thesis.courseworkDetails?.researchMethodology || [])}
-          {renderReadOnlySection('Research Analysis', thesis.courseworkDetails?.researchAnalysis || [])}
-          {renderReadOnlySection('Elective Courses', thesis.courseworkDetails?.elective || [])}
+          {renderReadOnlySection('Discipline-Specific Elective Course', thesis.courseworkDetails?.elective || [])}
+          {thesis.courseworkDetails?.others?.length > 0 && renderReadOnlySection('Others', thesis.courseworkDetails?.others || [])}
           
+          {thesis.courseworkUploadProof && (
+            <div style={{ marginTop: 20, padding: '12px 16px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>Upload Proof:</span>
+              <a 
+                href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2563EB', textDecoration: 'underline' }}
+              >
+                View Uploaded Proof
+              </a>
+            </div>
+          )}
+
           <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#6B7280', fontSize: '0.85rem', background: '#F9FAFB', padding: 12, borderRadius: 8 }}>
             <Lock size={16} /> Coursework details are locked while approval is pending.
           </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
-          {renderEditableSection('Research Methodology', 'methodology', methodology)}
-          {renderEditableSection('Research Analysis', 'analysis', analysis)}
-          {renderEditableSection('Elective Courses', 'elective', elective)}
+          {renderEditableSection('Research and Publication Ethics', 'researchEthics', researchEthics)}
+          {renderEditableSection('Research Methodology', 'researchMethodology', researchMethodology)}
+          {renderEditableSection('Discipline-Specific Elective Course', 'elective', elective)}
+          {renderEditableSection('Others (Optional)', 'others', others)}
+
+          <div style={{ marginTop: 24, padding: 20, background: '#F8FAFC', borderRadius: 16, border: '2px dashed #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <label style={{ display: 'block', fontSize: '0.95rem', fontWeight: 800, color: '#1E293B', margin: 0 }}>Upload Proof *</label>
+            <div style={{ position: 'relative', overflow: 'hidden', display: 'inline-block' }}>
+              <button 
+                type="button" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                  color: 'white',
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)'
+                }}
+              >
+                📁 {proofFile ? 'Change File' : 'Select Proof Document'}
+              </button>
+              <input 
+                type="file" 
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setProofFile(e.target.files[0])}
+                required={!thesis.courseworkUploadProof}
+                style={{ 
+                  position: 'absolute', 
+                  fontSize: '100px', 
+                  opacity: 0, 
+                  right: 0, 
+                  top: 0, 
+                  cursor: 'pointer' 
+                }}
+              />
+            </div>
+            {proofFile && (
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#059669', background: '#ECFDF5', padding: '4px 12px', borderRadius: '12px' }}>
+                Selected: {proofFile.name} ({(proofFile.size / 1024 / 1024).toFixed(2)} MB)
+              </div>
+            )}
+            <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748B', textAlign: 'center' }}>
+              Please upload documentary proof such as the official gazette notification of results or marksheets.
+            </p>
+            {thesis.courseworkUploadProof && (
+              <div style={{ marginTop: 4, fontSize: '0.8rem', color: '#475569' }}>
+                Existing proof: <a href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'underline' }}>View uploaded file</a>
+              </div>
+            )}
+          </div>
 
           <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
             <button
@@ -1082,37 +1285,67 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         
         {/* Current status info banner */}
-        <div style={{ 
-          background: synopsisMilestone.status === 'PENDING' ? '#FFFBEB' : synopsisMilestone.status === 'SUBMITTED' ? '#EFF6FF' : synopsisMilestone.status === 'APPROVED' ? '#ECFDF5' : '#FEF2F2',
-          border: '1px solid',
-          borderColor: synopsisMilestone.status === 'PENDING' ? '#FDE68A' : synopsisMilestone.status === 'SUBMITTED' ? '#BFDBFE' : synopsisMilestone.status === 'APPROVED' ? '#A7F3D0' : '#FCA5A5',
-          padding: 16, 
-          borderRadius: 8 
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 700, color: '#1E293B' }}>Current Lifecycle Status:</span>
-            <span style={{ 
-              fontWeight: 800, 
-              color: synopsisMilestone.status === 'PENDING' ? '#D97706' : synopsisMilestone.status === 'SUBMITTED' ? '#2563EB' : synopsisMilestone.status === 'APPROVED' ? '#059669' : '#DC2626',
-              textTransform: 'uppercase'
-            }}>
-              {synopsisMilestone.status === 'PENDING' ? 'Synopsis Upload Unlocked' : 
-               synopsisMilestone.status === 'SUBMITTED' ? 'Synopsis Submitted & Under Review' : 
-               synopsisMilestone.status === 'APPROVED' ? 'Approved & Verified' : 
-               'Correction Needed'}
-            </span>
-          </div>
-          {synopsisMilestone.comments?.length > 0 && (
-            <div style={{ marginTop: 12, padding: 12, background: 'rgba(255, 255, 255, 0.7)', borderRadius: 6 }}>
-              <div style={{ fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>Faculty Feedback / Directives:</div>
-              {synopsisMilestone.comments.map((c, idx) => (
-                <div key={idx} style={{ fontSize: '0.85rem', color: '#7F1D1D', fontStyle: 'italic', marginBottom: 2 }}>
-                  "{c.text}" — {c.authorName}
+        {(() => {
+          let bg = '#F3F4F6';
+          let border = '#E2E8F0';
+          let color = '#4B5563';
+          let label = 'Awaiting Synopsis';
+
+          if (synopsisMilestone.status === 'PENDING') {
+            bg = '#FFFBEB';
+            border = '#FDE68A';
+            color = '#D97706';
+            label = 'Synopsis Upload Unlocked';
+          } else if (synopsisMilestone.status === 'SUBMITTED') {
+            bg = '#EFF6FF';
+            border = '#BFDBFE';
+            color = '#2563EB';
+            label = 'Synopsis Submitted & Under Review';
+          } else if (synopsisMilestone.status === 'PENDING_HOD') {
+            bg = '#FFFBEB';
+            border = '#FDE68A';
+            color = '#D97706';
+            label = 'Pending HOD Approval & DRC Pending';
+          } else if (synopsisMilestone.status === 'APPROVED') {
+            if (thesis.status === 'SYNOPSIS_PENDING') {
+              bg = '#FFFBEB';
+              border = '#FDE68A';
+              color = '#D97706';
+              label = 'Synopsis Approved (DRC Pending at HOD)';
+            } else {
+              bg = '#ECFDF5';
+              border = '#A7F3D0';
+              color = '#059669';
+              label = 'Approved & Verified';
+            }
+          } else if (synopsisMilestone.status === 'REVISION_REQUIRED') {
+            bg = '#FEF2F2';
+            border = '#FCA5A5';
+            color = '#DC2626';
+            label = 'Correction Needed';
+          }
+
+          return (
+            <div style={{ background: bg, border: `1px solid ${border}`, padding: 16, borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, color: '#1E293B' }}>Current Lifecycle Status:</span>
+                <span style={{ fontWeight: 800, color: color, textTransform: 'uppercase' }}>
+                  {label}
+                </span>
+              </div>
+              {synopsisMilestone.comments?.length > 0 && (
+                <div style={{ marginTop: 12, padding: 12, background: 'rgba(255, 255, 255, 0.7)', borderRadius: 6 }}>
+                  <div style={{ fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>Faculty Feedback / Directives:</div>
+                  {synopsisMilestone.comments.map((c, idx) => (
+                    <div key={idx} style={{ fontSize: '0.85rem', color: '#7F1D1D', fontStyle: 'italic', marginBottom: 2 }}>
+                      "{c.text}" — {c.authorName}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* Synopsis submission form */}
         {synopsisMilestone.status === 'PENDING' || synopsisMilestone.status === 'REVISION_REQUIRED' ? (
@@ -1127,8 +1360,42 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Synopsis Document (PDF/Word) *</label>
-              <input type="file" accept=".pdf,.doc,.docx" onChange={e => setFile(e.target.files[0])} required />
-              <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: 4 }}>Please ensure your document includes introduction, literature survey, proposed methodology, and references.</p>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
+                <label 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: 8, 
+                    padding: '8px 16px', 
+                    background: '#F1F5F9', 
+                    color: '#475569', 
+                    border: '1px solid #CBD5E1', 
+                    borderRadius: 8, 
+                    cursor: 'pointer', 
+                    fontSize: '0.85rem', 
+                    fontWeight: 600,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.background = '#E2E8F0'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = '#F1F5F9'; }}
+                >
+                  <Upload size={16} />
+                  {file ? file.name : 'Choose file...'}
+                  <input 
+                    type="file" 
+                    accept=".pdf,.doc,.docx" 
+                    onChange={e => setFile(e.target.files[0])} 
+                    style={{ display: 'none' }} 
+                    required 
+                  />
+                </label>
+                {file && (
+                  <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>
+                    Selected ✓
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: 6 }}>Please ensure your document includes introduction, literature survey, proposed methodology, and references.</p>
             </div>
             
             <div style={{ background: '#F3F4F6', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#4B5563' }}>
@@ -6056,31 +6323,38 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
     return { border: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)', text: '#6B7280', badge: 'LOCKED' };
   };
 
-  const renderReadOnlySection = (title, items) => (
-    <div style={{ marginBottom: 20 }}>
-      <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary, #374151)', marginBottom: 8, borderBottom: '1px solid var(--color-border, #E5E7EB)', paddingBottom: 4 }}>{title}</h4>
-      <div style={{ background: 'var(--color-bg, #F9FAFB)', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border, #E5E7EB)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-          <thead>
-            <tr style={{ background: 'var(--color-sidebar, #F3F4F6)', color: 'var(--color-text-secondary, #4B5563)', textAlign: 'left' }}>
-              <th style={{ padding: '8px 12px' }}>Subject Name</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center' }}>Marks Obtained</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center' }}>Max Marks</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((row, idx) => (
-              <tr key={idx} style={{ borderBottom: '1px solid var(--color-border, #E5E7EB)' }}>
-                <td style={{ padding: '8px 12px', color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectName}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.marksObtained}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.maxMarks}</td>
+  const renderReadOnlySection = (title, items) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary, #374151)', marginBottom: 8, borderBottom: '1px solid var(--color-border, #E5E7EB)', paddingBottom: 4 }}>{title}</h4>
+        <div style={{ background: 'var(--color-bg, #F9FAFB)', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border, #E5E7EB)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ background: 'var(--color-sidebar, #F3F4F6)', color: 'var(--color-text-secondary, #4B5563)', textAlign: 'left' }}>
+                <th style={{ padding: '8px 12px' }}>Subject Name</th>
+                <th style={{ padding: '8px 12px' }}>Subject Code</th>
+                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Marks Obtained</th>
+                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Max Marks</th>
+                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Exam Month & Year</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((row, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid var(--color-border, #E5E7EB)' }}>
+                  <td style={{ padding: '8px 12px', color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectName}</td>
+                  <td style={{ padding: '8px 12px', color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectCode || '-'}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.marksObtained}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.maxMarks}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{formatMonthYear(row.examinationMonthYear)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -6236,12 +6510,28 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                       <div>
                         {thesis.courseworkDetails ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            {thesis.courseworkDetails.researchEthics?.length > 0 && 
+                              renderReadOnlySection('Research and Publication Ethics', thesis.courseworkDetails.researchEthics)}
                             {thesis.courseworkDetails.researchMethodology?.length > 0 && 
                               renderReadOnlySection('Research Methodology', thesis.courseworkDetails.researchMethodology)}
-                            {thesis.courseworkDetails.researchAnalysis?.length > 0 && 
-                              renderReadOnlySection('Research Analysis', thesis.courseworkDetails.researchAnalysis)}
                             {thesis.courseworkDetails.elective?.length > 0 && 
-                              renderReadOnlySection('Elective Courses', thesis.courseworkDetails.elective)}
+                              renderReadOnlySection('Discipline-Specific Elective Course', thesis.courseworkDetails.elective)}
+                            {thesis.courseworkDetails.others?.length > 0 && 
+                              renderReadOnlySection('Others', thesis.courseworkDetails.others)}
+
+                            {thesis.courseworkUploadProof && (
+                              <div style={{ marginTop: 8, padding: '10px 14px', background: 'var(--color-bg, #F9FAFB)', borderRadius: 8, border: '1px solid var(--color-border, #E5E7EB)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)' }}>Upload Proof:</span>
+                                <a 
+                                  href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  style={{ fontSize: '0.82rem', fontWeight: 800, color: '#2563EB', textDecoration: 'underline' }}
+                                >
+                                  View Uploaded Proof
+                                </a>
+                              </div>
+                            )}
                             
                             <div style={{ 
                               background: 'rgba(16, 185, 129, 0.15)', 
@@ -6533,7 +6823,7 @@ const StudentDashboard = () => {
     preSubmission: 'Pre-Submission Package',
     changes: 'Request Changes', 
     certificates: 'Certificates', 
-    milestones: 'Milestones', 
+    workspace: 'Workspace', 
     documents: 'Documents', 
     meetings: 'Meetings', 
     profile: 'Profile' 
@@ -6577,7 +6867,7 @@ const StudentDashboard = () => {
       case 'certificates': return <CertificatesTab thesis={thesis} />;
       case 'meetings': return <MeetingsTab thesis={thesis} />;
       case 'documents': return <DocumentsTab thesis={thesis} />;
-      case 'milestones':
+      case 'workspace':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <MilestoneTimeline thesis={thesis} milestones={milestones} />

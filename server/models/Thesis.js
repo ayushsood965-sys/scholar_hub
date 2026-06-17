@@ -16,22 +16,26 @@ const thesisSchema = new mongoose.Schema(
     },
     courseworkCompleted: { type: Boolean, default: false },
     courseworkDetails: {
-      researchMethodology: {
+      researchEthics: {
         type: [
           {
             subjectName: { type: String, required: true },
+            subjectCode: { type: String, default: '' },
             marksObtained: { type: Number, required: true },
-            maxMarks: { type: Number, required: true }
+            maxMarks: { type: Number, required: true },
+            examinationMonthYear: { type: String, default: '' }
           }
         ],
         default: []
       },
-      researchAnalysis: {
+      researchMethodology: {
         type: [
           {
             subjectName: { type: String, required: true },
+            subjectCode: { type: String, default: '' },
             marksObtained: { type: Number, required: true },
-            maxMarks: { type: Number, required: true }
+            maxMarks: { type: Number, required: true },
+            examinationMonthYear: { type: String, default: '' }
           }
         ],
         default: []
@@ -40,8 +44,22 @@ const thesisSchema = new mongoose.Schema(
         type: [
           {
             subjectName: { type: String, required: true },
+            subjectCode: { type: String, default: '' },
             marksObtained: { type: Number, required: true },
-            maxMarks: { type: Number, required: true }
+            maxMarks: { type: Number, required: true },
+            examinationMonthYear: { type: String, default: '' }
+          }
+        ],
+        default: []
+      },
+      others: {
+        type: [
+          {
+            subjectName: { type: String, default: '' },
+            subjectCode: { type: String, default: '' },
+            marksObtained: { type: Number, default: null },
+            maxMarks: { type: Number, default: null },
+            examinationMonthYear: { type: String, default: '' }
           }
         ],
         default: []
@@ -52,6 +70,7 @@ const thesisSchema = new mongoose.Schema(
       enum: ['NOT_SUBMITTED', 'PENDING_FACULTY', 'PENDING_HOD', 'APPROVED', 'REJECTED'],
       default: 'NOT_SUBMITTED'
     },
+    courseworkUploadProof: { type: String, default: null },
     courseworkApprovals: {
       facultyApproved: { type: Boolean, default: false },
       facultyApproverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
