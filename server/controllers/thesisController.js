@@ -1213,6 +1213,146 @@ const rejectCourseworkHOD = async (req, res) => {
   }
 };
 
+// PUT /api/thesis/:id/pre-submission/schedule — HOD schedules pre-submission seminar
+const schedulePreSubmissionSeminar = async (req, res) => {
+  try {
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // HOD department check
+    if (req.user.role !== 'HOD' && req.user.subRole !== 'HOD') {
+      return res.status(403).json({ message: 'Not authorized. Only HOD can perform this action.' });
+    }
+    if (thesis.department !== req.user.department) {
+      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    }
+
+    // Ensure the PRE_SUBMISSION milestone draft is APPROVED
+    const preMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
+    if (!preMilestone || preMilestone.status !== 'APPROVED') {
+      return res.status(400).json({ message: 'Pre-Submission Thesis Draft package must be approved by Supervisor and HOD before scheduling the seminar.' });
+    }
+
+    const { scheduledDate, scheduledTime, venue, committeeMembers, remarks } = req.body;
+    if (!scheduledDate || !scheduledTime || !venue) {
+      return res.status(400).json({ message: 'Please specify Scheduled Date, Time, and Venue.' });
+    }
+
+    if (!thesis.preSubmissionSeminar) {
+      thesis.preSubmissionSeminar = {};
+    }
+
+    thesis.preSubmissionSeminar.status = 'SCHEDULED';
+    thesis.preSubmissionSeminar.scheduledDate = scheduledDate;
+    thesis.preSubmissionSeminar.scheduledTime = scheduledTime;
+    thesis.preSubmissionSeminar.venue = venue;
+    thesis.preSubmissionSeminar.committeeMembers = committeeMembers || '';
+    thesis.preSubmissionSeminar.remarks = remarks || '';
+    thesis.preSubmissionSeminar.hodApprovedAt = new Date();
+    thesis.preSubmissionSeminar.hodApproverId = req.user._id;
+
+    thesis.auditLog.push({
+      action: 'PRE_SUBMISSION_SEMINAR_SCHEDULED',
+      note: `Pre-submission seminar scheduled by HOD. Date: ${new Date(scheduledDate).toLocaleDateString()}, Time: ${scheduledTime}, Venue: ${venue}. Remarks: ${remarks || 'None'}`
+    });
+
+    await thesis.save();
+
+    // Notify Student
+    await createNotification({
+      recipient: thesis.scholarId,
+      title: '📆 Pre-Submission Seminar Scheduled!',
+      message: `Your Pre-Submission Seminar has been scheduled for ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`,
+      type: 'INFO',
+      link: 'presubmission'
+    });
+
+    // Notify Supervisor
+    await createNotification({
+      recipient: thesis.supervisorId,
+      title: '📆 Pre-Submission Seminar Scheduled!',
+      message: `The Pre-Submission Seminar for scholar "${thesis.title}" has been scheduled for ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`,
+      type: 'INFO',
+      link: 'overview'
+    });
+
+    res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/thesis/:id/pre-submission/record-outcome — HOD records seminar outcome
+const recordPreSubmissionSeminarOutcome = async (req, res) => {
+  try {
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // HOD department check
+    if (req.user.role !== 'HOD' && req.user.subRole !== 'HOD') {
+      return res.status(403).json({ message: 'Not authorized. Only HOD can perform this action.' });
+    }
+    if (thesis.department !== req.user.department) {
+      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    }
+
+    if (thesis.preSubmissionSeminar?.status !== 'SCHEDULED') {
+      return res.status(400).json({ message: 'Pre-Submission Seminar has not been scheduled yet.' });
+    }
+
+    const { status, remarks } = req.body;
+    if (status !== 'CLEARED' && status !== 'UNCLEARED') {
+      return res.status(400).json({ message: 'Outcome status must be either CLEARED or UNCLEARED.' });
+    }
+
+    thesis.preSubmissionSeminar.status = status;
+    thesis.preSubmissionSeminar.outcomeRecordedAt = new Date();
+    thesis.preSubmissionSeminar.outcomeRemarks = remarks || '';
+
+    if (status === 'CLEARED') {
+      thesis.status = 'SUBMITTED'; // Automatically move candidate to next milestone
+      thesis.auditLog.push({
+        action: 'SEMINAR_CLEARED',
+        note: `Pre-submission seminar evaluated CLEARED by HOD. Remarks: ${remarks || 'None'}`
+      });
+
+      // Auto-create final submission milestone (sequence 100) if it doesn't exist
+      const finalExists = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+      if (!finalExists) {
+        await Milestone.create({
+          thesisId: thesis._id,
+          type: 'FINAL_SUBMISSION',
+          title: 'Final Complete Thesis Submission Package',
+          status: 'PENDING',
+          sequence: 100,
+        });
+      }
+    } else {
+      thesis.auditLog.push({
+        action: 'SEMINAR_FAILED',
+        note: `Pre-submission seminar evaluated UNCLEARED by HOD. Remarks: ${remarks || 'None'}`
+      });
+    }
+
+    await thesis.save();
+
+    // Notify Student
+    await createNotification({
+      recipient: thesis.scholarId,
+      title: status === 'CLEARED' ? '🎉 Seminar Cleared!' : '⚠️ Seminar Uncleared',
+      message: status === 'CLEARED'
+        ? 'Congratulations! Your Pre-Submission Seminar outcome was evaluated as CLEARED. Finalbound thesis upload is now unlocked.'
+        : `Your Pre-Submission Seminar outcome was evaluated as UNCLEARED. Remarks: "${remarks || 'None'}"`,
+      type: status === 'CLEARED' ? 'SUCCESSFUL_ACTION' : 'PENDING_ACTION',
+      link: 'finalsubmission'
+    });
+
+    res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createThesis, getMyThesis, getAllTheses, getThesisById,
   verifyEnrollment, assignSupervisor, clearCoursework, awardDegree, updateAuditLog,
@@ -1220,5 +1360,6 @@ module.exports = {
   dispatchThesis, scheduleViva, recordViva, transferThesis, forcePreSubmission,
   searchGlobalTheses,
   submitCourseworkDetails, approveCourseworkFaculty, rejectCourseworkFaculty,
-  approveCourseworkHOD, rejectCourseworkHOD
+  approveCourseworkHOD, rejectCourseworkHOD,
+  schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome
 };

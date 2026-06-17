@@ -24,7 +24,7 @@ const formatMonthYear = (val) => {
 };
 
 // ── Status resolver (shared) ──
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {
@@ -43,9 +43,43 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole) 
   if (status === 'PRE_SUBMISSION') {
     if (finalSubStatus === 'SUBMITTED') return { text: 'Thesis Submitted (Awaiting Review)', color: '#2563EB', bg: '#DBEAFE' };
     if (finalSubStatus === 'REVISION_REQUIRED') return { text: 'Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
-    return { text: 'Pre-Submission Seminar Cleared', color: '#D97706', bg: '#FFF3CD' };
+    
+    if (preSubMilestoneStatus === 'SUBMITTED') {
+      return { text: 'Thesis Draft & Plagiarism Report Submitted (Pending Faculty Review)', color: '#2563EB', bg: '#DBEAFE' };
+    }
+    if (preSubMilestoneStatus === 'PENDING_HOD') {
+      return { text: 'Draft Approved by Supervisor (Pending HOD Sign-off)', color: '#D97706', bg: '#FFF3CD' };
+    }
+    if (preSubMilestoneStatus === 'REVISION_REQUIRED') {
+      return { text: 'Thesis Draft Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
+    }
+    if (preSubSeminarStatus === 'SCHEDULED') {
+      return { text: 'Pre-Submission Seminar Scheduled', color: '#7C3AED', bg: '#EDE9FE' };
+    }
+    if (preSubSeminarStatus === 'CLEARED') {
+      return { text: 'Pre-Submission Seminar Cleared', color: '#059669', bg: '#D1FAE5' };
+    }
+    if (preSubSeminarStatus === 'UNCLEARED') {
+      return { text: 'Pre-Submission Seminar Uncleared (Unsatisfactory)', color: '#DC2626', bg: '#FEE2E2' };
+    }
+    if (preSubMilestoneStatus === 'APPROVED') {
+      return { text: 'Draft Approved (Awaiting Seminar Schedule)', color: '#D97706', bg: '#FFFBEB' };
+    }
+
+    return { text: 'Pre-Submission Phase', color: '#D97706', bg: '#FFF3CD' };
   }
-  if (status === 'SUBMITTED') return { text: 'Awaiting Degree Award', color: '#4B5563', bg: '#F3F4F6' };
+  if (status === 'SUBMITTED') {
+    if (finalSubStatus === 'SUBMITTED') {
+      return { text: 'Final Thesis Submitted (Pending Sign-off)', color: '#2563EB', bg: '#DBEAFE' };
+    }
+    if (finalSubStatus === 'REVISION_REQUIRED') {
+      return { text: 'Final Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
+    }
+    if (finalSubStatus === 'APPROVED') {
+      return { text: 'Thesis Approved (Under Evaluation)', color: '#10B981', bg: '#ECFDF5' };
+    }
+    return { text: 'Thesis Submission Phase (Awaiting Upload)', color: '#D97706', bg: '#FFFBEB' };
+  }
   if (status === 'AWARDED') return { text: 'Degree Awarded! 🎉', color: '#10B981', bg: '#ECFDF5' };
   return { text: status?.replace(/_/g, ' '), color: '#374151', bg: '#F3F4F6' };
 };
@@ -317,7 +351,15 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
 const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose, onRefresh, onReview, onDRC, onSeminar, onFinalApprove, onClearCoursework, onVerify, onAssign, onForcePreSubmission, isReadOnly = false }) => {
   const toast = useToast();
   const { user: contextUser } = useContext(AuthContext);
-  const { transferScholar, approveCourseworkFaculty, rejectCourseworkFaculty, approveCourseworkHOD, rejectCourseworkHOD } = useContext(ThesisContext);
+  const { 
+    transferScholar, 
+    approveCourseworkFaculty, 
+    rejectCourseworkFaculty, 
+    approveCourseworkHOD, 
+    rejectCourseworkHOD,
+    schedulePreSubmissionSeminar,
+    recordPreSubmissionSeminarOutcome
+  } = useContext(ThesisContext);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
@@ -326,6 +368,15 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [showBypassModal, setShowBypassModal] = useState(false);
   const [bypassRemarks, setBypassRemarks] = useState('');
   const [bypassLoading, setBypassLoading] = useState(false);
+
+  // States for Pre-Submission Seminar Schedule and Outcome Recording
+  const [semDate, setSemDate] = useState('');
+  const [semTime, setSemTime] = useState('');
+  const [semVenue, setSemVenue] = useState('');
+  const [semCommittee, setSemCommittee] = useState('');
+  const [semRemarks, setSemRemarks] = useState('');
+  const [semOutcomeStatus, setSemOutcomeStatus] = useState('CLEARED');
+  const [semOutcomeRemarks, setSemOutcomeRemarks] = useState('');
 
   const user = isReadOnly ? { ...contextUser, role: '', _id: '' } : contextUser;
   const subRole = isReadOnly ? '' : propSubRole;
@@ -448,15 +499,32 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   // ── Computed values ──
   const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
   const finalSubMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-  const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole);
+  const preSubMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
+  const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole, preSubMilestone?.status, thesis.preSubmissionSeminar?.status);
   const reports = milestones.filter(m => m.type === '6_MONTH_REPORT');
   const chapters = milestones.filter(m => m.type === 'CHAPTER_DRAFT');
   const corePendingMilestones = milestones.filter(m => (m.type === 'FINAL_SUBMISSION' || m.type === 'PRE_SUBMISSION') && (m.status === 'SUBMITTED' || m.status === 'REVISION_REQUIRED'));
+  const corePendingMilestonesDocs = corePendingMilestones.filter(m => m.type !== 'PRE_SUBMISSION');
   const verifiedJournals = publications.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
   const verifiedConferences = publications.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
   const pendingOutputsCount = publications.filter(p => p.status === 'PENDING').length;
-  const pendingDocCount = corePendingMilestones.length + milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
+  const pendingDocCount = corePendingMilestonesDocs.length + milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
   const scheduledRacs = racReviews.filter(r => r.status === 'SCHEDULED').length;
+
+  const preSubmissionBadge = (() => {
+    const semStatus = thesis.preSubmissionSeminar?.status || 'NOT_REQUESTED';
+    const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
+    
+    if (subRole !== 'HOD' && thesis.supervisorId?._id === user._id) {
+      if (preMilestone?.status === 'SUBMITTED') return 1;
+    }
+    if (subRole === 'HOD') {
+      if (preMilestone?.status === 'PENDING_HOD') return 1;
+      if (preMilestone?.status === 'APPROVED' && (semStatus === 'NOT_SCHEDULED' || semStatus === 'NOT_REQUESTED' || semStatus === 'UNCLEARED')) return 1;
+      if (semStatus === 'SCHEDULED') return 1;
+    }
+    return null;
+  })();
 
   // ── Transfer ──
   const handleTransfer = async (e) => {
@@ -920,6 +988,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     { key: 'reports', label: 'Reports', icon: '📑', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'chapters', label: 'Chapters', icon: '📖', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'publications', label: 'Research Outputs', icon: '🏆', badge: pendingOutputsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'preSubmission', label: 'Pre-Submission', icon: '🚀', badge: preSubmissionBadge || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'PRE_SUBMISSION') },
     { key: 'defense', label: 'Defense & Award', icon: '🎓', show: ['SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'documents', label: 'Documents', icon: '📄', badge: pendingDocCount || null },
     { key: 'changes', label: 'Changes', icon: '🔄' },
@@ -1107,16 +1176,365 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {synopsisMilestone.comments.map((c, idx) => (
                 <div key={idx} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 700, color: '#475569' }}>{c.authorName}</span>
-                    <span style={{ color: '#94A3B8', fontSize: '0.72rem' }}>{new Date(c.createdAt).toLocaleString()}</span>
-                  </div>
-                  <div style={{ color: '#1F2937', fontStyle: 'italic' }}>"{c.text}"</div>
                 </div>
               ))}
             </div>
           </div>
         )}
+      </div>
+    );
+  };
+
+  const handleHODScheduleSubmit = async (e) => {
+    e.preventDefault();
+    if (!semDate || !semTime || !semVenue) {
+      return toast.warning('Please fill in Date, Time, and Venue.');
+    }
+    setLoading(true);
+    try {
+      await schedulePreSubmissionSeminar(thesis._id, {
+        scheduledDate: semDate,
+        scheduledTime: semTime,
+        venue: semVenue,
+        committeeMembers: semCommittee,
+        remarks: semRemarks
+      });
+      toast.success('Pre-Submission Seminar scheduled successfully!');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to schedule seminar.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleHODOutcomeSubmit = async (e) => {
+    e.preventDefault();
+    if (semOutcomeStatus === 'UNCLEARED' && !semOutcomeRemarks.trim()) {
+      return toast.warning('Remarks are required for Uncleared outcome.');
+    }
+    setLoading(true);
+    try {
+      await recordPreSubmissionSeminarOutcome(thesis._id, {
+        status: semOutcomeStatus,
+        remarks: semOutcomeRemarks
+      });
+      toast.success('Pre-Submission Seminar outcome recorded successfully!');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to record outcome.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderPreSubmission = () => {
+    const sem = thesis.preSubmissionSeminar || {};
+    const semStatus = sem.status || 'NOT_SCHEDULED';
+    const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
+
+    const statusBadge = (status) => {
+      const colors = {
+        NOT_SCHEDULED: { bg: '#F3F4F6', color: '#4B5563', text: 'Not Scheduled' },
+        NOT_REQUESTED: { bg: '#F3F4F6', color: '#4B5563', text: 'Not Scheduled' },
+        SCHEDULED: { bg: '#FFFBEB', color: '#B45309', text: 'Scheduled' },
+        CLEARED: { bg: '#D1FAE5', color: '#065F46', text: 'Seminar Cleared' },
+        UNCLEARED: { bg: '#FEE2E2', color: '#991B1B', text: 'Uncleared' }
+      };
+      const sc = colors[status] || colors.NOT_SCHEDULED;
+      return (
+        <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 700, background: sc.bg, color: sc.color }}>
+          {sc.text}
+        </span>
+      );
+    };
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #E2E8F0', paddingBottom: 10 }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1E293B' }}>🎓 Pre-Submission Phase</h3>
+          {statusBadge(semStatus)}
+        </div>
+
+        {/* 1. DRAFT SUBMISSION & REVIEW PIPELINE (Must happen first) */}
+        <div className="usm-card" style={{ padding: 16 }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
+            📂 Thesis Draft and Plagiarism Report Review
+          </h4>
+
+          {!preMilestone ? (
+            <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
+              Awaiting student to complete active research prerequisites and upload the Pre-Submission draft package.
+            </p>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>
+                  Milestone Status: <strong style={{ textTransform: 'uppercase', color: preMilestone.status === 'APPROVED' ? '#059669' : preMilestone.status === 'REVISION_REQUIRED' ? '#DC2626' : '#2563EB' }}>{preMilestone.status}</strong>
+                </span>
+              </div>
+
+              {/* Uploaded files display */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16, fontSize: '0.82rem' }}>
+                <thead>
+                  <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Document</th>
+                    <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Download</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1E293B' }}>📄 Rough Thesis Draft</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                      {preMilestone.documentUrl ? (
+                        <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600 }}>Download</a>
+                      ) : (
+                        <span style={{ color: '#94A3B8' }}>Not Uploaded</span>
+                      )}
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1E293B' }}>🔍 Turnitin Plagiarism Report</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                      {preMilestone.plagiarismReportUrl ? (
+                        <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600 }}>Download</a>
+                      ) : (
+                        <span style={{ color: '#94A3B8' }}>Not Uploaded</span>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Feedback log */}
+              {preMilestone.comments?.length > 0 && (
+                <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: 10, borderRadius: 6, marginBottom: 16, fontSize: '0.82rem' }}>
+                  <div style={{ fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Review Feedback History:</div>
+                  {preMilestone.comments.map((c, i) => (
+                    <div key={i} style={{ color: '#78350F', marginTop: 2 }}>
+                      "{c.text}" — <em>{c.authorName}</em>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Review actions */}
+              {!isReadOnly && (
+                <div>
+                  {/* Faculty approval check: status is SUBMITTED and reviewer is Faculty */}
+                  {preMilestone.status === 'SUBMITTED' && subRole !== 'HOD' && thesis.supervisorId?._id === user._id && (
+                    <div>
+                      <textarea className="form-input" placeholder="Add evaluation remarks..." rows="2" value={remarks[preMilestone._id] || ''} onChange={e => setRemarks(r => ({ ...r, [preMilestone._id]: e.target.value }))} style={{ marginBottom: 10, resize: 'vertical' }} />
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn-primary" onClick={() => act(() => onReview(preMilestone._id, 'APPROVE', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', background: '#059669' }}>
+                          <CheckCircle2 size={14} style={{ marginRight: 4 }} /> Approve Draft (Forward to HOD)
+                        </button>
+                        <button className="btn-outline" onClick={() => act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
+                          <XCircle size={14} style={{ marginRight: 4 }} /> Request Revision
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* HOD final approval check: status is PENDING_HOD and reviewer is HOD */}
+                  {preMilestone.status === 'PENDING_HOD' && subRole === 'HOD' && (
+                    <div>
+                      <textarea className="form-input" placeholder="Add final HOD evaluation remarks..." rows="2" value={remarks[preMilestone._id] || ''} onChange={e => setRemarks(r => ({ ...r, [preMilestone._id]: e.target.value }))} style={{ marginBottom: 10, resize: 'vertical' }} />
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn-primary" onClick={() => act(() => onReview(preMilestone._id, 'APPROVE', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', background: '#059669' }}>
+                          <CheckCircle2 size={14} style={{ marginRight: 4 }} /> Grant Final HOD Approval
+                        </button>
+                        <button className="btn-outline" onClick={() => act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
+                          <XCircle size={14} style={{ marginRight: 4 }} /> Request Revision
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status notifications (for users who can't review right now) */}
+                  {preMilestone.status === 'SUBMITTED' && subRole === 'HOD' && (
+                    <div style={{ padding: 10, background: '#EFF6FF', borderRadius: 8, color: '#1E40AF', fontSize: '0.82rem', textAlign: 'center' }}>
+                      ⏳ Awaiting Faculty Supervisor review and approval before final HOD review.
+                    </div>
+                  )}
+                  {preMilestone.status === 'PENDING_HOD' && subRole !== 'HOD' && (
+                    <div style={{ padding: 10, background: '#EFF6FF', borderRadius: 8, color: '#1E40AF', fontSize: '0.82rem', textAlign: 'center' }}>
+                      ⏳ Approved by Supervisor. Awaiting final HOD sign-off.
+                    </div>
+                  )}
+                  {preMilestone.status === 'REVISION_REQUIRED' && (
+                    <div style={{ padding: 10, background: '#FEF2F2', borderRadius: 8, color: '#991B1B', fontSize: '0.82rem', textAlign: 'center' }}>
+                      ℹ️ Revisions requested. Awaiting scholar to re-submit draft package.
+                    </div>
+                  )}
+                  {preMilestone.status === 'APPROVED' && (
+                    <div style={{ padding: 10, background: '#ECFDF5', borderRadius: 8, color: '#047857', fontSize: '0.82rem', textAlign: 'center', fontWeight: 600 }}>
+                      ✅ Pre-Submission Thesis Draft Package approved and signed off.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 2. SEMINAR DETAILS / SCHEDULING FLOW (Only visible/active if draft is APPROVED) */}
+        <div className="usm-card" style={{ padding: 16 }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
+            📅 Pre-Submission Seminar Status & Schedule
+          </h4>
+
+          {preMilestone?.status !== 'APPROVED' ? (
+            <div style={{ padding: 14, background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 8, color: '#64748B', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>🔒</span> Pre-Submission Seminar Scheduling is locked until the Thesis Draft & Plagiarism Package gets final HOD approval.
+            </div>
+          ) : (
+            <div>
+              {/* Seminar status logic */}
+              {(semStatus === 'NOT_SCHEDULED' || semStatus === 'NOT_REQUESTED') && (
+                <div>
+                  {!isReadOnly && subRole === 'HOD' ? (
+                    <form onSubmit={handleHODScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#475569' }}>Schedule Pre-Submission Seminar:</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Date *</label>
+                          <input type="date" className="form-input" value={semDate} onChange={e => setSemDate(e.target.value)} required style={{ padding: 8 }} />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Time *</label>
+                          <input type="text" className="form-input" placeholder="e.g., 11:30 AM" value={semTime} onChange={e => setSemTime(e.target.value)} required style={{ padding: 8 }} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Venue *</label>
+                        <input type="text" className="form-input" placeholder="e.g., Seminar Hall, Dept of Computer Science" value={semVenue} onChange={e => setSemVenue(e.target.value)} required style={{ padding: 8 }} />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Committee Members (Optional)</label>
+                        <input type="text" className="form-input" placeholder="e.g., Prof. A, Dr. B (External), etc." value={semCommittee} onChange={e => setSemCommittee(e.target.value)} style={{ padding: 8 }} />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Remarks (Optional)</label>
+                        <textarea className="form-input" placeholder="Scheduling notes..." value={semRemarks} onChange={e => setSemRemarks(e.target.value)} style={{ minHeight: 60, padding: 8 }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button type="submit" className="btn-primary" disabled={loading} style={{ background: '#EA580C', padding: '8px 16px' }}>
+                          {loading ? 'Submitting...' : 'Schedule Pre-Submission Seminar'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
+                      Draft Approved! Awaiting Head of Department (HOD) to schedule the Pre-Submission Seminar.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {semStatus === 'SCHEDULED' && (
+                <div>
+                  <div style={{ background: '#EFF6FF', borderRadius: 8, padding: 14, border: '1px solid #BFDBFE', fontSize: '0.85rem', marginBottom: 16 }}>
+                    <strong>📅 Scheduled Seminar Details:</strong>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+                      <div><strong>Date:</strong> {sem.scheduledDate ? new Date(sem.scheduledDate).toLocaleDateString() : 'N/A'}</div>
+                      <div><strong>Time:</strong> {sem.scheduledTime}</div>
+                      <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {sem.venue}</div>
+                      <div style={{ gridColumn: 'span 2' }}><strong>Committee:</strong> {sem.committeeMembers || 'N/A'}</div>
+                      {sem.remarks && <div style={{ gridColumn: 'span 2' }}><strong>HOD Remarks:</strong> "{sem.remarks}"</div>}
+                    </div>
+                  </div>
+
+                  {!isReadOnly && subRole === 'HOD' ? (
+                    <form onSubmit={handleHODOutcomeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#475569' }}>Record Seminar Outcome:</div>
+                      <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
+                          <input type="radio" name="outcome" value="CLEARED" checked={semOutcomeStatus === 'CLEARED'} onChange={() => setSemOutcomeStatus('CLEARED')} />
+                          Cleared (Satisfactory)
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
+                          <input type="radio" name="outcome" value="UNCLEARED" checked={semOutcomeStatus === 'UNCLEARED'} onChange={() => setSemOutcomeStatus('UNCLEARED')} />
+                          Uncleared (Unsatisfactory)
+                        </label>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Remarks / Feedback (Required if Uncleared) *</label>
+                        <textarea className="form-input" placeholder="Outcome remarks..." value={semOutcomeRemarks} onChange={e => setSemOutcomeRemarks(e.target.value)} required={semOutcomeStatus === 'UNCLEARED'} style={{ minHeight: 60, padding: 8 }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button type="submit" className="btn-primary" disabled={loading} style={{ background: '#EA580C', padding: '8px 16px' }}>
+                          {loading ? 'Recording...' : 'Record Outcome'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
+                      Awaiting conduct of the Seminar and outcome recording by HOD.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {semStatus === 'CLEARED' && (
+                <div style={{ background: '#E8F5E9', borderRadius: 8, padding: 14, border: '1px solid #A5D6A7', fontSize: '0.85rem' }}>
+                  <strong style={{ color: '#2E7D32' }}>✅ Seminar Outcome: CLEARED (Satisfactory)</strong>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+                    <div><strong>Conducted On:</strong> {sem.scheduledDate ? new Date(sem.scheduledDate).toLocaleDateString() : 'N/A'}</div>
+                    <div><strong>Recorded On:</strong> {sem.outcomeRecordedAt ? new Date(sem.outcomeRecordedAt).toLocaleDateString() : 'N/A'}</div>
+                    {sem.outcomeRemarks && <div style={{ gridColumn: 'span 2' }}><strong>Outcome Remarks:</strong> "{sem.outcomeRemarks}"</div>}
+                  </div>
+                </div>
+              )}
+
+              {semStatus === 'UNCLEARED' && (
+                <div>
+                  <div style={{ padding: 12, background: '#FEE2E2', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
+                    <strong>⚠️ Seminar Outcome: UNCLEARED (Unsatisfactory)</strong>
+                    <div style={{ marginTop: 4 }}>Remarks: "{sem.outcomeRemarks || 'None'}"</div>
+                  </div>
+
+                  {!isReadOnly && subRole === 'HOD' ? (
+                    <form onSubmit={handleHODScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#991B1B' }}>Reschedule Pre-Submission Seminar:</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Date *</label>
+                          <input type="date" className="form-input" value={semDate} onChange={e => setSemDate(e.target.value)} required style={{ padding: 8 }} />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Time *</label>
+                          <input type="text" className="form-input" placeholder="e.g., 11:30 AM" value={semTime} onChange={e => setSemTime(e.target.value)} required style={{ padding: 8 }} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Venue *</label>
+                        <input type="text" className="form-input" placeholder="e.g., Seminar Hall" value={semVenue} onChange={e => setSemVenue(e.target.value)} required style={{ padding: 8 }} />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Committee Members (Optional)</label>
+                        <input type="text" className="form-input" placeholder="Committee members..." value={semCommittee} onChange={e => setSemCommittee(e.target.value)} style={{ padding: 8 }} />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Remarks (Optional)</label>
+                        <textarea className="form-input" placeholder="Scheduling remarks..." value={semRemarks} onChange={e => setSemRemarks(e.target.value)} style={{ minHeight: 60, padding: 8 }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button type="submit" className="btn-primary" disabled={loading} style={{ background: '#EA580C', padding: '8px 16px' }}>
+                          {loading ? 'Submitting...' : 'Reschedule Seminar'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
+                      Awaiting Head of Department (HOD) to reschedule the Pre-Submission Seminar.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -1133,7 +1551,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600, background: badge.bg, color: badge.color }}>{badge.text}</span>
 
-        {!isReadOnly && subRole !== 'HOD' && thesis.status === 'PRE_SUBMISSION' && milestones.find(m => m.type === 'FINAL_SUBMISSION' && (m.status === 'SUBMITTED' || m.status === 'APPROVED')) && (
+        {!isReadOnly && subRole !== 'HOD' && thesis.status === 'SUBMITTED' && milestones.find(m => m.type === 'FINAL_SUBMISSION' && (m.status === 'SUBMITTED' || m.status === 'APPROVED')) && (
           <button className="btn-primary" onClick={() => act(onFinalApprove)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#8B5CF6' }}>✓ Final Approval → SUBMITTED</button>
         )}
         {!isReadOnly && subRole === 'HOD' && thesis.status === 'ACTIVE_RESEARCH' && (
@@ -1779,10 +2197,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   );
 
   const renderDocuments = () => {
-    const canClearSeminar = verifiedJournals >= 2 && verifiedConferences >= 2;
-    const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
-    const hasUploadedDocs = preMilestone && preMilestone.status === 'SUBMITTED';
-
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="usm-section-title">📄 Core Documents & Submissions</div>
@@ -1796,7 +2210,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         )}
 
         {/* Core pending documents for review */}
-        {corePendingMilestones.length > 0 && corePendingMilestones.map(m => (
+        {corePendingMilestonesDocs.length > 0 && corePendingMilestonesDocs.map(m => (
           <div key={m._id} className="usm-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ fontWeight: 700 }}>{m.title}</div>
@@ -1872,28 +2286,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </div>
         ))}
 
-        {/* Pre-submission seminar section (HOD) */}
-        {subRole === 'HOD' && thesis.status === 'ACTIVE_RESEARCH' && (
-          <div className="usm-card">
-            <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 10 }}>Pre-Submission Seminar</div>
-            {!canClearSeminar && <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '10px 14px', borderRadius: 10, fontSize: '0.82rem', color: '#EF4444', fontWeight: 600, marginBottom: 10 }}>⚠️ Prerequisites locked — Journals: {verifiedJournals}/2 | Conferences: {verifiedConferences}/2</div>}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              {hasUploadedDocs && <button className="btn-outline" onClick={() => setShowSeminarSchedule(!showSeminarSchedule)} style={{ padding: '6px 14px', fontSize: '0.78rem', borderColor: '#3B82F6', color: '#3B82F6' }}>📅 {showSeminarSchedule ? 'Cancel' : 'Schedule Seminar'}</button>}
-              <button className="btn-primary" onClick={() => act(onSeminar)} disabled={loading || !canClearSeminar || !hasUploadedDocs} style={{ padding: '6px 14px', fontSize: '0.78rem', background: !canClearSeminar || !hasUploadedDocs ? '#94A3B8' : '#EA580C', cursor: !canClearSeminar || !hasUploadedDocs ? 'not-allowed' : 'pointer', opacity: !canClearSeminar || !hasUploadedDocs ? 0.7 : 1 }}>✓ Seminar Cleared → Pre-Submission</button>
-            </div>
-            {showSeminarSchedule && hasUploadedDocs && (
-              <form onSubmit={handleSeminarSchedule} style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={seminarForm.scheduledDate} onChange={e => setSeminarForm({...seminarForm, scheduledDate: e.target.value})} required /></div>
-                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Time</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={seminarForm.scheduledTime} onChange={e => setSeminarForm({...seminarForm, scheduledTime: e.target.value})} required /></div>
-                </div>
-                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} value={seminarForm.venue} onChange={e => setSeminarForm({...seminarForm, venue: e.target.value})} required /></div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button type="submit" className="btn-primary" disabled={loading} style={{ padding: '6px 14px', fontSize: '0.75rem', background: '#0284C7' }}>Schedule</button></div>
-              </form>
-            )}
-          </div>
-        )}
-
         {/* Additional documents */}
         {additionalDocs.length > 0 && (
           <>
@@ -1950,7 +2342,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </>
         )}
 
-        {corePendingMilestones.length === 0 && additionalDocs.length === 0 && thesis.status !== 'SYNOPSIS_PENDING' && thesis.status !== 'PRE_SUBMISSION' && (
+        {corePendingMilestonesDocs.length === 0 && additionalDocs.length === 0 && thesis.status !== 'SYNOPSIS_PENDING' && thesis.status !== 'PRE_SUBMISSION' && (
           <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem' }}>No pending documents for review.</div>
         )}
       </div>
@@ -2024,7 +2416,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           <div style={{ fontSize: '0.78rem', color: '#64748B', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg, #F8FAFC)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 10 }}>
             <span>Authorization Level: <strong>{canManageDefense ? 'HOD/Admin (Manage)' : 'Faculty/Scholar (Read-Only)'}</strong></span>
             <span style={{ fontWeight: 700, color: isAwarded ? '#10B981' : '#3B82F6' }}>
-              Current Stage: {resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole).text}
+              Current Stage: {resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole, preSubMilestone?.status, thesis.preSubmissionSeminar?.status).text}
             </span>
           </div>
         </div>
@@ -2450,6 +2842,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       case 'reports': return renderReportsOrChapters('reports');
       case 'chapters': return renderReportsOrChapters('chapters');
       case 'publications': return renderPublications();
+      case 'preSubmission': return renderPreSubmission();
       case 'defense': return renderDefenseAndAward();
       case 'documents': return renderDocuments();
       case 'changes': return renderChanges();

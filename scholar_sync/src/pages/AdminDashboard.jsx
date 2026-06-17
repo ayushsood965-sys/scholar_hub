@@ -218,7 +218,7 @@ const Header = ({ title }) => {
   );
 };
 
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {
@@ -237,9 +237,43 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole) 
   if (status === 'PRE_SUBMISSION') {
     if (finalSubStatus === 'SUBMITTED') return { text: 'Thesis Submitted (Awaiting Review)', color: '#2563EB', bg: '#DBEAFE' };
     if (finalSubStatus === 'REVISION_REQUIRED') return { text: 'Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
-    return { text: 'Pre-Submission Seminar Cleared', color: '#D97706', bg: '#FFF3CD' };
+    
+    if (preSubMilestoneStatus === 'SUBMITTED') {
+      return { text: 'Thesis Draft & Plagiarism Report Submitted (Pending Faculty Review)', color: '#2563EB', bg: '#DBEAFE' };
+    }
+    if (preSubMilestoneStatus === 'PENDING_HOD') {
+      return { text: 'Draft Approved by Supervisor (Pending HOD Sign-off)', color: '#D97706', bg: '#FFF3CD' };
+    }
+    if (preSubMilestoneStatus === 'REVISION_REQUIRED') {
+      return { text: 'Thesis Draft Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
+    }
+    if (preSubSeminarStatus === 'SCHEDULED') {
+      return { text: 'Pre-Submission Seminar Scheduled', color: '#7C3AED', bg: '#EDE9FE' };
+    }
+    if (preSubSeminarStatus === 'CLEARED') {
+      return { text: 'Pre-Submission Seminar Cleared', color: '#059669', bg: '#D1FAE5' };
+    }
+    if (preSubSeminarStatus === 'UNCLEARED') {
+      return { text: 'Pre-Submission Seminar Uncleared (Unsatisfactory)', color: '#DC2626', bg: '#FEE2E2' };
+    }
+    if (preSubMilestoneStatus === 'APPROVED') {
+      return { text: 'Draft Approved (Awaiting Seminar Schedule)', color: '#D97706', bg: '#FFFBEB' };
+    }
+
+    return { text: 'Pre-Submission Phase', color: '#D97706', bg: '#FFF3CD' };
   }
-  if (status === 'SUBMITTED') return { text: 'Awaiting Degree Award', color: '#4B5563', bg: '#F3F4F6' };
+  if (status === 'SUBMITTED') {
+    if (finalSubStatus === 'SUBMITTED') {
+      return { text: 'Final Thesis Submitted (Pending Sign-off)', color: '#2563EB', bg: '#DBEAFE' };
+    }
+    if (finalSubStatus === 'REVISION_REQUIRED') {
+      return { text: 'Final Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
+    }
+    if (finalSubStatus === 'APPROVED') {
+      return { text: 'Thesis Approved (Under Evaluation)', color: '#10B981', bg: '#ECFDF5' };
+    }
+    return { text: 'Thesis Submission Phase (Awaiting Upload)', color: '#D97706', bg: '#FFFBEB' };
+  }
   if (status === 'AWARDED') return { text: 'Degree Awarded! 🎉', color: '#10B981', bg: '#ECFDF5' };
   return { text: status?.replace(/_/g, ' '), color: '#374151', bg: '#F3F4F6' };
 };
@@ -1933,7 +1967,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
               <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#6b7280' }}>{t.supervisorId?.name || '—'}</div>
               <div style={{ flex: 1 }}>
                 {(() => {
-                  const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole);
+                  const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
                   return (
                     <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
                       {badge.text}

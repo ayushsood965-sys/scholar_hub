@@ -20,68 +20,73 @@ const getPeriodMeta = (startDate, seq) => {
   };
 };
 
-// GET /api/milestones/:thesisId
-const getMilestones = async (req, res) => {
-  try {
-    const thesis = await Thesis.findById(req.params.thesisId);
-    if (thesis && ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) && thesis.startDate) {
-      // Use admissionDate from scholar profile if available, else fall back to thesis.startDate
-      const scholar = await User.findById(thesis.scholarId);
-      const admissionDate = scholar?.profile?.admissionDate ? new Date(scholar.profile.admissionDate) : null;
-      const referenceDate = admissionDate && !isNaN(admissionDate.getTime()) ? admissionDate : new Date(thesis.startDate);
+// Helper to generate milestones dynamically based on timeline & prerequisites
+const generateMilestonesIfNeeded = async (thesisId) => {
+  const thesis = await Thesis.findById(thesisId);
+  if (thesis && ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) && thesis.startDate) {
+    // Use admissionDate from scholar profile if available, else fall back to thesis.startDate
+    const scholar = await User.findById(thesis.scholarId);
+    const admissionDate = scholar?.profile?.admissionDate ? new Date(scholar.profile.admissionDate) : null;
+    const referenceDate = admissionDate && !isNaN(admissionDate.getTime()) ? admissionDate : new Date(thesis.startDate);
 
-      // Calculate how many 6-month periods have elapsed/started
-      const diffMs = new Date() - referenceDate;
-      const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.4375); // average days per month
-      const activePeriods = Math.max(1, Math.ceil(diffMonths / 6));
+    // Calculate how many 6-month periods have elapsed/started
+    const diffMs = new Date() - referenceDate;
+    const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.4375); // average days per month
+    const activePeriods = Math.max(1, Math.ceil(diffMonths / 6));
 
-      for (let i = 1; i <= activePeriods; i++) {
-        // Check if this milestone already exists
-        const exists = await Milestone.findOne({ thesisId: thesis._id, type: '6_MONTH_REPORT', sequence: i });
-        if (!exists) {
-          const meta = getPeriodMeta(referenceDate, i);
-          await Milestone.create({
-            thesisId: thesis._id,
-            type: '6_MONTH_REPORT',
-            sequence: i,
-            title: meta.title,
-            dueDate: meta.dueDate,
-            status: 'PENDING'
-          });
-        }
-      }
-
-      // Check Phase 5 Pre-Submission prerequisites:
-      // 1. Minimum 3 years (36 months) passed since admission/start (or 18 months if M.Phil is completed and verified)
-      const hasMphil = scholar?.profile?.qualifications?.mphil?.done === true && scholar?.isVerified === true;
-      const requiredMonths = hasMphil ? 18 : 36;
-      const hasThreeYearsPassed = diffMonths >= requiredMonths;
-
-      // 2. All 6-month progress reports are approved (at least 3 for M.Phil holders, 6 for others)
-      const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
-      const requiredReportsCount = hasMphil ? 3 : 6;
-      const allReportsApproved = reports.length >= requiredReportsCount && reports.every(r => r.status === 'APPROVED');
-
-      // 3. Required publications are approved (at least 2 verified journals and 2 verified conferences)
-      const Publication = require('../models/Publication');
-      const verifiedJournals = await Publication.countDocuments({ thesisId: thesis._id, type: 'JOURNAL', status: 'VERIFIED' });
-      const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
-      const publicationsApproved = verifiedJournals >= 2 && verifiedConferences >= 2;
-
-      if (hasThreeYearsPassed && allReportsApproved && publicationsApproved) {
-        const preExists = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
-        if (!preExists) {
-          await Milestone.create({
-            thesisId: thesis._id,
-            type: 'PRE_SUBMISSION',
-            title: 'Pre-Submission Thesis & Plagiarism Clearance Package',
-            status: 'PENDING',
-            sequence: 99
-          });
-        }
+    for (let i = 1; i <= activePeriods; i++) {
+      // Check if this milestone already exists
+      const exists = await Milestone.findOne({ thesisId: thesis._id, type: '6_MONTH_REPORT', sequence: i });
+      if (!exists) {
+        const meta = getPeriodMeta(referenceDate, i);
+        await Milestone.create({
+          thesisId: thesis._id,
+          type: '6_MONTH_REPORT',
+          sequence: i,
+          title: meta.title,
+          dueDate: meta.dueDate,
+          status: 'PENDING'
+        });
       }
     }
 
+    // Check Phase 5 Pre-Submission prerequisites:
+    // 1. Minimum 3 years (36 months) passed since admission/start (or 18 months if M.Phil is completed and verified)
+    const hasMphil = scholar?.profile?.qualifications?.mphil?.done === true && scholar?.isVerified === true;
+    const requiredMonths = hasMphil ? 18 : 36;
+    const hasThreeYearsPassed = diffMonths >= requiredMonths;
+
+    // 2. All 6-month progress reports are approved (at least 3 for M.Phil holders, 6 for others)
+    const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
+    const requiredReportsCount = hasMphil ? 3 : 6;
+    const approvedReportsCount = reports.filter(r => r.status === 'APPROVED').length;
+    const allReportsApproved = approvedReportsCount >= requiredReportsCount;
+
+    // 3. Required publications are approved (at least 2 verified journals and 2 verified conferences)
+    const Publication = require('../models/Publication');
+    const verifiedJournals = await Publication.countDocuments({ thesisId: thesis._id, type: 'JOURNAL', status: 'VERIFIED' });
+    const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
+    const publicationsApproved = verifiedJournals >= 2 && verifiedConferences >= 2;
+
+    if (hasThreeYearsPassed && allReportsApproved && publicationsApproved) {
+      const preExists = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
+      if (!preExists) {
+        await Milestone.create({
+          thesisId: thesis._id,
+          type: 'PRE_SUBMISSION',
+          title: 'Pre-Submission Thesis & Plagiarism Clearance Package',
+          status: 'PENDING',
+          sequence: 99
+        });
+      }
+    }
+  }
+};
+
+// GET /api/milestones/:thesisId
+const getMilestones = async (req, res) => {
+  try {
+    await generateMilestonesIfNeeded(req.params.thesisId);
     const milestones = await Milestone.find({ thesisId: req.params.thesisId })
       .sort('sequence createdAt');
     res.json(milestones);
@@ -98,7 +103,7 @@ const submitDocument = async (req, res) => {
 
     // Verify scholar owns this thesis
     const thesis = await Thesis.findById(milestone.thesisId);
-    if (thesis.status === 'SUBMITTED') {
+    if (thesis.status === 'SUBMITTED' && (milestone.type !== 'FINAL_SUBMISSION' || thesis.submittedAt || milestone.status === 'APPROVED')) {
       return res.status(403).json({ message: 'Thesis is submitted. Uploads are locked.' });
     }
 
@@ -153,7 +158,10 @@ const reviewMilestone = async (req, res) => {
     if (!milestone) return res.status(404).json({ message: 'Milestone not found' });
 
     let isSynopsis = milestone.type === 'SYNOPSIS';
-    if (isSynopsis) {
+    let isPreSubmission = milestone.type === 'PRE_SUBMISSION';
+    let isTwoStep = isSynopsis || isPreSubmission;
+
+    if (isTwoStep) {
       if (action === 'APPROVE') {
         if (milestone.status === 'PENDING_HOD') {
           milestone.status = 'APPROVED';
@@ -186,17 +194,21 @@ const reviewMilestone = async (req, res) => {
         await createNotification({
           roleScope: 'HOD',
           department: thesis.department,
-          title: '⏳ Synopsis HOD Approval Pending',
-          message: `The synopsis document of Scholar "${thesis.title}" has been approved by supervisor ${req.user.name} and awaits your final HOD approval.`,
+          title: isPreSubmission ? '⏳ Pre-Submission HOD Approval Pending' : '⏳ Synopsis HOD Approval Pending',
+          message: isPreSubmission
+            ? `The pre-submission package of Scholar "${thesis.title}" has been approved by supervisor ${req.user.name} and awaits your final HOD approval.`
+            : `The synopsis document of Scholar "${thesis.title}" has been approved by supervisor ${req.user.name} and awaits your final HOD approval.`,
           type: 'PENDING_ACTION',
-          link: 'registrations'
+          link: isPreSubmission ? 'overview' : 'registrations'
         });
       } else if (milestone.status === 'APPROVED') {
         await createNotification({
           recipient: thesis.scholarId,
-          title: isSynopsis ? '🎉 Synopsis Approved!' : '🎉 Milestone Approved!',
+          title: isSynopsis ? '🎉 Synopsis Approved!' : isPreSubmission ? '🎉 Pre-Submission Draft Approved!' : '🎉 Milestone Approved!',
           message: isSynopsis 
             ? `Your synopsis document has been officially approved by the department. HOD can now schedule the DRC meeting.`
+            : isPreSubmission
+            ? `Your pre-submission thesis draft and plagiarism package have been officially APPROVED by the department. HOD will schedule your Pre-Submission Seminar shortly.`
             : `Your supervisor "${req.user.name}" has APPROVED your submission for milestone "${milestone.title}".`,
           type: 'SUCCESSFUL_ACTION',
           link: 'overview'
@@ -204,9 +216,11 @@ const reviewMilestone = async (req, res) => {
       } else {
         await createNotification({
           recipient: thesis.scholarId,
-          title: isSynopsis ? '⚠️ Synopsis Revision Required' : '⚠️ Milestone Revision Required',
+          title: isSynopsis ? '⚠️ Synopsis Revision Required' : isPreSubmission ? '⚠️ Pre-Submission Package Revision Required' : '⚠️ Milestone Revision Required',
           message: isSynopsis
             ? `Corrections have been requested for your synopsis submission by ${req.user.role === 'HOD' ? 'HOD' : 'supervisor'} "${req.user.name}". Feedback: "${comment || 'Please check comments.'}"`
+            : isPreSubmission
+            ? `Corrections have been requested for your pre-submission draft package by ${req.user.role === 'HOD' ? 'HOD' : 'supervisor'} "${req.user.name}". Feedback: "${comment || 'Please check comments.'}"`
             : `Your supervisor "${req.user.name}" has requested corrections for milestone "${milestone.title}". Feedback: "${comment || 'Please check supervisor comments.'}"`,
           type: 'PENDING_ACTION',
           link: 'overview'
@@ -296,5 +310,6 @@ module.exports = {
   submitDocument,
   reviewMilestone,
   createMilestone,
-  getDefaulters
+  getDefaulters,
+  generateMilestonesIfNeeded
 };

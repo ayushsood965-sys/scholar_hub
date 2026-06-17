@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -406,6 +406,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
     { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
     { key: 'publications', label: 'Research Outputs', Icon: Award },
     { key: 'preSubmission', label: 'Pre-Submission', Icon: ClipboardList },
+    { key: 'finalSubmission', label: 'Final Submission', Icon: BookOpen },
     { key: 'meetings', label: 'Meetings', Icon: Calendar },
     { key: 'documents', label: 'Documents', Icon: FileText },
     { key: 'changes', label: 'Request Changes', Icon: Edit },
@@ -442,7 +443,10 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             }
             if (key === 'preSubmission') {
               const hasPreMilestone = milestones && milestones.some(m => m.type === 'PRE_SUBMISSION');
-              return !(['PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
+              return !(['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
+            }
+            if (key === 'finalSubmission') {
+              return !['SUBMITTED', 'AWARDED'].includes(status);
             }
             return true;
           })();
@@ -1619,7 +1623,7 @@ const ActiveResearch = ({ thesis, milestones, onSubmit, setActiveTab }) => {
       {/* Synopsis milestone if present */}
       {milestones.filter(m => m.type === 'SYNOPSIS').map(m => (
         <div key={m._id} className="card" style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontWeight: 700, color: '#111827' }}>{m.title}</div>
               <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 4 }}>Type: {m.type}</div>
@@ -1635,7 +1639,7 @@ const ActiveResearch = ({ thesis, milestones, onSubmit, setActiveTab }) => {
 };
 
 // ── Pre-Submission Phase ──
-const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
+const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
   const toast = useToast();
   const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
   const finalMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
@@ -1647,13 +1651,19 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
   const [fileFinalThesis, setFileFinalThesis] = useState(null);
   const [submittingFinal, setSubmittingFinal] = useState(false);
 
-  if (!preMilestone) {
-    return (
-      <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-secondary, #64748B)' }}>
-        ⏳ Pre-submission package milestone generation pending. Fulfill all prerequisites first to unlock.
-      </div>
-    );
-  }
+  // States for pre-submission eligibility checklist
+  const [pubs, setPubs] = useState([]);
+  const [fetchingChecklist, setFetchingChecklist] = useState(false);
+
+  useEffect(() => {
+    if (!preMilestone && thesis?._id) {
+      setFetchingChecklist(true);
+      axios.get(`${API}/publications/thesis/${thesis._id}`, getAuthHeader())
+        .then(res => setPubs(res.data))
+        .catch(() => {})
+        .finally(() => setFetchingChecklist(false));
+    }
+  }, [preMilestone, thesis?._id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1711,10 +1721,30 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
     }
   };
 
-  const isPending = preMilestone.status === 'PENDING';
-  const isRevision = preMilestone.status === 'REVISION_REQUIRED';
-  const isSubmitted = preMilestone.status === 'SUBMITTED';
-  const isApproved = preMilestone.status === 'APPROVED';
+  const semStatus = thesis.preSubmissionSeminar?.status || 'NOT_SCHEDULED';
+  const isPending = preMilestone?.status === 'PENDING';
+  const isRevision = preMilestone?.status === 'REVISION_REQUIRED';
+  const isSubmitted = preMilestone?.status === 'SUBMITTED' || preMilestone?.status === 'PENDING_HOD';
+  const isApproved = preMilestone?.status === 'APPROVED';
+
+  // Checklist verification calculations
+  const scholar = user || {};
+  const hasMphil = scholar.profile?.qualifications?.mphil?.done === true && scholar.isVerified === true;
+  const requiredMonths = hasMphil ? 18 : 36;
+  const admissionDate = scholar.profile?.admissionDate ? new Date(scholar.profile.admissionDate) : null;
+  const referenceDate = admissionDate && !isNaN(admissionDate.getTime()) ? admissionDate : (thesis.startDate ? new Date(thesis.startDate) : new Date());
+  const diffMs = new Date() - referenceDate;
+  const diffMonths = Math.max(0, diffMs / (1000 * 60 * 60 * 24 * 30.4375));
+  const timeCleared = diffMonths >= requiredMonths;
+
+  const reports = milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT') || [];
+  const approvedReports = reports.filter(r => r.status === 'APPROVED').length;
+  const requiredReportsCount = hasMphil ? 3 : 6;
+  const reportsCleared = approvedReports >= requiredReportsCount;
+
+  const journals = pubs.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
+  const conferences = pubs.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
+  const pubsCleared = journals >= 2 && conferences >= 2;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1729,140 +1759,810 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
           🎓 Pre-Submission Colloquium & Thesis Defense
         </h4>
         <p style={{ color: 'var(--color-text-secondary, #475569)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-          Congratulations! You have fulfilled the active research prerequisites (3-year duration, reports, and verified publications). Fulfill the final steps by submitting your rough thesis draft and Turnitin plagiarism clearance report. The department will then schedule your offline expert defense seminar.
+          The Pre-Submission phase requires you to upload your rough thesis draft and Turnitin plagiarism clearance report for Supervisor and HOD evaluation. 
+          Upon successful draft verification, HOD will schedule your Pre-Submission Seminar. Once cleared, you will proceed to the final submission.
         </p>
       </div>
 
-      {/* Package Form or Status */}
-      {(isPending || isRevision) && (
-        <div className="card">
-          <h3 className="card-title">Upload Pre-Submission Package</h3>
-          <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', marginBottom: 20 }}>
-            Upload complete rough draft thesis compiled from approved chapters, along with the plagiarism verification clearance certificate.
+      {/* 1. Prerequisites Check (If preMilestone not generated) */}
+      {!preMilestone && (
+        <div className="card" style={{ borderLeft: '4px solid #EF4444' }}>
+          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#DC2626' }}>
+            🔒 Pre-Submission Prerequisites Locked
+          </h3>
+          <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 16 }}>
+            You must satisfy the following research timeline, progress report, and publication criteria to unlock rough draft submission:
           </p>
 
-          {preMilestone.comments?.length > 0 && (
-            <div style={{ marginBottom: 20, padding: 12, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem' }}>
-              <strong>Correction Required:</strong> "{preMilestone.comments[preMilestone.comments.length - 1].text}"
+          {fetchingChecklist ? (
+            <div style={{ padding: 12, color: '#64748B', fontSize: '0.85rem' }}>⏳ Checking eligibility criteria...</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Research Duration */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: timeCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: timeCleared ? '#065F46' : '#991B1B' }}>Research Time Elapsed</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredMonths} months ({hasMphil ? 'M.Phil Holder' : 'Regular Ph.D.'}) | Current: {diffMonths.toFixed(1)} months</div>
+                </div>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: timeCleared ? '#059669' : '#DC2626' }}>{timeCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+              </div>
+
+              {/* Progress Reports */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: reportsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: reportsCleared ? '#065F46' : '#991B1B' }}>Approved Progress Reports</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredReportsCount} approved reports | Current: {approvedReports} approved</div>
+                </div>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: reportsCleared ? '#059669' : '#DC2626' }}>{reportsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+              </div>
+
+              {/* Research Outputs */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: pubsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: pubsCleared ? '#065F46' : '#991B1B' }}>Research Publications</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: 2 verified journals & 2 verified conferences | Current: {journals} journals, {conferences} conferences</div>
+                </div>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: pubsCleared ? '#059669' : '#DC2626' }}>{pubsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+              </div>
             </div>
           )}
+        </div>
+      )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
-                 Rough Thesis Complete Document (PDF format only) *
-              </label>
-              <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileThesis(e.target.files[0])} />
+      {/* 2. Draft submission form (Rough Thesis Draft + Plagiarism Certificate) */}
+      {preMilestone && (isPending || isRevision) && (
+        <div className="card" style={{
+          padding: '28px',
+          borderRadius: '20px',
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.5)',
+          boxShadow: '0 8px 32px rgba(15, 23, 42, 0.04)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {/* Subtle background glow */}
+          <div style={{
+            position: 'absolute',
+            top: '-50px',
+            right: '-50px',
+            width: '150px',
+            height: '150px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(234, 88, 12, 0.08) 0%, rgba(234, 88, 12, 0) 70%)',
+            pointerEvents: 'none'
+          }} />
+
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>📤</span> Submit Rough Thesis Draft & Plagiarism Report
+          </h3>
+          {isRevision && (
+            <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
+              <strong>⚠️ Revision Required:</strong>
+              <div style={{ marginTop: 4 }}>
+                {preMilestone.comments?.length > 0
+                  ? `"${preMilestone.comments[preMilestone.comments.length - 1].text}" — ${preMilestone.comments[preMilestone.comments.length - 1].authorName}`
+                  : 'Supervisor/HOD has requested corrections.'}
+              </div>
+            </div>
+          )}
+          <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', marginBottom: 20 }}>
+            Please upload your complete rough thesis draft and Turnitin plagiarism clearance report. Once submitted, your Supervisor and HOD will review them.
+          </p>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '4px' }}>
+              {/* File 1: Rough Thesis Draft */}
+              <div 
+                style={{
+                  border: fileThesis ? '2px solid rgba(16, 185, 129, 0.4)' : '2px dashed rgba(234, 88, 12, 0.25)',
+                  borderRadius: '16px',
+                  padding: '30px 20px',
+                  textAlign: 'center',
+                  background: fileThesis 
+                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)' 
+                    : 'linear-gradient(135deg, rgba(234, 88, 12, 0.03) 0%, rgba(255, 255, 255, 0) 100%)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
+                  backdropFilter: 'blur(8px)',
+                }}
+                onClick={() => document.getElementById('thesis-file-input').click()}
+                onMouseEnter={e => {
+                  if (!fileThesis) {
+                    e.currentTarget.style.borderColor = '#EA580C';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(234, 88, 12, 0.06)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!fileThesis) {
+                    e.currentTarget.style.borderColor = 'rgba(234, 88, 12, 0.25)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.01)';
+                  }
+                }}
+              >
+                <input 
+                  id="thesis-file-input"
+                  type="file" 
+                  accept=".pdf" 
+                  onChange={e => setFileThesis(e.target.files[0])} 
+                  style={{ display: 'none' }} 
+                  required={!fileThesis}
+                />
+                
+                {fileThesis ? (
+                  <>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#ECFDF5',
+                      color: '#10B981',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 10px rgba(16, 185, 129, 0.15)'
+                    }}>
+                      <CheckCircle2 size={24} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {fileThesis.name}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
+                        {(fileThesis.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFileThesis(null);
+                        document.getElementById('thesis-file-input').value = '';
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        background: '#FEF2F2',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: '#EF4444',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}
+                    >
+                      <X size={12} /> Remove
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#FFF7ED',
+                      color: '#EA580C',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 10px rgba(234, 88, 12, 0.08)'
+                    }}>
+                      <Upload size={20} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1F2937' }}>Rough Thesis Draft (PDF) *</div>
+                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '6px', lineHeight: 1.4 }}>
+                        Click to browse or drag file here<br />Required for supervisor review
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* File 2: Plagiarism Clearance Report */}
+              <div 
+                style={{
+                  border: filePlagiarism ? '2px solid rgba(16, 185, 129, 0.4)' : '2px dashed rgba(234, 88, 12, 0.25)',
+                  borderRadius: '16px',
+                  padding: '30px 20px',
+                  textAlign: 'center',
+                  background: filePlagiarism 
+                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)' 
+                    : 'linear-gradient(135deg, rgba(234, 88, 12, 0.03) 0%, rgba(255, 255, 255, 0) 100%)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
+                  backdropFilter: 'blur(8px)',
+                }}
+                onClick={() => document.getElementById('plagiarism-file-input').click()}
+                onMouseEnter={e => {
+                  if (!filePlagiarism) {
+                    e.currentTarget.style.borderColor = '#EA580C';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(234, 88, 12, 0.06)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!filePlagiarism) {
+                    e.currentTarget.style.borderColor = 'rgba(234, 88, 12, 0.25)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.01)';
+                  }
+                }}
+              >
+                <input 
+                  id="plagiarism-file-input"
+                  type="file" 
+                  accept=".pdf" 
+                  onChange={e => setFilePlagiarism(e.target.files[0])} 
+                  style={{ display: 'none' }} 
+                  required={!filePlagiarism}
+                />
+                
+                {filePlagiarism ? (
+                  <>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#ECFDF5',
+                      color: '#10B981',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 10px rgba(16, 185, 129, 0.15)'
+                    }}>
+                      <CheckCircle2 size={24} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {filePlagiarism.name}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
+                        {(filePlagiarism.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilePlagiarism(null);
+                        document.getElementById('plagiarism-file-input').value = '';
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        background: '#FEF2F2',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: '#EF4444',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}
+                    >
+                      <X size={12} /> Remove
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#FFF7ED',
+                      color: '#EA580C',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 10px rgba(234, 88, 12, 0.08)'
+                    }}>
+                      <Upload size={20} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1F2937' }}>Plagiarism Report (PDF) *</div>
+                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '6px', lineHeight: 1.4 }}>
+                        Click to browse or drag file here<br />Official Turnitin certificate
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
-                 Plagiarism Clearance Certificate (PDF format only) *
-              </label>
-              <input type="file" required accept=".pdf" className="form-input" onChange={e => setFilePlagiarism(e.target.files[0])} />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-              <button type="submit" className="btn-primary" disabled={submitting} style={{ background: '#EA580C', padding: '10px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
-                {submitting ? 'Uploading Package...' : '🚀 Submit Pre-Submission Package'}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button 
+                type="submit" 
+                disabled={submitting} 
+                style={{
+                  background: submitting 
+                    ? 'var(--color-neutral-300, #CBD5E1)' 
+                    : 'linear-gradient(135deg, #FF6B35 0%, #EA580C 100%)',
+                  color: '#FFFFFF',
+                  padding: '12px 28px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  boxShadow: submitting 
+                    ? 'none' 
+                    : '0 4px 14px rgba(234, 88, 12, 0.3), inset 0 -2px 0 rgba(0,0,0,0.1)',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  outline: 'none',
+                }}
+                onMouseEnter={e => {
+                  if (!submitting) {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(234, 88, 12, 0.4), inset 0 -2px 0 rgba(0,0,0,0.1)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!submitting) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(234, 88, 12, 0.3), inset 0 -2px 0 rgba(0,0,0,0.1)';
+                  }
+                }}
+                onMouseDown={e => {
+                  if (!submitting) {
+                    e.currentTarget.style.transform = 'translateY(1px)';
+                  }
+                }}
+                onMouseUp={e => {
+                  if (!submitting) {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }
+                }}
+              >
+                <Upload size={16} />
+                {submitting ? 'Uploading Package...' : 'Upload & Submit Pre-Submission Package'}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {isSubmitted && (
-        <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: 16 }}>⏳</div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text, #0F172A)', margin: '0 0 8px 0' }}>Pre-Submission Package Uploaded</h3>
-          <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 500, margin: '0 auto 20px', lineHeight: 1.5 }}>
-            Your rough draft and Turnitin report have been submitted to the HOD. Awaiting department scheduling for your open, offline Pre-Submission Seminar presentation.
-          </p>
-          <div style={{ display: 'inline-flex', gap: 16, background: 'var(--color-bg, #F8FAFC)', padding: '12px 20px', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)' }}>
+      {/* 3. Draft Submitted & Awaiting Review */}
+      {preMilestone && isSubmitted && (
+        <div className="card">
+          <h3 className="card-title">⏳ Draft Under Evaluation</h3>
+          <div style={{ textAlign: 'center', padding: '24px 16px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, color: '#1E40AF', marginBottom: 16 }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⏳</div>
+            <h4 style={{ margin: '0 0 6px 0', fontWeight: 700 }}>Draft Submitted Successfully</h4>
+            <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.4 }}>
+              Your rough draft thesis and plagiarism report are under review. Faculty Supervisor must verify them first, followed by HOD final sign-off.
+            </p>
+          </div>
+          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Uploaded Files:</div>
             {preMilestone.documentUrl && (
-              <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#EA580C', fontWeight: 600, textDecoration: 'underline' }}>
-                📄 Rough Thesis Draft
-              </a>
+              <div style={{ marginBottom: 6 }}>
+                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
+                  📄 Rough Thesis Draft
+                </a>
+              </div>
             )}
             {preMilestone.plagiarismReportUrl && (
-              <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: 600, textDecoration: 'underline' }}>
-                📊 Plagiarism Report
-              </a>
+              <div>
+                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
+                  📄 Plagiarism Clearance Report
+                </a>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {isApproved && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="card" style={{ padding: '40px 24px', borderLeft: '8px solid #059669', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎉</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#065F46', margin: '0 0 8px 0' }}>Pre-Submission Seminar Successful!</h3>
-            <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 500, margin: '0 auto 20px', lineHeight: 1.5 }}>
-              Your expert defense seminar was recorded as **Successful** by the HOD. Your thesis status has progressed to **PRE_SUBMISSION**. Please begin assembling your final submission materials.
+      {/* 4. Draft Approved & Awaiting Seminar Schedule */}
+      {preMilestone && isApproved && semStatus === 'NOT_SCHEDULED' && (
+        <div className="card">
+          <h3 className="card-title">📅 Seminar Scheduling Pending</h3>
+          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
+              ✅ Thesis Draft & Plagiarism Certificate Approved
+            </h4>
+            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
+              Your complete rough thesis draft and Turnitin report have been approved by both the Faculty Supervisor and HOD. 
+              The HOD of the department has been notified to schedule your Pre-Submission Seminar defense colloquium.
             </p>
-            <div style={{ display: 'inline-flex', gap: 16, background: 'var(--color-bg, #F8FAFC)', padding: '12px 20px', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)' }}>
-              {preMilestone.documentUrl && (
-                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#EA580C', fontWeight: 600, textDecoration: 'underline' }}>
-                  📄 Rough Thesis Draft
+          </div>
+          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Approved Files:</div>
+            {preMilestone.documentUrl && (
+              <div style={{ marginBottom: 6 }}>
+                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
+                  📄 Approved Thesis Draft
                 </a>
-              )}
-              {preMilestone.plagiarismReportUrl && (
-                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: 600, textDecoration: 'underline' }}>
-                  📊 Plagiarism Report
+              </div>
+            )}
+            {preMilestone.plagiarismReportUrl && (
+              <div>
+                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
+                  📄 Approved Plagiarism Clearance Certificate
                 </a>
-              )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Seminar Scheduled */}
+      {semStatus === 'SCHEDULED' && (
+        <div className="card">
+          <h3 className="card-title">📆 Pre-Submission Seminar Confirmed</h3>
+          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <h4 style={{ margin: '0 0 12px 0', color: '#92400E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>📆</span> Seminar Schedule Details:
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.85rem', color: '#78350F' }}>
+              <div><strong>Date:</strong> {thesis.preSubmissionSeminar.scheduledDate ? new Date(thesis.preSubmissionSeminar.scheduledDate).toLocaleDateString() : 'TBD'}</div>
+              <div><strong>Time:</strong> {thesis.preSubmissionSeminar.scheduledTime || 'TBD'}</div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {thesis.preSubmissionSeminar.venue || 'TBD'}</div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Committee/Panel:</strong> {thesis.preSubmissionSeminar.committeeMembers || 'TBD'}</div>
+              {thesis.preSubmissionSeminar.remarks && <div style={{ gridColumn: 'span 2', background: 'white', padding: 10, borderRadius: 6, border: '1px solid #FCD34D', marginTop: 6 }}><strong>Remarks:</strong> {thesis.preSubmissionSeminar.remarks}</div>}
+            </div>
+            <div style={{ marginTop: 16, fontSize: '0.8rem', color: '#92400E', fontStyle: 'italic', borderTop: '1px solid #FDE68A', paddingTop: 10 }}>
+              * Please attend the seminar defense offline at the scheduled time. The outcome clearance will be recorded in this portal by the HOD.
             </div>
           </div>
+        </div>
+      )}
 
-          {finalMilestone && (
-            <div className="card">
-              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text, #0F172A)' }}>
-                <span>🚀</span> Final Thesis Package Submission
-              </h3>
-              
-              {finalMilestone.status === 'PENDING' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
-                  <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-                    Please compile and upload your absolute final, hard-bound equivalent Ph.D. thesis document here. Ensure that all corrections, suggestions, and feedback received from the expert panel during your offline defense colloquium are fully incorporated.
-                  </p>
+      {/* 6. Seminar Uncleared */}
+      {semStatus === 'UNCLEARED' && (
+        <div className="card">
+          <h3 className="card-title" style={{ color: '#DC2626' }}>⚠️ Seminar Outcome: Uncleared</h3>
+          <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
+            <strong>⚠️ Seminar Defense Evaluated as Unsatisfactory</strong>
+            <div style={{ marginTop: 4 }}><strong>HOD Feedback Remarks:</strong> {thesis.preSubmissionSeminar.outcomeRemarks || 'None'}</div>
+            <div style={{ marginTop: 6, color: '#7F1D1D' }}>Please discuss the corrections with your supervisor. HOD will reschedule the seminar defense in this portal once ready.</div>
+          </div>
+        </div>
+      )}
 
-                  <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
-                        Final Hard-Bound Equivalent Thesis (PDF format only) *
-                      </label>
-                      <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileFinalThesis(e.target.files[0])} />
-                    </div>
+      {/* 7. Seminar Cleared -> Notification */}
+      {semStatus === 'CLEARED' && (
+        <div className="card">
+          <h3 className="card-title" style={{ color: '#059669' }}>🎉 Seminar Outcome: Cleared</h3>
+          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20 }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
+              🎉 Pre-Submission Seminar Successfully Cleared!
+            </h4>
+            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
+              Your seminar colloquium has been evaluated as satisfactory. You have transitioned to the next phase: <strong>Thesis Submission</strong>.
+            </p>
+            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: '8px 0 0 0', lineHeight: 1.5 }}>
+              Please navigate to the <strong>Final Submission</strong> tab in the sidebar to upload your final bound thesis document.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                      <button type="submit" className="btn-primary" disabled={submittingFinal} style={{ background: '#EA580C', padding: '10px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {submittingFinal ? 'Uploading Final Thesis...' : '🚀 Submit Final Thesis Package'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
+// ── Final Thesis Submission Phase ──
+const FinalSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
+  const toast = useToast();
+  const finalMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
+  
+  const [fileFinalThesis, setFileFinalThesis] = useState(null);
+  const [submittingFinal, setSubmittingFinal] = useState(false);
 
-              {finalMilestone.status === 'SUBMITTED' && (
-                <div style={{ textAlign: 'center', padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                  <div style={{ fontSize: '3rem' }}>⏳</div>
-                  <h4 style={{ fontWeight: 700, color: 'var(--color-text, #0F172A)', margin: 0 }}>Awaiting Digital Sign-off</h4>
-                  <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 500, margin: 0, lineHeight: 1.5 }}>
-                    Your final complete thesis document has been submitted and forwarded to your assigned Faculty Supervisor for the last digital signature and sign-off.
-                  </p>
-                  
-                  {finalMilestone.documentUrl && (
-                    <div style={{ marginTop: 8 }}>
-                      <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#EA580C', fontWeight: 600, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        📄 View Submitted Final Thesis
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
+  const handleFinalSubmit = async (e) => {
+    e.preventDefault();
+    if (!fileFinalThesis) return toast.warning('Please upload your final thesis PDF.');
+    if (!finalMilestone) return toast.error('Final submission milestone not found.');
+
+    setSubmittingFinal(true);
+    try {
+      const formData = new FormData();
+      formData.append('document', fileFinalThesis);
+
+      await axios.post(`${API_URL}/milestones/${finalMilestone._id}/submit`, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      toast.success('Final Ph.D. thesis uploaded successfully! Awaiting supervisor digital sign-off.');
+      setFileFinalThesis(null);
+      if (onSubmit) await onSubmit();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error uploading final thesis.');
+    } finally {
+      setSubmittingFinal(false);
+    }
+  };
+
+  if (!finalMilestone) {
+    return (
+      <div className="card">
+        <h3 className="card-title">📄 Final Thesis Submission</h3>
+        <p style={{ color: '#64748B', fontSize: '0.85rem' }}>
+          Final thesis submission milestone is not yet generated. Please contact your administrator.
+        </p>
+      </div>
+    );
+  }
+
+  const isPending = finalMilestone.status === 'PENDING';
+  const isRevision = finalMilestone.status === 'REVISION_REQUIRED';
+  const isSubmitted = finalMilestone.status === 'SUBMITTED';
+  const isApproved = finalMilestone.status === 'APPROVED';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Overview Banner */}
+      <div className="card" style={{ 
+        padding: 24, 
+        borderRadius: 16, 
+        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%)', 
+        border: '1px solid rgba(16, 185, 129, 0.15)' 
+      }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: '1rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
+          📚 Final Ph.D. Thesis Submission
+        </h4>
+        <p style={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
+          This is the final phase of your Ph.D. journey. Incorporate all corrections and feedback from the Pre-Submission Seminar and upload the complete bound final thesis. Your supervisor must digitally sign and approve it to forward for external evaluation.
+        </p>
+      </div>
+
+      {/* Upload Form (Pending or Revision) */}
+      {(isPending || isRevision) && (
+        <div className="card" style={{
+          padding: '28px',
+          borderRadius: '20px',
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.5)',
+          boxShadow: '0 8px 32px rgba(15, 23, 42, 0.04)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>📤</span> Upload Final bound Thesis Document
+          </h3>
+          {isRevision && (
+            <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
+              <strong>⚠️ Revision Required:</strong>
+              <div style={{ marginTop: 4 }}>
+                {finalMilestone.comments?.length > 0
+                  ? `"${finalMilestone.comments[finalMilestone.comments.length - 1].text}" — ${finalMilestone.comments[finalMilestone.comments.length - 1].authorName}`
+                  : 'Supervisor has requested corrections.'}
+              </div>
             </div>
           )}
+          <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
+            Please upload your finalized complete thesis document. Only PDF format is accepted.
+          </p>
+          <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div 
+              style={{
+                border: fileFinalThesis ? '2px solid rgba(16, 185, 129, 0.4)' : '2px dashed rgba(16, 185, 129, 0.25)',
+                borderRadius: '16px',
+                padding: '30px 20px',
+                textAlign: 'center',
+                background: fileFinalThesis 
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)' 
+                  : 'linear-gradient(135deg, rgba(16, 185, 129, 0.03) 0%, rgba(255, 255, 255, 0) 100%)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
+                backdropFilter: 'blur(8px)',
+              }}
+              onClick={() => document.getElementById('final-thesis-file-input').click()}
+              onMouseEnter={e => {
+                if (!fileFinalThesis) {
+                  e.currentTarget.style.borderColor = '#10B981';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.06)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!fileFinalThesis) {
+                  e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.01)';
+                }
+              }}
+            >
+              <input 
+                id="final-thesis-file-input"
+                type="file" 
+                accept=".pdf" 
+                onChange={e => setFileFinalThesis(e.target.files[0])} 
+                style={{ display: 'none' }} 
+                required
+              />
+              
+              {fileFinalThesis ? (
+                <>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    background: '#ECFDF5',
+                    color: '#10B981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 10px rgba(16, 185, 129, 0.15)'
+                  }}>
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {fileFinalThesis.name}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
+                      {(fileFinalThesis.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFileFinalThesis(null);
+                      document.getElementById('final-thesis-file-input').value = '';
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      background: '#FEF2F2',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#EF4444',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <X size={12} /> Remove
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    background: '#ECFDF5',
+                    color: '#10B981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 10px rgba(16, 185, 129, 0.08)'
+                  }}>
+                    <Upload size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1F2937' }}>Final bound Thesis (PDF) *</div>
+                    <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '6px', lineHeight: 1.4 }}>
+                      Click to browse or drag file here<br />Incorporating seminar panel feedback
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button 
+                type="submit" 
+                disabled={submittingFinal} 
+                style={{
+                  background: submittingFinal 
+                    ? '#CBD5E1' 
+                    : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  color: '#FFFFFF',
+                  padding: '12px 28px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: submittingFinal ? 'not-allowed' : 'pointer',
+                  boxShadow: submittingFinal 
+                    ? 'none' 
+                    : '0 4px 14px rgba(16, 185, 129, 0.3), inset 0 -2px 0 rgba(0,0,0,0.1)',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  outline: 'none',
+                }}
+              >
+                <Upload size={16} />
+                {submittingFinal ? 'Uploading Thesis...' : 'Upload & Submit Final Thesis'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Awaiting Review */}
+      {isSubmitted && (
+        <div className="card">
+          <h3 className="card-title">⏳ Final Thesis Under Review</h3>
+          <div style={{ textAlign: 'center', padding: '24px 16px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, color: '#1E40AF', marginBottom: 16 }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⏳</div>
+            <h4 style={{ margin: '0 0 6px 0', fontWeight: 700 }}>Final Thesis Uploaded</h4>
+            <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.4 }}>
+              Your final bound thesis document has been submitted successfully and is awaiting digital sign-off and approval by your supervisor.
+            </p>
+          </div>
+          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Uploaded File:</div>
+            {finalMilestone.documentUrl && (
+              <div>
+                <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
+                  📄 View Submitted Final Thesis
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Approved */}
+      {isApproved && (
+        <div className="card">
+          <h3 className="card-title" style={{ color: '#059669' }}>🎉 Final Thesis Approved & Signed-off</h3>
+          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
+              🎉 Ph.D. Thesis Approved!
+            </h4>
+            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
+              Your final bound Ph.D. thesis document has been digitally approved and signed-off by your Faculty Supervisor. It has been officially locked and forwarded for external assessment and dispatch.
+            </p>
+          </div>
+          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Approved Document:</div>
+            {finalMilestone.documentUrl && (
+              <div>
+                <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#059669', textDecoration: 'underline', fontWeight: 600 }}>
+                  📄 Approved Final Thesis
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -7124,7 +7824,8 @@ const StudentDashboard = () => {
       case 'overview': return <OverviewPage thesis={thesis} milestones={milestones} setActiveTab={setActiveTab} user={user} />;
       case 'rac': return <RACProgressTab thesis={thesis} />;
       case 'publications': return <ResearchOutputsTab thesis={thesis} />;
-      case 'preSubmission': return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} />;
+      case 'preSubmission': return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} user={user} />;
+      case 'finalSubmission': return <FinalSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} user={user} />;
       case 'sixMonthReports': return <SixMonthReportsTab thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'chapterDrafts': return <ChapterDraftsTab thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'changes': return <RequestChangesTab thesis={thesis} />;
@@ -7191,8 +7892,15 @@ const StudentDashboard = () => {
                 if (thesis.status === 'COURSEWORK') return <CourseworkPhase thesis={thesis} />;
                 if (thesis.status === 'SYNOPSIS_PENDING') return <SynopsisPhase thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
                 if (thesis.status === 'ACTIVE_RESEARCH') return <ActiveResearch thesis={thesis} milestones={milestones} onSubmit={submitMilestone} setActiveTab={setActiveTab} />;
-                if (thesis.status === 'PRE_SUBMISSION') return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
-                if (thesis.status === 'SUBMITTED' || thesis.status === 'AWARDED') return <SubmittedView thesis={thesis} />;
+                if (thesis.status === 'PRE_SUBMISSION') return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} user={user} />;
+                if (thesis.status === 'SUBMITTED') {
+                  const finalM = milestones.find(m => m.type === 'FINAL_SUBMISSION');
+                  if (finalM && finalM.status === 'APPROVED') {
+                    return <SubmittedView thesis={thesis} />;
+                  }
+                  return <FinalSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} user={user} />;
+                }
+                if (thesis.status === 'AWARDED') return <SubmittedView thesis={thesis} />;
                 return <div className="card" style={{ padding: 32, color: '#6b7280' }}>No milestones yet.</div>;
               })()
             ) : (
@@ -7201,7 +7909,12 @@ const StudentDashboard = () => {
           </div>
         );
       case 'thesis':
-        if (thesis.status === 'SUBMITTED') return <SubmittedView thesis={thesis} />;
+        if (thesis.status === 'SUBMITTED') {
+          const finalM = milestones.find(m => m.type === 'FINAL_SUBMISSION');
+          if (finalM && finalM.status === 'APPROVED') {
+            return <SubmittedView thesis={thesis} />;
+          }
+        }
         if (thesis.status === 'AWARDED') return <AwardedView thesis={thesis} />;
         return (
           <div className="card">

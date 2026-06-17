@@ -79,6 +79,26 @@ const thesisSchema = new mongoose.Schema(
       hodApproverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
       hodApprovedAt: { type: Date, default: null }
     },
+    preSubmissionSeminar: {
+      status: {
+        type: String,
+        enum: ['NOT_REQUESTED', 'REQUESTED', 'FACULTY_APPROVED', 'HOD_APPROVED', 'SATISFACTORY', 'UNSATISFACTORY', 'NOT_SCHEDULED', 'SCHEDULED', 'CLEARED', 'UNCLEARED'],
+        default: 'NOT_SCHEDULED'
+      },
+      requestRemarks: { type: String, default: '' },
+      requestedAt: { type: Date, default: null },
+      scheduledDate: { type: Date, default: null },
+      scheduledTime: { type: String, default: '' },
+      venue: { type: String, default: '' },
+      committeeMembers: { type: String, default: '' },
+      remarks: { type: String, default: '' },
+      facultyApprovedAt: { type: Date, default: null },
+      facultyApproverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+      hodApprovedAt: { type: Date, default: null },
+      hodApproverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+      outcomeRecordedAt: { type: Date, default: null },
+      outcomeRemarks: { type: String, default: '' }
+    },
     enrollmentVerified: { type: Boolean, default: false },
     startDate: { type: Date, default: null },
     submittedAt: { type: Date, default: null },

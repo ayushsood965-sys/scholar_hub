@@ -184,6 +184,18 @@ export const ThesisProvider = ({ children }) => {
     return data;
   };
 
+  const schedulePreSubmissionSeminar = async (id, payload) => {
+    const { data } = await axios.put(`${API}/thesis/${id}/pre-submission/schedule`, payload, getAuthHeader());
+    setAllTheses(prev => prev.map(t => t._id === id ? data : t));
+    return data;
+  };
+
+  const recordPreSubmissionSeminarOutcome = async (id, payload) => {
+    const { data } = await axios.put(`${API}/thesis/${id}/pre-submission/record-outcome`, payload, getAuthHeader());
+    setAllTheses(prev => prev.map(t => t._id === id ? data : t));
+    return data;
+  };
+
   const submitCourseworkDetails = async (payload) => {
     const formData = new FormData();
     formData.append('researchEthics', JSON.stringify(payload.researchEthics));
@@ -234,7 +246,8 @@ export const ThesisProvider = ({ children }) => {
       fetchAssignedTheses, fetchDeptTheses, drcApprove, scheduleSeminar, seminarClear, finalApprove, reviewMilestone,
       dispatchThesis, scheduleViva, recordViva, transferScholar, forcePreSubmission,
       submitCourseworkDetails, approveCourseworkFaculty, rejectCourseworkFaculty,
-      approveCourseworkHOD, rejectCourseworkHOD
+      approveCourseworkHOD, rejectCourseworkHOD,
+      schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome
     }}>
       {children}
     </ThesisContext.Provider>
