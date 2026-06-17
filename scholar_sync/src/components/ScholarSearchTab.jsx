@@ -403,7 +403,11 @@ const ScholarSearchTab = ({ user }) => {
           thesis={selectedThesisData.thesis}
           milestones={selectedThesisData.milestones}
           onReview={handleReview}
-          onDRC={() => handleHODAction(drcApprove)}
+          onDRC={async () => {
+            const data = await fetchThesisById(selectedThesisId);
+            setSelectedThesisData(data);
+            setResults(prev => prev.map(r => r._id === selectedThesisId ? data.thesis : r));
+          }}
           onSeminar={() => handleHODAction(seminarClear)}
           onFinalApprove={() => handleHODAction(finalApprove)}
           onClearCoursework={() => handleHODAction(clearCoursework)}

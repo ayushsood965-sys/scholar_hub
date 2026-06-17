@@ -4829,7 +4829,11 @@ const AdminDashboard = () => {
           thesis={selectedThesisData.thesis}
           milestones={selectedThesisData.milestones}
           onReview={handleReview}
-          onDRC={() => handleHODAction(drcApprove)}
+          onDRC={async () => {
+            const data = await fetchThesisById(selectedThesisId);
+            setSelectedThesisData(data);
+            fetchAllTheses();
+          }}
           onSeminar={() => handleHODAction(seminarClear)}
           onFinalApprove={() => handleHODAction(finalApprove)}
           onClearCoursework={() => handleHODAction(clearCoursework)}

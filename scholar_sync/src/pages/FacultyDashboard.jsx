@@ -564,12 +564,12 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
   // DRC variables
   const [drcMeetings, setDrcMeetings] = useState([]);
   const [showDrcSchedule, setShowDrcSchedule] = useState(false);
-  const [drcForm, setDrcForm] = useState({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '' });
+  const [drcForm, setDrcForm] = useState({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
   const [showDrcResult, setShowDrcResult] = useState(false);
   const [selectedDrc, setSelectedDrc] = useState(null);
   const [drcResultForm, setDrcResultForm] = useState({ status: 'APPROVED', remarks: '', scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '' });
   const [showOfflineDrc, setShowOfflineDrc] = useState(false);
-  const [offlineDrcForm, setOfflineDrcForm] = useState({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED' });
+  const [offlineDrcForm, setOfflineDrcForm] = useState({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
 
   // Seminar scheduling variables
   const [showSeminarSchedule, setShowSeminarSchedule] = useState(false);
@@ -704,7 +704,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
       await axios.post(`${API}/lifecycle/drc/schedule`, { thesisId: thesis._id, ...drcForm }, getAuthHeader());
       toast.success('DRC meeting scheduled successfully!');
       setShowDrcSchedule(false);
-      setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '' });
+      setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
     } catch (err) {
@@ -765,11 +765,12 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
         venue: offlineDrcForm.venue || 'Offline Department Room',
         committeeMembers: offlineDrcForm.committeeMembers || 'Department Board',
         remarks: offlineDrcForm.remarks,
-        status: offlineDrcForm.status
+        status: offlineDrcForm.status,
+        isSynopsisApproval: offlineDrcForm.isSynopsisApproval
       }, getAuthHeader());
       toast.success(`Offline DRC Outcome successfully recorded as ${offlineDrcForm.status}!`);
       setShowOfflineDrc(false);
-      setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED' });
+      setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
     } catch (err) {
@@ -1205,8 +1206,30 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                         <span>📆 Departmental Research Committee (DRC) Status</span>
                         {subRole === 'HOD' && !showDrcSchedule && !showOfflineDrc && (
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button type="button" className="btn-primary" onClick={() => { setShowDrcSchedule(true); setShowOfflineDrc(false); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#3B82F6' }}>+ Schedule Meeting</button>
-                            <button type="button" className="btn-primary" onClick={() => { setShowOfflineDrc(true); setShowDrcSchedule(false); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline DRC</button>
+                            <button type="button" className="btn-primary" onClick={() => {
+                              setShowDrcSchedule(true);
+                              setShowOfflineDrc(false);
+                              setDrcForm({
+                                scheduledDate: '',
+                                scheduledTime: '',
+                                venue: '',
+                                committeeMembers: '',
+                                agenda: '',
+                                isSynopsisApproval: showSynopsisApprovalOption
+                              });
+                            }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#3B82F6' }}>+ Schedule Meeting</button>
+                            <button type="button" className="btn-primary" onClick={() => {
+                              setShowOfflineDrc(true);
+                              setShowDrcSchedule(false);
+                              setOfflineDrcForm({
+                                conductedDate: '',
+                                venue: '',
+                                committeeMembers: '',
+                                remarks: '',
+                                status: 'APPROVED',
+                                isSynopsisApproval: showSynopsisApprovalOption
+                              });
+                            }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline DRC</button>
                           </div>
                         )}
                       </div>
@@ -1217,9 +1240,9 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                         drcMeetings.map((drc, idx) => (
                           <div key={drc._id} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px solid var(--color-border, #E2E8F0)' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 10 : 0, paddingTop: idx > 0 ? 10 : 0 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text, #0F172A)' }}>DRC Session</span>
-                              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : drc.status === 'REVISION_REQUIRED' ? '#92400E' : '#92400E' }}>
-                                {drc.status}
+                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text, #0F172A)' }}>{drc.title || 'DRC Session'}</span>
+                              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>
+                                {drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : drc.status}
                               </span>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)' }}>
@@ -1253,9 +1276,18 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                             <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required />
                           </div>
                         </div>
-                        <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Venue</label>
-                          <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Venue</label>
+                            <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Purpose</label>
+                            <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
+                              <option value="General">General DRC</option>
+                              {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
+                            </select>
+                          </div>
                         </div>
                         <div>
                           <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
@@ -1284,14 +1316,23 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                           <div>
                             <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Decision</label>
                             <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.status} onChange={e => setOfflineDrcForm({...offlineDrcForm, status: e.target.value})} required>
-                              <option value="APPROVED">APPROVED (Move Candidate to ACTIVE_RESEARCH)</option>
-                              <option value="REVISION_REQUIRED">REVISION REQUIRED (Revert Synopsis to Candidate)</option>
+                              <option value="APPROVED">Satisfactory</option>
+                              <option value="REVISION_REQUIRED">Unsatisfactory</option>
                             </select>
                           </div>
                         </div>
-                        <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Venue</label>
-                          <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Office" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Venue</label>
+                            <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Office" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Purpose</label>
+                            <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setOfflineDrcForm({...offlineDrcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
+                              <option value="General">General DRC</option>
+                              {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
+                            </select>
+                          </div>
                         </div>
                         <div>
                           <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
@@ -1315,8 +1356,8 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                         <div>
                           <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Decision</label>
                           <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})} required>
-                            <option value="APPROVED">APPROVED (Move Candidate to ACTIVE_RESEARCH)</option>
-                            <option value="REVISION_REQUIRED">REVISION REQUIRED (Revert Synopsis to Candidate)</option>
+                            <option value="APPROVED">Satisfactory</option>
+                            <option value="REVISION_REQUIRED">Unsatisfactory</option>
                             <option value="RESCHEDULE">RESCHEDULE MEETING (Select New Date/Time/Venue)</option>
                           </select>
                         </div>
@@ -1895,174 +1936,217 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                 )}
               </div>
             )}
-            {activeResearchTab === 'drc' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-                {/* DRC Meetings List */}
-                <div style={{ background: 'var(--color-bg, #f8fafc)', border: '1px solid var(--color-border, #e2e8f0)', padding: 14, borderRadius: 10, width: '100%' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text, #334155)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>📆 Departmental Research Committee (DRC) Meetings</span>
-                    {subRole === 'HOD' && !showDrcSchedule && !showOfflineDrc && !showDrcResult && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button type="button" className="btn-primary" onClick={() => { setShowDrcSchedule(true); setShowOfflineDrc(false); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#3B82F6' }}>+ Schedule Meeting</button>
-                        <button type="button" className="btn-primary" onClick={() => { setShowOfflineDrc(true); setShowDrcSchedule(false); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline DRC</button>
-                      </div>
+            {activeResearchTab === 'drc' && (() => {
+              const showSynopsisApprovalOption = thesis.status === 'SYNOPSIS_PENDING' && !drcMeetings.some(d => d.isSynopsisApproval && (d.status === 'APPROVED' || d.status === 'SCHEDULED'));
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+                  {/* DRC Meetings List */}
+                  <div style={{ background: 'var(--color-bg, #f8fafc)', border: '1px solid var(--color-border, #e2e8f0)', padding: 14, borderRadius: 10, width: '100%' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text, #334155)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>📆 Departmental Research Committee (DRC) Meetings</span>
+                      {subRole === 'HOD' && !showDrcSchedule && !showOfflineDrc && !showDrcResult && (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button type="button" className="btn-primary" onClick={() => {
+                            setShowDrcSchedule(true);
+                            setShowOfflineDrc(false);
+                            setDrcForm({
+                              scheduledDate: '',
+                              scheduledTime: '',
+                              venue: '',
+                              committeeMembers: '',
+                              agenda: '',
+                              isSynopsisApproval: showSynopsisApprovalOption
+                            });
+                          }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#3B82F6' }}>+ Schedule Meeting</button>
+                          <button type="button" className="btn-primary" onClick={() => {
+                            setShowOfflineDrc(true);
+                            setShowDrcSchedule(false);
+                            setOfflineDrcForm({
+                              conductedDate: '',
+                              venue: '',
+                              committeeMembers: '',
+                              remarks: '',
+                              status: 'APPROVED',
+                              isSynopsisApproval: showSynopsisApprovalOption
+                            });
+                          }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline DRC</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {drcMeetings.length === 0 ? (
+                      <div style={{ padding: 24, textAlign: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted, #64748b)', fontStyle: 'italic' }}>No subsequent DRC meetings scheduled yet.</div>
+                    ) : (
+                      drcMeetings.map((drc, idx) => (
+                        <div key={drc._id} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px solid var(--color-border, #E2E8F0)' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 12 : 0, paddingTop: idx > 0 ? 12 : 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text, #0F172A)' }}>
+                              {drc.title || 'DRC Meeting'}
+                            </span>
+                            <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>
+                              {drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : drc.status}
+                            </span>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)' }}>
+                            <div><strong>Date:</strong> {new Date(drc.scheduledDate).toLocaleDateString()}</div>
+                            <div><strong>Time:</strong> {drc.scheduledTime}</div>
+                            <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {drc.venue}</div>
+                            {drc.committeeMembers && <div style={{ gridColumn: 'span 2' }}><strong>Committee:</strong> {drc.committeeMembers}</div>}
+                            {drc.agenda && <div style={{ gridColumn: 'span 2' }}><strong>Agenda:</strong> {drc.agenda}</div>}
+                            {drc.remarks && <div style={{ gridColumn: 'span 2', background: '#FFFBEB', padding: 6, borderRadius: 6, color: '#92400E', borderLeft: '3px solid #F59E0B', marginTop: 4 }}><strong>Remarks:</strong> {drc.remarks}</div>}
+                          </div>
+
+                          {subRole === 'HOD' && drc.status === 'SCHEDULED' && !showDrcResult && (
+                            <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record DRC Outcome</button>
+                          )}
+                        </div>
+                      ))
                     )}
                   </div>
 
-                  {drcMeetings.length === 0 ? (
-                    <div style={{ padding: 24, textAlign: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted, #64748b)', fontStyle: 'italic' }}>No subsequent DRC meetings scheduled yet.</div>
-                  ) : (
-                    drcMeetings.map((drc, idx) => (
-                      <div key={drc._id} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px solid var(--color-border, #E2E8F0)' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 12 : 0, paddingTop: idx > 0 ? 12 : 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text, #0F172A)' }}>
-                            {drc.title || 'DRC Meeting'}
-                          </span>
-                          <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>
-                            {drc.status}
-                          </span>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)' }}>
-                          <div><strong>Date:</strong> {new Date(drc.scheduledDate).toLocaleDateString()}</div>
-                          <div><strong>Time:</strong> {drc.scheduledTime}</div>
-                          <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {drc.venue}</div>
-                          {drc.committeeMembers && <div style={{ gridColumn: 'span 2' }}><strong>Committee:</strong> {drc.committeeMembers}</div>}
-                          {drc.agenda && <div style={{ gridColumn: 'span 2' }}><strong>Agenda:</strong> {drc.agenda}</div>}
-                          {drc.remarks && <div style={{ gridColumn: 'span 2', background: '#FFFBEB', padding: 6, borderRadius: 6, color: '#92400E', borderLeft: '3px solid #F59E0B', marginTop: 4 }}><strong>Remarks:</strong> {drc.remarks}</div>}
-                        </div>
-
-                        {subRole === 'HOD' && drc.status === 'SCHEDULED' && !showDrcResult && (
-                          <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record DRC Outcome</button>
-                        )}
+                  {/* DRC Schedule Form */}
+                  {showDrcSchedule && (
+                    <form onSubmit={handleDrcScheduleSubmit} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Schedule DRC Meeting</span>
+                        <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#64748B' }} onClick={() => setShowDrcSchedule(false)}>✕</button>
                       </div>
-                    ))
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Date</label>
+                          <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Time</label>
+                          <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Venue</label>
+                          <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Purpose</label>
+                          <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
+                            <option value="General">General DRC</option>
+                            {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
+                        <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen (HOD), Prof. M. Roy" value={drcForm.committeeMembers} onChange={e => setDrcForm({...drcForm, committeeMembers: e.target.value})} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
+                        <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="2" placeholder="e.g. Research progress evaluation and review." value={drcForm.agenda} onChange={e => setDrcForm({...drcForm, agenda: e.target.value})} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button type="button" className="btn-outline" onClick={() => setShowDrcSchedule(false)} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
+                        <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '4px 14px', fontSize: '0.75rem', background: '#3B82F6' }}>Schedule Event</button>
+                      </div>
+                    </form>
                   )}
-                </div>
 
-                {/* DRC Schedule Form */}
-                {showDrcSchedule && (
-                  <form onSubmit={handleDrcScheduleSubmit} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Schedule DRC Meeting</span>
-                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#64748B' }} onClick={() => setShowDrcSchedule(false)}>✕</button>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <div>
-                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Date</label>
-                        <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required />
+                  {/* Offline DRC Form */}
+                  {showOfflineDrc && (
+                    <form onSubmit={handleOfflineDrcSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Record Offline Conducted DRC Outcome</span>
+                        <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#047857' }} onClick={() => setShowOfflineDrc(false)}>✕</button>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Date Conducted</label>
+                          <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.conductedDate} onChange={e => setOfflineDrcForm({...offlineDrcForm, conductedDate: e.target.value})} required />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Decision</label>
+                          <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.status} onChange={e => setOfflineDrcForm({...offlineDrcForm, status: e.target.value})} required>
+                            <option value="APPROVED">Satisfactory</option>
+                            <option value="REVISION_REQUIRED">Unsatisfactory</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Venue</label>
+                          <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Room" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Purpose</label>
+                          <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setOfflineDrcForm({...offlineDrcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
+                            <option value="General">General DRC</option>
+                            {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
+                          </select>
+                        </div>
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Time</label>
-                        <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required />
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
+                        <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen (HOD), Prof. M. Roy" value={offlineDrcForm.committeeMembers} onChange={e => setOfflineDrcForm({...offlineDrcForm, committeeMembers: e.target.value})} />
                       </div>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Venue</label>
-                      <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
-                      <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen (HOD), Prof. M. Roy" value={drcForm.committeeMembers} onChange={e => setDrcForm({...drcForm, committeeMembers: e.target.value})} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
-                      <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="2" placeholder="e.g. Research progress evaluation and review." value={drcForm.agenda} onChange={e => setDrcForm({...drcForm, agenda: e.target.value})} />
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn-outline" onClick={() => setShowDrcSchedule(false)} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
-                      <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '4px 14px', fontSize: '0.75rem', background: '#3B82F6' }}>Schedule Event</button>
-                    </div>
-                  </form>
-                )}
-
-                {/* Offline DRC Form */}
-                {showOfflineDrc && (
-                  <form onSubmit={handleOfflineDrcSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Record Offline Conducted DRC Outcome</span>
-                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#047857' }} onClick={() => setShowOfflineDrc(false)}>✕</button>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                       <div>
-                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Date Conducted</label>
-                        <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.conductedDate} onChange={e => setOfflineDrcForm({...offlineDrcForm, conductedDate: e.target.value})} required />
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>MoM / Committee Remarks</label>
+                        <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="3" placeholder="Enter offline comments or required modifications..." value={offlineDrcForm.remarks} onChange={e => setOfflineDrcForm({...offlineDrcForm, remarks: e.target.value})} required />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button type="button" className="btn-outline" onClick={() => setShowOfflineDrc(false)} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
+                        <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '4px 14px', fontSize: '0.75rem', background: '#059669' }}>Submit Offline Result</button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* DRC Result Grading Form */}
+                  {showDrcResult && selectedDrc && (
+                    <form onSubmit={handleDrcResultSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Record DRC Meeting Outcome ({selectedDrc.title})</span>
+                        <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#047857' }} onClick={() => { setShowDrcResult(false); setSelectedDrc(null); }}>✕</button>
                       </div>
                       <div>
                         <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Decision</label>
-                        <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.status} onChange={e => setOfflineDrcForm({...offlineDrcForm, status: e.target.value})} required>
-                          <option value="APPROVED">APPROVED</option>
-                          <option value="REVISION_REQUIRED">REVISION REQUIRED</option>
+                        <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})} required>
+                          <option value="APPROVED">Satisfactory</option>
+                          <option value="REVISION_REQUIRED">Unsatisfactory</option>
+                          <option value="RESCHEDULE">RESCHEDULE MEETING</option>
                         </select>
                       </div>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Venue</label>
-                      <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Room" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
-                      <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen (HOD), Prof. M. Roy" value={offlineDrcForm.committeeMembers} onChange={e => setOfflineDrcForm({...offlineDrcForm, committeeMembers: e.target.value})} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>MoM / Committee Remarks</label>
-                      <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="3" placeholder="Enter offline comments or required modifications..." value={offlineDrcForm.remarks} onChange={e => setOfflineDrcForm({...offlineDrcForm, remarks: e.target.value})} required />
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn-outline" onClick={() => setShowOfflineDrc(false)} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
-                      <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '4px 14px', fontSize: '0.75rem', background: '#059669' }}>Submit Offline Result</button>
-                    </div>
-                  </form>
-                )}
-
-                {/* DRC Result Grading Form */}
-                {showDrcResult && selectedDrc && (
-                  <form onSubmit={handleDrcResultSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Record DRC Meeting Outcome ({selectedDrc.title})</span>
-                      <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#047857' }} onClick={() => { setShowDrcResult(false); setSelectedDrc(null); }}>✕</button>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Decision</label>
-                      <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})} required>
-                        <option value="APPROVED">APPROVED</option>
-                        <option value="REVISION_REQUIRED">REVISION REQUIRED</option>
-                        <option value="RESCHEDULE">RESCHEDULE MEETING</option>
-                      </select>
-                    </div>
-                    {drcResultForm.status === 'RESCHEDULE' && (
-                      <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>New Date</label>
-                            <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.scheduledDate} onChange={e => setDrcResultForm({...drcResultForm, scheduledDate: e.target.value})} required />
+                      {drcResultForm.status === 'RESCHEDULE' && (
+                        <>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            <div>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>New Date</label>
+                              <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.scheduledDate} onChange={e => setDrcResultForm({...drcResultForm, scheduledDate: e.target.value})} required />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>New Time</label>
+                              <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:30 AM" value={drcResultForm.scheduledTime} onChange={e => setDrcResultForm({...drcResultForm, scheduledTime: e.target.value})} required />
+                            </div>
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>New Time</label>
-                            <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:30 AM" value={drcResultForm.scheduledTime} onChange={e => setDrcResultForm({...drcResultForm, scheduledTime: e.target.value})} required />
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>New Venue</label>
+                            <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Seminar Hall A" value={drcResultForm.venue} onChange={e => setDrcResultForm({...drcResultForm, venue: e.target.value})} required />
                           </div>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>New Venue</label>
-                          <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Seminar Hall A" value={drcResultForm.venue} onChange={e => setDrcResultForm({...drcResultForm, venue: e.target.value})} required />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
-                          <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen, Prof. M. Roy" value={drcResultForm.committeeMembers} onChange={e => setDrcResultForm({...drcResultForm, committeeMembers: e.target.value})} />
-                        </div>
-                      </>
-                    )}
-                    <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>MoM / Committee Remarks *</label>
-                      <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="3" placeholder="Enter comments or reschedule reason..." value={drcResultForm.remarks} onChange={e => setDrcResultForm({...drcResultForm, remarks: e.target.value})} required />
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn-outline" onClick={() => { setShowDrcResult(false); setSelectedDrc(null); }} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
-                      <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '4px 14px', fontSize: '0.75rem', background: '#059669' }}>Record Outcome</button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
+                          <div>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
+                            <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen, Prof. M. Roy" value={drcResultForm.committeeMembers} onChange={e => setDrcResultForm({...drcResultForm, committeeMembers: e.target.value})} />
+                          </div>
+                        </>
+                      )}
+                      <div>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>MoM / Committee Remarks *</label>
+                        <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="3" placeholder="Enter comments or reschedule reason..." value={drcResultForm.remarks} onChange={e => setDrcResultForm({...drcResultForm, remarks: e.target.value})} required />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button type="button" className="btn-outline" onClick={() => { setShowDrcResult(false); setSelectedDrc(null); }} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
+                        <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '4px 14px', fontSize: '0.75rem', background: '#059669' }}>Record Outcome</button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              );
+            })()}
             {activeResearchTab === 'history' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>Ph.D. Candidate Lifecycle Progress Checklist</h4>
@@ -4276,7 +4360,11 @@ const FacultyDashboard = () => {
           thesis={selectedThesisData.thesis}
           milestones={selectedThesisData.milestones}
           onReview={handleReview}
-          onDRC={() => handleHODAction(drcApprove)}
+          onDRC={async () => {
+            const data = await fetchThesisById(selectedThesisId);
+            setSelectedThesisData(data);
+            if (subRole === 'HOD') fetchDeptTheses(); else fetchAssignedTheses();
+          }}
           onSeminar={() => handleHODAction(seminarClear)}
           onFinalApprove={() => handleHODAction(finalApprove)}
           onClearCoursework={() => handleHODAction(clearCoursework)}

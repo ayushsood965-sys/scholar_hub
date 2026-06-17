@@ -834,7 +834,7 @@ const forcePreSubmission = async (req, res) => {
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
     // Only HOD can force this
-    if (req.user.role !== 'HOD') {
+    if (req.user.role !== 'HOD' && req.user.subRole !== 'HOD') {
       return res.status(403).json({ message: 'Only the HOD can force-advance a scholar to Pre-Submission.' });
     }
 

@@ -323,6 +323,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [loading, setLoading] = useState(false);
   const [remarks, setRemarks] = useState({});
   const [cwRemarks, setCwRemarks] = useState('');
+  const [showBypassModal, setShowBypassModal] = useState(false);
+  const [bypassRemarks, setBypassRemarks] = useState('');
+  const [bypassLoading, setBypassLoading] = useState(false);
 
   const user = isReadOnly ? { ...contextUser, role: '', _id: '' } : contextUser;
   const subRole = isReadOnly ? '' : propSubRole;
@@ -348,12 +351,12 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
   // DRC form states
   const [showDrcSchedule, setShowDrcSchedule] = useState(false);
-  const [drcForm, setDrcForm] = useState({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '' });
+  const [drcForm, setDrcForm] = useState({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
   const [showDrcResult, setShowDrcResult] = useState(false);
   const [selectedDrc, setSelectedDrc] = useState(null);
   const [drcResultForm, setDrcResultForm] = useState({ status: 'APPROVED', remarks: '', scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '' });
   const [showOfflineDrc, setShowOfflineDrc] = useState(false);
-  const [offlineDrcForm, setOfflineDrcForm] = useState({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED' });
+  const [offlineDrcForm, setOfflineDrcForm] = useState({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
 
   // RAC form states
   const [showRacSchedule, setShowRacSchedule] = useState(false);
@@ -470,6 +473,24 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     finally { setTransferLoading(false); }
   };
 
+  // ── Bypass Pre-Submission ──
+  const handleBypassSubmit = async (e) => {
+    e.preventDefault();
+    if (!bypassRemarks.trim()) return toast.warning('Remarks are required.');
+    setBypassLoading(true);
+    try {
+      await axios.put(`${API}/thesis/${thesis._id}/force-pre-submission`, { remarks: bypassRemarks }, getAuthHeader());
+      toast.success('Scholar advanced to Pre-Submission phase!');
+      setShowBypassModal(false);
+      setBypassRemarks('');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to advance scholar.');
+    } finally {
+      setBypassLoading(false);
+    }
+  };
+
   // ── DRC handlers ──
   const handleDrcSchedule = async (e) => {
     e.preventDefault();
@@ -479,7 +500,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       await axios.post(`${API}/lifecycle/drc/schedule`, { thesisId: thesis._id, ...drcForm }, getAuthHeader());
       toast.success('DRC meeting scheduled!');
       setShowDrcSchedule(false);
-      setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '' });
+      setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
@@ -513,10 +534,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     if (!offlineDrcForm.remarks) return toast.warning('Enter Remarks / MoM');
     setLoading(true);
     try {
-      await axios.post(`${API}/lifecycle/drc/offline`, { thesisId: thesis._id, conductedDate: offlineDrcForm.conductedDate || new Date(), venue: offlineDrcForm.venue || 'Offline', committeeMembers: offlineDrcForm.committeeMembers || 'Department Board', remarks: offlineDrcForm.remarks, status: offlineDrcForm.status }, getAuthHeader());
+      await axios.post(`${API}/lifecycle/drc/offline`, { thesisId: thesis._id, conductedDate: offlineDrcForm.conductedDate || new Date(), venue: offlineDrcForm.venue || 'Offline', committeeMembers: offlineDrcForm.committeeMembers || 'Department Board', remarks: offlineDrcForm.remarks, status: offlineDrcForm.status, isSynopsisApproval: offlineDrcForm.isSynopsisApproval }, getAuthHeader());
       toast.success(`Offline DRC recorded as ${offlineDrcForm.status}!`);
       setShowOfflineDrc(false);
-      setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED' });
+      setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
       if (onRefresh) await onRefresh();
@@ -1116,18 +1137,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           <button className="btn-primary" onClick={() => act(onFinalApprove)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#8B5CF6' }}>✓ Final Approval → SUBMITTED</button>
         )}
         {!isReadOnly && subRole === 'HOD' && thesis.status === 'ACTIVE_RESEARCH' && (
-          <button className="btn-primary" onClick={async () => {
-            setLoading(true);
-            try {
-              await axios.put(`${API}/thesis/${thesis._id}/force-pre-submission`, {}, getAuthHeader());
-              toast.success('Scholar advanced to Pre-Submission phase!');
-              if (onRefresh) await onRefresh();
-            } catch (e) {
-              toast.error(e.response?.data?.message || e.message || 'Failed to advance scholar.');
-            } finally {
-              setLoading(false);
-            }
-          }} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#EA580C' }}>🚀 Advance to Pre-Submission</button>
+          <button className="btn-primary" onClick={() => setShowBypassModal(true)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#EA580C' }}>🚀 Advance to Pre-Submission</button>
         )}
       </div>
 
@@ -1375,6 +1385,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       );
     };
 
+    const showSynopsisApprovalOption = thesis.status === 'SYNOPSIS_PENDING' && !drcMeetings.some(d => d.isSynopsisApproval && (d.status === 'APPROVED' || d.status === 'SCHEDULED'));
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="usm-section-title">🏛️ Departmental Research Committee (DRC)</div>
@@ -1389,8 +1401,30 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               (thesis.status !== 'SYNOPSIS_PENDING')
             ) && !showDrcSchedule && !showOfflineDrc && (
               <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                <button className="btn-primary" onClick={() => { setShowDrcSchedule(true); setShowOfflineDrc(false); }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#3B82F6' }}>+ Schedule DRC</button>
-                <button className="btn-primary" onClick={() => { setShowOfflineDrc(true); setShowDrcSchedule(false); }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#059669' }}>+ Record Offline DRC</button>
+                <button className="btn-primary" onClick={() => {
+                  setShowDrcSchedule(true);
+                  setShowOfflineDrc(false);
+                  setDrcForm({
+                    scheduledDate: '',
+                    scheduledTime: '',
+                    venue: '',
+                    committeeMembers: '',
+                    agenda: '',
+                    isSynopsisApproval: showSynopsisApprovalOption
+                  });
+                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#3B82F6' }}>+ Schedule DRC</button>
+                <button className="btn-primary" onClick={() => {
+                  setShowOfflineDrc(true);
+                  setShowDrcSchedule(false);
+                  setOfflineDrcForm({
+                    conductedDate: '',
+                    venue: '',
+                    committeeMembers: '',
+                    remarks: '',
+                    status: 'APPROVED',
+                    isSynopsisApproval: showSynopsisApprovalOption
+                  });
+                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#059669' }}>+ Record Offline DRC</button>
               </div>
             )}
 
@@ -1401,7 +1435,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <div key={drc._id} className="usm-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{drc.title || 'DRC Session'}</span>
-                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>{drc.status}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>{drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : drc.status}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)' }}>
                   <div><strong>Date:</strong> {new Date(drc.scheduledDate).toLocaleDateString()}</div>
@@ -1424,7 +1458,16 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required /></div>
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Time</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required /></div>
                 </div>
-                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required /></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required /></div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Purpose</label>
+                    <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
+                      <option value="General">General DRC</option>
+                      {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
+                    </select>
+                  </div>
+                </div>
                 <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Committee</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen, Prof. M. Roy" value={drcForm.committeeMembers} onChange={e => setDrcForm({...drcForm, committeeMembers: e.target.value})} /></div>
                 <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Agenda</label><textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="2" placeholder="Focus areas..." value={drcForm.agenda} onChange={e => setDrcForm({...drcForm, agenda: e.target.value})} /></div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -1440,9 +1483,24 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record Offline DRC Outcome</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date Conducted</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.conductedDate} onChange={e => setOfflineDrcForm({...offlineDrcForm, conductedDate: e.target.value})} required /></div>
-                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label><select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.status} onChange={e => setOfflineDrcForm({...offlineDrcForm, status: e.target.value})}><option value="APPROVED">APPROVED</option><option value="REVISION_REQUIRED">REVISION REQUIRED</option></select></div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label>
+                    <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.status} onChange={e => setOfflineDrcForm({...offlineDrcForm, status: e.target.value})}>
+                      <option value="APPROVED">Satisfactory</option>
+                      <option value="REVISION_REQUIRED">Unsatisfactory</option>
+                    </select>
+                  </div>
                 </div>
-                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Office" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required /></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Office" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required /></div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Purpose</label>
+                    <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setOfflineDrcForm({...offlineDrcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
+                      <option value="General">General DRC</option>
+                      {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
+                    </select>
+                  </div>
+                </div>
                 <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Remarks / MoM</label><textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="3" value={offlineDrcForm.remarks} onChange={e => setOfflineDrcForm({...offlineDrcForm, remarks: e.target.value})} required /></div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-outline" onClick={() => setShowOfflineDrc(false)} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
@@ -1455,7 +1513,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             {showDrcResult && selectedDrc && (
               <form onSubmit={handleDrcResult} className="usm-card" style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#ECFDF5', borderColor: '#A7F3D0' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record DRC Outcome</div>
-                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label><select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})}><option value="APPROVED">APPROVED</option><option value="REVISION_REQUIRED">REVISION REQUIRED</option><option value="RESCHEDULE">RESCHEDULE</option></select></div>
+                <div>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label>
+                  <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})}>
+                    <option value="APPROVED">Satisfactory</option>
+                    <option value="REVISION_REQUIRED">Unsatisfactory</option>
+                    <option value="RESCHEDULE">Reschedule</option>
+                  </select>
+                </div>
                 {drcResultForm.status === 'RESCHEDULE' && (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -2485,6 +2550,56 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn-outline" onClick={() => setShowTransferModal(false)} style={{ borderColor: '#F59E0B', color: '#B45309' }}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={transferLoading} style={{ background: '#D97706' }}>{transferLoading ? 'Transferring...' : 'Confirm Transfer'}</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Bypass Validations Modal */}
+        {showBypassModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 200002, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <form onSubmit={handleBypassSubmit} style={{ background: '#FFF7ED', border: '1px solid #FED7AA', padding: 28, borderRadius: 16, width: '100%', maxWidth: '460px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#C2410C' }}>Bypass Validation Checks</span>
+              </div>
+              
+              <div style={{ background: '#FFEDD5', borderLeft: '4px solid #EA580C', padding: '12px 16px', borderRadius: 8, fontSize: '0.82rem', color: '#9A3412', marginBottom: 20, lineHeight: 1.5 }}>
+                Are you sure you want to bypass all active research requirements (journals, conferences, minimum duration, etc.) and advance <strong>{thesis.scholarId?.name || 'the candidate'}</strong> directly to the <strong>Pre-Submission</strong> stage?
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#7C2D12', marginBottom: 6 }}>
+                  Enter Justification / Bypass Remarks (Required)
+                </label>
+                <textarea 
+                  className="form-input" 
+                  rows={4} 
+                  required
+                  placeholder="e.g. Approved by DRC under special circumstances. Scholar has completed industrial publications." 
+                  value={bypassRemarks} 
+                  onChange={e => setBypassRemarks(e.target.value)}
+                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FED7AA', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  className="btn-outline" 
+                  onClick={() => { setShowBypassModal(false); setBypassRemarks(''); }} 
+                  style={{ borderColor: '#F97316', color: '#C2410C' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  disabled={bypassLoading || !bypassRemarks.trim()} 
+                  style={{ background: '#EA580C', color: 'white', border: 'none', borderRadius: '8px', cursor: (bypassLoading || !bypassRemarks.trim()) ? 'not-allowed' : 'pointer' }}
+                >
+                  {bypassLoading ? 'Saving...' : 'Bypass & Save'}
+                </button>
               </div>
             </form>
           </div>

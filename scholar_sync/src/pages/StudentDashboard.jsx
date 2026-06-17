@@ -426,7 +426,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             if (!thesis || thesis.status === 'REGISTRATION_PENDING') return true;
             
             const status = thesis.status;
-            if (key === 'thesis' || key === 'workspace') {
+            if (key === 'thesis' || key === 'workspace' || key === 'certificates') {
               return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status);
             }
             if ([
@@ -443,9 +443,6 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             if (key === 'preSubmission') {
               const hasPreMilestone = milestones && milestones.some(m => m.type === 'PRE_SUBMISSION');
               return !(['PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
-            }
-            if (key === 'certificates') {
-              return !['SUBMITTED', 'AWARDED'].includes(status);
             }
             return true;
           })();
@@ -780,6 +777,8 @@ const CourseworkPhase = ({ thesis }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [proofFile, setProofFile] = useState(null);
+  const [shake, setShake] = useState(false);
+  const cardRef = React.useRef(null);
 
   // Row state helper
   const createEmptyRow = () => ({ subjectName: '', subjectCode: '', marksObtained: '', maxMarks: '', examinationMonthYear: '' });
@@ -922,7 +921,14 @@ const CourseworkPhase = ({ thesis }) => {
       toast.success('Coursework details submitted successfully!');
       fetchMyThesis();
     } catch (err) {
-      setError(err.message || err.response?.data?.message || 'Failed to submit coursework details.');
+      const errMsg = err.message || err.response?.data?.message || 'Failed to submit coursework details.';
+      setError(errMsg);
+      toast.error(errMsg);
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      if (cardRef.current) {
+        cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } finally {
       setLoading(false);
     }
@@ -1120,7 +1126,17 @@ const CourseworkPhase = ({ thesis }) => {
   const isPending = thesis.courseworkStatus === 'PENDING_FACULTY' || thesis.courseworkStatus === 'PENDING_HOD';
 
   return (
-    <div className="card" style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>
+    <div ref={cardRef} className={`card ${shake ? 'shake-on-error' : ''}`} style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+          20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .shake-on-error {
+          animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+      `}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, borderBottom: '2px solid #F3F4F6', paddingBottom: 16 }}>
         <BookOpen size={36} color="#3B82F6" />
         <div>
@@ -4581,6 +4597,53 @@ const ProfileTab = () => {
       .catch(err => console.error('Error fetching department faculty:', err));
   }, [user?.department]);
 
+  const isGeneralInfoComplete = () => {
+    return !!(
+      dob && dob.trim() &&
+      gender && gender.trim() &&
+      category && category.trim() &&
+      nationality && nationality.trim() &&
+      fatherName && fatherName.trim() &&
+      motherName && motherName.trim() &&
+      phoneNumber && phoneNumber.trim() &&
+      address && address.trim() &&
+      enrollmentNumber && enrollmentNumber.trim() &&
+      admissionDate && admissionDate.trim() &&
+      phdMode && phdMode.trim() &&
+      specialization && specialization.trim() &&
+      areaOfInterest && areaOfInterest.trim() &&
+      thesisTitle && thesisTitle.trim() &&
+      thesisSummary && thesisSummary.trim() &&
+      thesisKeywords && thesisKeywords.trim()
+    );
+  };
+
+  const isAcademicQualificationsComplete = () => {
+    const q = user?.profile?.qualifications;
+    if (!q) return false;
+
+    // Check roll numbers, marks, board/school/college/university, percentages, and certificates
+    const class10Ok = !!(class10Roll && class10Board && class10School && class10Marks && class10Total && class10Percentage && q?.class10?.certificateUrl);
+    const class12Ok = !!(class12Roll && class12Board && class12School && class12Marks && class12Total && class12Percentage && q?.class12?.certificateUrl);
+    const gradOk = !!(gradRoll && gradDegree && gradCollege && gradUniversity && gradMarks && gradTotal && gradPercentage && q?.graduation?.certificateUrl);
+    const pgOk = !!(pgRoll && pgDegree && pgCollege && pgUniversity && pgMarks && pgTotal && pgPercentage && q?.postGraduation?.certificateUrl);
+
+    if (!class10Ok || !class12Ok || !gradOk || !pgOk) return false;
+
+    if (mphilDone === 'YES') {
+      const mphilOk = !!(mphilUniversity && mphilPassingYear && mphilTotalMarks && mphilMarksObtained && mphilPercentage && q?.mphil?.certificateUrl);
+      if (!mphilOk) return false;
+    }
+
+    if (netJrfQualified === 'YES') {
+      const netJrfOk = !!(netJrfCertNumber && netJrfRoll && netJrfRank && netJrfScore && netJrfIssueDate && q?.netJrf?.certificateUrl);
+      if (!netJrfOk) return false;
+    }
+
+    return true;
+  };
+
+
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -4713,7 +4776,8 @@ const ProfileTab = () => {
           passingYear: mphilPassingYear,
           totalMarks: mphilTotalMarks,
           marksObtained: mphilMarksObtained,
-          percentage: mphilPercentage
+          percentage: mphilPercentage,
+          certificateUrl: user?.profile?.qualifications?.mphil?.certificateUrl
         },
         netJrf: {
           qualified: netJrfQualified === 'YES',
@@ -5015,6 +5079,106 @@ const ProfileTab = () => {
 
     try {
       setRegistering(true);
+
+      // Save guide preference and other details to server before submission
+      const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
+      const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
+      if (!indianPhoneRegex.test(cleanedPhone)) {
+        toast.error('Please enter a valid 10-digit Indian phone number (starts with 6-9).');
+        setRegistering(false);
+        return;
+      }
+
+      const payload = {
+        dob,
+        gender,
+        category,
+        fatherName,
+        motherName,
+        nationality,
+        admissionDate,
+        enrollmentNumber,
+        phdMode,
+        specialization,
+        phoneNumber,
+        address,
+        areaOfInterest,
+        academicBackground,
+        preferredGuideId,
+        thesisTitle,
+        thesisSummary,
+        thesisKeywords,
+        qualifications: {
+          class10: {
+            rollNo: class10Roll,
+            board: class10Board,
+            school: class10School,
+            marksObtained: class10Marks,
+            totalMarks: class10Total,
+            percentage: class10Percentage,
+            certificateUrl: user?.profile?.qualifications?.class10?.certificateUrl
+          },
+          class12: {
+            rollNo: class12Roll,
+            board: class12Board,
+            school: class12School,
+            marksObtained: class12Marks,
+            totalMarks: class12Total,
+            percentage: class12Percentage,
+            certificateUrl: user?.profile?.qualifications?.class12?.certificateUrl
+          },
+          graduation: {
+            rollNo: gradRoll,
+            degree: gradDegree,
+            college: gradCollege,
+            university: gradUniversity,
+            marksObtained: gradMarks,
+            totalMarks: gradTotal,
+            percentage: gradPercentage,
+            certificateUrl: user?.profile?.qualifications?.graduation?.certificateUrl
+          },
+          postGraduation: {
+            rollNo: pgRoll,
+            degree: pgDegree,
+            college: pgCollege,
+            university: pgUniversity,
+            marksObtained: pgMarks,
+            totalMarks: pgTotal,
+            percentage: pgPercentage,
+            certificateUrl: user?.profile?.qualifications?.postGraduation?.certificateUrl
+          },
+          mphil: {
+            done: mphilDone === 'YES',
+            university: mphilUniversity,
+            passingYear: mphilPassingYear,
+            totalMarks: mphilTotalMarks,
+            marksObtained: mphilMarksObtained,
+            percentage: mphilPercentage,
+            certificateUrl: user?.profile?.qualifications?.mphil?.certificateUrl
+          },
+          netJrf: {
+            qualified: netJrfQualified === 'YES',
+            certNumber: netJrfCertNumber,
+            rollNo: netJrfRoll,
+            rank: netJrfRank,
+            score: netJrfScore,
+            issueDate: netJrfIssueDate,
+            certificateUrl: user?.profile?.qualifications?.netJrf?.certificateUrl
+          },
+          fellowships: fellowships.map((f, i) => ({
+            ...f,
+            certificateUrl: user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl || f.certificateUrl || ''
+          }))
+        }
+      };
+
+      const res = await updateProfile(payload);
+      if (!res.success) {
+        toast.error('Failed to save guide preference before submission: ' + res.message);
+        setRegistering(false);
+        return;
+      }
+
       await createThesis({});
       await fetchMyThesis();
       toast.success('Your PhD Profile and registration details have been successfully submitted to the HOD for verification and supervisor assignment!');
@@ -5122,38 +5286,78 @@ const ProfileTab = () => {
         >
           👤 General Information
         </button>
-        <button 
-          onClick={() => setSubTab('academic')}
-          style={{ 
-            padding: '10px 16px', 
-            fontSize: '0.9rem', 
-            fontWeight: 600, 
-            background: 'none', 
-            border: 'none', 
-            borderBottom: subTab === 'academic' ? '3px solid #133A26' : '3px solid transparent', 
-            color: subTab === 'academic' ? '#133A26' : '#6B7280', 
-            cursor: 'pointer', 
-            transition: 'all 0.2s' 
-          }}
-        >
-          🎓 Academic Qualifications
-        </button>
-        <button 
-          onClick={() => setSubTab('guide')}
-          style={{ 
-            padding: '10px 16px', 
-            fontSize: '0.9rem', 
-            fontWeight: 600, 
-            background: 'none', 
-            border: 'none', 
-            borderBottom: subTab === 'guide' ? '3px solid #133A26' : '3px solid transparent', 
-            color: subTab === 'guide' ? '#133A26' : '#6B7280', 
-            cursor: 'pointer', 
-            transition: 'all 0.2s' 
-          }}
-        >
-          🤝 Preferred Guide Preference
-        </button>
+        {(thesis || isGeneralInfoComplete()) ? (
+          <button 
+            onClick={() => setSubTab('academic')}
+            style={{ 
+              padding: '10px 16px', 
+              fontSize: '0.9rem', 
+              fontWeight: 600, 
+              background: 'none', 
+              border: 'none', 
+              borderBottom: subTab === 'academic' ? '3px solid #133A26' : '3px solid transparent', 
+              color: subTab === 'academic' ? '#133A26' : '#6B7280', 
+              cursor: 'pointer', 
+              transition: 'all 0.2s' 
+            }}
+          >
+            🎓 Academic Qualifications
+          </button>
+        ) : (
+          <button 
+            disabled
+            style={{ 
+              padding: '10px 16px', 
+              fontSize: '0.9rem', 
+              fontWeight: 600, 
+              background: 'none', 
+              border: 'none', 
+              borderBottom: '3px solid transparent', 
+              color: '#9CA3AF', 
+              cursor: 'not-allowed', 
+              opacity: 0.6
+            }}
+            title="Complete and save General Information to unlock"
+          >
+            🔒 Academic Qualifications
+          </button>
+        )}
+        {(thesis || (isGeneralInfoComplete() && isAcademicQualificationsComplete())) ? (
+          <button 
+            onClick={() => setSubTab('guide')}
+            style={{ 
+              padding: '10px 16px', 
+              fontSize: '0.9rem', 
+              fontWeight: 600, 
+              background: 'none', 
+              border: 'none', 
+              borderBottom: subTab === 'guide' ? '3px solid #133A26' : '3px solid transparent', 
+              color: subTab === 'guide' ? '#133A26' : '#6B7280', 
+              cursor: 'pointer', 
+              transition: 'all 0.2s' 
+            }}
+          >
+            🤝 Preferred Guide Preference
+          </button>
+        ) : (
+          <button 
+            disabled
+            style={{ 
+              padding: '10px 16px', 
+              fontSize: '0.9rem', 
+              fontWeight: 600, 
+              background: 'none', 
+              border: 'none', 
+              borderBottom: '3px solid transparent', 
+              color: '#9CA3AF', 
+              cursor: 'not-allowed', 
+              opacity: 0.6
+            }}
+            title="Complete and save all Academic Qualifications to unlock"
+          >
+            🔒 Preferred Guide Preference
+          </button>
+        )}
       </div>
 
       <form onSubmit={subTab === 'academic' ? handleSaveAcademicDetails : handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -6242,33 +6446,92 @@ const ProfileTab = () => {
           </div>
         )}
         <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #E5E7EB' }}>
-          {!thesis && !(subTab === 'general' && !editModes.general) && (
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="btn-primary" 
-              style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-            >
-              {loading ? 'Saving Changes...' : subTab === 'academic' ? '💾 Save Academic Details' : subTab === 'guide' ? '💾 Save Guide Preference' : '💾 Save General Info'}
-            </button>
-          )}
-
-          {!thesis && (
-            <button 
-              type="button"
-              disabled={registering}
-              onClick={handleProfileRegistrationSubmit}
-              className="btn-primary" 
-              style={{ flex: 1.2, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
-            >
-              {registering ? 'Submitting...' : '🚀 Submit PhD Profile for HOD Approval'}
-            </button>
-          )}
-
+          {/* If thesis is submitted and pending, show pending badge */}
           {thesis && thesis.status === 'REGISTRATION_PENDING' && (
-            <div style={{ flex: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 700, padding: '10px 16px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 700, padding: '10px 16px' }}>
               ⏳ Awaiting HOD Verification
             </div>
+          )}
+
+          {/* Onboarding mode (no thesis submitted yet) */}
+          {!thesis && (
+            <>
+              {/* General Tab Bottom Buttons */}
+              {subTab === 'general' && (
+                <>
+                  {editModes.general ? (
+                    <button 
+                      type="submit" 
+                      disabled={loading} 
+                      className="btn-primary" 
+                      style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    >
+                      {loading ? 'Saving Changes...' : '💾 Save General Info'}
+                    </button>
+                  ) : (
+                    isGeneralInfoComplete() && (
+                      <button 
+                        type="button"
+                        onClick={() => setSubTab('academic')}
+                        className="btn-primary" 
+                        style={{ flex: 1, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
+                      >
+                        Move to next step: Academic Qualifications ➔
+                      </button>
+                    )
+                  )}
+                </>
+              )}
+
+              {/* Academic Tab Bottom Buttons */}
+              {subTab === 'academic' && (
+                isAcademicQualificationsComplete() && (
+                  <button 
+                    type="button"
+                    onClick={() => setSubTab('guide')}
+                    className="btn-primary" 
+                    style={{ flex: 1, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
+                  >
+                    Move to next step: Preferred Guide Selection ➔
+                  </button>
+                )
+              )}
+
+              {/* Guide Tab Bottom Buttons */}
+              {subTab === 'guide' && (
+                <>
+                  <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="btn-primary" 
+                    style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    {loading ? 'Saving Changes...' : '💾 Save Guide Preference'}
+                  </button>
+                  <button 
+                    type="button"
+                    disabled={registering || !preferredGuideId}
+                    onClick={handleProfileRegistrationSubmit}
+                    className="btn-primary" 
+                    style={{ 
+                      flex: 1.2, 
+                      background: preferredGuideId ? '#059669' : '#9CA3AF', 
+                      color: 'white',
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: '8px', 
+                      border: 'none', 
+                      cursor: preferredGuideId ? 'pointer' : 'not-allowed',
+                      boxShadow: preferredGuideId ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : 'none' 
+                    }}
+                    title={!preferredGuideId ? "Please select a preferred supervisor/guide to enable submission" : ""}
+                  >
+                    {registering ? 'Submitting...' : '🚀 Submit PhD Profile for HOD Approval'}
+                  </button>
+                </>
+              )}
+            </>
           )}
         </div>
       </form>

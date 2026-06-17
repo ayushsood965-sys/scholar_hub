@@ -595,11 +595,11 @@ const generateCertificate = async (req, res) => {
 // ── DRC MEETINGS ──
 const scheduleDRC = async (req, res) => {
   try {
-    const { thesisId, scheduledDate, scheduledTime, venue, committeeMembers, agenda } = req.body;
+    const { thesisId, scheduledDate, scheduledTime, venue, committeeMembers, agenda, isSynopsisApproval: bodyIsSynopsisApproval } = req.body;
     const thesis = await Thesis.findById(thesisId);
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
-    const isSynopsisApproval = thesis.status === 'SYNOPSIS_PENDING';
+    const isSynopsisApproval = bodyIsSynopsisApproval !== undefined ? (bodyIsSynopsisApproval === true || bodyIsSynopsisApproval === 'true') : (thesis.status === 'SYNOPSIS_PENDING');
     const dynamicTitle = isSynopsisApproval ? 'DRC for Synopsis Approval' : 'DRC Meeting';
 
     const newDRC = new DRCMeeting({
@@ -664,19 +664,6 @@ const submitDRCResult = async (req, res) => {
           if (synopsis) {
             synopsis.status = 'APPROVED';
             await synopsis.save();
-          }
-
-          // Auto-create first 6-month progress report milestone
-          const existingReport = await Milestone.findOne({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
-          if (!existingReport) {
-            await Milestone.create({
-              thesisId: thesis._id,
-              type: '6_MONTH_REPORT',
-              title: '6-Month Progress Report #1',
-              status: 'PENDING',
-              sequence: 1,
-              dueDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-            });
           }
         }
 
@@ -743,11 +730,11 @@ const getDRCMeetings = async (req, res) => {
 
 const recordOfflineDRC = async (req, res) => {
   try {
-    const { thesisId, conductedDate, venue, committeeMembers, remarks, status } = req.body; // status is 'APPROVED' or 'REVISION_REQUIRED'
+    const { thesisId, conductedDate, venue, committeeMembers, remarks, status, isSynopsisApproval: bodyIsSynopsisApproval } = req.body; // status is 'APPROVED' or 'REVISION_REQUIRED'
     const thesis = await Thesis.findById(thesisId);
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
-    const isSynopsisApproval = thesis.status === 'SYNOPSIS_PENDING';
+    const isSynopsisApproval = bodyIsSynopsisApproval !== undefined ? (bodyIsSynopsisApproval === true || bodyIsSynopsisApproval === 'true') : (thesis.status === 'SYNOPSIS_PENDING');
     const dynamicTitle = isSynopsisApproval ? 'DRC for Synopsis Approval' : 'DRC Meeting';
 
     const newDRC = new DRCMeeting({
@@ -776,19 +763,6 @@ const recordOfflineDRC = async (req, res) => {
         if (synopsis) {
           synopsis.status = 'APPROVED';
           await synopsis.save();
-        }
-
-        // Auto-create first 6-month progress report milestone
-        const existingReport = await Milestone.findOne({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
-        if (!existingReport) {
-          await Milestone.create({
-            thesisId: thesis._id,
-            type: '6_MONTH_REPORT',
-            title: '6-Month Progress Report #1',
-            status: 'PENDING',
-            sequence: 1,
-            dueDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-          });
         }
       }
 
