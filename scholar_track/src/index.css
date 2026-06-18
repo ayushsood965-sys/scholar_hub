@@ -1,4 +1,4 @@
-/* index.css - AuraTrack Design System */
+/* index.css - ScholarTrack Design System */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
@@ -953,4 +953,161 @@ a {
   50% {
     opacity: 1;
   }
+}
+
+/* Sidebar Layout Styling for Dashboards */
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+[data-theme='dark'] .app-container {
+  background-color: var(--color-bg) !important;
+}
+
+.sidebar {
+  width: 250px;
+  background: linear-gradient(180deg, #F0FDF4 0%, #E2F8EC 50%, #D3F2E3 100%);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+  border-right: 1px solid rgba(26, 90, 59, 0.1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='dark'] .sidebar {
+  background: linear-gradient(180deg, #091C12 0%, #05120B 100%) !important;
+  border-right: 1px solid rgba(52, 211, 153, 0.08) !important;
+  box-shadow: 6px 0 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.sidebar-logo {
+  padding: 24px 20px;
+  text-align: center;
+  border-bottom: 1px solid rgba(26, 90, 59, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+[data-theme='dark'] .sidebar-logo {
+  border-bottom: 1px solid rgba(52, 211, 153, 0.08);
+}
+
+.sidebar-logo img {
+  width: 50px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.sidebar-logo h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+  background: linear-gradient(120deg, var(--color-primary) 0%, var(--color-success) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-top: 4px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px !important;
+  border-radius: 8px;
+  color: #64748B;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-align: left;
+}
+
+[data-theme='dark'] .nav-item {
+  color: #A1A1AA;
+}
+
+.nav-item:hover {
+  background-color: rgba(26, 90, 59, 0.05) !important;
+  color: var(--color-primary) !important;
+}
+
+[data-theme='dark'] .nav-item:hover {
+  background-color: rgba(52, 211, 153, 0.05) !important;
+  color: var(--color-primary) !important;
+}
+
+.nav-item.active {
+  background-color: var(--color-primary) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .nav-item.active {
+  background-color: var(--color-primary) !important;
+  color: #092c1a !important;
+  font-weight: 700;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.nav-item:hover .nav-icon {
+  transform: scale(1.1);
+  color: var(--color-primary);
+}
+
+.nav-item.active .nav-icon {
+  color: white !important;
+}
+
+[data-theme='dark'] .nav-item.active .nav-icon {
+  color: #092c1a !important;
+}
+
+.sidebar-bottom {
+  padding: 16px 12px;
+  border-top: 1px solid rgba(26, 90, 59, 0.08);
+}
+
+[data-theme='dark'] .sidebar-bottom {
+  border-top: 1px solid rgba(52, 211, 153, 0.08);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-area {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
 }

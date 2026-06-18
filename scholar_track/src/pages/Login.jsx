@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -12,8 +12,18 @@ const Login = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [preloaderStep, setPreloaderStep] = useState('');
   
-  const { login } = useContext(AuthContext);
+  const { login, user, loading } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role === 'SUPER_ADMIN') navigate('/super-dashboard');
+      else if (user.role === 'HOD') navigate('/hod-dashboard');
+      else if (user.role === 'ADMIN') navigate('/admin-dashboard');
+      else if (user.role === 'FACULTY') navigate('/faculty-dashboard');
+      else navigate('/student-dashboard');
+    }
+  }, [user, loading, navigate]);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +55,8 @@ const Login = () => {
       setTimeout(() => {
         setIsLoggingIn(false);
         if (result.role === 'SUPER_ADMIN') navigate('/super-dashboard');
-        else if (result.role === 'ADMIN' || result.role === 'HOD') navigate('/admin-dashboard');
+        else if (result.role === 'HOD') navigate('/hod-dashboard');
+        else if (result.role === 'ADMIN') navigate('/admin-dashboard');
         else if (result.role === 'FACULTY') navigate('/faculty-dashboard');
         else navigate('/student-dashboard');
       }, 3200);

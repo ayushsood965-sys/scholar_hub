@@ -1,10 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
-const Navbar = () => {
+const Navbar = ({ minimal = false }) => {
   const location = useLocation();
   const currentPath = location.pathname;
   const navigate = useNavigate();
@@ -16,6 +16,36 @@ const Navbar = () => {
     logout();
     navigate('/');
   };
+
+  const handleDashboardRedirect = () => {
+    setShowDropdown(false);
+    if (user.role === 'SUPER_ADMIN') navigate('/super-dashboard');
+    else if (user.role === 'HOD') navigate('/hod-dashboard');
+    else if (user.role === 'ADMIN') navigate('/admin-dashboard');
+    else if (user.role === 'FACULTY') navigate('/faculty-dashboard');
+    else navigate('/student-dashboard');
+  };
+
+  const dashboardPath = user ? (
+    user.role === 'SUPER_ADMIN' ? '/super-dashboard' :
+    user.role === 'HOD' ? '/hod-dashboard' :
+    user.role === 'ADMIN' ? '/admin-dashboard' :
+    user.role === 'FACULTY' ? '/faculty-dashboard' :
+    '/student-dashboard'
+  ) : '/login';
+
+  if (minimal) {
+    return (
+      <nav className="landing-nav">
+        <Link to="/" className="landing-logo" style={{ textDecoration: 'none' }}>
+          <div className="landing-logo-wrapper">
+            <img src="/hpu_logo.png" alt="HPU ScholarTrack Logo" className="landing-logo-img" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+          </div>
+          <span className="logo-text">ScholarTrack</span>
+        </Link>
+      </nav>
+    );
+  }
 
   return (
     <nav className="landing-nav">
@@ -29,6 +59,9 @@ const Navbar = () => {
       {/* Desktop Links */}
       <div className="nav-links">
         <Link to="/" className={`nav-link ${currentPath === '/' ? 'active' : ''}`}>Home</Link>
+        {user && (
+          <Link to={dashboardPath} className={`nav-link ${currentPath.includes('dashboard') ? 'active' : ''}`}>Dashboard</Link>
+        )}
         <Link to="/track" className={`nav-link ${currentPath === '/track' ? 'active' : ''}`}>Track Attendance</Link>
         <Link to="/leaves" className={`nav-link ${currentPath === '/leaves' ? 'active' : ''}`}>Leave Management</Link>
         <Link to="/reports" className={`nav-link ${currentPath === '/reports' ? 'active' : ''}`}>Reports & Analytics</Link>
@@ -57,6 +90,9 @@ const Navbar = () => {
                   <div style={{ fontWeight: 'bold', color: 'var(--color-text-primary)' }}>{user.name}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{user.role}</div>
                 </div>
+                <button onClick={handleDashboardRedirect} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 15px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--color-text-primary)', borderBottom: '1px solid var(--color-border)' }}>
+                  <LayoutDashboard size={16} /> Go to Dashboard
+                </button>
                 <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 15px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: '#F87171' }}>
                   <LogOut size={16} /> Log Out
                 </button>
@@ -84,6 +120,9 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="mobile-drawer glass-panel">
           <Link to="/" className={`mobile-nav-link ${currentPath === '/' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          {user && (
+            <Link to={dashboardPath} className={`mobile-nav-link ${currentPath.includes('dashboard') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+          )}
           <Link to="/track" className={`mobile-nav-link ${currentPath === '/track' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Track Attendance</Link>
           <Link to="/leaves" className={`mobile-nav-link ${currentPath === '/leaves' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Leave Management</Link>
           <Link to="/reports" className={`mobile-nav-link ${currentPath === '/reports' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Reports & Analytics</Link>

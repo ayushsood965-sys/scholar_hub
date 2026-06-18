@@ -30,9 +30,19 @@ const Signup = () => {
     'Business Administration'
   ]);
   
-  const { register } = useContext(AuthContext);
+  const { register, user, loading } = useContext(AuthContext);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role === 'SUPER_ADMIN') navigate('/super-dashboard');
+      else if (user.role === 'HOD') navigate('/hod-dashboard');
+      else if (user.role === 'ADMIN') navigate('/admin-dashboard');
+      else if (user.role === 'FACULTY') navigate('/faculty-dashboard');
+      else navigate('/student-dashboard');
+    }
+  }, [user, loading, navigate]);
 
   // Fetch departments from server on mount
   useEffect(() => {

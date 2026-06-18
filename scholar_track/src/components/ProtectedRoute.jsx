@@ -21,7 +21,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect to their appropriate dashboard if they try to access another role's route
     if (user.role === 'SUPER_ADMIN') return <Navigate to="/super-dashboard" />;
-    if (user.role === 'ADMIN' || user.role === 'HOD') return <Navigate to="/admin-dashboard" />;
+    if (user.role === 'HOD') return <Navigate to="/hod-dashboard" />;
+    if (user.role === 'ADMIN') return <Navigate to="/admin-dashboard" />;
     if (user.role === 'FACULTY') return <Navigate to="/faculty-dashboard" />;
     return <Navigate to="/student-dashboard" />;
   }

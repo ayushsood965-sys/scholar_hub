@@ -8,17 +8,22 @@ import {
   LogOut,
   Sparkles,
   ShieldAlert,
-  ListOrdered
+  ListOrdered,
+  Home,
+  User,
+  Clock,
+  CalendarRange
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import ThemeToggle from '../components/ThemeToggle';
+import AttendanceDashboard from '../modules/attendance/AttendanceDashboard';
 
 const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const toast = useToast();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -47,121 +52,140 @@ const AdminDashboard = () => {
   if (!user) return null;
 
   return (
-    <div className="subpage-container">
-      <div className="liquid-bg-wrapper">
-        <div className="liquid-blob blob-1"></div>
-        <div className="liquid-blob blob-2"></div>
-        <div className="liquid-blob blob-3"></div>
-      </div>
+    <div className="app-container">
+      {/* Sidebar Navigation */}
+      <div className="sidebar">
+        <div className="sidebar-logo">
+          <img src="/hpu_logo.png" alt="HPU Logo" />
+          <h2>ScholarTrack</h2>
+        </div>
 
-      <Navbar />
+        <div className="sidebar-nav">
+          <button 
+            className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            <Home className="nav-icon" /> Overview
+          </button>
+          
+          <button 
+            className={`nav-item ${activeTab === 'attendance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('attendance')}
+          >
+            <Clock className="nav-icon" /> Attendance Policies
+          </button>
 
-      <div style={{ flex: 1, padding: '40px 8%', zIndex: 10 }}>
-        {/* Welcome Banner */}
-        <div className="glass-panel" style={{ padding: '30px', marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-          <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(26, 90, 59, 0.08)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-primary)', marginBottom: '12px' }}>
-              <Sparkles size={12} /> HPU ScholarTrack Administrative Console
-            </div>
-            <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Welcome, HOD {user.name}</h1>
-            <p style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '0.95rem' }}>
-              Department of {user.department || 'Computer Science'} | Role: Head of Department / Admin
-            </p>
-          </div>
-          <button onClick={logout} className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#EF4444' }}>
-            <LogOut size={16} /> Log Out
+          <button 
+            className={`nav-item ${activeTab === 'leave' ? 'active' : ''}`}
+            onClick={() => setActiveTab('leave')}
+          >
+            <CalendarRange className="nav-icon" /> Holiday Calendar
           </button>
         </div>
 
-        {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '25px', marginBottom: '30px' }}>
-          <div className="clay-card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Department Cohort Size</span>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Users size={32} /> 740 Students
-            </div>
-          </div>
-          <div className="clay-card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Defalcation Shortages</span>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#EF4444', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <ShieldAlert size={32} /> {shortages.length} Flagged
-            </div>
-          </div>
-          <div className="clay-card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Biometric Swipes Today</span>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0284c7', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Database size={32} /> 642 Logs
-            </div>
-          </div>
-        </div>
-
-        {/* Grid for Shortages and System Logs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px' }}>
-          
-          {/* Defalcation warning list */}
-          <div className="glass-panel" style={{ padding: '30px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#EF4444' }}>
-              <AlertTriangle size={20} /> Attendance Shortage Warnings (Below 75%)
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {shortages.map(student => (
-                <div key={student.id} style={{ padding: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                  <div>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>{student.name}</h4>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', display: 'block', marginTop: '2px' }}>
-                      {student.program} | {student.rollNo}
-                    </span>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#EF4444', display: 'block', marginTop: '8px' }}>
-                      Current Rate: {student.rate}%
-                    </span>
-                  </div>
-                  <div>
-                    <button 
-                      onClick={() => handleSendNotice(student.id, student.name, student.email)}
-                      className="btn-primary"
-                      disabled={student.notified}
-                      style={{ 
-                        padding: '8px 16px', 
-                        fontSize: '0.82rem', 
-                        background: student.notified ? '#9CA3AF' : 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-                        boxShadow: student.notified ? 'none' : '0 4px 15px rgba(239, 68, 68, 0.2)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <Send size={12} /> {student.notified ? 'Alert Dispatched' : 'Email Warning'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* System Log Stream */}
-          <div className="glass-panel" style={{ padding: '30px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ListOrdered size={20} color="var(--color-primary)" /> Live Terminal Node Streams
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {systemLogs.map(log => (
-                <div key={log.id} style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', borderLeft: '3px solid var(--color-primary)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{log.event}</span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{log.stamp}</span>
-                  </div>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
-                    User: {log.user} | Terminal: {log.terminal}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
+        <div className="sidebar-bottom">
+          <button 
+            className="nav-item" 
+            onClick={() => { logout(); navigate('/'); }}
+            style={{ color: '#EF4444' }}
+          >
+            <LogOut className="nav-icon" style={{ color: '#EF4444' }} /> Log Out
+          </button>
         </div>
       </div>
 
-      <Footer />
+      {/* Main Content Area */}
+      <div className="main-content">
+        {/* Top Header */}
+        <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>
+            {activeTab === 'overview' ? 'Administration Overview' : 'Attendance Control Center'}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <ThemeToggle />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                {user.name ? user.name[0].toUpperCase() : 'A'}
+              </div>
+              <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user.name}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Scrollable Area */}
+        <div className="dashboard-area" style={{ position: 'relative' }}>
+          {/* Animated Blobs Backdrop */}
+          <div className="liquid-bg-wrapper" style={{ zIndex: 1 }}>
+            <div className="liquid-blob blob-1"></div>
+            <div className="liquid-blob blob-2"></div>
+            <div className="liquid-blob blob-3"></div>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            {activeTab === 'overview' ? (
+              <div>
+                {/* Welcome Banner */}
+                <div className="glass-panel" style={{ padding: '30px', marginBottom: '30px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(26, 90, 59, 0.08)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-primary)', marginBottom: '12px' }}>
+                    <Sparkles size={12} /> HPU ScholarTrack Administrative Console
+                  </div>
+                  <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Welcome, Admin {user.name}</h1>
+                  <p style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '0.95rem' }}>
+                    Department of {user.department || 'Computer Science'} | Role: Head of Department / Admin
+                  </p>
+                </div>
+
+                {/* Profile Grid details */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+                  {/* Personal Details Card */}
+                  <div className="glass-panel" style={{ padding: '30px' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-primary)' }}>
+                      <User size={20} /> Administrator Profile
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Full Name</span>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>{user.name}</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Email Address</span>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>{user.email || user.username}</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Designated Role</span>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>Head of Department / Administrative Officer</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Academic Context Card */}
+                  <div className="glass-panel" style={{ padding: '30px' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-primary)' }}>
+                      <Sparkles size={20} /> System Settings
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Department Scope</span>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>{user.department || 'Computer Science'}</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Audit Configuration</span>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>75% Minimum Biometric Threshold</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Gateways Online</span>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>3 Biometric Terminal Terminals</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <AttendanceDashboard activeTab={activeTab} />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

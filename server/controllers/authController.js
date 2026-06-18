@@ -50,7 +50,9 @@ const register = async (req, res) => {
   const { name, username, password, role, department, phoneNumber } = req.body;
   try {
     if (await User.findOne({ username })) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ 
+        message: 'You are already registered on the ScholarSync or ScholarTrack portal. Please use your existing credentials to log in.' 
+      });
     }
 
     if (!phoneNumber) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Scan, 
@@ -14,8 +14,10 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import axios from 'axios';
 import { API_URL } from './config';
+import { AuthContext } from './context/AuthContext';
 
 const Landing = () => {
+  const { user, logout } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
   const [cohortData, setCohortData] = useState([]);
 
@@ -76,12 +78,31 @@ const Landing = () => {
             A centralized, state-of-the-art attendance auditing suite built specifically for Himachal Pradesh University (HPU). Seamlessly tracking and registering biometric and digital attendance for UG, PG, PhD Scholars, Diploma, and Certificate programs.
           </p>
           <div className="hero-buttons">
-            <Link to="/signup" className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              Register Profile <ArrowRight size={18} />
-            </Link>
-            <Link to="/login" className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              Account Sign In
-            </Link>
+            {user ? (
+              <>
+                <Link to={
+                  user.role === 'SUPER_ADMIN' ? '/super-dashboard' :
+                  user.role === 'HOD' ? '/hod-dashboard' :
+                  user.role === 'ADMIN' ? '/admin-dashboard' :
+                  user.role === 'FACULTY' ? '/faculty-dashboard' :
+                  '/student-dashboard'
+                } className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  Go to Dashboard <ArrowRight size={18} />
+                </Link>
+                <button onClick={logout} className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'none', cursor: 'pointer', border: '1px solid var(--color-border)', borderRadius: '30px', padding: '12px 28px', color: 'inherit' }}>
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/signup" className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  Register Profile <ArrowRight size={18} />
+                </Link>
+                <Link to="/login" className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  Account Sign In
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
