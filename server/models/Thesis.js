@@ -11,7 +11,7 @@ const thesisSchema = new mongoose.Schema(
     keywords: { type: String, default: '' },
     status: {
       type: String,
-      enum: ['REGISTRATION_PENDING', 'COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'],
+      enum: ['REGISTRATION_PENDING', 'COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'],
       default: 'REGISTRATION_PENDING',
     },
     courseworkCompleted: { type: Boolean, default: false },
@@ -106,6 +106,14 @@ const thesisSchema = new mongoose.Schema(
     dispatchDate: { type: Date, default: null },
     dispatchMethod: { type: String, default: '' },
     dispatchTrackingNumber: { type: String, default: '' },
+    externalEvaluationStatus: {
+      type: String,
+      enum: ['PENDING', 'SUCCESSFUL', 'FAILED'],
+      default: 'PENDING'
+    },
+    externalEvaluationRemarks: { type: String, default: '' },
+    externalEvaluationLoggedAt: { type: Date, default: null },
+    externalEvaluationLoggedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     vivaDate: { type: Date, default: null },
     vivaTime: { type: String, default: '' },
     vivaVenue: { type: String, default: '' },

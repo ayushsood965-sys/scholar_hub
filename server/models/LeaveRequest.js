@@ -10,10 +10,19 @@ const leaveRequestSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  departmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    default: null
+  },
   leaveType: {
     type: String,
-    enum: ['CASUAL', 'MEDICAL', 'DUTY', 'MATERNITY', 'PATERNITY', 'CO_CURRICULAR'],
     required: true
+  },
+  leaveTypeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LeaveTypeMaster',
+    default: null
   },
   startDate: {
     type: Date,
@@ -32,11 +41,11 @@ const leaveRequestSchema = new mongoose.Schema({
     required: true
   },
   documentUrl: {
-    type: String // Required for MEDICAL if > 2 days, and CO_CURRICULAR (NCC/NSS/Sports)
+    type: String 
   },
   status: {
     type: String,
-    enum: ['PENDING_SUPERVISOR', 'PENDING_HOD', 'APPROVED', 'REJECTED'],
+    enum: ['DRAFT', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'APPROVED', 'REJECTED', 'WITHDRAWN'],
     default: 'PENDING_SUPERVISOR'
   },
   currentAssigneeId: {

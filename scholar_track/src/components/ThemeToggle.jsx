@@ -1,43 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import React from 'react';
+import { useTheme } from '../context/ThemeContext';
+import { Moon, Sun } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-const ThemeToggle = ({ style }) => {
-  const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      root.removeAttribute('data-theme');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
+const ThemeToggle = () => {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
-    <button
-      onClick={() => setIsDark(!isDark)}
-      className="theme-toggle-btn"
-      style={{
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '8px',
-        borderRadius: '50%',
-        transition: 'all 0.2s ease',
-        color: 'inherit',
-        ...style
-      }}
-      title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+    <motion.button
+      className="header-icon-btn"
+      onClick={toggleTheme}
+      whileTap={{ scale: 0.9 }}
+      whileHover={{ scale: 1.05 }}
+      aria-label="Toggle theme"
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {isDark ? <Sun size={20} className="theme-icon sun" /> : <Moon size={20} className="theme-icon moon" />}
-    </button>
+      <motion.div
+        key={theme}
+        initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
+        animate={{ rotate: 0, opacity: 1, scale: 1 }}
+        exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      >
+        {isDark ? <Sun size={18} /> : <Moon size={18} />}
+      </motion.div>
+    </motion.button>
   );
 };
 

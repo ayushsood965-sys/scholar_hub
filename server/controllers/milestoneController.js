@@ -23,7 +23,7 @@ const getPeriodMeta = (startDate, seq) => {
 // Helper to generate milestones dynamically based on timeline & prerequisites
 const generateMilestonesIfNeeded = async (thesisId) => {
   const thesis = await Thesis.findById(thesisId);
-  if (thesis && ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) && thesis.startDate) {
+  if (thesis && ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) && thesis.startDate) {
     // Use admissionDate from scholar profile if available, else fall back to thesis.startDate
     const scholar = await User.findById(thesis.scholarId);
     const admissionDate = scholar?.profile?.admissionDate ? new Date(scholar.profile.admissionDate) : null;
@@ -103,8 +103,11 @@ const submitDocument = async (req, res) => {
 
     // Verify scholar owns this thesis
     const thesis = await Thesis.findById(milestone.thesisId);
-    if (thesis.status === 'SUBMITTED' && (milestone.type !== 'FINAL_SUBMISSION' || thesis.submittedAt || milestone.status === 'APPROVED')) {
-      return res.status(403).json({ message: 'Thesis is submitted. Uploads are locked.' });
+    if (['PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status)) {
+      return res.status(403).json({ message: 'Thesis is approved or pending final sign-off. Uploads are locked.' });
+    }
+    if (milestone.type === 'FINAL_SUBMISSION' && ['SUBMITTED', 'PENDING_HOD', 'APPROVED'].includes(milestone.status)) {
+      return res.status(400).json({ message: 'Final Bound Thesis package is already submitted and under review.' });
     }
 
     // Update thesis details if provided (common when finalizing synopsis)
@@ -134,11 +137,18 @@ const submitDocument = async (req, res) => {
     milestone.submittedAt = new Date();
     await milestone.save();
 
+    if (milestone.type === 'FINAL_SUBMISSION') {
+      thesis.status = 'THESIS_SUBMITTED';
+      await thesis.save();
+    }
+
     if (thesis.supervisorId) {
       await createNotification({
         recipient: thesis.supervisorId,
-        title: '⏳ Milestone Review Pending',
-        message: `Scholar "${req.user.name}" has uploaded a document for milestone "${milestone.title}". Action needed: Please review and record your grade.`,
+        title: milestone.type === 'FINAL_SUBMISSION' ? '⏳ Final Thesis Awaiting Sign-off' : '⏳ Milestone Review Pending',
+        message: milestone.type === 'FINAL_SUBMISSION'
+          ? `Scholar "${req.user.name}" has uploaded their absolute Final Bound Thesis. Please review and provide sign-off.`
+          : `Scholar "${req.user.name}" has uploaded a document for milestone "${milestone.title}". Action needed: Please review and record your grade.`,
         type: 'PENDING_ACTION',
         link: 'overview'
       });

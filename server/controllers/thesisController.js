@@ -261,24 +261,162 @@ const awardDegree = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
     }
 
-    if (thesis.vivaStatus !== 'SUCCESSFUL') {
-      return res.status(400).json({ message: 'Ph.D. degree can only be awarded after a successful Viva-Voce defense.' });
+    // Run verification checks
+    const User = require('../models/User');
+    const Milestone = require('../models/Milestone');
+    const Publication = require('../models/Publication');
+    const DRCMeeting = require('../models/DRCMeeting');
+
+    const scholar = await User.findById(thesis.scholarId);
+
+    const hasMphil = scholar?.profile?.qualifications?.mphil?.done === true && scholar?.isVerified === true;
+    const requiredReportsCount = hasMphil ? 3 : 6;
+    const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
+    const approvedReportsCount = reports.filter(r => r.status === 'APPROVED').length;
+    const verifiedJournals = await Publication.countDocuments({ thesisId: thesis._id, type: 'JOURNAL', status: 'VERIFIED' });
+    const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
+    const synopsisMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'SYNOPSIS' });
+    const finalMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    const drcApproved = await DRCMeeting.findOne({ thesisId: thesis._id, status: 'APPROVED' });
+
+    const checks = {
+      courseworkCleared: thesis.courseworkCompleted === true,
+      enrollmentVerified: thesis.enrollmentVerified === true,
+      synopsisApproved: synopsisMilestone?.status === 'APPROVED',
+      drcCleared: !!drcApproved,
+      reportsCleared: approvedReportsCount >= requiredReportsCount,
+      publicationsCleared: verifiedJournals >= 2 && verifiedConferences >= 2,
+      preSubmissionCleared: thesis.preSubmissionSeminar?.status === 'CLEARED',
+      finalThesisApproved: finalMilestone?.status === 'APPROVED',
+      externalEvaluationCleared: thesis.externalEvaluationStatus === 'SUCCESSFUL',
+      vivaCleared: thesis.vivaStatus === 'SUCCESSFUL'
+    };
+
+    const failed = [];
+    if (!checks.courseworkCleared) failed.push('Coursework must be cleared');
+    if (!checks.enrollmentVerified) failed.push('Scholar enrollment must be verified');
+    if (!checks.synopsisApproved) failed.push('Synopsis must be approved');
+    if (!checks.drcCleared) failed.push('DRC evaluation must be approved');
+    if (!checks.reportsCleared) failed.push(`At least ${requiredReportsCount} progress reports must be approved`);
+    if (!checks.publicationsCleared) failed.push('At least 2 journals and 2 conferences must be verified');
+    if (!checks.preSubmissionCleared) failed.push('Pre-submission seminar must be cleared');
+    if (!checks.finalThesisApproved) failed.push('Final bound thesis must be approved by HOD');
+    if (!checks.externalEvaluationCleared) failed.push('External evaluation reports must be successful');
+    if (!checks.vivaCleared) failed.push('Viva-Voce oral defense must be successful');
+
+    if (failed.length > 0) {
+      return res.status(400).json({ 
+        message: 'Candidate is not eligible for degree award. Failed checks: ' + failed.join(', ') 
+      });
     }
 
     thesis.status = 'AWARDED';
     thesis.awardedAt = new Date();
-    thesis.auditLog.push({ action: 'DEGREE_AWARDED', note: req.body.note || 'Degree awarded after successful viva' });
+    thesis.auditLog.push({ 
+      action: 'DEGREE_AWARDED', 
+      note: req.body.note || 'Degree awarded after successfully clearing all Ph.D. lifecycle evaluation criteria.' 
+    });
     await thesis.save();
+
+    // Mark final bound thesis milestone as APPROVED if not already
+    if (finalMilestone && finalMilestone.status !== 'APPROVED') {
+      finalMilestone.status = 'APPROVED';
+      await finalMilestone.save();
+    }
 
     await createNotification({
       recipient: thesis.scholarId,
       title: '🎓 Ph.D. Degree Awarded!',
-      message: `Congratulations, Doctor! Your Ph.D. degree has been officially awarded by the Academic Council after your successful viva-voce defense.`,
+      message: `Congratulations, Doctor! Your Ph.D. degree has been officially awarded by the Academic Council after successfully clearing all evaluation stages.`,
       type: 'SUCCESSFUL_ACTION',
       link: 'overview'
     });
 
     res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/thesis/:id/eligibility — Returns detailed eligibility status and verification checklist
+const getEligibilityDetails = async (req, res) => {
+  try {
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // HOD department check
+    if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
+      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    }
+
+    const User = require('../models/User');
+    const Milestone = require('../models/Milestone');
+    const Publication = require('../models/Publication');
+    const DRCMeeting = require('../models/DRCMeeting');
+
+    const scholar = await User.findById(thesis.scholarId);
+    
+    // 1. Coursework check
+    const courseworkCleared = thesis.courseworkCompleted === true;
+
+    // 2. Enrollment verified check
+    const enrollmentVerified = thesis.enrollmentVerified === true;
+
+    // 3. Synopsis approved check
+    const synopsisMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'SYNOPSIS' });
+    const synopsisApproved = synopsisMilestone?.status === 'APPROVED';
+
+    // 4. DRC approved check
+    const drcApproved = await DRCMeeting.findOne({ thesisId: thesis._id, status: 'APPROVED' });
+    const drcCleared = !!drcApproved;
+
+    // 5. 6-Month progress reports check
+    const hasMphil = scholar?.profile?.qualifications?.mphil?.done === true && scholar?.isVerified === true;
+    const requiredReportsCount = hasMphil ? 3 : 6;
+    const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
+    const approvedReportsCount = reports.filter(r => r.status === 'APPROVED').length;
+    const reportsCleared = approvedReportsCount >= requiredReportsCount;
+
+    // 6. Publications check
+    const verifiedJournals = await Publication.countDocuments({ thesisId: thesis._id, type: 'JOURNAL', status: 'VERIFIED' });
+    const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
+    const publicationsCleared = verifiedJournals >= 2 && verifiedConferences >= 2;
+
+    // 7. Pre-submission seminar cleared
+    const preSubmissionCleared = thesis.preSubmissionSeminar?.status === 'CLEARED';
+
+    // 8. Final bound thesis approved
+    const finalMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    const finalThesisApproved = finalMilestone?.status === 'APPROVED';
+
+    // 9. External evaluation marked successful
+    const externalEvaluationCleared = thesis.externalEvaluationStatus === 'SUCCESSFUL';
+
+    // 10. Viva-Voce successful
+    const vivaCleared = thesis.vivaStatus === 'SUCCESSFUL';
+
+    const checklist = [
+      { name: 'Doctoral Coursework Cleared', status: courseworkCleared, details: courseworkCleared ? 'Verified' : 'Coursework must be cleared by department' },
+      { name: 'Scholar Enrollment Verified', status: enrollmentVerified, details: enrollmentVerified ? 'Verified' : 'Enrollment registration must be verified by HOD' },
+      { name: 'Research Synopsis Approved', status: synopsisApproved, details: synopsisApproved ? 'Approved' : 'Synopsis document review must be approved' },
+      { name: 'DRC Evaluation Cleared', status: drcCleared, details: drcCleared ? 'Approved' : 'Department Research Committee must approve synopsis' },
+      { name: `6-Month Progress Reports Approved (Min ${requiredReportsCount})`, status: reportsCleared, details: `${approvedReportsCount} / ${requiredReportsCount} reports cleared` },
+      { name: 'Mandatory Research Publications Verified', status: publicationsCleared, details: `Journals: ${verifiedJournals}/2, Conferences: ${verifiedConferences}/2` },
+      { name: 'Pre-Submission Colloquium Cleared', status: preSubmissionCleared, details: preSubmissionCleared ? 'Cleared' : 'Open colloquium presentation must be cleared' },
+      { name: 'Final Bound Thesis Signed Off', status: finalThesisApproved, details: finalThesisApproved ? 'Approved by Supervisor & HOD' : 'Final submission must clear HOD approval' },
+      { name: 'External Evaluation Successful', status: externalEvaluationCleared, details: externalEvaluationCleared ? 'Positive evaluation reports logged' : 'External evaluation reports pending' },
+      { name: 'Viva-Voce Oral Defense Cleared', status: vivaCleared, details: vivaCleared ? 'Conducted and PASSED' : 'Viva-Voce outcome must be recorded as successful' }
+    ];
+
+    const eligible = checklist.every(item => item.status === true);
+
+    res.json({
+      eligible,
+      checklist,
+      thesisStatus: thesis.status,
+      vivaStatus: thesis.vivaStatus,
+      externalEvaluationStatus: thesis.externalEvaluationStatus
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -504,15 +642,111 @@ const seminarClear = async (req, res) => {
   }
 };
 
-// PUT /api/thesis/:id/final-approve — Supervisor final digital approval → SUBMITTED
+// PUT /api/thesis/:id/final-approve — Supervisor final digital approval → PENDING_HOD
 const finalApprove = async (req, res) => {
   try {
     const thesis = await Thesis.findById(req.params.id);
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
+    thesis.status = 'PENDING_HOD';
+    thesis.auditLog.push({ action: 'SUPERVISOR_APPROVED', note: `Final digital sign-off by supervisor ${req.user.name}` });
+    await thesis.save();
+
+    // Mark final submission milestone as PENDING_HOD
+    const Milestone = require('../models/Milestone');
+    let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    if (milestone) {
+      milestone.status = 'PENDING_HOD';
+      milestone.reviewedAt = new Date();
+      milestone.comments.push({
+        authorId: req.user._id,
+        authorName: req.user.name,
+        text: `Approved and signed off by supervisor ${req.user.name}. Sent to HOD for final sign-off.`
+      });
+      await milestone.save();
+    }
+
+    // Notify Student
+    await createNotification({
+      recipient: thesis.scholarId,
+      title: '🚀 Supervisor Signed Off Final Thesis',
+      message: `Your supervisor ${req.user.name} has signed off on your final thesis. It has been routed to the HOD for final digital approval.`,
+      type: 'SUCCESSFUL_ACTION',
+      link: 'overview'
+    });
+
+    // Notify HOD
+    await createNotification({
+      roleScope: 'HOD',
+      department: thesis.department,
+      title: '⏳ Final Thesis HOD Approval Pending',
+      message: `Final bound thesis of scholar "${thesis.title}" has been signed off by supervisor ${req.user.name} and is pending your final HOD approval.`,
+      type: 'PENDING_ACTION',
+      link: 'overview'
+    });
+
+    res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/thesis/:id/final-reject — Supervisor rejects final submission back to student
+const finalReject = async (req, res) => {
+  try {
+    const { comment } = req.body;
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    thesis.status = 'PRE_SUBMISSION';
+    thesis.auditLog.push({ 
+      action: 'SUPERVISOR_REJECTED', 
+      note: `Final thesis submission returned to scholar by supervisor ${req.user.name}. Remarks: ${comment || 'None'}` 
+    });
+    await thesis.save();
+
+    const Milestone = require('../models/Milestone');
+    let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    if (milestone) {
+      milestone.status = 'REVISION_REQUIRED';
+      milestone.reviewedAt = new Date();
+      milestone.comments.push({
+        authorId: req.user._id,
+        authorName: req.user.name,
+        text: comment || 'Supervisor requested corrections.'
+      });
+      await milestone.save();
+    }
+
+    // Notify Student
+    await createNotification({
+      recipient: thesis.scholarId,
+      title: '⚠️ Final Thesis Corrections Requested',
+      message: `Your supervisor ${req.user.name} has requested corrections for your final thesis submission. Remarks: "${comment || 'Please check comments.'}"`,
+      type: 'PENDING_ACTION',
+      link: 'overview'
+    });
+
+    res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/thesis/:id/final-approve-hod — HOD final approval → SUBMITTED
+const finalApproveHOD = async (req, res) => {
+  try {
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // HOD department check
+    if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
+      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    }
+
     thesis.status = 'SUBMITTED';
     thesis.submittedAt = new Date();
-    thesis.auditLog.push({ action: 'FINAL_APPROVED', note: `Final digital approval by supervisor ${req.user.name}` });
+    thesis.auditLog.push({ action: 'HOD_APPROVED', note: `Final digital sign-off by HOD ${req.user.name}` });
     await thesis.save();
 
     // Mark final submission milestone as APPROVED
@@ -524,16 +758,64 @@ const finalApprove = async (req, res) => {
       milestone.comments.push({
         authorId: req.user._id,
         authorName: req.user.name,
-        text: `Approved and signed off for final evaluation by supervisor ${req.user.name}.`
+        text: `Approved and signed off by HOD ${req.user.name}. Ready for examiner dispatch.`
       });
       await milestone.save();
     }
 
+    // Notify Student
     await createNotification({
       recipient: thesis.scholarId,
-      title: '🚀 Thesis Final Digital Sign-off!',
-      message: `Your supervisor has provided final digital sign-off and approval for your Ph.D. thesis. It has been officially SUBMITTED for external evaluation!`,
+      title: '🎉 Final Thesis Approved by HOD!',
+      message: `Your final thesis document has been officially approved by the HOD. It has been marked as SUBMITTED and is ready for offline examiner dispatch.`,
       type: 'SUCCESSFUL_ACTION',
+      link: 'overview'
+    });
+
+    res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/thesis/:id/final-reject-hod — HOD rejects final submission back to student
+const finalRejectHOD = async (req, res) => {
+  try {
+    const { comment } = req.body;
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // HOD department check
+    if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
+      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    }
+
+    thesis.status = 'PRE_SUBMISSION';
+    thesis.auditLog.push({ 
+      action: 'HOD_REJECTED', 
+      note: `Final thesis submission returned to scholar by HOD ${req.user.name}. Remarks: ${comment || 'None'}` 
+    });
+    await thesis.save();
+
+    const Milestone = require('../models/Milestone');
+    let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    if (milestone) {
+      milestone.status = 'REVISION_REQUIRED';
+      milestone.reviewedAt = new Date();
+      milestone.comments.push({
+        authorId: req.user._id,
+        authorName: req.user.name,
+        text: comment || 'HOD requested corrections.'
+      });
+      await milestone.save();
+    }
+
+    // Notify Student
+    await createNotification({
+      recipient: thesis.scholarId,
+      title: '⚠️ Final Thesis HOD Corrections Requested',
+      message: `HOD ${req.user.name} has requested corrections for your final thesis. Remarks: "${comment || 'Please check comments.'}"`,
+      type: 'PENDING_ACTION',
       link: 'overview'
     });
 
@@ -584,6 +866,80 @@ const dispatchThesis = async (req, res) => {
   }
 };
 
+// PUT /api/thesis/:id/external-evaluation — HOD logs outcome of external evaluation
+const logExternalEvaluation = async (req, res) => {
+  try {
+    const { status, remarks } = req.body;
+    if (!status || !['SUCCESSFUL', 'FAILED'].includes(status)) {
+      return res.status(400).json({ message: 'Valid external evaluation status is required (SUCCESSFUL/FAILED)' });
+    }
+
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // HOD department check
+    if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
+      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    }
+
+    thesis.externalEvaluationStatus = status;
+    thesis.externalEvaluationRemarks = remarks || '';
+    thesis.externalEvaluationLoggedAt = new Date();
+    thesis.externalEvaluationLoggedBy = req.user._id;
+
+    if (status === 'SUCCESSFUL') {
+      thesis.auditLog.push({ 
+        action: 'EXTERNAL_EVALUATION_SUCCESS', 
+        note: `External examiner evaluation cleared successfully. Remarks: ${remarks || 'None'}` 
+      });
+      await thesis.save();
+
+      // Notify Student
+      await createNotification({
+        recipient: thesis.scholarId,
+        title: '🎉 External Evaluation Successful!',
+        message: `Your external thesis evaluation report is positive and has been marked as SUCCESSFUL. Viva-Voce defense will be scheduled shortly.`,
+        type: 'SUCCESSFUL_ACTION',
+        link: 'overview'
+      });
+    } else {
+      // Rejection: gets back to the student
+      thesis.status = 'PRE_SUBMISSION';
+      thesis.auditLog.push({ 
+        action: 'EXTERNAL_EVALUATION_FAILED', 
+        note: `External examiner evaluation FAILED. Returned to scholar. Remarks: ${remarks || 'None'}` 
+      });
+      await thesis.save();
+
+      // Reset final submission milestone so student can re-upload
+      const Milestone = require('../models/Milestone');
+      let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+      if (milestone) {
+        milestone.status = 'REVISION_REQUIRED';
+        milestone.comments.push({
+          authorId: req.user._id,
+          authorName: req.user.name,
+          text: `External evaluation failed: ${remarks || 'Needs corrections.'}`
+        });
+        await milestone.save();
+      }
+
+      // Notify Student
+      await createNotification({
+        recipient: thesis.scholarId,
+        title: '⚠️ Final Thesis External Evaluation Failed',
+        message: `Your external evaluation reports were negative. Your final thesis submission has been returned to you for modifications. Remarks: "${remarks || 'None'}"`,
+        type: 'PENDING_ACTION',
+        link: 'overview'
+      });
+    }
+
+    res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // PUT /api/thesis/:id/schedule-viva — HOD/Admin schedules offline Viva-Voce defense
 const scheduleViva = async (req, res) => {
   try {
@@ -594,6 +950,10 @@ const scheduleViva = async (req, res) => {
 
     const thesis = await Thesis.findById(req.params.id);
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    if (thesis.externalEvaluationStatus !== 'SUCCESSFUL') {
+      return res.status(400).json({ message: 'Viva-Voce defense can only be scheduled after a successful external evaluation.' });
+    }
 
     // HOD department check
     if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
@@ -1310,11 +1670,19 @@ const recordPreSubmissionSeminarOutcome = async (req, res) => {
     thesis.preSubmissionSeminar.outcomeRemarks = remarks || '';
 
     if (status === 'CLEARED') {
-      thesis.status = 'SUBMITTED'; // Automatically move candidate to next milestone
+      thesis.status = 'PRE_SUBMISSION';
       thesis.auditLog.push({
         action: 'SEMINAR_CLEARED',
         note: `Pre-submission seminar evaluated CLEARED by HOD. Remarks: ${remarks || 'None'}`
       });
+
+      // Mark pre-submission milestone as APPROVED
+      const preSub = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
+      if (preSub) {
+        preSub.status = 'APPROVED';
+        preSub.reviewedAt = new Date();
+        await preSub.save();
+      }
 
       // Auto-create final submission milestone (sequence 100) if it doesn't exist
       const finalExists = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
@@ -1361,5 +1729,6 @@ module.exports = {
   searchGlobalTheses,
   submitCourseworkDetails, approveCourseworkFaculty, rejectCourseworkFaculty,
   approveCourseworkHOD, rejectCourseworkHOD,
-  schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome
+  schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome,
+  finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails
 };

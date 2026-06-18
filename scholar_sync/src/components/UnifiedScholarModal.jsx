@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle2, XCircle, Plus, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, Plus } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 import { AuthContext } from '../context/AuthContext';
@@ -10,32 +10,13 @@ import { useToast } from '../context/ToastContext';
 const API = API_URL;
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
-const formatMonthYear = (val) => {
-  if (!val) return '-';
-  const parts = val.split('-');
-  if (parts.length !== 2) return val;
-  const year = parts[0];
-  const monthIdx = parseInt(parts[1], 10) - 1;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  if (monthIdx >= 0 && monthIdx < 12) {
-    return `${months[monthIdx]} ${year}`;
-  }
-  return val;
-};
-
 // ── Status resolver (shared) ──
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {
-    if (synopsisStatus === 'SUBMITTED') {
-      if (subRole === 'HOD') {
-        return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
-      }
-      return { text: 'Synopsis Submitted', color: '#2563EB', bg: '#DBEAFE' };
-    }
-    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & DRC Pending', color: '#D97706', bg: '#FFFBEB' };
-    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (DRC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
+    if (synopsisStatus === 'SUBMITTED') return { text: 'Synopsis Submitted', color: '#2563EB', bg: '#DBEAFE' };
+    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (Awaiting DRC)', color: '#059669', bg: '#D1FAE5' };
     if (synopsisStatus === 'REVISION_REQUIRED') return { text: 'Synopsis Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
     return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
   }
@@ -43,43 +24,9 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
   if (status === 'PRE_SUBMISSION') {
     if (finalSubStatus === 'SUBMITTED') return { text: 'Thesis Submitted (Awaiting Review)', color: '#2563EB', bg: '#DBEAFE' };
     if (finalSubStatus === 'REVISION_REQUIRED') return { text: 'Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
-    
-    if (preSubMilestoneStatus === 'SUBMITTED') {
-      return { text: 'Thesis Draft & Plagiarism Report Submitted (Pending Faculty Review)', color: '#2563EB', bg: '#DBEAFE' };
-    }
-    if (preSubMilestoneStatus === 'PENDING_HOD') {
-      return { text: 'Draft Approved by Supervisor (Pending HOD Sign-off)', color: '#D97706', bg: '#FFF3CD' };
-    }
-    if (preSubMilestoneStatus === 'REVISION_REQUIRED') {
-      return { text: 'Thesis Draft Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
-    }
-    if (preSubSeminarStatus === 'SCHEDULED') {
-      return { text: 'Pre-Submission Seminar Scheduled', color: '#7C3AED', bg: '#EDE9FE' };
-    }
-    if (preSubSeminarStatus === 'CLEARED') {
-      return { text: 'Pre-Submission Seminar Cleared', color: '#059669', bg: '#D1FAE5' };
-    }
-    if (preSubSeminarStatus === 'UNCLEARED') {
-      return { text: 'Pre-Submission Seminar Uncleared (Unsatisfactory)', color: '#DC2626', bg: '#FEE2E2' };
-    }
-    if (preSubMilestoneStatus === 'APPROVED') {
-      return { text: 'Draft Approved (Awaiting Seminar Schedule)', color: '#D97706', bg: '#FFFBEB' };
-    }
-
-    return { text: 'Pre-Submission Phase', color: '#D97706', bg: '#FFF3CD' };
+    return { text: 'Pre-Submission Seminar Cleared', color: '#D97706', bg: '#FFF3CD' };
   }
-  if (status === 'SUBMITTED') {
-    if (finalSubStatus === 'SUBMITTED') {
-      return { text: 'Final Thesis Submitted (Pending Sign-off)', color: '#2563EB', bg: '#DBEAFE' };
-    }
-    if (finalSubStatus === 'REVISION_REQUIRED') {
-      return { text: 'Final Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
-    }
-    if (finalSubStatus === 'APPROVED') {
-      return { text: 'Thesis Approved (Under Evaluation)', color: '#10B981', bg: '#ECFDF5' };
-    }
-    return { text: 'Thesis Submission Phase (Awaiting Upload)', color: '#D97706', bg: '#FFFBEB' };
-  }
+  if (status === 'SUBMITTED') return { text: 'Awaiting Degree Award', color: '#4B5563', bg: '#F3F4F6' };
   if (status === 'AWARDED') return { text: 'Degree Awarded! 🎉', color: '#10B981', bg: '#ECFDF5' };
   return { text: status?.replace(/_/g, ' '), color: '#374151', bg: '#F3F4F6' };
 };
@@ -286,40 +233,9 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '4px 0', overflowY: 'auto' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--color-bg, #F8FAFC)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', fontSize: '0.82rem' }}>
-                <div><strong>Scholar:</strong> {doc.scholarName} {doc.enrollmentNumber ? `(${doc.enrollmentNumber})` : ''}</div>
+                <div><strong>Scholar:</strong> {doc.scholarName}</div>
                 <div><strong>Deliverable:</strong> {doc.title}</div>
-                <div><strong>Type:</strong> {doc.type === 'IPR' && doc.iprType ? `IPR: ${doc.iprType}` : doc.type === 'PATENT' ? 'IPR: Patent' : doc.type || doc.docType}</div>
-                {doc.thesisTitle && <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong>Thesis:</strong> {doc.thesisTitle}</div>}
-                
-                {doc.docType === 'PUBLICATION' && (
-                  <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div><strong>{doc.type === 'PATENT' || doc.type === 'IPR' ? 'IPR Office/Org:' : doc.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {doc.journalName}</div>
-                    <div><strong>{doc.type === 'PATENT' || doc.type === 'IPR' ? 'IPR Number:' : doc.type === 'CONFERENCE' ? 'Location/Venue:' : 'ISSN:'}</strong> {doc.issn || 'N/A'}</div>
-                    <div><strong>{doc.type === 'PATENT' || doc.type === 'IPR' ? 'Filing/Award Date:' : 'Date:'}</strong> {doc.publicationDate ? new Date(doc.publicationDate).toLocaleDateString() : 'N/A'}</div>
-                    {(doc.type === 'PATENT' || doc.type === 'IPR') && (
-                      <>
-                        <div><strong>Inventors/Applicants:</strong> {doc.volume || 'N/A'}</div>
-                        <div><strong>App/Grant No:</strong> {doc.issue || 'N/A'}</div>
-                        <div><strong>Country/Region:</strong> {doc.pages || 'N/A'}</div>
-                      </>
-                    )}
-                    {doc.type === 'JOURNAL' && (
-                      <>
-                        <div><strong>Indexing:</strong> {doc.indexing || 'N/A'}</div>
-                        <div><strong>Volume:</strong> {doc.volume || 'N/A'}</div>
-                        <div><strong>Issue:</strong> {doc.issue || 'N/A'}</div>
-                        <div><strong>Pages:</strong> {doc.pages || 'N/A'}</div>
-                      </>
-                    )}
-                    {doc.type === 'CONFERENCE' && (
-                      <>
-                        <div><strong>Indexing:</strong> {doc.indexing || 'N/A'}</div>
-                        <div><strong>Organizer:</strong> {doc.volume || 'N/A'}</div>
-                      </>
-                    )}
-                    {doc.doiUrl && <div style={{ wordBreak: 'break-all' }}><strong>{doc.type === 'PATENT' || doc.type === 'IPR' ? 'IPR ID/Ref:' : doc.type === 'CONFERENCE' ? 'Proceedings Link:' : 'DOI:'}</strong> <a href={doc.paperLink || `https://doi.org/${doc.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{doc.doiUrl}</a></div>}
-                  </div>
-                )}
+                <div><strong>Type:</strong> {doc.type || doc.docType}</div>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>Review Remarks</label>
@@ -351,32 +267,11 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
 const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose, onRefresh, onReview, onDRC, onSeminar, onFinalApprove, onClearCoursework, onVerify, onAssign, onForcePreSubmission, isReadOnly = false }) => {
   const toast = useToast();
   const { user: contextUser } = useContext(AuthContext);
-  const { 
-    transferScholar, 
-    approveCourseworkFaculty, 
-    rejectCourseworkFaculty, 
-    approveCourseworkHOD, 
-    rejectCourseworkHOD,
-    schedulePreSubmissionSeminar,
-    recordPreSubmissionSeminarOutcome
-  } = useContext(ThesisContext);
+  const { transferScholar } = useContext(ThesisContext);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
   const [remarks, setRemarks] = useState({});
-  const [cwRemarks, setCwRemarks] = useState('');
-  const [showBypassModal, setShowBypassModal] = useState(false);
-  const [bypassRemarks, setBypassRemarks] = useState('');
-  const [bypassLoading, setBypassLoading] = useState(false);
-
-  // States for Pre-Submission Seminar Schedule and Outcome Recording
-  const [semDate, setSemDate] = useState('');
-  const [semTime, setSemTime] = useState('');
-  const [semVenue, setSemVenue] = useState('');
-  const [semCommittee, setSemCommittee] = useState('');
-  const [semRemarks, setSemRemarks] = useState('');
-  const [semOutcomeStatus, setSemOutcomeStatus] = useState('CLEARED');
-  const [semOutcomeRemarks, setSemOutcomeRemarks] = useState('');
 
   const user = isReadOnly ? { ...contextUser, role: '', _id: '' } : contextUser;
   const subRole = isReadOnly ? '' : propSubRole;
@@ -402,12 +297,12 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
   // DRC form states
   const [showDrcSchedule, setShowDrcSchedule] = useState(false);
-  const [drcForm, setDrcForm] = useState({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
+  const [drcForm, setDrcForm] = useState({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '' });
   const [showDrcResult, setShowDrcResult] = useState(false);
   const [selectedDrc, setSelectedDrc] = useState(null);
   const [drcResultForm, setDrcResultForm] = useState({ status: 'APPROVED', remarks: '', scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '' });
   const [showOfflineDrc, setShowOfflineDrc] = useState(false);
-  const [offlineDrcForm, setOfflineDrcForm] = useState({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
+  const [offlineDrcForm, setOfflineDrcForm] = useState({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED' });
 
   // RAC form states
   const [showRacSchedule, setShowRacSchedule] = useState(false);
@@ -441,6 +336,34 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   // Degree award form states
   const [showAwardForm, setShowAwardForm] = useState(false);
   const [awardForm, setAwardForm] = useState({ note: '' });
+
+  // New final submission & award degree states
+  const [eligibilityData, setEligibilityData] = useState(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
+  const [showSupervisorRejectForm, setShowSupervisorRejectForm] = useState(false);
+  const [showHodRejectForm, setShowHodRejectForm] = useState(false);
+  const [showEvalOutcomeForm, setShowEvalOutcomeForm] = useState(false);
+  const [supervisorRejectComment, setSupervisorRejectComment] = useState('');
+  const [hodRejectComment, setHodRejectComment] = useState('');
+  const [evalRemarks, setEvalRemarks] = useState('');
+
+  const fetchEligibility = async () => {
+    setEligibilityLoading(true);
+    try {
+      const res = await axios.get(`${API}/thesis/${thesis._id}/eligibility`, getAuthHeader());
+      setEligibilityData(res.data);
+    } catch (err) {
+      toast.error('Failed to load eligibility checklist.');
+    } finally {
+      setEligibilityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'awardDegree') {
+      fetchEligibility();
+    }
+  }, [activeTab, thesis._id]);
 
   // ── Fetch All Data ──
   const fetchPublications = async () => {
@@ -494,37 +417,23 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     fetchDrcMeetings();
     fetchRacReviews();
     fetchChangeRequests();
+    if (activeTab === 'awardDegree') {
+      fetchEligibility();
+    }
   };
 
   // ── Computed values ──
   const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
   const finalSubMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-  const preSubMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
-  const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole, preSubMilestone?.status, thesis.preSubmissionSeminar?.status);
+  const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status);
   const reports = milestones.filter(m => m.type === '6_MONTH_REPORT');
   const chapters = milestones.filter(m => m.type === 'CHAPTER_DRAFT');
-  const corePendingMilestones = milestones.filter(m => (m.type === 'FINAL_SUBMISSION' || m.type === 'PRE_SUBMISSION') && (m.status === 'SUBMITTED' || m.status === 'REVISION_REQUIRED'));
-  const corePendingMilestonesDocs = corePendingMilestones.filter(m => m.type !== 'PRE_SUBMISSION');
+  const corePendingMilestones = milestones.filter(m => (m.type === 'SYNOPSIS' || m.type === 'FINAL_SUBMISSION' || m.type === 'PRE_SUBMISSION') && (m.status === 'SUBMITTED' || m.status === 'REVISION_REQUIRED'));
   const verifiedJournals = publications.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
   const verifiedConferences = publications.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
   const pendingOutputsCount = publications.filter(p => p.status === 'PENDING').length;
-  const pendingDocCount = corePendingMilestonesDocs.length + milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
+  const pendingDocCount = corePendingMilestones.length + milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
   const scheduledRacs = racReviews.filter(r => r.status === 'SCHEDULED').length;
-
-  const preSubmissionBadge = (() => {
-    const semStatus = thesis.preSubmissionSeminar?.status || 'NOT_REQUESTED';
-    const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
-    
-    if (subRole !== 'HOD' && thesis.supervisorId?._id === user._id) {
-      if (preMilestone?.status === 'SUBMITTED') return 1;
-    }
-    if (subRole === 'HOD') {
-      if (preMilestone?.status === 'PENDING_HOD') return 1;
-      if (preMilestone?.status === 'APPROVED' && (semStatus === 'NOT_SCHEDULED' || semStatus === 'NOT_REQUESTED' || semStatus === 'UNCLEARED')) return 1;
-      if (semStatus === 'SCHEDULED') return 1;
-    }
-    return null;
-  })();
 
   // ── Transfer ──
   const handleTransfer = async (e) => {
@@ -541,24 +450,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     finally { setTransferLoading(false); }
   };
 
-  // ── Bypass Pre-Submission ──
-  const handleBypassSubmit = async (e) => {
-    e.preventDefault();
-    if (!bypassRemarks.trim()) return toast.warning('Remarks are required.');
-    setBypassLoading(true);
-    try {
-      await axios.put(`${API}/thesis/${thesis._id}/force-pre-submission`, { remarks: bypassRemarks }, getAuthHeader());
-      toast.success('Scholar advanced to Pre-Submission phase!');
-      setShowBypassModal(false);
-      setBypassRemarks('');
-      if (onRefresh) await onRefresh();
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to advance scholar.');
-    } finally {
-      setBypassLoading(false);
-    }
-  };
-
   // ── DRC handlers ──
   const handleDrcSchedule = async (e) => {
     e.preventDefault();
@@ -568,7 +459,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       await axios.post(`${API}/lifecycle/drc/schedule`, { thesisId: thesis._id, ...drcForm }, getAuthHeader());
       toast.success('DRC meeting scheduled!');
       setShowDrcSchedule(false);
-      setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
+      setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '' });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
@@ -602,10 +493,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     if (!offlineDrcForm.remarks) return toast.warning('Enter Remarks / MoM');
     setLoading(true);
     try {
-      await axios.post(`${API}/lifecycle/drc/offline`, { thesisId: thesis._id, conductedDate: offlineDrcForm.conductedDate || new Date(), venue: offlineDrcForm.venue || 'Offline', committeeMembers: offlineDrcForm.committeeMembers || 'Department Board', remarks: offlineDrcForm.remarks, status: offlineDrcForm.status, isSynopsisApproval: offlineDrcForm.isSynopsisApproval }, getAuthHeader());
+      await axios.post(`${API}/lifecycle/drc/offline`, { thesisId: thesis._id, conductedDate: offlineDrcForm.conductedDate || new Date(), venue: offlineDrcForm.venue || 'Offline', committeeMembers: offlineDrcForm.committeeMembers || 'Department Board', remarks: offlineDrcForm.remarks, status: offlineDrcForm.status }, getAuthHeader());
       toast.success(`Offline DRC recorded as ${offlineDrcForm.status}!`);
       setShowOfflineDrc(false);
-      setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
+      setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED' });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
       if (onRefresh) await onRefresh();
@@ -743,801 +634,21 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     }
   };
 
-  const handleCourseworkAction = async (action, remarksText) => {
-    setLoading(true);
-    try {
-      if (action === 'APPROVE_FACULTY') {
-        await approveCourseworkFaculty(thesis._id);
-        toast.success('Coursework details approved by Supervisor!');
-      } else if (action === 'REJECT_FACULTY') {
-        await rejectCourseworkFaculty(thesis._id, remarksText);
-        toast.success('Coursework details rejected and sent back to student.');
-      } else if (action === 'APPROVE_HOD') {
-        await approveCourseworkHOD(thesis._id);
-        toast.success('Coursework successfully cleared and marked as completed!');
-      } else if (action === 'REJECT_HOD') {
-        await rejectCourseworkHOD(thesis._id, remarksText);
-        toast.success('Coursework details rejected and sent back to student.');
-      }
-      if (onRefresh) await onRefresh();
-      setCwRemarks('');
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to update coursework status');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderCourseworkSection = (title, items) => {
-    if (!items || items.length === 0) {
-      return (
-        <div style={{ color: '#64748B', fontSize: '0.85rem', fontStyle: 'italic', padding: '10px 0' }}>
-          No subjects added in this section.
-        </div>
-      );
-    }
-    return (
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: '0.85rem' }}>
-        <thead>
-          <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0', textAlign: 'left' }}>
-            <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Subject Name</th>
-            <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Subject Code</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '120px' }}>Marks Obtained</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '120px' }}>Maximum Marks</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '150px' }}>Exam Month & Year</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, idx) => (
-            <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
-              <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1E293B' }}>{item.subjectName}</td>
-              <td style={{ padding: '10px 12px', color: '#475569' }}>{item.subjectCode || '-'}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#0F172A' }}>{item.marksObtained}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#475569' }}>{item.maxMarks}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#475569' }}>{formatMonthYear(item.examinationMonthYear)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  };
-
-  const renderCoursework = () => {
-    const details = thesis.courseworkDetails || {};
-    const hasDetails = (details.researchEthics && details.researchEthics.length > 0) ||
-                       (details.researchMethodology && details.researchMethodology.length > 0) ||
-                       (details.elective && details.elective.length > 0) ||
-                       (details.others && details.others.length > 0);
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div>
-          <h3 className="usm-section-title" style={{ margin: 0 }}>📚 Coursework Marks & Verification</h3>
-          <p style={{ color: '#64748B', fontSize: '0.85rem', marginTop: 4 }}>
-            Verify the subject-wise coursework examinations and marks details submitted by the scholar.
-          </p>
-        </div>
-
-        {/* Current coursework verification status */}
-        <div style={{ 
-          background: 'var(--color-bg, #F8FAFC)', 
-          border: '1px solid var(--color-border, #E2E8F0)', 
-          padding: '12px 16px', 
-          borderRadius: 10,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-muted, #64748B)' }}>Coursework Progress Status</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: 4, color: thesis.courseworkCompleted ? '#059669' : '#D97706' }}>
-              {thesis.courseworkCompleted ? 'APPROVED & COMPLETED ✅' : 
-               thesis.courseworkStatus === 'PENDING_FACULTY' ? 'Awaiting Supervisor Approval ⏳' :
-               thesis.courseworkStatus === 'PENDING_HOD' ? 'Awaiting HOD Approval ⏳' :
-               thesis.courseworkStatus === 'REJECTED' ? 'Rejected & Sent Back to Student ❌' :
-               'Awaiting Submission from Student ⏳'}
-            </div>
-          </div>
-          {thesis.courseworkApprovals?.remarks && (
-            <div style={{ maxWidth: '60%', fontSize: '0.82rem', background: '#FEF2F2', borderLeft: '3px solid #EF4444', padding: '6px 10px', borderRadius: 6, color: '#991B1B' }}>
-              <strong>Remarks:</strong> "{thesis.courseworkApprovals.remarks}"
-            </div>
-          )}
-        </div>
-
-        {!hasDetails ? (
-          <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.85rem', padding: '30px 20px' }}>
-            📭 The scholar has not submitted any coursework marks yet.
-          </div>
-        ) : (
-          <>
-            <div className="usm-card" style={{ padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E3A8A', borderBottom: '2px solid #DBEAFE', paddingBottom: 6 }}>1. Research and Publication Ethics</div>
-              {renderCourseworkSection('Research and Publication Ethics', details.researchEthics)}
-            </div>
-
-            <div className="usm-card" style={{ padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#065F46', borderBottom: '2px solid #D1FAE5', paddingBottom: 6 }}>2. Research Methodology</div>
-              {renderCourseworkSection('Research Methodology', details.researchMethodology)}
-            </div>
-
-            <div className="usm-card" style={{ padding: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#B45309', borderBottom: '2px solid #FEF3C7', paddingBottom: 6 }}>3. Discipline-Specific Elective Course</div>
-              {renderCourseworkSection('Discipline-Specific Elective Course', details.elective)}
-            </div>
-
-            {details.others && details.others.length > 0 && (
-              <div className="usm-card" style={{ padding: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#475569', borderBottom: '2px solid #CBD5E1', paddingBottom: 6 }}>4. Others</div>
-                {renderCourseworkSection('Others', details.others)}
-              </div>
-            )}
-
-            {thesis.courseworkUploadProof && (
-              <div className="usm-card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC' }}>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#334155' }}>Upload Proof (Grade Sheet / Certificate)</span>
-                <a 
-                  href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="btn-primary"
-                  style={{ fontSize: '0.8rem', padding: '8px 16px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                  📎 View Uploaded Proof
-                </a>
-              </div>
-            )}
-
-            {/* Approval / Rejection box for Supervisor */}
-            {!isReadOnly && subRole !== 'HOD' && thesis.supervisorId?._id === user._id && thesis.courseworkStatus === 'PENDING_FACULTY' && (
-              <div className="usm-card" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: 20 }}>
-                <h4 style={{ margin: '0 0 10px', color: '#166534', fontSize: '0.9rem', fontWeight: 800 }}>🤝 Supervisor Coursework Review Action</h4>
-                <p style={{ fontSize: '0.8rem', color: '#166534', marginBottom: 12 }}>
-                  Verify that the marks entered above exactly match the candidate's exam grade sheets. Approving will forward the file to HOD for final clearance.
-                </p>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#166534', marginBottom: 4 }}>Rejection Remarks (Required only if rejecting)</label>
-                  <textarea
-                    className="form-input"
-                    rows="2"
-                    placeholder="Enter reason for sending back..."
-                    value={cwRemarks}
-                    onChange={e => setCwRemarks(e.target.value)}
-                    style={{ background: '#FFFFFF', borderColor: '#BBF7D0', width: '100%' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button 
-                    onClick={() => handleCourseworkAction('APPROVE_FACULTY')} 
-                    disabled={loading} 
-                    className="btn-primary" 
-                    style={{ background: '#166534', flex: 1, padding: '10px' }}
-                  >
-                    ✓ Approve & Forward to HOD
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (!cwRemarks.trim()) return toast.warning('Please enter rejection remarks first.');
-                      handleCourseworkAction('REJECT_FACULTY', cwRemarks);
-                    }} 
-                    disabled={loading} 
-                    className="btn-outline" 
-                    style={{ borderColor: '#DC2626', color: '#DC2626', flex: 1, padding: '10px' }}
-                  >
-                    ✗ Send Back for Correction
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Approval / Rejection box for HOD */}
-            {!isReadOnly && subRole === 'HOD' && thesis.courseworkStatus === 'PENDING_HOD' && (
-              <div className="usm-card" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: 20 }}>
-                <h4 style={{ margin: '0 0 10px', color: '#1E40AF', fontSize: '0.9rem', fontWeight: 800 }}>🏛️ HOD Coursework Final Clearance</h4>
-                <p style={{ fontSize: '0.8rem', color: '#1E40AF', marginBottom: 12 }}>
-                  Supervisor has verified and approved the coursework marks. Clear this candidate's coursework phase to transition them to Synopsis status.
-                </p>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#1E40AF', marginBottom: 4 }}>Rejection Remarks (Required only if rejecting)</label>
-                  <textarea
-                    className="form-input"
-                    rows="2"
-                    placeholder="Enter reason for sending back..."
-                    value={cwRemarks}
-                    onChange={e => setCwRemarks(e.target.value)}
-                    style={{ background: '#FFFFFF', borderColor: '#BFDBFE', width: '100%' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button 
-                    onClick={() => handleCourseworkAction('APPROVE_HOD')} 
-                    disabled={loading} 
-                    className="btn-primary" 
-                    style={{ background: '#1E40AF', flex: 1, padding: '10px' }}
-                  >
-                    ✓ Verify & Complete Coursework Phase
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (!cwRemarks.trim()) return toast.warning('Please enter rejection remarks first.');
-                      handleCourseworkAction('REJECT_HOD', cwRemarks);
-                    }} 
-                    disabled={loading} 
-                    className="btn-outline" 
-                    style={{ borderColor: '#DC2626', color: '#DC2626', flex: 1, padding: '10px' }}
-                  >
-                    ✗ Send Back for Correction
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    );
-  };
-
   // ── Tab definitions ──
   const tabs = [
     { key: 'overview', label: 'Overview', icon: '📊' },
     { key: 'profile', label: 'Profile', icon: '👤' },
-    { key: 'coursework', label: 'Coursework', icon: '📚', show: thesis.status === 'COURSEWORK' || thesis.courseworkCompleted || (thesis.courseworkDetails && ((thesis.courseworkDetails.researchEthics && thesis.courseworkDetails.researchEthics.length > 0) || (thesis.courseworkDetails.researchMethodology && thesis.courseworkDetails.researchMethodology.length > 0) || (thesis.courseworkDetails.elective && thesis.courseworkDetails.elective.length > 0) || (thesis.courseworkDetails.others && thesis.courseworkDetails.others.length > 0))) },
-    { key: 'synopsis', label: 'Synopsis', icon: '📝', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'SYNOPSIS') },
-    { key: 'drc', label: 'DRC', icon: '🏛️', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'rac', label: 'RAC', icon: '📋', badge: scheduledRacs || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'reports', label: 'Reports', icon: '📑', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'chapters', label: 'Chapters', icon: '📖', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'publications', label: 'Research Outputs', icon: '🏆', badge: pendingOutputsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'preSubmission', label: 'Pre-Submission', icon: '🚀', badge: preSubmissionBadge || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'PRE_SUBMISSION') },
-    { key: 'defense', label: 'Defense & Award', icon: '🎓', show: ['SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'drc', label: 'DRC', icon: '🏛️', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'rac', label: 'RAC', icon: '📋', badge: scheduledRacs || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'reports', label: 'Reports', icon: '📑', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'chapters', label: 'Chapters', icon: '📖', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'publications', label: 'Research Outputs', icon: '🏆', badge: pendingOutputsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'finalSubmission', label: 'final thesis submission', icon: '📚', show: ['PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'awardDegree', label: 'award degree', icon: '🎓', show: ['SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'documents', label: 'Documents', icon: '📄', badge: pendingDocCount || null },
     { key: 'changes', label: 'Changes', icon: '🔄' },
     { key: 'audit', label: 'Audit Log', icon: '📜' },
   ].filter(t => t.show !== false);
-
-  const renderSynopsis = () => {
-    const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
-    if (!synopsisMilestone) {
-      return (
-        <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.85rem', padding: '30px 20px' }}>
-          ⏳ Synopsis milestone has not been generated for this candidate.
-        </div>
-      );
-    }
-
-    const hasUploaded = !!synopsisMilestone.documentUrl && !(subRole === 'HOD' && synopsisMilestone.status === 'SUBMITTED');
-    const isSubmitted = synopsisMilestone.status === 'SUBMITTED';
-    const isPendingHOD = synopsisMilestone.status === 'PENDING_HOD';
-    const isRevision = synopsisMilestone.status === 'REVISION_REQUIRED';
-    const isApproved = synopsisMilestone.status === 'APPROVED';
-
-    const statusBadge = () => {
-      let bg = '#F3F4F6';
-      let color = '#4B5563';
-      let text = 'Pending Upload';
-
-      if (isSubmitted) {
-        if (subRole === 'HOD') {
-          bg = '#F3F4F6';
-          color = '#4B5563';
-          text = 'Pending Upload';
-        } else {
-          bg = '#DBEAFE';
-          color = '#1D4ED8';
-          text = 'Awaiting Supervisor Approval';
-        }
-      } else if (isPendingHOD) {
-        bg = '#FFFBEB';
-        color = '#D97706';
-        text = 'Pending HOD Approval & DRC Pending';
-      } else if (isRevision) {
-        bg = '#FEE2E2';
-        color = '#991B1B';
-        text = 'Revision Required';
-      } else if (isApproved) {
-        if (thesis.status === 'SYNOPSIS_PENDING') {
-          bg = '#FFFBEB';
-          color = '#D97706';
-          text = 'Synopsis Approved (DRC Pending at HOD)';
-        } else {
-          bg = '#D1FAE5';
-          color = '#065F46';
-          text = 'Approved & Verified';
-        }
-      }
-
-      return (
-        <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 700, background: bg, color: color }}>
-          {text}
-        </span>
-      );
-    };
-
-    const canReview = !isReadOnly && (
-      (isSubmitted && subRole !== 'HOD' && thesis.supervisorId?._id === user._id) ||
-      (isPendingHOD && subRole === 'HOD')
-    );
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #E2E8F0', paddingBottom: 10 }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1E293B' }}>📝 Thesis Synopsis Submission</h3>
-          {statusBadge()}
-        </div>
-
-        {/* Scholar Research Details */}
-        <div className="usm-card" style={{ padding: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E3A8A', marginBottom: 12 }}>Research Outline</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
-            <div>
-              <strong>Thesis Title:</strong>
-              <div style={{ background: '#F8FAFC', padding: 10, borderRadius: 8, marginTop: 4, fontWeight: 600, color: '#334155', border: '1px solid #E2E8F0' }}>
-                {thesis.title || 'N/A'}
-              </div>
-            </div>
-            <div>
-              <strong>Abstract:</strong>
-              <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 8, marginTop: 4, color: '#475569', lineHeight: '1.5', border: '1px solid #E2E8F0', whiteSpace: 'pre-line' }}>
-                {thesis.abstract || 'N/A'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Synopsis Document Link */}
-        {hasUploaded ? (
-          <div className="usm-card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-            <div>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#166534' }}>📄 Synopsis Document File</span>
-              {synopsisMilestone.submittedAt && (
-                <div style={{ fontSize: '0.72rem', color: '#15803D', marginTop: 2 }}>
-                  Submitted on: {new Date(synopsisMilestone.submittedAt).toLocaleString()}
-                </div>
-              )}
-            </div>
-            <a 
-              href={`${API_BASE_URL}${synopsisMilestone.documentUrl}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="btn-primary"
-              style={{ fontSize: '0.8rem', padding: '8px 16px', background: '#166534', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            >
-              📥 Download / View Synopsis
-            </a>
-          </div>
-        ) : (
-          <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.85rem', padding: '20px' }}>
-            ⏳ The candidate has not uploaded the synopsis document yet.
-          </div>
-        )}
-
-        {/* Evaluation/Action Box (Only for HOD/Supervisor when submitted/pending HOD) */}
-        {canReview && (
-          <div className="usm-card" style={{ background: '#FFFDF5', border: '1px solid #FDE68A', padding: 20 }}>
-            <h4 style={{ margin: '0 0 10px', color: '#92400E', fontSize: '0.9rem', fontWeight: 800 }}>📋 Synopsis Evaluation Action</h4>
-            <p style={{ fontSize: '0.8rem', color: '#92400E', marginBottom: 12 }}>
-              {isPendingHOD 
-                ? "Supervisor has verified and provisionally approved the synopsis. Give final clearance to unlock DRC scheduling." 
-                : "Review the synopsis document and title details. You can approve the submission or request a revision with feedback."}
-            </p>
-            <textarea
-              className="form-input"
-              rows="3"
-              placeholder="Enter evaluation remarks or changes required..."
-              value={remarks[synopsisMilestone._id] || ''}
-              onChange={e => setRemarks(r => ({ ...r, [synopsisMilestone._id]: e.target.value }))}
-              style={{ marginBottom: 12, width: '100%', borderColor: '#FCD34D', background: '#FFFFFF' }}
-            />
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button 
-                className="btn-primary" 
-                onClick={() => act(() => onReview(synopsisMilestone._id, 'APPROVE', remarks[synopsisMilestone._id]))} 
-                disabled={loading} 
-                style={{ flex: 1, padding: '10px', background: '#059669' }}
-              >
-                {subRole === 'HOD' ? '✓ Grant HOD Final Approval' : '✓ Approve & Forward to HOD'}
-              </button>
-              <button 
-                className="btn-outline" 
-                onClick={() => {
-                  if (!(remarks[synopsisMilestone._id] || '').trim()) {
-                    return toast.warning('Remarks are required to request revision.');
-                  }
-                  act(() => onReview(synopsisMilestone._id, 'REVISION', remarks[synopsisMilestone._id]));
-                }}
-                disabled={loading} 
-                style={{ flex: 1, padding: '10px', borderColor: '#DC2626', color: '#DC2626' }}
-              >
-                ✗ Request Revision
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Read-Only provisional approval notice for supervisor */}
-        {!canReview && isPendingHOD && (
-          <div style={{ background: '#FFF9E6', borderLeft: '4px solid #F59E0B', color: '#B45309', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
-            ⏳ Synopsis has been provisionally approved by supervisor. Awaiting HOD final approval and DRC scheduling.
-          </div>
-        )}
-
-        {isApproved && thesis.status === 'SYNOPSIS_PENDING' && (
-          <div style={{ background: '#ECFDF5', borderLeft: '4px solid #10B981', color: '#065F46', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
-            ✅ Synopsis approved by HOD! DRC meeting evaluation is now pending. Please proceed to the <strong>DRC</strong> tab to schedule or record the meeting.
-          </div>
-        )}
-
-        {/* Action log / Feedback History */}
-        {synopsisMilestone.comments?.length > 0 && (
-          <div className="usm-card" style={{ padding: 16 }}>
-            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#334155', borderBottom: '1px solid #E2E8F0', paddingBottom: 6, marginBottom: 12 }}>
-              📜 Action & Feedback Log
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {synopsisMilestone.comments.map((c, idx) => (
-                <div key={idx} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, fontSize: '0.8rem' }}>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const handleHODScheduleSubmit = async (e) => {
-    e.preventDefault();
-    if (!semDate || !semTime || !semVenue) {
-      return toast.warning('Please fill in Date, Time, and Venue.');
-    }
-    setLoading(true);
-    try {
-      await schedulePreSubmissionSeminar(thesis._id, {
-        scheduledDate: semDate,
-        scheduledTime: semTime,
-        venue: semVenue,
-        committeeMembers: semCommittee,
-        remarks: semRemarks
-      });
-      toast.success('Pre-Submission Seminar scheduled successfully!');
-      if (onRefresh) await onRefresh();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to schedule seminar.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleHODOutcomeSubmit = async (e) => {
-    e.preventDefault();
-    if (semOutcomeStatus === 'UNCLEARED' && !semOutcomeRemarks.trim()) {
-      return toast.warning('Remarks are required for Uncleared outcome.');
-    }
-    setLoading(true);
-    try {
-      await recordPreSubmissionSeminarOutcome(thesis._id, {
-        status: semOutcomeStatus,
-        remarks: semOutcomeRemarks
-      });
-      toast.success('Pre-Submission Seminar outcome recorded successfully!');
-      if (onRefresh) await onRefresh();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to record outcome.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderPreSubmission = () => {
-    const sem = thesis.preSubmissionSeminar || {};
-    const semStatus = sem.status || 'NOT_SCHEDULED';
-    const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
-
-    const statusBadge = (status) => {
-      const colors = {
-        NOT_SCHEDULED: { bg: '#F3F4F6', color: '#4B5563', text: 'Not Scheduled' },
-        NOT_REQUESTED: { bg: '#F3F4F6', color: '#4B5563', text: 'Not Scheduled' },
-        SCHEDULED: { bg: '#FFFBEB', color: '#B45309', text: 'Scheduled' },
-        CLEARED: { bg: '#D1FAE5', color: '#065F46', text: 'Seminar Cleared' },
-        UNCLEARED: { bg: '#FEE2E2', color: '#991B1B', text: 'Uncleared' }
-      };
-      const sc = colors[status] || colors.NOT_SCHEDULED;
-      return (
-        <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 700, background: sc.bg, color: sc.color }}>
-          {sc.text}
-        </span>
-      );
-    };
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #E2E8F0', paddingBottom: 10 }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1E293B' }}>🎓 Pre-Submission Phase</h3>
-          {statusBadge(semStatus)}
-        </div>
-
-        {/* 1. DRAFT SUBMISSION & REVIEW PIPELINE (Must happen first) */}
-        <div className="usm-card" style={{ padding: 16 }}>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
-            📂 Thesis Draft and Plagiarism Report Review
-          </h4>
-
-          {!preMilestone ? (
-            <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
-              Awaiting student to complete active research prerequisites and upload the Pre-Submission draft package.
-            </p>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>
-                  Milestone Status: <strong style={{ textTransform: 'uppercase', color: preMilestone.status === 'APPROVED' ? '#059669' : preMilestone.status === 'REVISION_REQUIRED' ? '#DC2626' : '#2563EB' }}>{preMilestone.status}</strong>
-                </span>
-              </div>
-
-              {/* Uploaded files display */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16, fontSize: '0.82rem' }}>
-                <thead>
-                  <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Document</th>
-                    <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Download</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1E293B' }}>📄 Rough Thesis Draft</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                      {preMilestone.documentUrl ? (
-                        <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600 }}>Download</a>
-                      ) : (
-                        <span style={{ color: '#94A3B8' }}>Not Uploaded</span>
-                      )}
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1E293B' }}>🔍 Turnitin Plagiarism Report</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                      {preMilestone.plagiarismReportUrl ? (
-                        <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600 }}>Download</a>
-                      ) : (
-                        <span style={{ color: '#94A3B8' }}>Not Uploaded</span>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* Feedback log */}
-              {preMilestone.comments?.length > 0 && (
-                <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: 10, borderRadius: 6, marginBottom: 16, fontSize: '0.82rem' }}>
-                  <div style={{ fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Review Feedback History:</div>
-                  {preMilestone.comments.map((c, i) => (
-                    <div key={i} style={{ color: '#78350F', marginTop: 2 }}>
-                      "{c.text}" — <em>{c.authorName}</em>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Review actions */}
-              {!isReadOnly && (
-                <div>
-                  {/* Faculty approval check: status is SUBMITTED and reviewer is Faculty */}
-                  {preMilestone.status === 'SUBMITTED' && subRole !== 'HOD' && thesis.supervisorId?._id === user._id && (
-                    <div>
-                      <textarea className="form-input" placeholder="Add evaluation remarks..." rows="2" value={remarks[preMilestone._id] || ''} onChange={e => setRemarks(r => ({ ...r, [preMilestone._id]: e.target.value }))} style={{ marginBottom: 10, resize: 'vertical' }} />
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <button className="btn-primary" onClick={() => act(() => onReview(preMilestone._id, 'APPROVE', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', background: '#059669' }}>
-                          <CheckCircle2 size={14} style={{ marginRight: 4 }} /> Approve Draft (Forward to HOD)
-                        </button>
-                        <button className="btn-outline" onClick={() => act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
-                          <XCircle size={14} style={{ marginRight: 4 }} /> Request Revision
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* HOD final approval check: status is PENDING_HOD and reviewer is HOD */}
-                  {preMilestone.status === 'PENDING_HOD' && subRole === 'HOD' && (
-                    <div>
-                      <textarea className="form-input" placeholder="Add final HOD evaluation remarks..." rows="2" value={remarks[preMilestone._id] || ''} onChange={e => setRemarks(r => ({ ...r, [preMilestone._id]: e.target.value }))} style={{ marginBottom: 10, resize: 'vertical' }} />
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <button className="btn-primary" onClick={() => act(() => onReview(preMilestone._id, 'APPROVE', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', background: '#059669' }}>
-                          <CheckCircle2 size={14} style={{ marginRight: 4 }} /> Grant Final HOD Approval
-                        </button>
-                        <button className="btn-outline" onClick={() => act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
-                          <XCircle size={14} style={{ marginRight: 4 }} /> Request Revision
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Status notifications (for users who can't review right now) */}
-                  {preMilestone.status === 'SUBMITTED' && subRole === 'HOD' && (
-                    <div style={{ padding: 10, background: '#EFF6FF', borderRadius: 8, color: '#1E40AF', fontSize: '0.82rem', textAlign: 'center' }}>
-                      ⏳ Awaiting Faculty Supervisor review and approval before final HOD review.
-                    </div>
-                  )}
-                  {preMilestone.status === 'PENDING_HOD' && subRole !== 'HOD' && (
-                    <div style={{ padding: 10, background: '#EFF6FF', borderRadius: 8, color: '#1E40AF', fontSize: '0.82rem', textAlign: 'center' }}>
-                      ⏳ Approved by Supervisor. Awaiting final HOD sign-off.
-                    </div>
-                  )}
-                  {preMilestone.status === 'REVISION_REQUIRED' && (
-                    <div style={{ padding: 10, background: '#FEF2F2', borderRadius: 8, color: '#991B1B', fontSize: '0.82rem', textAlign: 'center' }}>
-                      ℹ️ Revisions requested. Awaiting scholar to re-submit draft package.
-                    </div>
-                  )}
-                  {preMilestone.status === 'APPROVED' && (
-                    <div style={{ padding: 10, background: '#ECFDF5', borderRadius: 8, color: '#047857', fontSize: '0.82rem', textAlign: 'center', fontWeight: 600 }}>
-                      ✅ Pre-Submission Thesis Draft Package approved and signed off.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 2. SEMINAR DETAILS / SCHEDULING FLOW (Only visible/active if draft is APPROVED) */}
-        <div className="usm-card" style={{ padding: 16 }}>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
-            📅 Pre-Submission Seminar Status & Schedule
-          </h4>
-
-          {preMilestone?.status !== 'APPROVED' ? (
-            <div style={{ padding: 14, background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 8, color: '#64748B', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>🔒</span> Pre-Submission Seminar Scheduling is locked until the Thesis Draft & Plagiarism Package gets final HOD approval.
-            </div>
-          ) : (
-            <div>
-              {/* Seminar status logic */}
-              {(semStatus === 'NOT_SCHEDULED' || semStatus === 'NOT_REQUESTED') && (
-                <div>
-                  {!isReadOnly && subRole === 'HOD' ? (
-                    <form onSubmit={handleHODScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#475569' }}>Schedule Pre-Submission Seminar:</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Date *</label>
-                          <input type="date" className="form-input" value={semDate} onChange={e => setSemDate(e.target.value)} required style={{ padding: 8 }} />
-                        </div>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Time *</label>
-                          <input type="text" className="form-input" placeholder="e.g., 11:30 AM" value={semTime} onChange={e => setSemTime(e.target.value)} required style={{ padding: 8 }} />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Venue *</label>
-                        <input type="text" className="form-input" placeholder="e.g., Seminar Hall, Dept of Computer Science" value={semVenue} onChange={e => setSemVenue(e.target.value)} required style={{ padding: 8 }} />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Committee Members (Optional)</label>
-                        <input type="text" className="form-input" placeholder="e.g., Prof. A, Dr. B (External), etc." value={semCommittee} onChange={e => setSemCommittee(e.target.value)} style={{ padding: 8 }} />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Remarks (Optional)</label>
-                        <textarea className="form-input" placeholder="Scheduling notes..." value={semRemarks} onChange={e => setSemRemarks(e.target.value)} style={{ minHeight: 60, padding: 8 }} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button type="submit" className="btn-primary" disabled={loading} style={{ background: '#EA580C', padding: '8px 16px' }}>
-                          {loading ? 'Submitting...' : 'Schedule Pre-Submission Seminar'}
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
-                      Draft Approved! Awaiting Head of Department (HOD) to schedule the Pre-Submission Seminar.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {semStatus === 'SCHEDULED' && (
-                <div>
-                  <div style={{ background: '#EFF6FF', borderRadius: 8, padding: 14, border: '1px solid #BFDBFE', fontSize: '0.85rem', marginBottom: 16 }}>
-                    <strong>📅 Scheduled Seminar Details:</strong>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-                      <div><strong>Date:</strong> {sem.scheduledDate ? new Date(sem.scheduledDate).toLocaleDateString() : 'N/A'}</div>
-                      <div><strong>Time:</strong> {sem.scheduledTime}</div>
-                      <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {sem.venue}</div>
-                      <div style={{ gridColumn: 'span 2' }}><strong>Committee:</strong> {sem.committeeMembers || 'N/A'}</div>
-                      {sem.remarks && <div style={{ gridColumn: 'span 2' }}><strong>HOD Remarks:</strong> "{sem.remarks}"</div>}
-                    </div>
-                  </div>
-
-                  {!isReadOnly && subRole === 'HOD' ? (
-                    <form onSubmit={handleHODOutcomeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#475569' }}>Record Seminar Outcome:</div>
-                      <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
-                          <input type="radio" name="outcome" value="CLEARED" checked={semOutcomeStatus === 'CLEARED'} onChange={() => setSemOutcomeStatus('CLEARED')} />
-                          Cleared (Satisfactory)
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
-                          <input type="radio" name="outcome" value="UNCLEARED" checked={semOutcomeStatus === 'UNCLEARED'} onChange={() => setSemOutcomeStatus('UNCLEARED')} />
-                          Uncleared (Unsatisfactory)
-                        </label>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Remarks / Feedback (Required if Uncleared) *</label>
-                        <textarea className="form-input" placeholder="Outcome remarks..." value={semOutcomeRemarks} onChange={e => setSemOutcomeRemarks(e.target.value)} required={semOutcomeStatus === 'UNCLEARED'} style={{ minHeight: 60, padding: 8 }} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button type="submit" className="btn-primary" disabled={loading} style={{ background: '#EA580C', padding: '8px 16px' }}>
-                          {loading ? 'Recording...' : 'Record Outcome'}
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
-                      Awaiting conduct of the Seminar and outcome recording by HOD.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {semStatus === 'CLEARED' && (
-                <div style={{ background: '#E8F5E9', borderRadius: 8, padding: 14, border: '1px solid #A5D6A7', fontSize: '0.85rem' }}>
-                  <strong style={{ color: '#2E7D32' }}>✅ Seminar Outcome: CLEARED (Satisfactory)</strong>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-                    <div><strong>Conducted On:</strong> {sem.scheduledDate ? new Date(sem.scheduledDate).toLocaleDateString() : 'N/A'}</div>
-                    <div><strong>Recorded On:</strong> {sem.outcomeRecordedAt ? new Date(sem.outcomeRecordedAt).toLocaleDateString() : 'N/A'}</div>
-                    {sem.outcomeRemarks && <div style={{ gridColumn: 'span 2' }}><strong>Outcome Remarks:</strong> "{sem.outcomeRemarks}"</div>}
-                  </div>
-                </div>
-              )}
-
-              {semStatus === 'UNCLEARED' && (
-                <div>
-                  <div style={{ padding: 12, background: '#FEE2E2', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
-                    <strong>⚠️ Seminar Outcome: UNCLEARED (Unsatisfactory)</strong>
-                    <div style={{ marginTop: 4 }}>Remarks: "{sem.outcomeRemarks || 'None'}"</div>
-                  </div>
-
-                  {!isReadOnly && subRole === 'HOD' ? (
-                    <form onSubmit={handleHODScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#991B1B' }}>Reschedule Pre-Submission Seminar:</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Date *</label>
-                          <input type="date" className="form-input" value={semDate} onChange={e => setSemDate(e.target.value)} required style={{ padding: 8 }} />
-                        </div>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Time *</label>
-                          <input type="text" className="form-input" placeholder="e.g., 11:30 AM" value={semTime} onChange={e => setSemTime(e.target.value)} required style={{ padding: 8 }} />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Venue *</label>
-                        <input type="text" className="form-input" placeholder="e.g., Seminar Hall" value={semVenue} onChange={e => setSemVenue(e.target.value)} required style={{ padding: 8 }} />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Committee Members (Optional)</label>
-                        <input type="text" className="form-input" placeholder="Committee members..." value={semCommittee} onChange={e => setSemCommittee(e.target.value)} style={{ padding: 8 }} />
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Remarks (Optional)</label>
-                        <textarea className="form-input" placeholder="Scheduling remarks..." value={semRemarks} onChange={e => setSemRemarks(e.target.value)} style={{ minHeight: 60, padding: 8 }} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button type="submit" className="btn-primary" disabled={loading} style={{ background: '#EA580C', padding: '8px 16px' }}>
-                          {loading ? 'Submitting...' : 'Reschedule Seminar'}
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <p style={{ margin: 0, color: '#64748B', fontSize: '0.85rem' }}>
-                      Awaiting Head of Department (HOD) to reschedule the Pre-Submission Seminar.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   // ══════════════════════════════════════════════════════════
   // TAB CONTENT RENDERERS
@@ -1550,14 +661,43 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       {/* Quick Actions */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600, background: badge.bg, color: badge.color }}>{badge.text}</span>
-
-        {!isReadOnly && subRole !== 'HOD' && thesis.status === 'SUBMITTED' && milestones.find(m => m.type === 'FINAL_SUBMISSION' && (m.status === 'SUBMITTED' || m.status === 'APPROVED')) && (
+        {!isReadOnly && subRole === 'HOD' && (!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') && (
+          <button className="btn-primary" onClick={() => act(onVerify)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#059669' }}>✓ Verify Enrollment</button>
+        )}
+        {!isReadOnly && thesis.status === 'COURSEWORK' && (
+          <button className="btn-primary" onClick={() => act(onClearCoursework)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#3B82F6' }}>✓ Clear Coursework</button>
+        )}
+        {!isReadOnly && subRole !== 'HOD' && thesis.status === 'PRE_SUBMISSION' && milestones.find(m => m.type === 'FINAL_SUBMISSION' && (m.status === 'SUBMITTED' || m.status === 'APPROVED')) && (
           <button className="btn-primary" onClick={() => act(onFinalApprove)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#8B5CF6' }}>✓ Final Approval → SUBMITTED</button>
         )}
         {!isReadOnly && subRole === 'HOD' && thesis.status === 'ACTIVE_RESEARCH' && (
-          <button className="btn-primary" onClick={() => setShowBypassModal(true)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#EA580C' }}>🚀 Advance to Pre-Submission</button>
+          <button className="btn-primary" onClick={async () => {
+            setLoading(true);
+            try {
+              await axios.put(`${API}/thesis/${thesis._id}/force-pre-submission`, {}, getAuthHeader());
+              toast.success('Scholar advanced to Pre-Submission phase!');
+              if (onRefresh) await onRefresh();
+            } catch (e) {
+              toast.error(e.response?.data?.message || e.message || 'Failed to advance scholar.');
+            } finally {
+              setLoading(false);
+            }
+          }} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#EA580C' }}>🚀 Advance to Pre-Submission</button>
         )}
       </div>
+
+      {/* HOD: Supervisor assignment */}
+      {!isReadOnly && subRole === 'HOD' && thesis.status !== 'AWARDED' && (
+        <div className="usm-card" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select className="form-input" style={{ padding: '5px 10px', height: 'auto', fontSize: '0.82rem', flex: 1 }} value={selSupervisor} onChange={e => setSelSupervisor(e.target.value)} disabled={!!thesis.supervisorId}>
+            <option value="">Assign Supervisor...</option>
+            {faculty.filter(f => f.department === thesis.department).map(f => <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Supervisor'})</option>)}
+          </select>
+          <button className="btn-primary" onClick={() => act(() => onAssign(selSupervisor))} disabled={!selSupervisor || !!thesis.supervisorId || loading} style={{ padding: '5px 14px', fontSize: '0.82rem', opacity: thesis.supervisorId ? 0.6 : 1 }}>
+            {thesis.supervisorId ? '✓ Assigned' : 'Assign'}
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="usm-stats">
@@ -1624,7 +764,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
         <div className="usm-section-title" style={{ marginBottom: '10px' }}>📝 Thesis & Research Details</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
-          <div><strong>SH no:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{thesis.scholarId?.profile?.shNo || 'N/A'}</span></div>
           <div><strong>Enrollment No:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
           <div><strong>Department:</strong> <span style={{ color: '#475569' }}>{thesis.department || 'N/A'}</span></div>
           <div><strong>Admission Date:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.admissionDate ? new Date(thesis.scholarId.profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
@@ -1659,23 +798,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
             );
           })}
-          {thesis.scholarId?.profile?.qualifications?.mphil && thesis.scholarId.profile.qualifications.mphil.done === true && (
-            <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#F8FAF5', borderColor: '#D7F3A0', marginBottom: 8 }}>
-              <div style={{ fontWeight: 700, color: '#4D7C0F', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                <span>M.Phil Qualification</span>
-                {thesis.scholarId.profile.qualifications.mphil.certificateUrl ? (
-                  <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.mphil.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#65A30D', fontWeight: 600 }}>📄 M.Phil Certificate</a>
-                ) : (
-                  <span style={{ color: '#94A3B8' }}>Pending Proof</span>
-                )}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
-                <div><strong>University:</strong> {thesis.scholarId.profile.qualifications.mphil.university || 'N/A'}</div>
-                <div><strong>Passing Year:</strong> {thesis.scholarId.profile.qualifications.mphil.passingYear || 'N/A'}</div>
-                <div><strong>Marks:</strong> {thesis.scholarId.profile.qualifications.mphil.marksObtained}/{thesis.scholarId.profile.qualifications.mphil.totalMarks || 'N/A'} ({thesis.scholarId.profile.qualifications.mphil.percentage}%)</div>
-              </div>
-            </div>
-          )}
           {thesis.scholarId?.profile?.qualifications?.netJrf && thesis.scholarId.profile.qualifications.netJrf.qualified !== 'No' && (
             <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#ECFDF5', borderColor: '#A7F3D0' }}>
               <div style={{ fontWeight: 700, color: '#065F46', marginBottom: 4 }}>NET / JRF Qualified</div>
@@ -1686,86 +808,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
             </div>
           )}
-          {thesis.scholarId?.profile?.qualifications?.fellowships?.length > 0 && (
-            <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#F0F9FF', borderColor: '#BAE6FD' }}>
-              <div style={{ fontWeight: 700, color: '#0369A1', marginBottom: 4 }}>National & International Fellowships</div>
-              {thesis.scholarId.profile.qualifications.fellowships.map((f, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, paddingBottom: 6, marginBottom: 6, borderBottom: i !== thesis.scholarId.profile.qualifications.fellowships.length - 1 ? '1px solid #E0F2FE' : 'none' }}>
-                  <div><strong>Type:</strong> {f.type === 'Other' ? f.otherType : f.type || 'N/A'}</div>
-                  <div><strong>Awarding Body:</strong> {f.awardingBody || 'N/A'}</div>
-                  <div><strong>Award Date:</strong> {f.awardDate || 'N/A'}</div>
-                  <div><strong>Ref/ID:</strong> {f.referenceNo || 'N/A'}</div>
-                  <div><strong>Duration:</strong> {f.duration || 'N/A'}</div>
-                  <div><strong>Amount:</strong> {f.amount || 'N/A'}</div>
-                  {f.certificateUrl && (
-                    <div style={{ gridColumn: 'span 3' }}>
-                      <a href={`${API_BASE_URL}${f.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#0284C7', fontWeight: 600 }}>📄 View Fellowship Proof</a>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* HOD Review, Verify & Assign Supervisor Card */}
-      {!isReadOnly && subRole === 'HOD' && (
-        <div className="usm-card" style={{ borderTop: '2px solid #E2E8F0', paddingTop: '16px', marginTop: '12px', background: '#F8FAFC', padding: '16px', borderRadius: '10px' }}>
-          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', marginBottom: '8px', marginTop: 0 }}>📋 Verification & Supervisor Assignment</h4>
-          <p style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: '16px' }}>
-            Please review the qualifications and credentials above. Verify the scholar and allocate their Research Advisor (Supervisor).
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Enrollment Status:</span>
-              {(!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') ? (
-                <button 
-                  className="btn-primary" 
-                  onClick={() => act(onVerify)} 
-                  disabled={loading} 
-                  style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
-                >
-                  ✓ Verify Enrollment & Move to Coursework
-                </button>
-              ) : (
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>
-                  ✓ Verified
-                </span>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Supervisor:</span>
-              {thesis.supervisorId ? (
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0369A1', background: '#E0F2FE', padding: '4px 10px', borderRadius: '12px' }}>
-                  {thesis.supervisorId?.name || 'Assigned'}
-                </span>
-              ) : (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
-                  <select 
-                    className="form-input" 
-                    style={{ padding: '6px 10px', height: 'auto', fontSize: '0.82rem', flex: 1 }} 
-                    value={selSupervisor} 
-                    onChange={e => setSelSupervisor(e.target.value)}
-                  >
-                    <option value="">Select Supervisor...</option>
-                    {faculty.filter(f => f.department === thesis.department).map(f => (
-                      <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Faculty'})</option>
-                    ))}
-                  </select>
-                  <button 
-                    className="btn-primary" 
-                    onClick={() => act(() => onAssign(selSupervisor))} 
-                    disabled={!selSupervisor || loading} 
-                    style={{ padding: '6px 14px', fontSize: '0.82rem' }}
-                  >
-                    Assign
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -1773,43 +815,15 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
   const renderDRC = () => {
     const synopsisApproved = synopsisMilestone?.status === 'APPROVED';
-
-    const drcLockNotice = () => {
-      const mStatus = synopsisMilestone?.status || 'PENDING';
-      let bg = '#FFF5F5';
-      let border = '#FEB2B2';
-      let color = '#C53030';
-      let text = "⚠️ Synopsis upload is currently pending at the candidate's end. DRC scheduling is locked.";
-
-      if (mStatus === 'SUBMITTED') {
-        if (subRole === 'HOD') {
-          text = "⚠️ Synopsis upload is currently pending at the candidate's end. DRC scheduling is locked.";
-        } else {
-          text = '⚠️ Synopsis has been submitted by candidate. Awaiting supervisor provisional approval. DRC scheduling is locked.';
-        }
-      } else if (mStatus === 'PENDING_HOD') {
-        bg = '#FFFBEB';
-        border = '#FDE68A';
-        color = '#B45309';
-        text = '⏳ Synopsis has been provisionally approved by supervisor. Awaiting HOD final approval. DRC scheduling is locked.';
-      } else if (mStatus === 'REVISION_REQUIRED') {
-        text = '⚠️ Synopsis revision required. Awaiting updated draft from candidate. DRC scheduling is locked.';
-      }
-
-      return (
-        <div style={{ background: bg, border: `1px solid ${border}`, color: color, padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}>
-          {text}
-        </div>
-      );
-    };
-
-    const showSynopsisApprovalOption = thesis.status === 'SYNOPSIS_PENDING' && !drcMeetings.some(d => d.isSynopsisApproval && (d.status === 'APPROVED' || d.status === 'SCHEDULED'));
-
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="usm-section-title">🏛️ Departmental Research Committee (DRC)</div>
 
-        {!synopsisApproved && thesis.status === 'SYNOPSIS_PENDING' && drcLockNotice()}
+        {!synopsisApproved && thesis.status === 'SYNOPSIS_PENDING' && (
+          <div style={{ background: '#FFF5F5', border: '1px solid #FEB2B2', color: '#C53030', padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}>
+            ⚠️ Synopsis not yet approved by Supervisor (Status: {synopsisMilestone?.status || 'PENDING'}). DRC locked.
+          </div>
+        )}
 
         {(synopsisApproved || thesis.status !== 'SYNOPSIS_PENDING') && (
           <>
@@ -1819,30 +833,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               (thesis.status !== 'SYNOPSIS_PENDING')
             ) && !showDrcSchedule && !showOfflineDrc && (
               <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                <button className="btn-primary" onClick={() => {
-                  setShowDrcSchedule(true);
-                  setShowOfflineDrc(false);
-                  setDrcForm({
-                    scheduledDate: '',
-                    scheduledTime: '',
-                    venue: '',
-                    committeeMembers: '',
-                    agenda: '',
-                    isSynopsisApproval: showSynopsisApprovalOption
-                  });
-                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#3B82F6' }}>+ Schedule DRC</button>
-                <button className="btn-primary" onClick={() => {
-                  setShowOfflineDrc(true);
-                  setShowDrcSchedule(false);
-                  setOfflineDrcForm({
-                    conductedDate: '',
-                    venue: '',
-                    committeeMembers: '',
-                    remarks: '',
-                    status: 'APPROVED',
-                    isSynopsisApproval: showSynopsisApprovalOption
-                  });
-                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#059669' }}>+ Record Offline DRC</button>
+                <button className="btn-primary" onClick={() => { setShowDrcSchedule(true); setShowOfflineDrc(false); }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#3B82F6' }}>+ Schedule DRC</button>
+                <button className="btn-primary" onClick={() => { setShowOfflineDrc(true); setShowDrcSchedule(false); }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#059669' }}>+ Record Offline DRC</button>
               </div>
             )}
 
@@ -1853,7 +845,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <div key={drc._id} className="usm-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{drc.title || 'DRC Session'}</span>
-                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>{drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : drc.status}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>{drc.status}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)' }}>
                   <div><strong>Date:</strong> {new Date(drc.scheduledDate).toLocaleDateString()}</div>
@@ -1876,16 +868,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required /></div>
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Time</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required /></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required /></div>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Purpose</label>
-                    <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                      <option value="General">General DRC</option>
-                      {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
-                    </select>
-                  </div>
-                </div>
+                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required /></div>
                 <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Committee</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen, Prof. M. Roy" value={drcForm.committeeMembers} onChange={e => setDrcForm({...drcForm, committeeMembers: e.target.value})} /></div>
                 <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Agenda</label><textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="2" placeholder="Focus areas..." value={drcForm.agenda} onChange={e => setDrcForm({...drcForm, agenda: e.target.value})} /></div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -1901,24 +884,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record Offline DRC Outcome</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date Conducted</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.conductedDate} onChange={e => setOfflineDrcForm({...offlineDrcForm, conductedDate: e.target.value})} required /></div>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label>
-                    <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.status} onChange={e => setOfflineDrcForm({...offlineDrcForm, status: e.target.value})}>
-                      <option value="APPROVED">Satisfactory</option>
-                      <option value="REVISION_REQUIRED">Unsatisfactory</option>
-                    </select>
-                  </div>
+                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label><select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.status} onChange={e => setOfflineDrcForm({...offlineDrcForm, status: e.target.value})}><option value="APPROVED">APPROVED</option><option value="REVISION_REQUIRED">REVISION REQUIRED</option></select></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Office" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required /></div>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Purpose</label>
-                    <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setOfflineDrcForm({...offlineDrcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                      <option value="General">General DRC</option>
-                      {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
-                    </select>
-                  </div>
-                </div>
+                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Offline Department Office" value={offlineDrcForm.venue} onChange={e => setOfflineDrcForm({...offlineDrcForm, venue: e.target.value})} required /></div>
                 <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Remarks / MoM</label><textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="3" value={offlineDrcForm.remarks} onChange={e => setOfflineDrcForm({...offlineDrcForm, remarks: e.target.value})} required /></div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-outline" onClick={() => setShowOfflineDrc(false)} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Cancel</button>
@@ -1931,14 +899,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             {showDrcResult && selectedDrc && (
               <form onSubmit={handleDrcResult} className="usm-card" style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#ECFDF5', borderColor: '#A7F3D0' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record DRC Outcome</div>
-                <div>
-                  <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label>
-                  <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})}>
-                    <option value="APPROVED">Satisfactory</option>
-                    <option value="REVISION_REQUIRED">Unsatisfactory</option>
-                    <option value="RESCHEDULE">Reschedule</option>
-                  </select>
-                </div>
+                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label><select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})}><option value="APPROVED">APPROVED</option><option value="REVISION_REQUIRED">REVISION REQUIRED</option><option value="RESCHEDULE">RESCHEDULE</option></select></div>
                 {drcResultForm.status === 'RESCHEDULE' && (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -2131,7 +1092,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         <div style={{ width: 1, background: '#E2E8F0' }} />
         <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: verifiedConferences >= 2 ? '#059669' : '#EF4444' }}>{verifiedConferences}/2</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Conferences {verifiedConferences >= 2 ? '✅' : '⚠️'}</div></div>
         <div style={{ width: 1, background: '#E2E8F0' }} />
-        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2563EB' }}>{publications.filter(p => p.type === 'PATENT' || p.type === 'IPR').length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>IPRs (Optional)</div></div>
+        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2563EB' }}>{publications.filter(p => p.type === 'PATENT').length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Patents (Optional)</div></div>
         <div style={{ width: 1, background: '#E2E8F0' }} />
         <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3B82F6' }}>{publications.length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Total Logged</div></div>
       </div>
@@ -2149,40 +1110,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: p.status === 'VERIFIED' ? '#D1FAE5' : p.status === 'REJECTED' ? '#FEE2E2' : '#FEF3C7', color: p.status === 'VERIFIED' ? '#065F46' : p.status === 'REJECTED' ? '#991B1B' : '#92400E' }}>{p.status}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', fontSize: '0.78rem', color: '#64748B', margin: '6px 0' }}>
-            <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Office/Org:' : p.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {p.journalName}</div>
-            <div><strong>Type:</strong> {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type} {p.itemStatus && <span style={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem', marginLeft: 4 }}>({p.itemStatus})</span>}</div>
-            <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Number:' : p.type === 'CONFERENCE' ? 'Location/Venue:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
-            <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'Filing/Award Date:' : 'Date:'}</strong> {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}</div>
-            
-            {(p.type === 'PATENT' || p.type === 'IPR') && (
-              <>
-                <div><strong>Inventors/Applicants:</strong> {p.volume || 'N/A'}</div>
-                <div><strong>App/Grant No:</strong> {p.issue || 'N/A'}</div>
-                <div><strong>Country/Region:</strong> {p.pages || 'N/A'}</div>
-              </>
-            )}
-            
-            {p.type === 'JOURNAL' && (
-              <>
-                <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
-                <div><strong>Volume:</strong> {p.volume || 'N/A'}</div>
-                <div><strong>Issue:</strong> {p.issue || 'N/A'}</div>
-                <div><strong>Pages:</strong> {p.pages || 'N/A'}</div>
-              </>
-            )}
-
-            {p.type === 'CONFERENCE' && (
-              <>
-                <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
-                <div><strong>Organizer:</strong> {p.volume || 'N/A'}</div>
-              </>
-            )}
-            
-            {p.doiUrl && <div style={{ gridColumn: 'span 2' }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR ID/Ref:' : p.type === 'CONFERENCE' ? 'Proceedings Link:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
+            <div><strong>{p.type === 'PATENT' ? 'Patent Office/Org:' : 'Journal/Publisher:'}</strong> {p.journalName}</div>
+            <div><strong>Type:</strong> {p.type}</div>
+            <div><strong>{p.type === 'PATENT' ? 'Patent Number:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
+            <div><strong>{p.type === 'PATENT' ? 'Filing/Award Date:' : 'Date:'}</strong> {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}</div>
           </div>
           {(p.documentUrl || p.attachmentUrl) && (
             <a href={`${API_BASE_URL}${p.documentUrl || p.attachmentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: '#3B82F6', fontWeight: 600, display: 'inline-block', marginBottom: 8 }}>
-              {p.type === 'PATENT' || p.type === 'IPR' ? '📄 View IPR Proof' : '📄 View Proof'}
+              {p.type === 'PATENT' ? '📄 View Patent Proof' : '📄 View Proof'}
             </a>
           )}
           {p.remarks && <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', color: '#92400E', margin: '8px 0' }}><strong>Remarks:</strong> {p.remarks}</div>}
@@ -2197,6 +1132,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   );
 
   const renderDocuments = () => {
+    const canClearSeminar = verifiedJournals >= 2 && verifiedConferences >= 2;
+    const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
+    const hasUploadedDocs = preMilestone && preMilestone.status === 'SUBMITTED';
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="usm-section-title">📄 Core Documents & Submissions</div>
@@ -2210,7 +1149,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         )}
 
         {/* Core pending documents for review */}
-        {corePendingMilestonesDocs.length > 0 && corePendingMilestonesDocs.map(m => (
+        {corePendingMilestones.length > 0 && corePendingMilestones.map(m => (
           <div key={m._id} className="usm-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ fontWeight: 700 }}>{m.title}</div>
@@ -2286,6 +1225,28 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </div>
         ))}
 
+        {/* Pre-submission seminar section (HOD) */}
+        {subRole === 'HOD' && thesis.status === 'ACTIVE_RESEARCH' && (
+          <div className="usm-card">
+            <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 10 }}>Pre-Submission Seminar</div>
+            {!canClearSeminar && <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '10px 14px', borderRadius: 10, fontSize: '0.82rem', color: '#EF4444', fontWeight: 600, marginBottom: 10 }}>⚠️ Prerequisites locked — Journals: {verifiedJournals}/2 | Conferences: {verifiedConferences}/2</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              {hasUploadedDocs && <button className="btn-outline" onClick={() => setShowSeminarSchedule(!showSeminarSchedule)} style={{ padding: '6px 14px', fontSize: '0.78rem', borderColor: '#3B82F6', color: '#3B82F6' }}>📅 {showSeminarSchedule ? 'Cancel' : 'Schedule Seminar'}</button>}
+              <button className="btn-primary" onClick={() => act(onSeminar)} disabled={loading || !canClearSeminar || !hasUploadedDocs} style={{ padding: '6px 14px', fontSize: '0.78rem', background: !canClearSeminar || !hasUploadedDocs ? '#94A3B8' : '#EA580C', cursor: !canClearSeminar || !hasUploadedDocs ? 'not-allowed' : 'pointer', opacity: !canClearSeminar || !hasUploadedDocs ? 0.7 : 1 }}>✓ Seminar Cleared → Pre-Submission</button>
+            </div>
+            {showSeminarSchedule && hasUploadedDocs && (
+              <form onSubmit={handleSeminarSchedule} style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={seminarForm.scheduledDate} onChange={e => setSeminarForm({...seminarForm, scheduledDate: e.target.value})} required /></div>
+                  <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Time</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={seminarForm.scheduledTime} onChange={e => setSeminarForm({...seminarForm, scheduledTime: e.target.value})} required /></div>
+                </div>
+                <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Venue</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} value={seminarForm.venue} onChange={e => setSeminarForm({...seminarForm, venue: e.target.value})} required /></div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button type="submit" className="btn-primary" disabled={loading} style={{ padding: '6px 14px', fontSize: '0.75rem', background: '#0284C7' }}>Schedule</button></div>
+              </form>
+            )}
+          </div>
+        )}
+
         {/* Additional documents */}
         {additionalDocs.length > 0 && (
           <>
@@ -2342,7 +1303,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </>
         )}
 
-        {corePendingMilestonesDocs.length === 0 && additionalDocs.length === 0 && thesis.status !== 'SYNOPSIS_PENDING' && thesis.status !== 'PRE_SUBMISSION' && (
+        {corePendingMilestones.length === 0 && additionalDocs.length === 0 && thesis.status !== 'SYNOPSIS_PENDING' && thesis.status !== 'PRE_SUBMISSION' && (
           <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem' }}>No pending documents for review.</div>
         )}
       </div>
@@ -2398,402 +1359,495 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     </div>
   );
 
-  const renderDefenseAndAward = () => {
-    const canManageDefense = user.role === 'ADMIN' || subRole === 'HOD';
+  const renderFinalSubmission = () => {
+    const finalSub = milestones.find(m => m.type === 'FINAL_SUBMISSION');
+    const isSupervisor = thesis.supervisorId?._id === user._id;
+    const isHOD = subRole === 'HOD';
+    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
     const isDispatched = !!thesis.dispatchDate;
-    const isVivaScheduled = thesis.vivaStatus === 'SCHEDULED';
-    const isVivaSuccessful = thesis.vivaStatus === 'SUCCESSFUL';
-    const isVivaUnsuccessful = thesis.vivaStatus === 'UNSUCCESSFUL';
-    const isAwarded = thesis.status === 'AWARDED';
+
+    const handleSupervisorApprove = async () => {
+      act(async () => {
+        await axios.put(`${API}/thesis/${thesis._id}/final-approve`, {}, getAuthHeader());
+        toast.success('Thesis signed-off and routed to HOD!');
+        refreshAll();
+      });
+    };
+
+    const handleSupervisorReject = async (e) => {
+      e.preventDefault();
+      if (!supervisorRejectComment.trim()) return toast.warning('Comment is required for corrections.');
+      act(async () => {
+        await axios.put(`${API}/thesis/${thesis._id}/final-reject`, { comment: supervisorRejectComment.trim() }, getAuthHeader());
+        toast.success('Thesis corrections sent back to student.');
+        setSupervisorRejectComment('');
+        setShowSupervisorRejectForm(false);
+        refreshAll();
+      });
+    };
+
+    const handleHodApprove = async () => {
+      act(async () => {
+        await axios.put(`${API}/thesis/${thesis._id}/final-approve-hod`, {}, getAuthHeader());
+        toast.success('Final Bound Thesis approved and marked SUBMITTED!');
+        refreshAll();
+      });
+    };
+
+    const handleHodReject = async (e) => {
+      e.preventDefault();
+      if (!hodRejectComment.trim()) return toast.warning('Comment is required for corrections.');
+      act(async () => {
+        await axios.put(`${API}/thesis/${thesis._id}/final-reject-hod`, { comment: hodRejectComment.trim() }, getAuthHeader());
+        toast.success('Thesis corrections sent back to student.');
+        setHodRejectComment('');
+        setShowHodRejectForm(false);
+        refreshAll();
+      });
+    };
+
+    const handleEvalOutcome = async (outcome) => {
+      act(async () => {
+        await axios.put(`${API}/thesis/${thesis._id}/external-evaluation`, { status: outcome, remarks: evalRemarks }, getAuthHeader());
+        toast.success(`External evaluation logged as ${outcome}!`);
+        setEvalRemarks('');
+        setShowEvalOutcomeForm(false);
+        refreshAll();
+      });
+    };
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div>
-          <h3 className="usm-section-title" style={{ margin: 0 }}>🎓 Ph.D. Defense, Viva-Voce & Degree Award</h3>
-          <p style={{ color: '#64748B', fontSize: '0.85rem', marginTop: 4 }}>
-            Track examiner dispatch, schedule oral defense viva-voce, record final recommendations, and authorize degree award.
-          </p>
-          <div style={{ fontSize: '0.78rem', color: '#64748B', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg, #F8FAFC)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 10 }}>
-            <span>Authorization Level: <strong>{canManageDefense ? 'HOD/Admin (Manage)' : 'Faculty/Scholar (Read-Only)'}</strong></span>
-            <span style={{ fontWeight: 700, color: isAwarded ? '#10B981' : '#3B82F6' }}>
-              Current Stage: {resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole, preSubMilestone?.status, thesis.preSubmissionSeminar?.status).text}
-            </span>
-          </div>
-        </div>
+        <div className="usm-section-title">📚 Final Bound Thesis Submission & Evaluation Activities</div>
 
-        {/* ── CARD 1: Thesis External Dispatch ── */}
-        <div className="usm-card" style={{
-          borderLeft: `4px solid ${isDispatched ? '#10B981' : '#F59E0B'}`,
-          background: isDispatched ? 'rgba(16, 185, 129, 0.02)' : 'rgba(245, 158, 11, 0.02)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-          padding: 16
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800 }}>📬 Step 1: Dispatch to External Examiners</h4>
-            <span style={{
-              padding: '2px 8px',
-              borderRadius: 12,
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              background: isDispatched ? '#D1FAE5' : '#FEF3C7',
-              color: isDispatched ? '#065F46' : '#92400E'
-            }}>
-              {isDispatched ? 'DISPATCHED' : 'PENDING'}
-            </span>
+        {!finalSub ? (
+          <div className="usm-card" style={{ padding: 24, textAlign: 'center', color: '#64748B' }}>
+            ⏳ Final bound thesis submission is locked. Scholar must clear the Pre-Submission Seminar first.
           </div>
-
-          {isDispatched ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.82rem' }}>
-                <div><strong>Dispatch Date:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)' }}>{new Date(thesis.dispatchDate).toLocaleDateString()}</span></div>
-                <div><strong>Dispatch Method:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)' }}>{thesis.dispatchMethod}</span></div>
-                <div style={{ gridColumn: 'span 2' }}><strong>Tracking / Reference Code:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)', fontFamily: 'monospace', fontWeight: 600 }}>{thesis.dispatchTrackingNumber || 'N/A'}</span></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Step 1: Upload Details */}
+            <div className="usm-card" style={{ borderLeft: '4px solid #3B82F6', padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 1: Student Final Thesis Upload</h4>
+                <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: finalSub.status === 'PENDING' ? '#FEF3C7' : '#D1FAE5', color: finalSub.status === 'PENDING' ? '#D97706' : '#065F46' }}>
+                  {finalSub.status === 'PENDING' ? 'Awaiting Upload' : 'Uploaded'}
+                </span>
               </div>
-
-              {canManageDefense && !showDispatchForm && (
-                <button
-                  onClick={() => {
-                    setDispatchForm({
-                      dispatchDate: thesis.dispatchDate ? new Date(thesis.dispatchDate).toISOString().substring(0, 10) : '',
-                      dispatchMethod: thesis.dispatchMethod || 'Speed Post',
-                      dispatchTrackingNumber: thesis.dispatchTrackingNumber || ''
-                    });
-                    setShowDispatchForm(true);
-                  }}
-                  className="btn-outline"
-                  style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: '0.72rem', marginTop: 4 }}
-                >
-                  ✏️ Edit Dispatch Details
-                </button>
-              )}
-            </div>
-          ) : (
-            <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #475569)' }}>
-              {canManageDefense ? (
-                <p style={{ margin: 0 }}>Log dispatch details when the physical/digital copy of final thesis is officially sent to external university examiners.</p>
+              {finalSub.status === 'PENDING' ? (
+                <div style={{ fontSize: '0.82rem', color: '#64748B' }}>Awaiting the student to incorporate corrections and upload the final hard-bound thesis PDF.</div>
               ) : (
-                <p style={{ margin: 0 }}>Awaiting thesis examiner dispatch log from HOD/Admin.</p>
-              )}
-            </div>
-          )}
-
-          {canManageDefense && (showDispatchForm || !isDispatched) && (
-            <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--color-surface, #FFFFFF)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 4 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Dispatch Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={dispatchForm.dispatchDate}
-                    onChange={e => setDispatchForm({ ...dispatchForm, dispatchDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Dispatch Method</label>
-                  <select
-                    className="form-input"
-                    value={dispatchForm.dispatchMethod}
-                    onChange={e => setDispatchForm({ ...dispatchForm, dispatchMethod: e.target.value })}
-                    required
-                  >
-                    <option value="Speed Post">Speed Post</option>
-                    <option value="Registered Post">Registered Post</option>
-                    <option value="DHL Courier">DHL Courier</option>
-                    <option value="Official Courier">Official Courier</option>
-                    <option value="Secure Email">Secure Email</option>
-                    <option value="Hand Delivery">Hand Delivery</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Tracking Code / Dispatch Reference Number</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. HPU-EXAM-PHD-2026-99"
-                  value={dispatchForm.dispatchTrackingNumber}
-                  onChange={e => setDispatchForm({ ...dispatchForm, dispatchTrackingNumber: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-                {isDispatched && (
-                  <button type="button" className="btn-outline" onClick={() => setShowDispatchForm(false)} style={{ padding: '5px 12px', fontSize: '0.75rem' }}>Cancel</button>
-                )}
-                <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '5px 14px', fontSize: '0.75rem', background: '#059669' }}>
-                  {loading ? 'Saving...' : isDispatched ? 'Update Dispatch Details' : 'Log Dispatch to Examiners'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* ── CARD 2: Viva-Voce Oral Defense ── */}
-        <div className="usm-card" style={{
-          borderLeft: `4px solid ${isVivaSuccessful ? '#10B981' : isVivaUnsuccessful ? '#EF4444' : isVivaScheduled ? '#3B82F6' : '#94A3B8'}`,
-          background: isVivaSuccessful ? 'rgba(16, 185, 129, 0.02)' : isVivaUnsuccessful ? 'rgba(239, 68, 68, 0.02)' : isVivaScheduled ? 'rgba(59, 130, 246, 0.02)' : 'rgba(148, 163, 184, 0.02)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-          padding: 16,
-          opacity: isDispatched ? 1 : 0.6
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800 }}>🎓 Step 2: Viva-Voce Defense Colloquium</h4>
-            <span style={{
-              padding: '2px 8px',
-              borderRadius: 12,
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              background: isVivaSuccessful ? '#D1FAE5' : isVivaUnsuccessful ? '#FEE2E2' : isVivaScheduled ? '#DBEAFE' : '#E2E8F0',
-              color: isVivaSuccessful ? '#065F46' : isVivaUnsuccessful ? '#991B1B' : isVivaScheduled ? '#1E40AF' : '#475569'
-            }}>
-              {isVivaSuccessful ? 'PASSED / SUCCESSFUL' : isVivaUnsuccessful ? 'REVISIONS REQUIRED' : isVivaScheduled ? 'SCHEDULED' : 'PENDING ASSESSMENT'}
-            </span>
-          </div>
-
-          {!isDispatched ? (
-            <div style={{ fontSize: '0.82rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>🔒 Locked:</span><span>Awaiting thesis external examiner dispatch completion.</span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {thesis.vivaStatus !== 'NOT_SCHEDULED' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.82rem' }}>
-                  <div><strong>Defense Date:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)' }}>{thesis.vivaDate ? new Date(thesis.vivaDate).toLocaleDateString() : 'N/A'}</span></div>
-                  <div><strong>Defense Time:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)' }}>{thesis.vivaTime || 'N/A'}</span></div>
-                  <div><strong>Venue:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)' }}>{thesis.vivaVenue || 'N/A'}</span></div>
-                  <div><strong>Expert Panel:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)' }}>{thesis.vivaPanel || 'N/A'}</span></div>
-                  {(isVivaSuccessful || isVivaUnsuccessful) && (
-                    <div style={{ gridColumn: 'span 2', background: isVivaSuccessful ? '#ECFDF5' : '#FFF5F5', padding: 8, borderRadius: 6, borderLeft: `3px solid ${isVivaSuccessful ? '#10B981' : '#EF4444'}`, marginTop: 4 }}>
-                      <strong>Outcome Remarks:</strong> <span style={{ color: isVivaSuccessful ? '#065F46' : '#991B1B' }}>"{thesis.vivaRemarks || 'No remarks recorded'}"</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {thesis.vivaStatus === 'NOT_SCHEDULED' && (
-                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #475569)' }}>
-                  {canManageDefense ? (
-                    <p style={{ margin: 0 }}>Schedule the Viva-Voce oral defense seminar once positive reports are received from the external evaluation panel.</p>
-                  ) : (
-                    <p style={{ margin: 0 }}>Awaiting external examiner assessments and defense scheduling by HOD/Admin.</p>
-                  )}
-                </div>
-              )}
-
-              {canManageDefense && thesis.vivaStatus === 'NOT_SCHEDULED' && (
-                <button onClick={() => setShowVivaForm(true)} className="btn-primary" style={{ alignSelf: 'flex-start', padding: '5px 12px', fontSize: '0.75rem', marginTop: 4, background: '#3B82F6' }}>
-                  📅 Schedule Viva-Voce
-                </button>
-              )}
-
-              {canManageDefense && isVivaScheduled && !showVivaOutcomeForm && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                  <button onClick={() => setShowVivaOutcomeForm(true)} className="btn-primary" style={{ padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>
-                    📝 Record Defense Outcome
-                  </button>
-                  <button onClick={() => {
-                    setVivaForm({
-                      vivaDate: thesis.vivaDate ? new Date(thesis.vivaDate).toISOString().substring(0, 10) : '',
-                      vivaTime: thesis.vivaTime || '',
-                      vivaVenue: thesis.vivaVenue || '',
-                      vivaPanel: thesis.vivaPanel || ''
-                    });
-                    setShowVivaForm(true);
-                  }} className="btn-outline" style={{ padding: '5px 12px', fontSize: '0.75rem' }}>
-                    Reschedule
-                  </button>
-                </div>
-              )}
-
-              {canManageDefense && isVivaUnsuccessful && !showVivaForm && (
-                <button onClick={() => {
-                  setVivaForm({ vivaDate: '', vivaTime: '', vivaVenue: '', vivaPanel: '' });
-                  setShowVivaForm(true);
-                }} className="btn-primary" style={{ alignSelf: 'flex-start', padding: '5px 12px', fontSize: '0.75rem', marginTop: 4, background: '#EA580C' }}>
-                  🔄 Re-schedule Viva-Voce Defense
-                </button>
-              )}
-            </div>
-          )}
-
-          {canManageDefense && showVivaForm && isDispatched && (
-            <form onSubmit={handleScheduleViva} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--color-surface, #FFFFFF)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 4 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#1E40AF' }}>Schedule Viva-Voce Defense Session</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Defense Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={vivaForm.vivaDate}
-                    onChange={e => setVivaForm({ ...vivaForm, vivaDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Defense Time</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. 11:30 AM"
-                    value={vivaForm.vivaTime}
-                    onChange={e => setVivaForm({ ...vivaForm, vivaTime: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Defense Venue</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Department Boardroom / Offline"
-                  value={vivaForm.vivaVenue}
-                  onChange={e => setVivaForm({ ...vivaForm, vivaVenue: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>External Board & Committee Panel</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Prof. G. C. Sharma (External), Dr. R. K. Sen (Supervisor)"
-                  value={vivaForm.vivaPanel}
-                  onChange={e => setVivaForm({ ...vivaForm, vivaPanel: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-                <button type="button" className="btn-outline" onClick={() => setShowVivaForm(false)} style={{ padding: '5px 12px', fontSize: '0.75rem' }}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '5px 14px', fontSize: '0.75rem', background: '#3B82F6' }}>
-                  {loading ? 'Scheduling...' : 'Save Viva Schedule'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {canManageDefense && showVivaOutcomeForm && isDispatched && (
-            <form onSubmit={handleRecordVivaOutcome} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--color-surface, #FFFFFF)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 4 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#065F46' }}>Record Viva-Voce Defense Recommendations</div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Defense Decision</label>
-                <select
-                  className="form-input"
-                  value={vivaOutcomeForm.vivaStatus}
-                  onChange={e => setVivaOutcomeForm({ ...vivaOutcomeForm, vivaStatus: e.target.value })}
-                  required
-                >
-                  <option value="SUCCESSFUL">SUCCESSFUL (Clear & Pass)</option>
-                  <option value="UNSUCCESSFUL">UNSUCCESSFUL (Revisions Required / Fail)</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Panel Evaluation Remarks / Corrections Required</label>
-                <textarea
-                  className="form-input"
-                  rows="3"
-                  placeholder="Enter detailed review comments..."
-                  value={vivaOutcomeForm.remarks}
-                  onChange={e => setVivaOutcomeForm({ ...vivaOutcomeForm, remarks: e.target.value })}
-                  required
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-                <button type="button" className="btn-outline" onClick={() => setShowVivaOutcomeForm(false)} style={{ padding: '5px 12px', fontSize: '0.75rem' }}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '5px 14px', fontSize: '0.75rem', background: '#059669' }}>
-                  {loading ? 'Recording...' : 'Record Outcome'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* ── CARD 3: Ph.D. Degree Clearance ── */}
-        <div className="usm-card" style={{
-          borderLeft: `4px solid ${isAwarded ? '#10B981' : '#94A3B8'}`,
-          background: isAwarded ? 'rgba(16, 185, 129, 0.02)' : 'rgba(148, 163, 184, 0.02)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-          padding: 16,
-          opacity: isVivaSuccessful ? 1 : 0.6
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800 }}>📜 Step 3: Ph.D. Degree Award Clearance</h4>
-            <span style={{
-              padding: '2px 8px',
-              borderRadius: 12,
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              background: isAwarded ? '#ECFDF5' : '#E2E8F0',
-              color: isAwarded ? '#065F46' : '#475569'
-            }}>
-              {isAwarded ? 'DEGREE AWARDED' : 'PENDING CLEARANCE'}
-            </span>
-          </div>
-
-          {!isVivaSuccessful ? (
-            <div style={{ fontSize: '0.82rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>🔒 Locked:</span><span>Awaiting successful Viva-Voce oral defense colloquium.</span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {isAwarded ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.82rem' }}>
-                    <div><strong>Award Date:</strong> <span style={{ color: 'var(--color-text-secondary, #475569)' }}>{thesis.awardedAt ? new Date(thesis.awardedAt).toLocaleDateString() : 'N/A'}</span></div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <strong>Clearance Note / Notification Ref:</strong>
-                      <span style={{ color: 'var(--color-text-secondary, #475569)', display: 'block', marginTop: 4, fontStyle: 'italic', background: 'var(--color-bg, #F8FAFC)', padding: 8, borderRadius: 6, border: '1px solid var(--color-border, #E2E8F0)' }}>
-                        "{thesis.auditLog?.find(l => l.action === 'DEGREE_AWARDED')?.note || 'Approved after successful viva-voce'}"
-                      </span>
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem' }}>
+                  <div><strong>Uploaded On:</strong> {new Date(finalSub.submittedAt).toLocaleString()}</div>
+                  <div style={{ marginTop: 4 }}>
+                    <a href={`${API_BASE_URL}${finalSub.documentUrl}`} target="_blank" rel="noreferrer" className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: '0.75rem', color: '#EA580C', borderColor: '#FDBA74' }}>
+                      📄 View Absolute Final Bound Thesis PDF
+                    </a>
                   </div>
                 </div>
-              ) : (
-                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #475569)' }}>
-                  {canManageDefense ? (
-                    <p style={{ margin: 0 }}>Authorize the final clearance of the Ph.D. degree for this scholar. This transitions the scholar status to <strong>AWARDED</strong> globally.</p>
-                  ) : (
-                    <p style={{ margin: 0 }}>Viva-Voce defense was successful! Awaiting final degree award approval by HOD/Admin.</p>
-                  )}
-                </div>
-              )}
-
-              {canManageDefense && !isAwarded && !showAwardForm && (
-                <button onClick={() => setShowAwardForm(true)} className="btn-primary" style={{ alignSelf: 'flex-start', padding: '5px 12px', fontSize: '0.75rem', marginTop: 4, background: '#10B981' }}>
-                  🎓 Award Ph.D. Degree
-                </button>
               )}
             </div>
-          )}
 
-          {canManageDefense && showAwardForm && isVivaSuccessful && (
-            <form onSubmit={handleAwardDegree} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--color-surface, #FFFFFF)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 4 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#047857' }}>Official Ph.D. Award Approval Form</div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Academic Council Decision / Official Clearance Note</label>
-                <textarea
-                  className="form-input"
-                  rows="3"
-                  placeholder="e.g. Awarded Ph.D. degree after successful viva-voce presentation. Ref: Notification No. HPU/PhD/2026/102 dated 03/06/2026."
-                  value={awardForm.note}
-                  onChange={e => setAwardForm({ ...awardForm, note: e.target.value })}
-                  required
-                />
+            {/* Step 2: Supervisor Digital Sign-off */}
+            {finalSub.status !== 'PENDING' && (
+              <div className="usm-card" style={{ borderLeft: `4px solid ${['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? '#10B981' : finalSub.status === 'REVISION_REQUIRED' ? '#EF4444' : '#3B82F6'}`, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 2: Supervisor Digital Sign-off</h4>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: ['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? '#D1FAE5' : finalSub.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#DBEAFE', color: ['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? '#065F46' : finalSub.status === 'REVISION_REQUIRED' ? '#991B1B' : '#1E40AF' }}>
+                    {['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? 'Approved' : finalSub.status === 'REVISION_REQUIRED' ? 'Corrections Requested' : 'Pending Approval'}
+                  </span>
+                </div>
+                
+                {finalSub.status === 'SUBMITTED' ? (
+                  <div style={{ fontSize: '0.82rem' }}>
+                    <p style={{ color: '#475569', margin: '0 0 10px 0' }}>Review the final bound document and check if corrections are incorporated. Click Approval to sign-off and route to HOD.</p>
+                    {isSupervisor && (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn-primary" onClick={handleSupervisorApprove} style={{ background: '#059669', padding: '5px 12px', fontSize: '0.75rem' }}>✓ Approve & Sign-off</button>
+                        <button className="btn-outline" onClick={() => setShowSupervisorRejectForm(true)} style={{ borderColor: '#EF4444', color: '#DC2626', padding: '5px 12px', fontSize: '0.75rem' }}>✗ Request Corrections</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
+                    {finalSub.comments?.filter(c => c.text?.includes('supervisor') || c.text?.includes('Supervisor')).map((c, i) => (
+                      <div key={i} style={{ marginTop: 4 }}><strong>{c.authorName}:</strong> "{c.text}" <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>({new Date(c.createdAt).toLocaleDateString()})</span></div>
+                    ))}
+                  </div>
+                )}
+
+                {showSupervisorRejectForm && (
+                  <form onSubmit={handleSupervisorReject} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12, background: '#FFF5F5', padding: 12, borderRadius: 8, border: '1px solid #FCA5A5' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.78rem', color: '#C53030' }}>Request Corrections (Supervisor)</div>
+                    <textarea className="form-input" rows="2" placeholder="List corrections needed..." value={supervisorRejectComment} onChange={e => setSupervisorRejectComment(e.target.value)} required />
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn-outline" onClick={() => setShowSupervisorRejectForm(false)} style={{ padding: '4px 10px', fontSize: '0.72rem' }}>Cancel</button>
+                      <button type="submit" className="btn-primary" style={{ background: '#E53E3E', padding: '4px 12px', fontSize: '0.72rem' }}>Send Back to Student</button>
+                    </div>
+                  </form>
+                )}
               </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-                <button type="button" className="btn-outline" onClick={() => setShowAwardForm(false)} style={{ padding: '5px 12px', fontSize: '0.75rem' }}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '5px 14px', fontSize: '0.75rem', background: '#10B981' }}>
-                  {loading ? 'Awarding...' : '🎓 Concluding & Award Degree'}
-                </button>
+            )}
+
+            {/* Step 3: HOD Final Digital Sign-off */}
+            {finalSub.status !== 'PENDING' && ['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) && (
+              <div className="usm-card" style={{ borderLeft: `4px solid ${['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? '#10B981' : '#3B82F6'}`, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 3: HOD Final Digital Sign-off</h4>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: ['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? '#D1FAE5' : '#DBEAFE', color: ['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? '#065F46' : '#1E40AF' }}>
+                    {['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) ? 'Approved' : 'Pending HOD Approval'}
+                  </span>
+                </div>
+
+                {finalSub.status === 'PENDING_HOD' ? (
+                  <div style={{ fontSize: '0.82rem' }}>
+                    <p style={{ color: '#475569', margin: '0 0 10px 0' }}>Supervisor signed off. Review document and approve to dispatch external examiners.</p>
+                    {isHOD && (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn-primary" onClick={handleHodApprove} style={{ background: '#059669', padding: '5px 12px', fontSize: '0.75rem' }}>✓ Approve & Sign-off</button>
+                        <button className="btn-outline" onClick={() => setShowHodRejectForm(true)} style={{ borderColor: '#EF4444', color: '#DC2626', padding: '5px 12px', fontSize: '0.75rem' }}>✗ Request Corrections</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
+                    <span>HOD digitally approved the thesis finalbound package. Unlocked examiner dispatch tracking.</span>
+                  </div>
+                )}
+
+                {showHodRejectForm && (
+                  <form onSubmit={handleHodReject} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12, background: '#FFF5F5', padding: 12, borderRadius: 8, border: '1px solid #FCA5A5' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.78rem', color: '#C53030' }}>Request Corrections (HOD)</div>
+                    <textarea className="form-input" rows="2" placeholder="List corrections needed..." value={hodRejectComment} onChange={e => setHodRejectComment(e.target.value)} required />
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn-outline" onClick={() => setShowHodRejectForm(false)} style={{ padding: '4px 10px', fontSize: '0.72rem' }}>Cancel</button>
+                      <button type="submit" className="btn-primary" style={{ background: '#E53E3E', padding: '4px 12px', fontSize: '0.72rem' }}>Send Back to Student</button>
+                    </div>
+                  </form>
+                )}
               </div>
-            </form>
+            )}
+
+            {/* Step 4: Dispatch Tracking */}
+            {finalSub.status !== 'PENDING' && ['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalSub.status) && (
+              <div className="usm-card" style={{ borderLeft: `4px solid ${thesis.dispatchDate ? '#10B981' : '#F59E0B'}`, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 4: External Evaluation Dispatch Tracking</h4>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: thesis.dispatchDate ? '#D1FAE5' : '#FEF3C7', color: thesis.dispatchDate ? '#065F46' : '#92400E' }}>
+                    {thesis.dispatchDate ? 'Dispatched' : 'Awaiting Dispatch'}
+                  </span>
+                </div>
+
+                {thesis.dispatchDate ? (
+                  <div style={{ fontSize: '0.82rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px' }}>
+                    <div><strong>Dispatch Date:</strong> {new Date(thesis.dispatchDate).toLocaleDateString()}</div>
+                    <div><strong>Method:</strong> {thesis.dispatchMethod}</div>
+                    <div style={{ gridColumn: 'span 2' }}><strong>Tracking Number / Reference:</strong> {thesis.dispatchTrackingNumber || 'None'}</div>
+                    {(isHOD || isAdmin) && (
+                      <button onClick={() => setShowDispatchForm(true)} className="btn-outline" style={{ gridColumn: 'span 2', alignSelf: 'flex-start', padding: '4px 8px', fontSize: '0.72rem', marginTop: 8 }}>Edit Dispatch Details</button>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.82rem' }}>
+                    <p style={{ color: '#475569', margin: '0 0 10px 0' }}>Log details when physical or digital bound thesis is dispatched offline to external examiners.</p>
+                    {(isHOD || isAdmin) && !showDispatchForm && (
+                      <button onClick={() => setShowDispatchForm(true)} className="btn-primary" style={{ background: '#EA580C', padding: '5px 12px', fontSize: '0.75rem' }}>Log Dispatch Details</button>
+                    )}
+                  </div>
+                )}
+
+                {showDispatchForm && (isHOD || isAdmin) && (
+                  <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#F8FAFC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Dispatch Date</label>
+                        <input type="date" className="form-input" value={dispatchForm.dispatchDate} onChange={e => setDispatchForm({ ...dispatchForm, dispatchDate: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Dispatch Method</label>
+                        <select className="form-input" value={dispatchForm.dispatchMethod} onChange={e => setDispatchForm({ ...dispatchForm, dispatchMethod: e.target.value })} required>
+                          <option value="Speed Post">Speed Post</option>
+                          <option value="Registered Post">Registered Post</option>
+                          <option value="DHL Courier">DHL Courier</option>
+                          <option value="Official Courier">Official Courier</option>
+                          <option value="Secure Email">Secure Email</option>
+                          <option value="Hand Delivery">Hand Delivery</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Tracking Code / Dispatch Reference Number</label>
+                      <input type="text" className="form-input" placeholder="e.g. HPU-EXAM-PHD-2026-99" value={dispatchForm.dispatchTrackingNumber} onChange={e => setDispatchForm({ ...dispatchForm, dispatchTrackingNumber: e.target.value })} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn-outline" onClick={() => setShowDispatchForm(false)} style={{ padding: '4px 10px', fontSize: '0.72rem' }}>Cancel</button>
+                      <button type="submit" className="btn-primary" style={{ background: '#EA580C', padding: '4px 12px', fontSize: '0.72rem' }}>Save Dispatch Details</button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Step 5: External Evaluation */}
+            {thesis.dispatchDate && (
+              <div className="usm-card" style={{ borderLeft: `4px solid ${thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#10B981' : thesis.externalEvaluationStatus === 'FAILED' ? '#EF4444' : '#F59E0B'}`, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 5: External Examiner Evaluation Results</h4>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#D1FAE5' : thesis.externalEvaluationStatus === 'FAILED' ? '#FEE2E2' : '#FEF3C7', color: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#065F46' : thesis.externalEvaluationStatus === 'FAILED' ? '#991B1B' : '#92400E' }}>
+                    {thesis.externalEvaluationStatus === 'SUCCESSFUL' ? 'Successful' : thesis.externalEvaluationStatus === 'FAILED' ? 'Failed / Rejected' : 'Awaiting Reports'}
+                  </span>
+                </div>
+
+                {thesis.externalEvaluationStatus !== 'PENDING' ? (
+                  <div style={{ fontSize: '0.82rem' }}>
+                    <div><strong>Logged On:</strong> {thesis.externalEvaluationLoggedAt ? new Date(thesis.externalEvaluationLoggedAt).toLocaleString() : 'N/A'}</div>
+                    <div style={{ marginTop: 4, background: '#F8FAFC', padding: 8, borderRadius: 6, border: '1px solid #E2E8F0' }}>
+                      <strong>Evaluation Comments / Remarks:</strong>
+                      <div style={{ fontStyle: 'italic', marginTop: 2 }}>"{thesis.externalEvaluationRemarks || 'No remarks recorded'}"</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.82rem' }}>
+                    <p style={{ color: '#475569', margin: '0 0 10px 0' }}>Examiners reports received? Record evaluation outcome. A successful outcome unlocks scheduling of the final Viva-Voce defense.</p>
+                    {(isHOD || isAdmin) && !showEvalOutcomeForm && (
+                      <button onClick={() => setShowEvalOutcomeForm(true)} className="btn-primary" style={{ background: '#3B82F6', padding: '5px 12px', fontSize: '0.75rem' }}>Log Evaluation Outcome</button>
+                    )}
+                  </div>
+                )}
+
+                {showEvalOutcomeForm && (isHOD || isAdmin) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#F8FAFC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#1E3A8A' }}>Select Evaluation Outcome</div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Remarks / MoM Summary</label>
+                      <textarea className="form-input" rows="2" placeholder="Detail examiner ratings and remarks..." value={evalRemarks} onChange={e => setEvalRemarks(e.target.value)} required />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn-outline" onClick={() => setShowEvalOutcomeForm(false)} style={{ padding: '4px 10px', fontSize: '0.72rem' }}>Cancel</button>
+                      <button onClick={() => handleEvalOutcome('FAILED')} className="btn-primary" style={{ background: '#DC2626', padding: '4px 12px', fontSize: '0.72rem' }}>Reject / Fail</button>
+                      <button onClick={() => handleEvalOutcome('SUCCESSFUL')} className="btn-primary" style={{ background: '#10B981', padding: '4px 12px', fontSize: '0.72rem' }}>Accept / Successful</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 6: Viva-Voce Oral Defense */}
+            {thesis.externalEvaluationStatus === 'SUCCESSFUL' && (
+              <div className="usm-card" style={{ borderLeft: `4px solid ${thesis.vivaStatus === 'SUCCESSFUL' ? '#10B981' : thesis.vivaStatus === 'UNSUCCESSFUL' ? '#EF4444' : thesis.vivaStatus === 'SCHEDULED' ? '#3B82F6' : '#94A3B8'}`, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 6: Viva-Voce oral defense seminar (Colloquium)</h4>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: thesis.vivaStatus === 'SUCCESSFUL' ? '#D1FAE5' : thesis.vivaStatus === 'UNSUCCESSFUL' ? '#FEE2E2' : thesis.vivaStatus === 'SCHEDULED' ? '#DBEAFE' : '#E2E8F0', color: thesis.vivaStatus === 'SUCCESSFUL' ? '#065F46' : thesis.vivaStatus === 'UNSUCCESSFUL' ? '#991B1B' : thesis.vivaStatus === 'SCHEDULED' ? '#1E40AF' : '#475569' }}>
+                    {thesis.vivaStatus === 'SUCCESSFUL' ? 'Passed / Successful' : thesis.vivaStatus === 'UNSUCCESSFUL' ? 'Corrections Required' : thesis.vivaStatus === 'SCHEDULED' ? 'Scheduled' : 'Awaiting Schedule'}
+                  </span>
+                </div>
+
+                {thesis.vivaStatus !== 'NOT_SCHEDULED' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.82rem', marginBottom: 8 }}>
+                    <div><strong>Date:</strong> {thesis.vivaDate ? new Date(thesis.vivaDate).toLocaleDateString() : 'N/A'}</div>
+                    <div><strong>Time:</strong> {thesis.vivaTime}</div>
+                    <div><strong>Venue:</strong> {thesis.vivaVenue}</div>
+                    <div><strong>Board Panel:</strong> {thesis.vivaPanel || 'None'}</div>
+                    {thesis.vivaRemarks && (
+                      <div style={{ gridColumn: 'span 2', background: '#F8FAFC', padding: 8, borderRadius: 6, border: '1px solid #E2E8F0', marginTop: 4 }}>
+                        <strong>Board Committee Decision Notes:</strong>
+                        <div style={{ fontStyle: 'italic', marginTop: 2 }}>"{thesis.vivaRemarks}"</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {thesis.vivaStatus === 'NOT_SCHEDULED' && (isHOD || isAdmin) && !showVivaForm && (
+                  <button onClick={() => setShowVivaForm(true)} className="btn-primary" style={{ background: '#3B82F6', padding: '5px 12px', fontSize: '0.75rem' }}>📅 Schedule Viva-Voce Defense</button>
+                )}
+
+                {thesis.vivaStatus === 'SCHEDULED' && (isHOD || isAdmin) && !showVivaOutcomeForm && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => setShowVivaOutcomeForm(true)} className="btn-primary" style={{ background: '#059669', padding: '5px 12px', fontSize: '0.75rem' }}>📝 Record Defense Outcome</button>
+                    <button onClick={() => {
+                      setVivaForm({
+                        vivaDate: thesis.vivaDate ? new Date(thesis.vivaDate).toISOString().substring(0, 10) : '',
+                        vivaTime: thesis.vivaTime || '',
+                        vivaVenue: thesis.vivaVenue || '',
+                        vivaPanel: thesis.vivaPanel || ''
+                      });
+                      setShowVivaForm(true);
+                    }} className="btn-outline" style={{ padding: '5px 12px', fontSize: '0.75rem' }}>Reschedule</button>
+                  </div>
+                )}
+
+                {thesis.vivaStatus === 'UNSUCCESSFUL' && (isHOD || isAdmin) && !showVivaForm && (
+                  <button onClick={() => {
+                    setVivaForm({ vivaDate: '', vivaTime: '', vivaVenue: '', vivaPanel: '' });
+                    setShowVivaForm(true);
+                  }} className="btn-primary" style={{ background: '#EA580C', padding: '5px 12px', fontSize: '0.75rem' }}>🔄 Re-schedule Viva-Voce Defense</button>
+                )}
+
+                {showVivaForm && (isHOD || isAdmin) && (
+                  <form onSubmit={handleScheduleViva} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#F8FAFC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#1E40AF' }}>Schedule Viva-Voce Session</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Date</label>
+                        <input type="date" className="form-input" value={vivaForm.vivaDate} onChange={e => setVivaForm({ ...vivaForm, vivaDate: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Time</label>
+                        <input type="text" className="form-input" placeholder="e.g. 12:00 PM" value={vivaForm.vivaTime} onChange={e => setVivaForm({ ...vivaForm, vivaTime: e.target.value })} required />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Venue</label>
+                      <input type="text" className="form-input" placeholder="e.g. Science Colloquium Hall" value={vivaForm.vivaVenue} onChange={e => setVivaForm({ ...vivaForm, vivaVenue: e.target.value })} required />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Panel Members</label>
+                      <input type="text" className="form-input" placeholder="External Examiner, Supervisor, DRC members" value={vivaForm.vivaPanel} onChange={e => setVivaForm({ ...vivaForm, vivaPanel: e.target.value })} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn-outline" onClick={() => setShowVivaForm(false)} style={{ padding: '4px 10px', fontSize: '0.72rem' }}>Cancel</button>
+                      <button type="submit" className="btn-primary" style={{ background: '#3B82F6', padding: '4px 12px', fontSize: '0.72rem' }}>Save Viva Schedule</button>
+                    </div>
+                  </form>
+                )}
+
+                {showVivaOutcomeForm && (isHOD || isAdmin) && (
+                  <form onSubmit={handleRecordVivaOutcome} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#F8FAFC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#047857' }}>Record Oral Defense Decision</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Decision</label>
+                        <select className="form-input" value={vivaOutcomeForm.vivaStatus} onChange={e => setVivaOutcomeForm({ ...vivaOutcomeForm, vivaStatus: e.target.value })} required>
+                          <option value="SUCCESSFUL">SUCCESSFUL (Clear & Pass)</option>
+                          <option value="UNSUCCESSFUL">UNSUCCESSFUL (Revisions Required / Fail)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Defense Board Comments / Remarks</label>
+                        <textarea className="form-input" rows="2" placeholder="Details of corrections or approval reasons..." value={vivaOutcomeForm.remarks} onChange={e => setVivaOutcomeForm({ ...vivaOutcomeForm, remarks: e.target.value })} required />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn-outline" onClick={() => setShowVivaOutcomeForm(false)} style={{ padding: '4px 10px', fontSize: '0.72rem' }}>Cancel</button>
+                      <button type="submit" className="btn-primary" style={{ background: '#059669', padding: '4px 12px', fontSize: '0.72rem' }}>Save Viva Decision</button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderAwardDegree = () => {
+    const isVivaSuccessful = thesis.vivaStatus === 'SUCCESSFUL';
+    const isHOD = subRole === 'HOD';
+    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    const canAward = isHOD || isAdmin;
+    const isAwarded = thesis.status === 'AWARDED';
+
+    if (!isVivaSuccessful) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', gap: 16 }}>
+          <div style={{ fontSize: '4rem' }}>🔒</div>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-text, #1F2937)' }}>Award Degree Section Locked</h3>
+          <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 460, lineHeight: 1.5, margin: 0 }}>
+            This section becomes available once the candidate has successfully cleared their Viva-Voce oral defense colloquium. Please record the successful Viva-Voce outcome first.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="usm-section-title">🎓 Ph.D. Degree Award Clearance & Verification</div>
+
+        {/* Eligibility Checklist */}
+        <div className="usm-card" style={{ padding: 18 }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text, #1F2937)' }}>📋 Ph.D. Requirements Checklist Verification</h4>
+          {eligibilityLoading ? (
+            <div style={{ fontSize: '0.85rem', color: '#64748B' }}>Loading requirements database checks...</div>
+          ) : eligibilityData ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {eligibilityData.checklist.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: item.status ? '#ECFDF5' : '#FEF2F2', borderRadius: 8, border: `1px solid ${item.status ? '#A7F3D0' : '#FCA5A5'}`, fontSize: '0.82rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '1.1rem', color: item.status ? '#059669' : '#EF4444' }}>{item.status ? '✓' : '✗'}</span>
+                    <strong style={{ color: 'var(--color-text, #1F2937)' }}>{item.name}</strong>
+                  </div>
+                  <div style={{ color: item.status ? '#047857' : '#B91C1C', fontWeight: 600 }}>{item.details}</div>
+                </div>
+              ))}
+
+              {!eligibilityData.eligible && (
+                <div style={{ marginTop: 12, padding: 12, background: '#FEF3C7', borderLeft: '4px solid #F59E0B', borderRadius: 8, color: '#B45309', fontSize: '0.82rem', fontWeight: 600 }}>
+                  ⚠️ Scholar is not eligible for degree award because one or more verification checks have not been met.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.85rem', color: '#64748B' }}>Failed to verify requirements checks.</div>
+          )}
+        </div>
+
+        {/* Progression Timeline & Logs */}
+        <div className="usm-card" style={{ padding: 18 }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text, #1F2937)' }}>📜 Full Timelines & Detailed Log</h4>
+          {!thesis.auditLog || thesis.auditLog.length === 0 ? (
+            <div style={{ color: '#64748B', fontSize: '0.82rem' }}>No progression log entries.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '200px', overflowY: 'auto', paddingRight: 4, background: '#F8FAFC', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+              {[...thesis.auditLog].map((log, index) => (
+                <div key={log._id || index} style={{ fontSize: '0.78rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: 6 }}>
+                  <div>
+                    <span style={{ fontWeight: 800, color: '#4F46E5', marginRight: 8 }}>{log.action}</span>
+                    <span style={{ color: 'var(--color-text, #1F2937)' }}>{log.note}</span>
+                  </div>
+                  <span style={{ color: '#94A3B8', fontSize: '0.72rem' }}>{new Date(log.date).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Degree Award Action Card */}
+        <div className="usm-card" style={{ borderLeft: `4px solid ${isAwarded ? '#10B981' : '#E2E8F0'}`, padding: 18 }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text, #1F2937)' }}>🎓 Degree Award Status</h4>
+          
+          {isAwarded ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem' }}>
+              <div><strong>Ph.D. Degree Awarded On:</strong> {thesis.awardedAt ? new Date(thesis.awardedAt).toLocaleDateString() : 'N/A'}</div>
+              <div style={{ background: '#ECFDF5', padding: 8, borderRadius: 6, color: '#065F46', marginTop: 4 }}>
+                <strong>Clearance Decision Note:</strong> "{thesis.auditLog?.find(l => l.action === 'DEGREE_AWARDED')?.note || 'Awarded after successfully clearing all Ph.D. lifecycle evaluation criteria.'}"
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p style={{ color: '#475569', fontSize: '0.82rem', margin: 0 }}>Record Himachal Pradesh University Academic Board award clearance note and click Award Degree to complete Ph.D. lifecycle.</p>
+              
+              {canAward && (
+                <form onSubmit={handleAwardDegree} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <textarea
+                    className="form-input"
+                    rows="2"
+                    placeholder="Enter academic notification reference... e.g. Passed Academic Council vide Ref HPU-PHD-2026-991"
+                    value={awardForm.note}
+                    onChange={e => setAwardForm({ ...awardForm, note: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={loading || !eligibilityData?.eligible}
+                    style={{ background: '#10B981', alignSelf: 'flex-start', padding: '6px 20px', fontSize: '0.82rem' }}
+                  >
+                    🎓 Award Ph.D. Degree
+                  </button>
+                </form>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -2835,15 +1889,13 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     switch (activeTab) {
       case 'overview': return renderOverview();
       case 'profile': return renderProfile();
-      case 'coursework': return renderCoursework();
-      case 'synopsis': return renderSynopsis();
       case 'drc': return renderDRC();
       case 'rac': return renderRAC();
       case 'reports': return renderReportsOrChapters('reports');
       case 'chapters': return renderReportsOrChapters('chapters');
       case 'publications': return renderPublications();
-      case 'preSubmission': return renderPreSubmission();
-      case 'defense': return renderDefenseAndAward();
+      case 'finalSubmission': return renderFinalSubmission();
+      case 'awardDegree': return renderAwardDegree();
       case 'documents': return renderDocuments();
       case 'changes': return renderChanges();
       case 'audit': return renderAudit();
@@ -2888,36 +1940,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <button key={tab.key} className={`usm-tab ${activeTab === tab.key ? 'active' : ''}`} onClick={() => setActiveTab(tab.key)}>
                   <span className="usm-tab-icon">{tab.icon}</span>
                   {tab.label}
-                  {tab.key === 'profile' && !isReadOnly && subRole === 'HOD' && (!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') && (
-                    <AlertTriangle 
-                      size={16} 
-                      title="Needs attention: verify credentials"
-                      style={{ marginLeft: '8px', color: '#EF4444', fill: '#FEE2E2', display: 'inline-block', verticalAlign: 'middle', cursor: 'help' }}
-                    />
-                  )}
-                  {tab.key === 'coursework' && !isReadOnly && (
-                    (user.role === 'FACULTY' && thesis.supervisorId?._id === user._id && thesis.courseworkStatus === 'PENDING_FACULTY') ||
-                    (subRole === 'HOD' && thesis.courseworkStatus === 'PENDING_HOD')
-                  ) && (
-                    <AlertTriangle 
-                      size={16} 
-                      title="Needs attention: verify coursework details"
-                      style={{ marginLeft: '8px', color: '#EF4444', fill: '#FEE2E2', display: 'inline-block', verticalAlign: 'middle', cursor: 'help' }}
-                    />
-                  )}
-                  {tab.key === 'synopsis' && !isReadOnly && (() => {
-                    const status = milestones.find(m => m.type === 'SYNOPSIS')?.status;
-                    return (
-                      (subRole === 'HOD' && status === 'PENDING_HOD') ||
-                      (subRole !== 'HOD' && thesis.supervisorId?._id === user._id && status === 'SUBMITTED')
-                    );
-                  })() && (
-                    <AlertTriangle 
-                      size={16} 
-                      title="Needs attention: verify synopsis document"
-                      style={{ marginLeft: '8px', color: '#EF4444', fill: '#FEE2E2', display: 'inline-block', verticalAlign: 'middle', cursor: 'help' }}
-                    />
-                  )}
                   {tab.badge && <span className="usm-tab-badge">{tab.badge}</span>}
                 </button>
               ))}
@@ -2943,56 +1965,6 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn-outline" onClick={() => setShowTransferModal(false)} style={{ borderColor: '#F59E0B', color: '#B45309' }}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={transferLoading} style={{ background: '#D97706' }}>{transferLoading ? 'Transferring...' : 'Confirm Transfer'}</button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Bypass Validations Modal */}
-        {showBypassModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 200002, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <form onSubmit={handleBypassSubmit} style={{ background: '#FFF7ED', border: '1px solid #FED7AA', padding: 28, borderRadius: 16, width: '100%', maxWidth: '460px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ fontSize: '1.5rem' }}>⚠️</span>
-                <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#C2410C' }}>Bypass Validation Checks</span>
-              </div>
-              
-              <div style={{ background: '#FFEDD5', borderLeft: '4px solid #EA580C', padding: '12px 16px', borderRadius: 8, fontSize: '0.82rem', color: '#9A3412', marginBottom: 20, lineHeight: 1.5 }}>
-                Are you sure you want to bypass all active research requirements (journals, conferences, minimum duration, etc.) and advance <strong>{thesis.scholarId?.name || 'the candidate'}</strong> directly to the <strong>Pre-Submission</strong> stage?
-              </div>
-
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#7C2D12', marginBottom: 6 }}>
-                  Enter Justification / Bypass Remarks (Required)
-                </label>
-                <textarea 
-                  className="form-input" 
-                  rows={4} 
-                  required
-                  placeholder="e.g. Approved by DRC under special circumstances. Scholar has completed industrial publications." 
-                  value={bypassRemarks} 
-                  onChange={e => setBypassRemarks(e.target.value)}
-                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FED7AA', fontFamily: 'inherit' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  className="btn-outline" 
-                  onClick={() => { setShowBypassModal(false); setBypassRemarks(''); }} 
-                  style={{ borderColor: '#F97316', color: '#C2410C' }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn-primary" 
-                  disabled={bypassLoading || !bypassRemarks.trim()} 
-                  style={{ background: '#EA580C', color: 'white', border: 'none', borderRadius: '8px', cursor: (bypassLoading || !bypassRemarks.trim()) ? 'not-allowed' : 'pointer' }}
-                >
-                  {bypassLoading ? 'Saving...' : 'Bypass & Save'}
-                </button>
               </div>
             </form>
           </div>

@@ -1,194 +1,31 @@
-import React, { useEffect, useContext, useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Sparkles, 
-  LogOut, 
-  Clock, 
-  Server, 
-  Database, 
-  AlertCircle,
-  Home,
-  User,
-  CalendarRange
-} from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import ThemeToggle from '../components/ThemeToggle';
-import AttendanceDashboard from '../modules/attendance/AttendanceDashboard';
+import DashboardShell from '../components/DashboardShell';
+import OverviewTab from '../modules/admin/OverviewTab';
+import SystemPoliciesTab from '../modules/admin/SystemPoliciesTab';
+import HolidayCalendarTab from '../modules/admin/HolidayCalendarTab';
 
 const SuperAdminDashboard = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
+  useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
   if (!user) return null;
 
+  const titles = {
+    overview: 'System Overview',
+    policies: 'Global Policies',
+    holidays: 'Holiday Calendar',
+  };
+
   return (
-    <div className="app-container">
-      {/* Sidebar Navigation */}
-      <div className="sidebar">
-        <div className="sidebar-logo">
-          <img src="/hpu_logo.png" alt="HPU Logo" />
-          <h2>ScholarTrack</h2>
-        </div>
-
-        <div className="sidebar-nav">
-          <button 
-            className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            <Home className="nav-icon" /> Overview
-          </button>
-          
-          <button 
-            className={`nav-item ${activeTab === 'attendance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attendance')}
-          >
-            <Clock className="nav-icon" /> Attendance Policies
-          </button>
-
-          <button 
-            className={`nav-item ${activeTab === 'leave' ? 'active' : ''}`}
-            onClick={() => setActiveTab('leave')}
-          >
-            <CalendarRange className="nav-icon" /> Holiday Calendar
-          </button>
-        </div>
-
-        <div className="sidebar-bottom">
-          <button 
-            className="nav-item" 
-            onClick={() => { logout(); navigate('/'); }}
-            style={{ color: '#EF4444' }}
-          >
-            <LogOut className="nav-icon" style={{ color: '#EF4444' }} /> Log Out
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="main-content">
-        {/* Top Header */}
-        <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>
-            {activeTab === 'overview' ? 'Global Super-Admin Overview' : 'System Configuration Center'}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <ThemeToggle />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                {user.name ? user.name[0].toUpperCase() : 'S'}
-              </div>
-              <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user.name}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Dashboard Scrollable Area */}
-        <div className="dashboard-area" style={{ position: 'relative' }}>
-          {/* Animated Blobs Backdrop */}
-          <div className="liquid-bg-wrapper" style={{ zIndex: 1 }}>
-            <div className="liquid-blob blob-1"></div>
-            <div className="liquid-blob blob-2"></div>
-            <div className="liquid-blob blob-3"></div>
-          </div>
-
-          <div style={{ position: 'relative', zIndex: 10 }}>
-            {activeTab === 'overview' ? (
-              <div>
-                {/* Welcome Banner */}
-                <div className="glass-panel" style={{ padding: '30px', marginBottom: '30px' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(26, 90, 59, 0.08)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-primary)', marginBottom: '12px' }}>
-                    <Sparkles size={12} /> HPU ScholarTrack Global Super-Admin Console
-                  </div>
-                  <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Welcome, Master Admin {user.name}</h1>
-                  <p style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '0.95rem' }}>
-                    System Administration | Role: Super Administrator
-                  </p>
-                </div>
-
-                {/* Profile Grid details */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
-                  {/* Personal Details Card */}
-                  <div className="glass-panel" style={{ padding: '30px' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-primary)' }}>
-                      <User size={20} /> Administrator Profile
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                      <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Full Name</span>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>{user.name}</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Email Address</span>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>{user.email || user.username}</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Designated Role</span>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>Institutional Super Administrator</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Academic Context Card */}
-                  <div className="glass-panel" style={{ padding: '30px' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-primary)' }}>
-                      <Sparkles size={20} /> Server Status
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                      <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Database Node</span>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>MongoDB Cluster Connected</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Connected Ports</span>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>5000 (API), 5174 (ScholarTrack), 5175 (ScholarSync)</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Global Node State</span>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '2px' }}>99.9% Uptime Active</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div>
-                {/* Quick Stats Banner */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '25px', marginBottom: '30px' }}>
-                  <div className="clay-card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Connected Nodes</span>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Server size={24} /> System Port Monitoring
-                    </div>
-                  </div>
-                  <div className="clay-card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Database Status</span>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0284c7', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Database size={24} /> MongoDB Cluster Connected
-                    </div>
-                  </div>
-                  <div className="clay-card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>System Health</span>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#d97706', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Clock size={24} /> 99.9% Uptime Active
-                    </div>
-                  </div>
-                </div>
-
-                {/* Attendance Dashboard Module */}
-                <AttendanceDashboard activeTab={activeTab} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    <DashboardShell role="SUPER_ADMIN" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]}>
+      {activeTab === 'overview' && <OverviewTab />}
+      {activeTab === 'policies' && <SystemPoliciesTab />}
+      {activeTab === 'holidays' && <HolidayCalendarTab />}
+    </DashboardShell>
   );
 };
 

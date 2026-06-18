@@ -7,9 +7,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="premium-preloader-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="premium-preloader-spinner"></div>
-        <div className="premium-preloader-text" style={{ marginTop: '16px', color: 'var(--color-primary)', fontWeight: 600 }}>Authenticating session...</div>
+      <div className="premium-preloader-container">
+        <div className="premium-preloader-spinner" />
+        <div className="premium-preloader-text">Authenticating session...</div>
       </div>
     );
   }
@@ -19,12 +19,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Redirect to their appropriate dashboard if they try to access another role's route
-    if (user.role === 'SUPER_ADMIN') return <Navigate to="/super-dashboard" />;
-    if (user.role === 'HOD') return <Navigate to="/hod-dashboard" />;
-    if (user.role === 'ADMIN') return <Navigate to="/admin-dashboard" />;
-    if (user.role === 'FACULTY') return <Navigate to="/faculty-dashboard" />;
-    return <Navigate to="/student-dashboard" />;
+    const dashMap = {
+      SUPER_ADMIN: '/super-dashboard',
+      HOD: '/hod-dashboard',
+      ADMIN: '/hod-dashboard',
+      FACULTY: '/faculty-dashboard',
+      STUDENT: '/student-dashboard',
+    };
+    return <Navigate to={dashMap[user.role] ?? '/student-dashboard'} />;
   }
 
   return children;

@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -13,19 +13,6 @@ import ThemeToggle from '../components/ThemeToggle';
 
 const API = API_URL;
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-
-const formatMonthYear = (val) => {
-  if (!val) return '-';
-  const parts = val.split('-');
-  if (parts.length !== 2) return val;
-  const year = parts[0];
-  const monthIdx = parseInt(parts[1], 10) - 1;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  if (monthIdx >= 0 && monthIdx < 12) {
-    return `${months[monthIdx]} ${year}`;
-  }
-  return val;
-};
 
 const MilestoneTimeline = ({ thesis, milestones = [] }) => {
   const [drcMeetings, setDrcMeetings] = useState([]);
@@ -136,9 +123,8 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
     if (currentStatus === 'SYNOPSIS_PENDING') {
       const synopsis = milestones?.find(m => m.type === 'SYNOPSIS');
       
-      const step1Uploaded = synopsis && ['SUBMITTED', 'PENDING_HOD', 'REVISION_REQUIRED', 'APPROVED'].includes(synopsis.status);
+      const step1Uploaded = synopsis && ['SUBMITTED', 'REVISION_REQUIRED', 'APPROVED'].includes(synopsis.status);
       const step2Approved = synopsis?.status === 'APPROVED';
-      const step2PendingHOD = synopsis?.status === 'PENDING_HOD';
       const step2Revision = synopsis?.status === 'REVISION_REQUIRED';
       const step2Submitted = synopsis?.status === 'SUBMITTED';
 
@@ -165,15 +151,13 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
         {
           label: 'Supervisor Sign-off',
           desc: step2Approved 
-            ? 'Approved by Supervisor & HOD.' 
-            : step2PendingHOD 
-            ? 'Approved by Supervisor. Awaiting HOD Final Approval.'
+            ? 'Approved and recommended by your Research Advisor.' 
             : step2Revision 
             ? `Correction needed: "${synopsis.comments?.[synopsis.comments.length - 1]?.text || 'Check remarks'}"`
             : step2Submitted 
             ? 'Awaiting your supervisor\'s review and evaluation.' 
             : 'Awaiting synopsis document upload.',
-          status: (step2Approved || step2PendingHOD) ? 'SUCCESS' : step2Revision ? 'DANGER' : step2Submitted ? 'WARNING' : 'PENDING'
+          status: step2Approved ? 'SUCCESS' : step2Revision ? 'DANGER' : step2Submitted ? 'WARNING' : 'PENDING'
         },
         {
           label: 'DRC Meeting Scheduling',
@@ -400,13 +384,12 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
     { key: 'overview', label: 'Dashboard', Icon: Home },
     { key: 'profile', label: 'Profile', Icon: User },
     { key: 'thesis', label: 'My Thesis', Icon: Book },
-    { key: 'workspace', label: 'Workspace', Icon: Flag },
+    { key: 'milestones', label: 'Milestones', Icon: Flag },
     { key: 'rac', label: 'RAC Progress', Icon: Layers },
     { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
     { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
     { key: 'publications', label: 'Research Outputs', Icon: Award },
     { key: 'preSubmission', label: 'Pre-Submission', Icon: ClipboardList },
-    { key: 'finalSubmission', label: 'Final Submission', Icon: BookOpen },
     { key: 'meetings', label: 'Meetings', Icon: Calendar },
     { key: 'documents', label: 'Documents', Icon: FileText },
     { key: 'changes', label: 'Request Changes', Icon: Edit },
@@ -427,8 +410,8 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             if (!thesis || thesis.status === 'REGISTRATION_PENDING') return true;
             
             const status = thesis.status;
-            if (key === 'thesis' || key === 'workspace' || key === 'certificates') {
-              return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status);
+            if (key === 'thesis' || key === 'milestones') {
+              return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
             }
             if ([
               'rac', 
@@ -439,13 +422,13 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
               'documents', 
               'changes'
             ].includes(key)) {
-              return !['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status);
+              return !['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
             }
             if (key === 'preSubmission') {
               const hasPreMilestone = milestones && milestones.some(m => m.type === 'PRE_SUBMISSION');
-              return !(['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
+              return !(['PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
             }
-            if (key === 'finalSubmission') {
+            if (key === 'certificates') {
               return !['SUBMITTED', 'AWARDED'].includes(status);
             }
             return true;
@@ -775,487 +758,22 @@ const WaitingRoom = ({ thesis }) => (
 );
 
 // ── Coursework Phase ──
-const CourseworkPhase = ({ thesis }) => {
-  const { submitCourseworkDetails, fetchMyThesis } = useContext(ThesisContext);
-  const toast = useToast();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [proofFile, setProofFile] = useState(null);
-  const [shake, setShake] = useState(false);
-  const cardRef = React.useRef(null);
-
-  // Row state helper
-  const createEmptyRow = () => ({ subjectName: '', subjectCode: '', marksObtained: '', maxMarks: '', examinationMonthYear: '' });
-
-  const [researchEthics, setResearchEthics] = useState(
-    thesis.courseworkDetails?.researchEthics?.length > 0
-      ? thesis.courseworkDetails.researchEthics
-      : [createEmptyRow()]
-  );
-  const [researchMethodology, setResearchMethodology] = useState(
-    thesis.courseworkDetails?.researchMethodology?.length > 0
-      ? thesis.courseworkDetails.researchMethodology
-      : [createEmptyRow()]
-  );
-  const [elective, setElective] = useState(
-    thesis.courseworkDetails?.elective?.length > 0
-      ? thesis.courseworkDetails.elective
-      : [createEmptyRow()]
-  );
-  const [others, setOthers] = useState(
-    thesis.courseworkDetails?.others?.length > 0
-      ? thesis.courseworkDetails.others
-      : [createEmptyRow()]
-  );
-
-  const handleRowChange = (section, index, field, value) => {
-    const setters = {
-      researchEthics: setResearchEthics,
-      researchMethodology: setResearchMethodology,
-      elective: setElective,
-      others: setOthers
-    };
-    const getters = {
-      researchEthics,
-      researchMethodology,
-      elective,
-      others
-    };
-    const setter = setters[section];
-    const getter = getters[section];
-    if (setter && getter) {
-      const updated = [...getter];
-      updated[index] = { ...updated[index], [field]: value };
-      setter(updated);
-    }
-  };
-
-  const addRow = (section) => {
-    const setters = {
-      researchEthics: setResearchEthics,
-      researchMethodology: setResearchMethodology,
-      elective: setElective,
-      others: setOthers
-    };
-    const getters = {
-      researchEthics,
-      researchMethodology,
-      elective,
-      others
-    };
-    const setter = setters[section];
-    const getter = getters[section];
-    if (setter && getter) {
-      setter([...getter, createEmptyRow()]);
-    }
-  };
-
-  const removeRow = (section, index) => {
-    const setters = {
-      researchEthics: setResearchEthics,
-      researchMethodology: setResearchMethodology,
-      elective: setElective,
-      others: setOthers
-    };
-    const getters = {
-      researchEthics,
-      researchMethodology,
-      elective,
-      others
-    };
-    const setter = setters[section];
-    const getter = getters[section];
-    if (setter && getter) {
-      if (getter.length > 1) {
-        setter(getter.filter((_, i) => i !== index));
-      } else if (section === 'others') {
-        setter([createEmptyRow()]);
-      }
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    // Pre-validation
-    const checkSection = (sectionRows, name, isOptional = false) => {
-      for (const row of sectionRows) {
-        if (isOptional && !row.subjectName.trim() && !row.subjectCode.trim() && !row.marksObtained && !row.maxMarks) {
-          continue;
-        }
-        if (!row.subjectName.trim()) {
-          throw new Error(`Subject Name is required in all active rows of ${name}.`);
-        }
-        const obtained = Number(row.marksObtained);
-        const max = Number(row.maxMarks);
-        if (isNaN(obtained) || obtained < 0) {
-          throw new Error(`Valid Marks Obtained is required in ${name}.`);
-        }
-        if (isNaN(max) || max <= 0) {
-          throw new Error(`Valid Maximum Marks (greater than 0) is required in ${name}.`);
-        }
-        if (obtained > max) {
-          throw new Error(`Marks Obtained (${obtained}) cannot exceed Maximum Marks (${max}) in ${name}.`);
-        }
-        if (!row.examinationMonthYear) {
-          throw new Error(`Examination Month & Year is required in ${name}.`);
-        }
-      }
-    };
-
-    try {
-      checkSection(researchEthics, 'Research and Publication Ethics');
-      checkSection(researchMethodology, 'Research Methodology');
-      checkSection(elective, 'Discipline-Specific Elective Course');
-      checkSection(others, 'Others', true);
-
-      if (!proofFile && !thesis.courseworkUploadProof) {
-        throw new Error('Upload Proof is required.');
-      }
-
-      await submitCourseworkDetails({
-        researchEthics,
-        researchMethodology,
-        elective,
-        others,
-        proof: proofFile
-      });
-      toast.success('Coursework details submitted successfully!');
-      fetchMyThesis();
-    } catch (err) {
-      const errMsg = err.message || err.response?.data?.message || 'Failed to submit coursework details.';
-      setError(errMsg);
-      toast.error(errMsg);
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      if (cardRef.current) {
-        cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Helper to resolve HOD/supervisor status styles
-  const getStatusBanner = () => {
-    if (thesis.courseworkStatus === 'PENDING_FACULTY') {
-      return (
-        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', padding: 16, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Clock size={24} />
-          <div>
-            <div style={{ fontWeight: 600 }}>Submitted & Awaiting Supervisor Approval</div>
-            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Your coursework details have been forwarded to your supervisor ({thesis.supervisorId?.name || 'Assigned Guide'}) for review.</div>
-          </div>
-        </div>
-      );
-    }
-    if (thesis.courseworkStatus === 'PENDING_HOD') {
-      return (
-        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', padding: 16, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Clock size={24} />
-          <div>
-            <div style={{ fontWeight: 600 }}>Supervisor Approved & Awaiting HOD Clearance</div>
-            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Approved by supervisor! Currently pending final verification by the Head of Department.</div>
-          </div>
-        </div>
-      );
-    }
-    if (thesis.courseworkStatus === 'REJECTED') {
-      return (
-        <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', padding: 16, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <AlertCircle size={24} />
-          <div>
-            <div style={{ fontWeight: 600 }}>Coursework Revision Required</div>
-            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Your supervisor or HOD returned your submission for correction. Please review details, modify if necessary, and resubmit.</div>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534', padding: 16, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <CheckCircle2 size={24} />
-        <div>
-          <div style={{ fontWeight: 600 }}>Coursework Phase Active</div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>{thesis.supervisorId?.name || 'Assigned Guide'} has been assigned as your supervisor. Please enter your coursework marks.</div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderReadOnlySection = (title, items) => {
-    if (!items || items.length === 0) return null;
-    return (
-      <div style={{ marginBottom: 20 }}>
-        <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#374151', marginBottom: 8, borderBottom: '1px solid #E5E7EB', paddingBottom: 4 }}>{title}</h4>
-        <div style={{ background: '#F9FAFB', borderRadius: 8, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ background: '#F3F4F6', color: '#4B5563', textAlign: 'left' }}>
-                <th style={{ padding: '8px 12px' }}>Subject Name</th>
-                <th style={{ padding: '8px 12px' }}>Subject Code</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Marks Obtained</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Max Marks</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Exam Month & Year</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((row, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                  <td style={{ padding: '8px 12px', color: '#1F2937' }}>{row.subjectName}</td>
-                  <td style={{ padding: '8px 12px', color: '#1F2937' }}>{row.subjectCode || '-'}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{row.marksObtained}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{row.maxMarks}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1F2937' }}>{formatMonthYear(row.examinationMonthYear)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
-
-  const renderEditableSection = (title, section, items) => (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #E2E8F0', paddingBottom: 6 }}>
-        <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>{title}</h4>
-      </div>
-
-      {/* Row Table Headers */}
-      <div style={{ display: 'flex', gap: 12, padding: '0 12px 6px 12px', borderBottom: '1px solid #E2E8F0', marginBottom: 8, fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
-        <div style={{ flex: 2 }}>Subject Name</div>
-        <div style={{ flex: 1.5 }}>Subject Code</div>
-        <div style={{ flex: 1, textAlign: 'center' }}>Obtained</div>
-        <div style={{ flex: 1, textAlign: 'center' }}>Max Marks</div>
-        <div style={{ flex: 1.5, textAlign: 'center' }}>Exam Month & Year</div>
-        {(items.length > 1 || section === 'others') && <div style={{ width: 24 }} />}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.map((row, idx) => (
-          <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ flex: 2 }}>
-              <input
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem' }}
-                placeholder="Subject Name"
-                value={row.subjectName}
-                onChange={(e) => handleRowChange(section, idx, 'subjectName', e.target.value)}
-                required={section !== 'others'}
-              />
-            </div>
-            <div style={{ flex: 1.5 }}>
-              <input
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem' }}
-                placeholder="Code (optional)"
-                value={row.subjectCode}
-                onChange={(e) => handleRowChange(section, idx, 'subjectCode', e.target.value)}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <input
-                type="number"
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem', textAlign: 'center' }}
-                placeholder="Obtained"
-                value={row.marksObtained}
-                onChange={(e) => handleRowChange(section, idx, 'marksObtained', e.target.value)}
-                min="0"
-                required={section !== 'others'}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <input
-                type="number"
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem', textAlign: 'center' }}
-                placeholder="Max Marks"
-                value={row.maxMarks}
-                onChange={(e) => handleRowChange(section, idx, 'maxMarks', e.target.value)}
-                min="1"
-                required={section !== 'others'}
-              />
-            </div>
-            <div style={{ flex: 1.5 }}>
-              <input
-                type="month"
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem', color: row.examinationMonthYear ? 'inherit' : '#94A3B8' }}
-                value={row.examinationMonthYear}
-                onChange={(e) => handleRowChange(section, idx, 'examinationMonthYear', e.target.value)}
-                required={section !== 'others'}
-              />
-            </div>
-            {(items.length > 1 || section === 'others') && (
-              <button
-                type="button"
-                style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 4 }}
-                onClick={() => removeRow(section, idx)}
-                title="Remove Row"
-              >
-                🗑️
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 12 }}>
-        <button 
-          type="button" 
-          onClick={() => addRow(section)} 
-          style={{ 
-            padding: '6px 12px', 
-            fontSize: '0.75rem', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 4,
-            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
-            border: '1px solid #BFDBFE',
-            color: '#1E40AF',
-            borderRadius: '6px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.05)'
-          }}
-        >
-          <Plus size={14} /> Add Row
-        </button>
+const CourseworkPhase = ({ thesis }) => (
+  <div className="card" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center', padding: 48 }}>
+    <Book size={64} color="#3B82F6" style={{ margin: '0 auto 16px' }} />
+    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Coursework Phase</h3>
+    <p style={{ color: '#6b7280', marginBottom: 24 }}>Enrollment verified! ✅ You are currently in the coursework phase. Attend offline classes and exams. Your supervisor will unlock the synopsis upload once coursework is cleared.</p>
+    <div style={{ background: '#DBEAFE', borderRadius: 12, padding: 16, textAlign: 'left' }}>
+      <div style={{ fontWeight: 600, marginBottom: 8, color: '#1D4ED8' }}>Your Supervisor:</div>
+      <div style={{ fontSize: '0.9rem', color: '#1E40AF' }}>
+        {thesis.supervisorId ? `👨‍🏫 ${thesis.supervisorId.name}` : '⏳ Supervisor assignment pending'}
       </div>
     </div>
-  );
-
-  const isPending = thesis.courseworkStatus === 'PENDING_FACULTY' || thesis.courseworkStatus === 'PENDING_HOD';
-
-  return (
-    <div ref={cardRef} className={`card ${shake ? 'shake-on-error' : ''}`} style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        .shake-on-error {
-          animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-        }
-      `}</style>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, borderBottom: '2px solid #F3F4F6', paddingBottom: 16 }}>
-        <BookOpen size={36} color="#3B82F6" />
-        <div>
-          <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>Doctoral Coursework Clearance</h3>
-          <p style={{ color: '#6b7280', fontSize: '0.88rem', margin: '4px 0 0' }}>Enter exam results for Research Methodology, Research Analysis, and Electives for verification.</p>
-        </div>
-      </div>
-
-      {getStatusBanner()}
-
-      {error && (
-        <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#B91C1C', padding: '12px 16px', borderRadius: 8, fontSize: '0.88rem', marginBottom: 20 }}>
-          {error}
-        </div>
-      )}
-
-      {isPending ? (
-        <div>
-          {renderReadOnlySection('Research and Publication Ethics', thesis.courseworkDetails?.researchEthics || [])}
-          {renderReadOnlySection('Research Methodology', thesis.courseworkDetails?.researchMethodology || [])}
-          {renderReadOnlySection('Discipline-Specific Elective Course', thesis.courseworkDetails?.elective || [])}
-          {thesis.courseworkDetails?.others?.length > 0 && renderReadOnlySection('Others', thesis.courseworkDetails?.others || [])}
-          
-          {thesis.courseworkUploadProof && (
-            <div style={{ marginTop: 20, padding: '12px 16px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>Upload Proof:</span>
-              <a 
-                href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
-                target="_blank" 
-                rel="noreferrer" 
-                style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2563EB', textDecoration: 'underline' }}
-              >
-                View Uploaded Proof
-              </a>
-            </div>
-          )}
-
-          <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#6B7280', fontSize: '0.85rem', background: '#F9FAFB', padding: 12, borderRadius: 8 }}>
-            <Lock size={16} /> Coursework details are locked while approval is pending.
-          </div>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          {renderEditableSection('Research and Publication Ethics', 'researchEthics', researchEthics)}
-          {renderEditableSection('Research Methodology', 'researchMethodology', researchMethodology)}
-          {renderEditableSection('Discipline-Specific Elective Course', 'elective', elective)}
-          {renderEditableSection('Others (Optional)', 'others', others)}
-
-          <div style={{ marginTop: 24, padding: 20, background: '#F8FAFC', borderRadius: 16, border: '2px dashed #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-            <label style={{ display: 'block', fontSize: '0.95rem', fontWeight: 800, color: '#1E293B', margin: 0 }}>Upload Proof *</label>
-            <div style={{ position: 'relative', overflow: 'hidden', display: 'inline-block' }}>
-              <button 
-                type="button" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-                  color: 'white',
-                  padding: '8px 20px',
-                  borderRadius: '8px',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)'
-                }}
-              >
-                📁 {proofFile ? 'Change File' : 'Select Proof Document'}
-              </button>
-              <input 
-                type="file" 
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setProofFile(e.target.files[0])}
-                required={!thesis.courseworkUploadProof}
-                style={{ 
-                  position: 'absolute', 
-                  fontSize: '100px', 
-                  opacity: 0, 
-                  right: 0, 
-                  top: 0, 
-                  cursor: 'pointer' 
-                }}
-              />
-            </div>
-            {proofFile && (
-              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#059669', background: '#ECFDF5', padding: '4px 12px', borderRadius: '12px' }}>
-                Selected: {proofFile.name} ({(proofFile.size / 1024 / 1024).toFixed(2)} MB)
-              </div>
-            )}
-            <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748B', textAlign: 'center' }}>
-              Please upload documentary proof such as the official gazette notification of results or marksheets.
-            </p>
-            {thesis.courseworkUploadProof && (
-              <div style={{ marginTop: 4, fontSize: '0.8rem', color: '#475569' }}>
-                Existing proof: <a href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'underline' }}>View uploaded file</a>
-              </div>
-            )}
-          </div>
-
-          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', fontSize: '0.95rem' }}
-            >
-              {loading ? 'Submitting...' : '✓ Submit Coursework Details'}
-            </button>
-          </div>
-        </form>
-      )}
+    <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#6b7280', fontSize: '0.85rem' }}>
+      <Lock size={16} /> Synopsis upload unlocks after coursework clearance
     </div>
-  );
-};
+  </div>
+);
 
 // ── Synopsis Phase ──
 const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
@@ -1305,67 +823,37 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         
         {/* Current status info banner */}
-        {(() => {
-          let bg = '#F3F4F6';
-          let border = '#E2E8F0';
-          let color = '#4B5563';
-          let label = 'Awaiting Synopsis';
-
-          if (synopsisMilestone.status === 'PENDING') {
-            bg = '#FFFBEB';
-            border = '#FDE68A';
-            color = '#D97706';
-            label = 'Synopsis Upload Unlocked';
-          } else if (synopsisMilestone.status === 'SUBMITTED') {
-            bg = '#EFF6FF';
-            border = '#BFDBFE';
-            color = '#2563EB';
-            label = 'Synopsis Submitted & Under Review';
-          } else if (synopsisMilestone.status === 'PENDING_HOD') {
-            bg = '#FFFBEB';
-            border = '#FDE68A';
-            color = '#D97706';
-            label = 'Pending HOD Approval & DRC Pending';
-          } else if (synopsisMilestone.status === 'APPROVED') {
-            if (thesis.status === 'SYNOPSIS_PENDING') {
-              bg = '#FFFBEB';
-              border = '#FDE68A';
-              color = '#D97706';
-              label = 'Synopsis Approved (DRC Pending at HOD)';
-            } else {
-              bg = '#ECFDF5';
-              border = '#A7F3D0';
-              color = '#059669';
-              label = 'Approved & Verified';
-            }
-          } else if (synopsisMilestone.status === 'REVISION_REQUIRED') {
-            bg = '#FEF2F2';
-            border = '#FCA5A5';
-            color = '#DC2626';
-            label = 'Correction Needed';
-          }
-
-          return (
-            <div style={{ background: bg, border: `1px solid ${border}`, padding: 16, borderRadius: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, color: '#1E293B' }}>Current Lifecycle Status:</span>
-                <span style={{ fontWeight: 800, color: color, textTransform: 'uppercase' }}>
-                  {label}
-                </span>
-              </div>
-              {synopsisMilestone.comments?.length > 0 && (
-                <div style={{ marginTop: 12, padding: 12, background: 'rgba(255, 255, 255, 0.7)', borderRadius: 6 }}>
-                  <div style={{ fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>Faculty Feedback / Directives:</div>
-                  {synopsisMilestone.comments.map((c, idx) => (
-                    <div key={idx} style={{ fontSize: '0.85rem', color: '#7F1D1D', fontStyle: 'italic', marginBottom: 2 }}>
-                      "{c.text}" — {c.authorName}
-                    </div>
-                  ))}
+        <div style={{ 
+          background: synopsisMilestone.status === 'PENDING' ? '#FFFBEB' : synopsisMilestone.status === 'SUBMITTED' ? '#EFF6FF' : synopsisMilestone.status === 'APPROVED' ? '#ECFDF5' : '#FEF2F2',
+          border: '1px solid',
+          borderColor: synopsisMilestone.status === 'PENDING' ? '#FDE68A' : synopsisMilestone.status === 'SUBMITTED' ? '#BFDBFE' : synopsisMilestone.status === 'APPROVED' ? '#A7F3D0' : '#FCA5A5',
+          padding: 16, 
+          borderRadius: 8 
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 700, color: '#1E293B' }}>Current Lifecycle Status:</span>
+            <span style={{ 
+              fontWeight: 800, 
+              color: synopsisMilestone.status === 'PENDING' ? '#D97706' : synopsisMilestone.status === 'SUBMITTED' ? '#2563EB' : synopsisMilestone.status === 'APPROVED' ? '#059669' : '#DC2626',
+              textTransform: 'uppercase'
+            }}>
+              {synopsisMilestone.status === 'PENDING' ? 'Synopsis Upload Unlocked' : 
+               synopsisMilestone.status === 'SUBMITTED' ? 'Synopsis Submitted & Under Review' : 
+               synopsisMilestone.status === 'APPROVED' ? 'Approved & Verified' : 
+               'Correction Needed'}
+            </span>
+          </div>
+          {synopsisMilestone.comments?.length > 0 && (
+            <div style={{ marginTop: 12, padding: 12, background: 'rgba(255, 255, 255, 0.7)', borderRadius: 6 }}>
+              <div style={{ fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>Faculty Feedback / Directives:</div>
+              {synopsisMilestone.comments.map((c, idx) => (
+                <div key={idx} style={{ fontSize: '0.85rem', color: '#7F1D1D', fontStyle: 'italic', marginBottom: 2 }}>
+                  "{c.text}" — {c.authorName}
                 </div>
-              )}
+              ))}
             </div>
-          );
-        })()}
+          )}
+        </div>
 
         {/* Synopsis submission form */}
         {synopsisMilestone.status === 'PENDING' || synopsisMilestone.status === 'REVISION_REQUIRED' ? (
@@ -1380,42 +868,8 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Synopsis Document (PDF/Word) *</label>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
-                <label 
-                  style={{ 
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    gap: 8, 
-                    padding: '8px 16px', 
-                    background: '#F1F5F9', 
-                    color: '#475569', 
-                    border: '1px solid #CBD5E1', 
-                    borderRadius: 8, 
-                    cursor: 'pointer', 
-                    fontSize: '0.85rem', 
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={e => { e.currentTarget.style.background = '#E2E8F0'; }}
-                  onMouseOut={e => { e.currentTarget.style.background = '#F1F5F9'; }}
-                >
-                  <Upload size={16} />
-                  {file ? file.name : 'Choose file...'}
-                  <input 
-                    type="file" 
-                    accept=".pdf,.doc,.docx" 
-                    onChange={e => setFile(e.target.files[0])} 
-                    style={{ display: 'none' }} 
-                    required 
-                  />
-                </label>
-                {file && (
-                  <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>
-                    Selected ✓
-                  </span>
-                )}
-              </div>
-              <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: 6 }}>Please ensure your document includes introduction, literature survey, proposed methodology, and references.</p>
+              <input type="file" accept=".pdf,.doc,.docx" onChange={e => setFile(e.target.files[0])} required />
+              <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: 4 }}>Please ensure your document includes introduction, literature survey, proposed methodology, and references.</p>
             </div>
             
             <div style={{ background: '#F3F4F6', borderRadius: 8, padding: 12, fontSize: '0.8rem', color: '#4B5563' }}>
@@ -1623,7 +1077,7 @@ const ActiveResearch = ({ thesis, milestones, onSubmit, setActiveTab }) => {
       {/* Synopsis milestone if present */}
       {milestones.filter(m => m.type === 'SYNOPSIS').map(m => (
         <div key={m._id} className="card" style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontWeight: 700, color: '#111827' }}>{m.title}</div>
               <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 4 }}>Type: {m.type}</div>
@@ -1639,7 +1093,7 @@ const ActiveResearch = ({ thesis, milestones, onSubmit, setActiveTab }) => {
 };
 
 // ── Pre-Submission Phase ──
-const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
+const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
   const toast = useToast();
   const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
   const finalMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
@@ -1651,19 +1105,13 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
   const [fileFinalThesis, setFileFinalThesis] = useState(null);
   const [submittingFinal, setSubmittingFinal] = useState(false);
 
-  // States for pre-submission eligibility checklist
-  const [pubs, setPubs] = useState([]);
-  const [fetchingChecklist, setFetchingChecklist] = useState(false);
-
-  useEffect(() => {
-    if (!preMilestone && thesis?._id) {
-      setFetchingChecklist(true);
-      axios.get(`${API}/publications/thesis/${thesis._id}`, getAuthHeader())
-        .then(res => setPubs(res.data))
-        .catch(() => {})
-        .finally(() => setFetchingChecklist(false));
-    }
-  }, [preMilestone, thesis?._id]);
+  if (!preMilestone) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-secondary, #64748B)' }}>
+        ⏳ Pre-submission package milestone generation pending. Fulfill all prerequisites first to unlock.
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1721,30 +1169,10 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
     }
   };
 
-  const semStatus = thesis.preSubmissionSeminar?.status || 'NOT_SCHEDULED';
-  const isPending = preMilestone?.status === 'PENDING';
-  const isRevision = preMilestone?.status === 'REVISION_REQUIRED';
-  const isSubmitted = preMilestone?.status === 'SUBMITTED' || preMilestone?.status === 'PENDING_HOD';
-  const isApproved = preMilestone?.status === 'APPROVED';
-
-  // Checklist verification calculations
-  const scholar = user || {};
-  const hasMphil = scholar.profile?.qualifications?.mphil?.done === true && scholar.isVerified === true;
-  const requiredMonths = hasMphil ? 18 : 36;
-  const admissionDate = scholar.profile?.admissionDate ? new Date(scholar.profile.admissionDate) : null;
-  const referenceDate = admissionDate && !isNaN(admissionDate.getTime()) ? admissionDate : (thesis.startDate ? new Date(thesis.startDate) : new Date());
-  const diffMs = new Date() - referenceDate;
-  const diffMonths = Math.max(0, diffMs / (1000 * 60 * 60 * 24 * 30.4375));
-  const timeCleared = diffMonths >= requiredMonths;
-
-  const reports = milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT') || [];
-  const approvedReports = reports.filter(r => r.status === 'APPROVED').length;
-  const requiredReportsCount = hasMphil ? 3 : 6;
-  const reportsCleared = approvedReports >= requiredReportsCount;
-
-  const journals = pubs.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
-  const conferences = pubs.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
-  const pubsCleared = journals >= 2 && conferences >= 2;
+  const isPending = preMilestone.status === 'PENDING';
+  const isRevision = preMilestone.status === 'REVISION_REQUIRED';
+  const isSubmitted = preMilestone.status === 'SUBMITTED';
+  const isApproved = preMilestone.status === 'APPROVED';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1759,810 +1187,146 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
           🎓 Pre-Submission Colloquium & Thesis Defense
         </h4>
         <p style={{ color: 'var(--color-text-secondary, #475569)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-          The Pre-Submission phase requires you to upload your rough thesis draft and Turnitin plagiarism clearance report for Supervisor and HOD evaluation. 
-          Upon successful draft verification, HOD will schedule your Pre-Submission Seminar. Once cleared, you will proceed to the final submission.
+          Congratulations! You have fulfilled the active research prerequisites (3-year duration, reports, and verified publications). Fulfill the final steps by submitting your rough thesis draft and Turnitin plagiarism clearance report. The department will then schedule your offline expert defense seminar.
         </p>
       </div>
 
-      {/* 1. Prerequisites Check (If preMilestone not generated) */}
-      {!preMilestone && (
-        <div className="card" style={{ borderLeft: '4px solid #EF4444' }}>
-          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#DC2626' }}>
-            🔒 Pre-Submission Prerequisites Locked
-          </h3>
-          <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 16 }}>
-            You must satisfy the following research timeline, progress report, and publication criteria to unlock rough draft submission:
-          </p>
-
-          {fetchingChecklist ? (
-            <div style={{ padding: 12, color: '#64748B', fontSize: '0.85rem' }}>⏳ Checking eligibility criteria...</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Research Duration */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: timeCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: timeCleared ? '#065F46' : '#991B1B' }}>Research Time Elapsed</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredMonths} months ({hasMphil ? 'M.Phil Holder' : 'Regular Ph.D.'}) | Current: {diffMonths.toFixed(1)} months</div>
-                </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: timeCleared ? '#059669' : '#DC2626' }}>{timeCleared ? '✓ Cleared' : '⏳ Pending'}</span>
-              </div>
-
-              {/* Progress Reports */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: reportsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: reportsCleared ? '#065F46' : '#991B1B' }}>Approved Progress Reports</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredReportsCount} approved reports | Current: {approvedReports} approved</div>
-                </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: reportsCleared ? '#059669' : '#DC2626' }}>{reportsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
-              </div>
-
-              {/* Research Outputs */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: pubsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: pubsCleared ? '#065F46' : '#991B1B' }}>Research Publications</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: 2 verified journals & 2 verified conferences | Current: {journals} journals, {conferences} conferences</div>
-                </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: pubsCleared ? '#059669' : '#DC2626' }}>{pubsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 2. Draft submission form (Rough Thesis Draft + Plagiarism Certificate) */}
-      {preMilestone && (isPending || isRevision) && (
-        <div className="card" style={{
-          padding: '28px',
-          borderRadius: '20px',
-          background: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.5)',
-          boxShadow: '0 8px 32px rgba(15, 23, 42, 0.04)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Subtle background glow */}
-          <div style={{
-            position: 'absolute',
-            top: '-50px',
-            right: '-50px',
-            width: '150px',
-            height: '150px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(234, 88, 12, 0.08) 0%, rgba(234, 88, 12, 0) 70%)',
-            pointerEvents: 'none'
-          }} />
-
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>📤</span> Submit Rough Thesis Draft & Plagiarism Report
-          </h3>
-          {isRevision && (
-            <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
-              <strong>⚠️ Revision Required:</strong>
-              <div style={{ marginTop: 4 }}>
-                {preMilestone.comments?.length > 0
-                  ? `"${preMilestone.comments[preMilestone.comments.length - 1].text}" — ${preMilestone.comments[preMilestone.comments.length - 1].authorName}`
-                  : 'Supervisor/HOD has requested corrections.'}
-              </div>
-            </div>
-          )}
+      {/* Package Form or Status */}
+      {(isPending || isRevision) && (
+        <div className="card">
+          <h3 className="card-title">Upload Pre-Submission Package</h3>
           <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', marginBottom: 20 }}>
-            Please upload your complete rough thesis draft and Turnitin plagiarism clearance report. Once submitted, your Supervisor and HOD will review them.
+            Upload complete rough draft thesis compiled from approved chapters, along with the plagiarism verification clearance certificate.
           </p>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '4px' }}>
-              {/* File 1: Rough Thesis Draft */}
-              <div 
-                style={{
-                  border: fileThesis ? '2px solid rgba(16, 185, 129, 0.4)' : '2px dashed rgba(234, 88, 12, 0.25)',
-                  borderRadius: '16px',
-                  padding: '30px 20px',
-                  textAlign: 'center',
-                  background: fileThesis 
-                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)' 
-                    : 'linear-gradient(135deg, rgba(234, 88, 12, 0.03) 0%, rgba(255, 255, 255, 0) 100%)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '14px',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
-                  backdropFilter: 'blur(8px)',
-                }}
-                onClick={() => document.getElementById('thesis-file-input').click()}
-                onMouseEnter={e => {
-                  if (!fileThesis) {
-                    e.currentTarget.style.borderColor = '#EA580C';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(234, 88, 12, 0.06)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!fileThesis) {
-                    e.currentTarget.style.borderColor = 'rgba(234, 88, 12, 0.25)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.01)';
-                  }
-                }}
-              >
-                <input 
-                  id="thesis-file-input"
-                  type="file" 
-                  accept=".pdf" 
-                  onChange={e => setFileThesis(e.target.files[0])} 
-                  style={{ display: 'none' }} 
-                  required={!fileThesis}
-                />
-                
-                {fileThesis ? (
-                  <>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: '#ECFDF5',
-                      color: '#10B981',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 10px rgba(16, 185, 129, 0.15)'
-                    }}>
-                      <CheckCircle2 size={24} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {fileThesis.name}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
-                        {(fileThesis.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
-                      </div>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFileThesis(null);
-                        document.getElementById('thesis-file-input').value = '';
-                      }}
-                      style={{
-                        padding: '4px 10px',
-                        background: '#FEF2F2',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#EF4444',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
-                      onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}
-                    >
-                      <X size={12} /> Remove
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: '#FFF7ED',
-                      color: '#EA580C',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 10px rgba(234, 88, 12, 0.08)'
-                    }}>
-                      <Upload size={20} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1F2937' }}>Rough Thesis Draft (PDF) *</div>
-                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '6px', lineHeight: 1.4 }}>
-                        Click to browse or drag file here<br />Required for supervisor review
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
 
-              {/* File 2: Plagiarism Clearance Report */}
-              <div 
-                style={{
-                  border: filePlagiarism ? '2px solid rgba(16, 185, 129, 0.4)' : '2px dashed rgba(234, 88, 12, 0.25)',
-                  borderRadius: '16px',
-                  padding: '30px 20px',
-                  textAlign: 'center',
-                  background: filePlagiarism 
-                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)' 
-                    : 'linear-gradient(135deg, rgba(234, 88, 12, 0.03) 0%, rgba(255, 255, 255, 0) 100%)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '14px',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
-                  backdropFilter: 'blur(8px)',
-                }}
-                onClick={() => document.getElementById('plagiarism-file-input').click()}
-                onMouseEnter={e => {
-                  if (!filePlagiarism) {
-                    e.currentTarget.style.borderColor = '#EA580C';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(234, 88, 12, 0.06)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!filePlagiarism) {
-                    e.currentTarget.style.borderColor = 'rgba(234, 88, 12, 0.25)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.01)';
-                  }
-                }}
-              >
-                <input 
-                  id="plagiarism-file-input"
-                  type="file" 
-                  accept=".pdf" 
-                  onChange={e => setFilePlagiarism(e.target.files[0])} 
-                  style={{ display: 'none' }} 
-                  required={!filePlagiarism}
-                />
-                
-                {filePlagiarism ? (
-                  <>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: '#ECFDF5',
-                      color: '#10B981',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 10px rgba(16, 185, 129, 0.15)'
-                    }}>
-                      <CheckCircle2 size={24} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {filePlagiarism.name}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
-                        {(filePlagiarism.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
-                      </div>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFilePlagiarism(null);
-                        document.getElementById('plagiarism-file-input').value = '';
-                      }}
-                      style={{
-                        padding: '4px 10px',
-                        background: '#FEF2F2',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#EF4444',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
-                      onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}
-                    >
-                      <X size={12} /> Remove
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: '#FFF7ED',
-                      color: '#EA580C',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 10px rgba(234, 88, 12, 0.08)'
-                    }}>
-                      <Upload size={20} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1F2937' }}>Plagiarism Report (PDF) *</div>
-                      <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '6px', lineHeight: 1.4 }}>
-                        Click to browse or drag file here<br />Official Turnitin certificate
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+          {preMilestone.comments?.length > 0 && (
+            <div style={{ marginBottom: 20, padding: 12, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem' }}>
+              <strong>Correction Required:</strong> "{preMilestone.comments[preMilestone.comments.length - 1].text}"
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
+                 Rough Thesis Complete Document (PDF format only) *
+              </label>
+              <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileThesis(e.target.files[0])} />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button 
-                type="submit" 
-                disabled={submitting} 
-                style={{
-                  background: submitting 
-                    ? 'var(--color-neutral-300, #CBD5E1)' 
-                    : 'linear-gradient(135deg, #FF6B35 0%, #EA580C 100%)',
-                  color: '#FFFFFF',
-                  padding: '12px 28px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  fontSize: '0.88rem',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: submitting ? 'not-allowed' : 'pointer',
-                  boxShadow: submitting 
-                    ? 'none' 
-                    : '0 4px 14px rgba(234, 88, 12, 0.3), inset 0 -2px 0 rgba(0,0,0,0.1)',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  outline: 'none',
-                }}
-                onMouseEnter={e => {
-                  if (!submitting) {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(234, 88, 12, 0.4), inset 0 -2px 0 rgba(0,0,0,0.1)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!submitting) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(234, 88, 12, 0.3), inset 0 -2px 0 rgba(0,0,0,0.1)';
-                  }
-                }}
-                onMouseDown={e => {
-                  if (!submitting) {
-                    e.currentTarget.style.transform = 'translateY(1px)';
-                  }
-                }}
-                onMouseUp={e => {
-                  if (!submitting) {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }
-                }}
-              >
-                <Upload size={16} />
-                {submitting ? 'Uploading Package...' : 'Upload & Submit Pre-Submission Package'}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
+                 Plagiarism Clearance Certificate (PDF format only) *
+              </label>
+              <input type="file" required accept=".pdf" className="form-input" onChange={e => setFilePlagiarism(e.target.files[0])} />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+              <button type="submit" className="btn-primary" disabled={submitting} style={{ background: '#EA580C', padding: '10px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                {submitting ? 'Uploading Package...' : '🚀 Submit Pre-Submission Package'}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* 3. Draft Submitted & Awaiting Review */}
-      {preMilestone && isSubmitted && (
-        <div className="card">
-          <h3 className="card-title">⏳ Draft Under Evaluation</h3>
-          <div style={{ textAlign: 'center', padding: '24px 16px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, color: '#1E40AF', marginBottom: 16 }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⏳</div>
-            <h4 style={{ margin: '0 0 6px 0', fontWeight: 700 }}>Draft Submitted Successfully</h4>
-            <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.4 }}>
-              Your rough draft thesis and plagiarism report are under review. Faculty Supervisor must verify them first, followed by HOD final sign-off.
-            </p>
-          </div>
-          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Uploaded Files:</div>
+      {isSubmitted && (
+        <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 16 }}>⏳</div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text, #0F172A)', margin: '0 0 8px 0' }}>Pre-Submission Package Uploaded</h3>
+          <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 500, margin: '0 auto 20px', lineHeight: 1.5 }}>
+            Your rough draft and Turnitin report have been submitted to the HOD. Awaiting department scheduling for your open, offline Pre-Submission Seminar presentation.
+          </p>
+          <div style={{ display: 'inline-flex', gap: 16, background: 'var(--color-bg, #F8FAFC)', padding: '12px 20px', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)' }}>
             {preMilestone.documentUrl && (
-              <div style={{ marginBottom: 6 }}>
-                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
+              <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#EA580C', fontWeight: 600, textDecoration: 'underline' }}>
+                📄 Rough Thesis Draft
+              </a>
+            )}
+            {preMilestone.plagiarismReportUrl && (
+              <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: 600, textDecoration: 'underline' }}>
+                📊 Plagiarism Report
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isApproved && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="card" style={{ padding: '40px 24px', borderLeft: '8px solid #059669', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎉</div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#065F46', margin: '0 0 8px 0' }}>Pre-Submission Seminar Successful!</h3>
+            <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 500, margin: '0 auto 20px', lineHeight: 1.5 }}>
+              Your expert defense seminar was recorded as **Successful** by the HOD. Your thesis status has progressed to **PRE_SUBMISSION**. Please begin assembling your final submission materials.
+            </p>
+            <div style={{ display: 'inline-flex', gap: 16, background: 'var(--color-bg, #F8FAFC)', padding: '12px 20px', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)' }}>
+              {preMilestone.documentUrl && (
+                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#EA580C', fontWeight: 600, textDecoration: 'underline' }}>
                   📄 Rough Thesis Draft
                 </a>
-              </div>
-            )}
-            {preMilestone.plagiarismReportUrl && (
-              <div>
-                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Plagiarism Clearance Report
+              )}
+              {preMilestone.plagiarismReportUrl && (
+                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: 600, textDecoration: 'underline' }}>
+                  📊 Plagiarism Report
                 </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 4. Draft Approved & Awaiting Seminar Schedule */}
-      {preMilestone && isApproved && semStatus === 'NOT_SCHEDULED' && (
-        <div className="card">
-          <h3 className="card-title">📅 Seminar Scheduling Pending</h3>
-          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
-              ✅ Thesis Draft & Plagiarism Certificate Approved
-            </h4>
-            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
-              Your complete rough thesis draft and Turnitin report have been approved by both the Faculty Supervisor and HOD. 
-              The HOD of the department has been notified to schedule your Pre-Submission Seminar defense colloquium.
-            </p>
-          </div>
-          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Approved Files:</div>
-            {preMilestone.documentUrl && (
-              <div style={{ marginBottom: 6 }}>
-                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Approved Thesis Draft
-                </a>
-              </div>
-            )}
-            {preMilestone.plagiarismReportUrl && (
-              <div>
-                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Approved Plagiarism Clearance Certificate
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 5. Seminar Scheduled */}
-      {semStatus === 'SCHEDULED' && (
-        <div className="card">
-          <h3 className="card-title">📆 Pre-Submission Seminar Confirmed</h3>
-          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-            <h4 style={{ margin: '0 0 12px 0', color: '#92400E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>📆</span> Seminar Schedule Details:
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.85rem', color: '#78350F' }}>
-              <div><strong>Date:</strong> {thesis.preSubmissionSeminar.scheduledDate ? new Date(thesis.preSubmissionSeminar.scheduledDate).toLocaleDateString() : 'TBD'}</div>
-              <div><strong>Time:</strong> {thesis.preSubmissionSeminar.scheduledTime || 'TBD'}</div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {thesis.preSubmissionSeminar.venue || 'TBD'}</div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Committee/Panel:</strong> {thesis.preSubmissionSeminar.committeeMembers || 'TBD'}</div>
-              {thesis.preSubmissionSeminar.remarks && <div style={{ gridColumn: 'span 2', background: 'white', padding: 10, borderRadius: 6, border: '1px solid #FCD34D', marginTop: 6 }}><strong>Remarks:</strong> {thesis.preSubmissionSeminar.remarks}</div>}
-            </div>
-            <div style={{ marginTop: 16, fontSize: '0.8rem', color: '#92400E', fontStyle: 'italic', borderTop: '1px solid #FDE68A', paddingTop: 10 }}>
-              * Please attend the seminar defense offline at the scheduled time. The outcome clearance will be recorded in this portal by the HOD.
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. Seminar Uncleared */}
-      {semStatus === 'UNCLEARED' && (
-        <div className="card">
-          <h3 className="card-title" style={{ color: '#DC2626' }}>⚠️ Seminar Outcome: Uncleared</h3>
-          <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
-            <strong>⚠️ Seminar Defense Evaluated as Unsatisfactory</strong>
-            <div style={{ marginTop: 4 }}><strong>HOD Feedback Remarks:</strong> {thesis.preSubmissionSeminar.outcomeRemarks || 'None'}</div>
-            <div style={{ marginTop: 6, color: '#7F1D1D' }}>Please discuss the corrections with your supervisor. HOD will reschedule the seminar defense in this portal once ready.</div>
-          </div>
-        </div>
-      )}
-
-      {/* 7. Seminar Cleared -> Notification */}
-      {semStatus === 'CLEARED' && (
-        <div className="card">
-          <h3 className="card-title" style={{ color: '#059669' }}>🎉 Seminar Outcome: Cleared</h3>
-          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20 }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
-              🎉 Pre-Submission Seminar Successfully Cleared!
-            </h4>
-            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
-              Your seminar colloquium has been evaluated as satisfactory. You have transitioned to the next phase: <strong>Thesis Submission</strong>.
-            </p>
-            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: '8px 0 0 0', lineHeight: 1.5 }}>
-              Please navigate to the <strong>Final Submission</strong> tab in the sidebar to upload your final bound thesis document.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Final Thesis Submission Phase ──
-const FinalSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
-  const toast = useToast();
-  const finalMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-  
-  const [fileFinalThesis, setFileFinalThesis] = useState(null);
-  const [submittingFinal, setSubmittingFinal] = useState(false);
-
-  const handleFinalSubmit = async (e) => {
-    e.preventDefault();
-    if (!fileFinalThesis) return toast.warning('Please upload your final thesis PDF.');
-    if (!finalMilestone) return toast.error('Final submission milestone not found.');
-
-    setSubmittingFinal(true);
-    try {
-      const formData = new FormData();
-      formData.append('document', fileFinalThesis);
-
-      await axios.post(`${API_URL}/milestones/${finalMilestone._id}/submit`, formData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      toast.success('Final Ph.D. thesis uploaded successfully! Awaiting supervisor digital sign-off.');
-      setFileFinalThesis(null);
-      if (onSubmit) await onSubmit();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Error uploading final thesis.');
-    } finally {
-      setSubmittingFinal(false);
-    }
-  };
-
-  if (!finalMilestone) {
-    return (
-      <div className="card">
-        <h3 className="card-title">📄 Final Thesis Submission</h3>
-        <p style={{ color: '#64748B', fontSize: '0.85rem' }}>
-          Final thesis submission milestone is not yet generated. Please contact your administrator.
-        </p>
-      </div>
-    );
-  }
-
-  const isPending = finalMilestone.status === 'PENDING';
-  const isRevision = finalMilestone.status === 'REVISION_REQUIRED';
-  const isSubmitted = finalMilestone.status === 'SUBMITTED';
-  const isApproved = finalMilestone.status === 'APPROVED';
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Overview Banner */}
-      <div className="card" style={{ 
-        padding: 24, 
-        borderRadius: 16, 
-        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%)', 
-        border: '1px solid rgba(16, 185, 129, 0.15)' 
-      }}>
-        <h4 style={{ margin: '0 0 12px 0', fontSize: '1rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
-          📚 Final Ph.D. Thesis Submission
-        </h4>
-        <p style={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-          This is the final phase of your Ph.D. journey. Incorporate all corrections and feedback from the Pre-Submission Seminar and upload the complete bound final thesis. Your supervisor must digitally sign and approve it to forward for external evaluation.
-        </p>
-      </div>
-
-      {/* Upload Form (Pending or Revision) */}
-      {(isPending || isRevision) && (
-        <div className="card" style={{
-          padding: '28px',
-          borderRadius: '20px',
-          background: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.5)',
-          boxShadow: '0 8px 32px rgba(15, 23, 42, 0.04)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>📤</span> Upload Final bound Thesis Document
-          </h3>
-          {isRevision && (
-            <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
-              <strong>⚠️ Revision Required:</strong>
-              <div style={{ marginTop: 4 }}>
-                {finalMilestone.comments?.length > 0
-                  ? `"${finalMilestone.comments[finalMilestone.comments.length - 1].text}" — ${finalMilestone.comments[finalMilestone.comments.length - 1].authorName}`
-                  : 'Supervisor has requested corrections.'}
-              </div>
-            </div>
-          )}
-          <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
-            Please upload your finalized complete thesis document. Only PDF format is accepted.
-          </p>
-          <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div 
-              style={{
-                border: fileFinalThesis ? '2px solid rgba(16, 185, 129, 0.4)' : '2px dashed rgba(16, 185, 129, 0.25)',
-                borderRadius: '16px',
-                padding: '30px 20px',
-                textAlign: 'center',
-                background: fileFinalThesis 
-                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)' 
-                  : 'linear-gradient(135deg, rgba(16, 185, 129, 0.03) 0%, rgba(255, 255, 255, 0) 100%)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '14px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
-                backdropFilter: 'blur(8px)',
-              }}
-              onClick={() => document.getElementById('final-thesis-file-input').click()}
-              onMouseEnter={e => {
-                if (!fileFinalThesis) {
-                  e.currentTarget.style.borderColor = '#10B981';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.06)';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!fileFinalThesis) {
-                  e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.25)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.01)';
-                }
-              }}
-            >
-              <input 
-                id="final-thesis-file-input"
-                type="file" 
-                accept=".pdf" 
-                onChange={e => setFileFinalThesis(e.target.files[0])} 
-                style={{ display: 'none' }} 
-                required
-              />
-              
-              {fileFinalThesis ? (
-                <>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    background: '#ECFDF5',
-                    color: '#10B981',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 10px rgba(16, 185, 129, 0.15)'
-                  }}>
-                    <CheckCircle2 size={24} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {fileFinalThesis.name}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
-                      {(fileFinalThesis.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
-                    </div>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFileFinalThesis(null);
-                      document.getElementById('final-thesis-file-input').value = '';
-                    }}
-                    style={{
-                      padding: '4px 10px',
-                      background: '#FEF2F2',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#EF4444',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      transition: 'background 0.2s'
-                    }}
-                  >
-                    <X size={12} /> Remove
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    background: '#ECFDF5',
-                    color: '#10B981',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 10px rgba(16, 185, 129, 0.08)'
-                  }}>
-                    <Upload size={20} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1F2937' }}>Final bound Thesis (PDF) *</div>
-                    <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '6px', lineHeight: 1.4 }}>
-                      Click to browse or drag file here<br />Incorporating seminar panel feedback
-                    </div>
-                  </div>
-                </>
               )}
             </div>
+          </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button 
-                type="submit" 
-                disabled={submittingFinal} 
-                style={{
-                  background: submittingFinal 
-                    ? '#CBD5E1' 
-                    : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                  color: '#FFFFFF',
-                  padding: '12px 28px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  fontSize: '0.88rem',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: submittingFinal ? 'not-allowed' : 'pointer',
-                  boxShadow: submittingFinal 
-                    ? 'none' 
-                    : '0 4px 14px rgba(16, 185, 129, 0.3), inset 0 -2px 0 rgba(0,0,0,0.1)',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  outline: 'none',
-                }}
-              >
-                <Upload size={16} />
-                {submittingFinal ? 'Uploading Thesis...' : 'Upload & Submit Final Thesis'}
-              </button>
+          {finalMilestone && (
+            <div className="card">
+              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text, #0F172A)' }}>
+                <span>🚀</span> Final Thesis Package Submission
+              </h3>
+              
+              {finalMilestone.status === 'PENDING' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
+                  <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
+                    Please compile and upload your absolute final, hard-bound equivalent Ph.D. thesis document here. Ensure that all corrections, suggestions, and feedback received from the expert panel during your offline defense colloquium are fully incorporated.
+                  </p>
+
+                  <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
+                        Final Hard-Bound Equivalent Thesis (PDF format only) *
+                      </label>
+                      <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileFinalThesis(e.target.files[0])} />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                      <button type="submit" className="btn-primary" disabled={submittingFinal} style={{ background: '#EA580C', padding: '10px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {submittingFinal ? 'Uploading Final Thesis...' : '🚀 Submit Final Thesis Package'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {['SUBMITTED', 'PENDING_HOD', 'APPROVED'].includes(finalMilestone.status) && (
+                <div style={{ textAlign: 'center', padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontSize: '3.5rem' }}>{finalMilestone.status === 'APPROVED' ? '🎉' : '⏳'}</div>
+                  <h4 style={{ fontWeight: 700, color: 'var(--color-text, #0F172A)', margin: 0 }}>
+                    {finalMilestone.status === 'APPROVED' ? 'Thesis Digitally Signed-off & Approved' :
+                     finalMilestone.status === 'PENDING_HOD' ? 'Awaiting HOD Digital Sign-off' :
+                     'Awaiting Supervisor Digital Sign-off'}
+                  </h4>
+                  <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 500, margin: 0, lineHeight: 1.5 }}>
+                    {finalMilestone.status === 'APPROVED' ? 'Your final bound thesis package has been approved and signed off by the supervisor and HOD. It has been submitted for evaluation.' :
+                     finalMilestone.status === 'PENDING_HOD' ? 'Your supervisor has signed off! It is now pending final approval at the HOD end.' :
+                     'Your final complete thesis document has been submitted and forwarded to your assigned Faculty Supervisor for digital signature and sign-off.'}
+                  </p>
+                  
+                  {finalMilestone.documentUrl && (
+                    <div style={{ marginTop: 8 }}>
+                      <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#EA580C', fontWeight: 600, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        📄 View Submitted Final Thesis
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </form>
-        </div>
-      )}
-
-      {/* Awaiting Review */}
-      {isSubmitted && (
-        <div className="card">
-          <h3 className="card-title">⏳ Final Thesis Under Review</h3>
-          <div style={{ textAlign: 'center', padding: '24px 16px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, color: '#1E40AF', marginBottom: 16 }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⏳</div>
-            <h4 style={{ margin: '0 0 6px 0', fontWeight: 700 }}>Final Thesis Uploaded</h4>
-            <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.4 }}>
-              Your final bound thesis document has been submitted successfully and is awaiting digital sign-off and approval by your supervisor.
-            </p>
-          </div>
-          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Uploaded File:</div>
-            {finalMilestone.documentUrl && (
-              <div>
-                <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 View Submitted Final Thesis
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Approved */}
-      {isApproved && (
-        <div className="card">
-          <h3 className="card-title" style={{ color: '#059669' }}>🎉 Final Thesis Approved & Signed-off</h3>
-          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
-              🎉 Ph.D. Thesis Approved!
-            </h4>
-            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
-              Your final bound Ph.D. thesis document has been digitally approved and signed-off by your Faculty Supervisor. It has been officially locked and forwarded for external assessment and dispatch.
-            </p>
-          </div>
-          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Approved Document:</div>
-            {finalMilestone.documentUrl && (
-              <div>
-                <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#059669', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Approved Final Thesis
-                </a>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -2576,15 +1340,26 @@ const SubmittedView = ({ thesis }) => {
   const steps = [
     {
       title: '📤 Thesis Submission Package',
-      desc: `Your final Ph.D. thesis was digitally signed-off by your Supervisor and submitted on ${thesis.submittedAt ? new Date(thesis.submittedAt).toLocaleDateString() : new Date().toLocaleDateString()}. Your account is locked.`,
+      desc: `Your final Ph.D. thesis was digitally signed-off by your Supervisor and approved by the HOD on ${thesis.submittedAt ? new Date(thesis.submittedAt).toLocaleDateString() : new Date().toLocaleDateString()}. Your account is locked.`,
       status: 'SUCCESS'
     },
     {
       title: '📬 Dispatch to External University Examiners',
       desc: thesis.dispatchDate 
-        ? `Dispatched on ${new Date(thesis.dispatchDate).toLocaleDateString()} via ${thesis.dispatchMethod} ${thesis.dispatchTrackingNumber ? `(Ref: ${thesis.dispatchTrackingNumber})` : ''}. Examiner evaluation is in progress.`
-        : 'Your thesis is being verified by the HOD and Academic Branch for official examiner dispatch.',
+        ? `Dispatched on ${new Date(thesis.dispatchDate).toLocaleDateString()} via ${thesis.dispatchMethod} ${thesis.dispatchTrackingNumber ? `(Ref: ${thesis.dispatchTrackingNumber})` : ''}.`
+        : 'Your thesis is being processed by the HOD and Academic Branch for examiner dispatch.',
       status: thesis.dispatchDate ? 'SUCCESS' : 'WARNING'
+    },
+    {
+      title: '🔍 External Examiner Evaluation',
+      desc: thesis.externalEvaluationStatus === 'SUCCESSFUL'
+        ? 'External evaluation cleared successfully with positive reports!'
+        : thesis.externalEvaluationStatus === 'FAILED'
+        ? `Evaluation reports were negative: ${thesis.externalEvaluationRemarks || 'Corrections required.'}`
+        : thesis.dispatchDate
+        ? 'Examiner evaluation is in progress (usually takes several months).'
+        : 'Awaiting thesis dispatch for evaluation.',
+      status: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? 'SUCCESS' : thesis.externalEvaluationStatus === 'FAILED' ? 'DANGER' : thesis.dispatchDate ? 'WARNING' : 'PENDING'
     },
     {
       title: '🎓 Viva-Voce Defense Colloquium',
@@ -2842,14 +1617,12 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
               const admDate = user?.profile?.admissionDate ? new Date(user.profile.admissionDate) : null;
               const refDate = admDate && !isNaN(admDate.getTime()) ? admDate : (thesis.startDate ? new Date(thesis.startDate) : null);
               const diffMs = refDate ? (new Date() - refDate) : 0;
-              const hasMphil = user?.profile?.qualifications?.mphil?.done === true;
-              const requiredYears = hasMphil ? 1.5 : 3;
-              const diffYears = Math.min(requiredYears, +(diffMs / (1000 * 60 * 60 * 24 * 365.25)).toFixed(2));
-              const isTimeMet = diffYears >= requiredYears;
+              const diffYears = Math.min(3, +(diffMs / (1000 * 60 * 60 * 24 * 365.25)).toFixed(2));
+              const isTimeMet = diffYears >= 3;
               return (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface, #ffffff)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--color-border, #E2E8F0)' }}>
                   <div style={{ fontSize: '0.82rem' }}>
-                    <strong>⏳ Minimum Research Duration:</strong> {diffYears} / {requiredYears} Years {hasMphil ? '(M.Phil Holder)' : ''}
+                    <strong>⏳ Minimum Research Duration:</strong> {diffYears} / 3 Years
                   </div>
                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: isTimeMet ? '#065F46' : '#D97706' }}>
                     {isTimeMet ? '✅ Eligible' : '⏳ Time Remaining'}
@@ -2862,13 +1635,12 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
             {(() => {
               const reports = milestones.filter(m => m.type === '6_MONTH_REPORT');
               const approvedReports = reports.filter(r => r.status === 'APPROVED').length;
-              const hasMphil = user?.profile?.qualifications?.mphil?.done === true;
-              const requiredReportsCount = hasMphil ? 3 : 6;
-              const isReportsMet = approvedReports >= requiredReportsCount;
+              const totalReports = reports.length;
+              const isReportsMet = totalReports > 0 && approvedReports === totalReports;
               return (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface, #ffffff)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--color-border, #E2E8F0)' }}>
                   <div style={{ fontSize: '0.82rem' }}>
-                    <strong>📄 Progress Reports:</strong> {approvedReports} / {requiredReportsCount} Semester Reports Approved {hasMphil ? '(M.Phil Holder)' : ''}
+                    <strong>📄 Progress Reports:</strong> {approvedReports} / {totalReports || 1} Semester Reports Approved
                   </div>
                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: isReportsMet ? '#065F46' : '#D97706' }}>
                     {isReportsMet ? '✅ All Approved' : '⏳ Pending Reviews'}
@@ -2909,7 +1681,6 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
               {[
-                ['SH no.', user?.profile?.shNo || '—'],
                 ['Enrollment Number', thesis.enrollmentNumber],
                 ['Research Department', thesis.department],
                 ['Research Advisor', thesis.supervisorId?.name || 'Awaiting Allocation'],
@@ -3260,9 +2031,7 @@ const ResearchOutputsTab = ({ thesis }) => {
     publicationDate: '', 
     paperLink: '', 
     type: 'JOURNAL',
-    doiUrl: '',
-    iprType: '',
-    itemStatus: ''
+    doiUrl: ''
   });
 
   const fetchPubs = async () => {
@@ -3278,7 +2047,7 @@ const ResearchOutputsTab = ({ thesis }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.journalName.trim()) {
-      return toast.warning(form.type === 'IPR' ? 'Please enter IPR title and office details.' : 'Please enter paper title and publisher details.');
+      return toast.warning(form.type === 'PATENT' ? 'Please enter patent title and office details.' : 'Please enter paper title and publisher details.');
     }
     if (!file) return toast.warning('Please upload a PDF proof document.');
     
@@ -3292,8 +2061,6 @@ const ResearchOutputsTab = ({ thesis }) => {
       formData.append('publicationDate', form.publicationDate);
       formData.append('paperLink', form.paperLink || form.doiUrl || '');
       formData.append('type', form.type);
-      if (form.type === 'IPR') formData.append('iprType', form.iprType);
-      formData.append('itemStatus', form.itemStatus);
       formData.append('doiUrl', form.doiUrl);
       formData.append('document', file);
 
@@ -3304,9 +2071,9 @@ const ResearchOutputsTab = ({ thesis }) => {
         }
       });
 
-      toast.success(`${form.type === 'IPR' ? 'IPR' : 'Scientific Publication'} logged successfully & pending verification!`);
+      toast.success(`${form.type === 'PATENT' ? 'Patent' : 'Scientific Publication'} logged successfully & pending verification!`);
       setShowForm(false);
-      setForm({ title: '', journalName: '', issn: '', publicationDate: '', paperLink: '', type: 'JOURNAL', doiUrl: '', iprType: '', itemStatus: '' });
+      setForm({ title: '', journalName: '', issn: '', publicationDate: '', paperLink: '', type: 'JOURNAL', doiUrl: '' });
       setFile(null);
       fetchPubs();
     } catch (err) {
@@ -3318,24 +2085,22 @@ const ResearchOutputsTab = ({ thesis }) => {
 
   const verifiedJournals = pubs.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
   const verifiedConferences = pubs.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
-  const loggedPatents = pubs.filter(p => p.type === 'PATENT' || p.type === 'IPR').length;
+  const loggedPatents = pubs.filter(p => p.type === 'PATENT').length;
 
-  const isIPR = form.type === 'PATENT' || form.type === 'IPR';
-  const isConf = form.type === 'CONFERENCE';
-  
-  const titleLabel = isIPR ? 'IPR / Patent Title *' : isConf ? 'Presentation/Paper Title *' : 'Paper Title *';
-  const titlePlaceholder = isIPR ? 'e.g. System and Method for Adaptive Threat Detection' : 'e.g. A Deep Learning Approach to Cybersecurity';
-  const journalLabel = isIPR ? 'IPR Office / Issuing Organization *' : isConf ? 'Conference Name & Location *' : 'Journal / Publisher *';
-  const journalPlaceholder = isIPR ? 'e.g. Indian Patent Office (IPO) / Copyright Office' : isConf ? 'e.g. IEEE ICC 2026, Paris' : 'e.g. IEEE Transactions on Forensics';
-  const issnLabel = isIPR ? 'IPR / Application Number' : 'ISSN / ISBN';
-  const issnPlaceholder = isIPR ? 'e.g. 202611012345' : 'e.g. 1549-3652';
-  const dateLabel = isIPR ? 'Date of Filing / Award *' : isConf ? 'Date of Presentation *' : 'Date of Acceptance/Print *';
-  const linkLabel = isIPR ? 'IPR URL / Link' : 'Paper/Publisher Link';
-  const linkPlaceholder = isIPR ? 'e.g. https://ipindiaservices.gov.in/...' : 'e.g. https://ieeexplore.ieee.org/document/...';
-  const doiLabel = isIPR ? 'IPR ID / App Ref Number' : 'DOI URL / Number';
-  const doiPlaceholder = isIPR ? 'e.g. PAT/2026/7890' : 'e.g. 10.1109/TIFS.2026.12345';
-  const proofLabel = isIPR ? 'Upload IPR Proof / Certificate (PDF format) *' : isConf ? 'Upload Proof of Presentation (PDF format) *' : 'Upload Proof of Acceptance (PDF format) *';
-  const typeLabel = isIPR ? 'Research Output Type *' : 'Publication / Presentation Type *';
+  const isPatent = form.type === 'PATENT';
+  const titleLabel = isPatent ? 'Patent Title *' : 'Paper Title *';
+  const titlePlaceholder = isPatent ? 'e.g. System and Method for Adaptive Threat Detection' : 'e.g. A Deep Learning Approach to Cybersecurity';
+  const journalLabel = isPatent ? 'Patent Office / Issuing Organization *' : 'Journal / Publisher / Conference Name *';
+  const journalPlaceholder = isPatent ? 'e.g. Indian Patent Office (IPO) / USPTO' : 'e.g. IEEE Transactions on Forensics';
+  const issnLabel = isPatent ? 'Patent / Application Number' : 'ISSN / ISBN';
+  const issnPlaceholder = isPatent ? 'e.g. 202611012345' : 'e.g. 1549-3652';
+  const dateLabel = isPatent ? 'Date of Filing / Award *' : 'Date of Acceptance/Print *';
+  const linkLabel = isPatent ? 'Patent URL / Link' : 'Paper/Publisher Link';
+  const linkPlaceholder = isPatent ? 'e.g. https://ipindiaservices.gov.in/...' : 'e.g. https://ieeexplore.ieee.org/document/...';
+  const doiLabel = isPatent ? 'Patent ID / App Ref Number' : 'DOI URL / Number';
+  const doiPlaceholder = isPatent ? 'e.g. PAT/2026/7890' : 'e.g. 10.1109/TIFS.2026.12345';
+  const proofLabel = isPatent ? 'Upload Patent Proof / Certificate (PDF format) *' : 'Upload Proof of Acceptance (PDF format) *';
+  const typeLabel = isPatent ? 'Research Output Type *' : 'Publication / Presentation Type *';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -3350,7 +2115,7 @@ const ResearchOutputsTab = ({ thesis }) => {
           🏆 Pre-Submission Research Output Prerequisites
         </h4>
         <p style={{ color: 'var(--color-text-secondary, #475569)', fontSize: '0.82rem', lineHeight: 1.4, margin: '0 0 16px 0' }}>
-          To unlock the Pre-Submission Seminar phase, you are required to have published at least 2 papers in verified peer-reviewed journals (UGC-CARE listed) and presented at least 2 papers at scientific conferences. Intellectual Property Rights (IPRs) can be logged optionally to build your doctoral research outputs portfolio.
+          To unlock the Pre-Submission Seminar phase, you are required to have published at least 2 papers in verified peer-reviewed journals (UGC-CARE listed) and presented at least 2 papers at scientific conferences. Patents can be logged optionally to build your doctoral research outputs portfolio.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           <div style={{ 
@@ -3425,7 +2190,7 @@ const ResearchOutputsTab = ({ thesis }) => {
             gap: 6
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>Intellectual Property Rights (IPRs)</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>Logged Patents</span>
               <span style={{ 
                 fontSize: '0.72rem', 
                 fontWeight: 700, 
@@ -3453,7 +2218,7 @@ const ResearchOutputsTab = ({ thesis }) => {
           <div>
             <h3 className="card-title" style={{ margin: 0 }}>Research Outputs Log</h3>
             <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', marginTop: 4 }}>
-              Log and track peer-reviewed journal papers, scientific conference presentations, and Intellectual Property Rights (IPRs) completed during your active Ph.D. tenure.
+              Log and track peer-reviewed journal papers, scientific conference presentations, and patents completed during your active Ph.D. tenure.
             </p>
           </div>
           <button onClick={() => setShowForm(!showForm)} className="btn-primary" style={{ background: 'var(--color-primary, #059669)', display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -3470,47 +2235,9 @@ const ResearchOutputsTab = ({ thesis }) => {
               <select className="form-input" required value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={{ maxWidth: '400px' }}>
                 <option value="JOURNAL">Journal Publication</option>
                 <option value="CONFERENCE">Conference Presentation</option>
-                <option value="IPR">Intellectual Property Rights (IPR)</option>
+                <option value="PATENT">Patent</option>
               </select>
             </div>
-
-            {form.type === 'IPR' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR Type *</label>
-                  <select className="form-input" required value={form.iprType || ''} onChange={e => setForm({ ...form, iprType: e.target.value })} style={{ width: '100%' }}>
-                    <option value="">-- Select IPR Type --</option>
-                    <option value="Patent">Patent</option>
-                    <option value="Copyright">Copyright</option>
-                    <option value="Trademark">Trademark</option>
-                    <option value="Design Registration">Design Registration</option>
-                    <option value="Geographical Indication">Geographical Indication</option>
-                    <option value="Trade Secret">Trade Secret</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR Status *</label>
-                  <select className="form-input" required value={form.itemStatus || ''} onChange={e => setForm({ ...form, itemStatus: e.target.value })} style={{ width: '100%' }}>
-                    <option value="">-- Select Status --</option>
-                    <option value="Filed">Filed</option>
-                    <option value="Published">Published</option>
-                    <option value="Granted/Issued">Granted / Issued / Awarded</option>
-                  </select>
-                </div>
-              </div>
-            )}
-            
-            {form.type !== 'IPR' && (
-              <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Publication Status *</label>
-                  <select className="form-input" required value={form.itemStatus || ''} onChange={e => setForm({ ...form, itemStatus: e.target.value })} style={{ maxWidth: '400px' }}>
-                    <option value="">-- Select Status --</option>
-                    <option value="Under Review">Under Review</option>
-                    <option value="Accepted">Accepted</option>
-                    <option value="Published/Presented">Published / Presented</option>
-                  </select>
-              </div>
-            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
@@ -3589,9 +2316,8 @@ const ResearchOutputsTab = ({ thesis }) => {
                       background: p.type === 'JOURNAL' ? 'rgba(59, 130, 246, 0.1)' : p.type === 'CONFERENCE' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                       color: p.type === 'JOURNAL' ? '#2563EB' : p.type === 'CONFERENCE' ? '#7C3AED' : '#059669'
                     }}>
-                      {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type}
+                      {p.type}
                     </span>
-                    {p.itemStatus && <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
                   </div>
                   <div style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
                   <div style={{ flex: 1 }}>
@@ -3604,7 +2330,7 @@ const ResearchOutputsTab = ({ thesis }) => {
                     </span>
                   </div>
                   <div style={{ flex: 1.8, display: 'flex', gap: 12, justifyContent: 'center' }}>
-                    {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" title={p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Publisher Page'} style={{ fontSize: '0.82rem', color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><File size={16} /> Link</a>}
+                    {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" title={p.type === 'PATENT' ? 'View Patent URL' : 'View Publisher Page'} style={{ fontSize: '0.82rem', color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><File size={16} /> Link</a>}
                     {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" title="View Proof PDF" style={{ fontSize: '0.82rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Upload size={16} /> PDF</a>}
                   </div>
                 </div>
@@ -5101,9 +3827,8 @@ const ProfileTab = () => {
     class12: false,
     graduation: false,
     postGraduation: false,
-    mphil: false,
     netJrf: false,
-    fellowships: false
+    other: false
   });
   // Common ERP fields
   const [dob, setDob] = useState(user?.profile?.dob ? user.profile.dob.split('T')[0] : '');
@@ -5158,16 +3883,6 @@ const ProfileTab = () => {
   const [pgPercentage, setPgPercentage] = useState(user?.profile?.qualifications?.postGraduation?.percentage || '');
 
   // NET JRF
-  const [mphilDone, setMphilDone] = useState(
-    user?.profile?.qualifications?.mphil?.done === true ? 'YES' : 
-    user?.profile?.qualifications?.mphil?.done === false ? 'NO' : ''
-  );
-  const [mphilUniversity, setMphilUniversity] = useState(user?.profile?.qualifications?.mphil?.university || '');
-  const [mphilPassingYear, setMphilPassingYear] = useState(user?.profile?.qualifications?.mphil?.passingYear || '');
-  const [mphilTotalMarks, setMphilTotalMarks] = useState(user?.profile?.qualifications?.mphil?.totalMarks || '');
-  const [mphilMarksObtained, setMphilMarksObtained] = useState(user?.profile?.qualifications?.mphil?.marksObtained || '');
-  const [mphilPercentage, setMphilPercentage] = useState(user?.profile?.qualifications?.mphil?.percentage || '');
-
   const [netJrfQualified, setNetJrfQualified] = useState(
     user?.profile?.qualifications?.netJrf?.qualified === true ? 'YES' : 
     user?.profile?.qualifications?.netJrf?.qualified === false ? 'NO' : ''
@@ -5179,7 +3894,7 @@ const ProfileTab = () => {
   const [netJrfIssueDate, setNetJrfIssueDate] = useState(user?.profile?.qualifications?.netJrf?.issueDate ? user.profile.qualifications.netJrf.issueDate.split('T')[0] : '');
 
   // Other Exam
-  const [fellowships, setFellowships] = useState(user?.profile?.qualifications?.fellowships || []);
+  const [otherDetails, setOtherDetails] = useState(user?.profile?.qualifications?.other?.details || '');
 
   // Guide Selection
   const [preferredGuideId, setPreferredGuideId] = useState(user?.profile?.preferredGuideId || '');
@@ -5240,16 +3955,6 @@ const ProfileTab = () => {
       setPgPercentage(q?.postGraduation?.percentage || '');
 
       // NET JRF
-      setMphilDone(
-        q?.mphil?.done === true ? 'YES' : 
-        q?.mphil?.done === false ? 'NO' : ''
-      );
-      setMphilUniversity(q?.mphil?.university || '');
-      setMphilPassingYear(q?.mphil?.passingYear || '');
-      setMphilTotalMarks(q?.mphil?.totalMarks || '');
-      setMphilMarksObtained(q?.mphil?.marksObtained || '');
-      setMphilPercentage(q?.mphil?.percentage || '');
-
       setNetJrfQualified(
         q?.netJrf?.qualified === true ? 'YES' : 
         q?.netJrf?.qualified === false ? 'NO' : ''
@@ -5261,7 +3966,7 @@ const ProfileTab = () => {
       setNetJrfIssueDate(q?.netJrf?.issueDate ? q.netJrf.issueDate.split('T')[0] : '');
 
       // Other
-      setFellowships(q?.fellowships || []);
+      setOtherDetails(q?.other?.details || '');
 
       // Initialize editModes based on if database has values
       setEditModes(prev => ({
@@ -5271,7 +3976,7 @@ const ProfileTab = () => {
         graduation: prev.graduation || !q?.graduation?.rollNo,
         postGraduation: prev.postGraduation || !q?.postGraduation?.rollNo,
         netJrf: prev.netJrf || q?.netJrf?.qualified === undefined || (q?.netJrf?.qualified === true && !q?.netJrf?.rollNo),
-        fellowships: prev.fellowships || !q?.fellowships
+        other: prev.other || !q?.other
       }));
     } else {
       setEditModes({
@@ -5297,53 +4002,6 @@ const ProfileTab = () => {
       })
       .catch(err => console.error('Error fetching department faculty:', err));
   }, [user?.department]);
-
-  const isGeneralInfoComplete = () => {
-    return !!(
-      dob && dob.trim() &&
-      gender && gender.trim() &&
-      category && category.trim() &&
-      nationality && nationality.trim() &&
-      fatherName && fatherName.trim() &&
-      motherName && motherName.trim() &&
-      phoneNumber && phoneNumber.trim() &&
-      address && address.trim() &&
-      enrollmentNumber && enrollmentNumber.trim() &&
-      admissionDate && admissionDate.trim() &&
-      phdMode && phdMode.trim() &&
-      specialization && specialization.trim() &&
-      areaOfInterest && areaOfInterest.trim() &&
-      thesisTitle && thesisTitle.trim() &&
-      thesisSummary && thesisSummary.trim() &&
-      thesisKeywords && thesisKeywords.trim()
-    );
-  };
-
-  const isAcademicQualificationsComplete = () => {
-    const q = user?.profile?.qualifications;
-    if (!q) return false;
-
-    // Check roll numbers, marks, board/school/college/university, percentages, and certificates
-    const class10Ok = !!(class10Roll && class10Board && class10School && class10Marks && class10Total && class10Percentage && q?.class10?.certificateUrl);
-    const class12Ok = !!(class12Roll && class12Board && class12School && class12Marks && class12Total && class12Percentage && q?.class12?.certificateUrl);
-    const gradOk = !!(gradRoll && gradDegree && gradCollege && gradUniversity && gradMarks && gradTotal && gradPercentage && q?.graduation?.certificateUrl);
-    const pgOk = !!(pgRoll && pgDegree && pgCollege && pgUniversity && pgMarks && pgTotal && pgPercentage && q?.postGraduation?.certificateUrl);
-
-    if (!class10Ok || !class12Ok || !gradOk || !pgOk) return false;
-
-    if (mphilDone === 'YES') {
-      const mphilOk = !!(mphilUniversity && mphilPassingYear && mphilTotalMarks && mphilMarksObtained && mphilPercentage && q?.mphil?.certificateUrl);
-      if (!mphilOk) return false;
-    }
-
-    if (netJrfQualified === 'YES') {
-      const netJrfOk = !!(netJrfCertNumber && netJrfRoll && netJrfRank && netJrfScore && netJrfIssueDate && q?.netJrf?.certificateUrl);
-      if (!netJrfOk) return false;
-    }
-
-    return true;
-  };
-
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -5380,12 +4038,6 @@ const ProfileTab = () => {
     if (!q?.class12?.rollNo || !q?.class12?.certificateUrl) missing.push('Class 12 Details & Certificate');
     if (!q?.graduation?.rollNo || !q?.graduation?.certificateUrl) missing.push('Graduation Details & Certificate');
     if (!q?.postGraduation?.rollNo || !q?.postGraduation?.certificateUrl) missing.push('Post Graduation Details & Certificate');
-    
-    if (mphilDone === 'YES') {
-      if (!q?.mphil?.university || !q?.mphil?.certificateUrl) {
-        missing.push('M.Phil Details & Certificate');
-      }
-    }
     
     if (netJrfQualified === 'YES') {
       if (!q?.netJrf?.rollNo || !q?.netJrf?.certificateUrl) {
@@ -5471,15 +4123,6 @@ const ProfileTab = () => {
           percentage: pgPercentage,
           certificateUrl: user?.profile?.qualifications?.postGraduation?.certificateUrl
         },
-        mphil: {
-          done: mphilDone === 'YES',
-          university: mphilUniversity,
-          passingYear: mphilPassingYear,
-          totalMarks: mphilTotalMarks,
-          marksObtained: mphilMarksObtained,
-          percentage: mphilPercentage,
-          certificateUrl: user?.profile?.qualifications?.mphil?.certificateUrl
-        },
         netJrf: {
           qualified: netJrfQualified === 'YES',
           certNumber: netJrfCertNumber,
@@ -5489,10 +4132,10 @@ const ProfileTab = () => {
           issueDate: netJrfIssueDate,
           certificateUrl: user?.profile?.qualifications?.netJrf?.certificateUrl
         },
-        fellowships: fellowships.map((f, i) => ({
-          ...f,
-          certificateUrl: user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl || f.certificateUrl || ''
-        }))
+        other: {
+          details: otherDetails,
+          certificateUrl: user?.profile?.qualifications?.other?.certificateUrl
+        }
       }
     };
 
@@ -5580,23 +4223,6 @@ const ProfileTab = () => {
         percentage: pgPercentage,
         certificateUrl: user?.profile?.qualifications?.postGraduation?.certificateUrl
       };
-    } else if (sectionKey === 'mphil') {
-      if (mphilDone === 'YES') {
-        if (!mphilUniversity.trim() || !mphilPassingYear.trim() || !mphilTotalMarks.trim() || !mphilMarksObtained.trim() || !mphilPercentage.trim()) {
-          toast.error('Please fill in all M.Phil details before saving.');
-          setLoading(false);
-          return;
-        }
-      }
-      sectionData = {
-        done: mphilDone === 'YES',
-        university: mphilUniversity,
-        passingYear: mphilPassingYear,
-        totalMarks: mphilTotalMarks,
-        marksObtained: mphilMarksObtained,
-        percentage: mphilPercentage,
-        certificateUrl: user?.profile?.qualifications?.mphil?.certificateUrl
-      };
     } else if (sectionKey === 'netJrf') {
       if (netJrfQualified === 'YES') {
         if (!netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
@@ -5614,11 +4240,11 @@ const ProfileTab = () => {
         issueDate: netJrfIssueDate,
         certificateUrl: user?.profile?.qualifications?.netJrf?.certificateUrl
       };
-    } else if (sectionKey === 'fellowships') {
-      sectionData = fellowships.map((f, i) => ({
-        ...f,
-        certificateUrl: user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl || f.certificateUrl || ''
-      }));
+    } else if (sectionKey === 'other') {
+      sectionData = {
+        details: otherDetails || '',
+        certificateUrl: user?.profile?.qualifications?.other?.certificateUrl || ''
+      };
     }
 
     const payload = {
@@ -5672,9 +4298,6 @@ const ProfileTab = () => {
       );
     }
     if (docType === 'other') {
-      return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: '#6B7280', fontWeight: 600 }}>Optional</span>;
-    }
-    if (docType.startsWith('fellowship_')) {
       return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: '#6B7280', fontWeight: 600 }}>Optional</span>;
     }
     return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: '#6B7280', fontWeight: 600 }}>Pending Upload</span>;
@@ -5747,13 +4370,6 @@ const ProfileTab = () => {
     }
 
     // 3. NET JRF details & certificate check if qualified
-    if (mphilDone === 'YES') {
-      if (!mphilUniversity || !mphilPassingYear || !mphilTotalMarks || !mphilMarksObtained || !mphilPercentage || !q?.mphil?.certificateUrl) {
-        toast.error('please fill in all the details before submitting the form.');
-        return;
-      }
-    }
-
     if (netJrfQualified === 'YES') {
       if (!netJrfCertNumber || !netJrfRoll || !netJrfRank || !netJrfScore || !netJrfIssueDate || !q?.netJrf?.certificateUrl) {
         toast.error('please fill in all the details before submitting the form.');
@@ -5780,106 +4396,6 @@ const ProfileTab = () => {
 
     try {
       setRegistering(true);
-
-      // Save guide preference and other details to server before submission
-      const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
-      const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
-      if (!indianPhoneRegex.test(cleanedPhone)) {
-        toast.error('Please enter a valid 10-digit Indian phone number (starts with 6-9).');
-        setRegistering(false);
-        return;
-      }
-
-      const payload = {
-        dob,
-        gender,
-        category,
-        fatherName,
-        motherName,
-        nationality,
-        admissionDate,
-        enrollmentNumber,
-        phdMode,
-        specialization,
-        phoneNumber,
-        address,
-        areaOfInterest,
-        academicBackground,
-        preferredGuideId,
-        thesisTitle,
-        thesisSummary,
-        thesisKeywords,
-        qualifications: {
-          class10: {
-            rollNo: class10Roll,
-            board: class10Board,
-            school: class10School,
-            marksObtained: class10Marks,
-            totalMarks: class10Total,
-            percentage: class10Percentage,
-            certificateUrl: user?.profile?.qualifications?.class10?.certificateUrl
-          },
-          class12: {
-            rollNo: class12Roll,
-            board: class12Board,
-            school: class12School,
-            marksObtained: class12Marks,
-            totalMarks: class12Total,
-            percentage: class12Percentage,
-            certificateUrl: user?.profile?.qualifications?.class12?.certificateUrl
-          },
-          graduation: {
-            rollNo: gradRoll,
-            degree: gradDegree,
-            college: gradCollege,
-            university: gradUniversity,
-            marksObtained: gradMarks,
-            totalMarks: gradTotal,
-            percentage: gradPercentage,
-            certificateUrl: user?.profile?.qualifications?.graduation?.certificateUrl
-          },
-          postGraduation: {
-            rollNo: pgRoll,
-            degree: pgDegree,
-            college: pgCollege,
-            university: pgUniversity,
-            marksObtained: pgMarks,
-            totalMarks: pgTotal,
-            percentage: pgPercentage,
-            certificateUrl: user?.profile?.qualifications?.postGraduation?.certificateUrl
-          },
-          mphil: {
-            done: mphilDone === 'YES',
-            university: mphilUniversity,
-            passingYear: mphilPassingYear,
-            totalMarks: mphilTotalMarks,
-            marksObtained: mphilMarksObtained,
-            percentage: mphilPercentage,
-            certificateUrl: user?.profile?.qualifications?.mphil?.certificateUrl
-          },
-          netJrf: {
-            qualified: netJrfQualified === 'YES',
-            certNumber: netJrfCertNumber,
-            rollNo: netJrfRoll,
-            rank: netJrfRank,
-            score: netJrfScore,
-            issueDate: netJrfIssueDate,
-            certificateUrl: user?.profile?.qualifications?.netJrf?.certificateUrl
-          },
-          fellowships: fellowships.map((f, i) => ({
-            ...f,
-            certificateUrl: user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl || f.certificateUrl || ''
-          }))
-        }
-      };
-
-      const res = await updateProfile(payload);
-      if (!res.success) {
-        toast.error('Failed to save guide preference before submission: ' + res.message);
-        setRegistering(false);
-        return;
-      }
-
       await createThesis({});
       await fetchMyThesis();
       toast.success('Your PhD Profile and registration details have been successfully submitted to the HOD for verification and supervisor assignment!');
@@ -5987,78 +4503,38 @@ const ProfileTab = () => {
         >
           👤 General Information
         </button>
-        {(thesis || isGeneralInfoComplete()) ? (
-          <button 
-            onClick={() => setSubTab('academic')}
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: subTab === 'academic' ? '3px solid #133A26' : '3px solid transparent', 
-              color: subTab === 'academic' ? '#133A26' : '#6B7280', 
-              cursor: 'pointer', 
-              transition: 'all 0.2s' 
-            }}
-          >
-            🎓 Academic Qualifications
-          </button>
-        ) : (
-          <button 
-            disabled
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: '3px solid transparent', 
-              color: '#9CA3AF', 
-              cursor: 'not-allowed', 
-              opacity: 0.6
-            }}
-            title="Complete and save General Information to unlock"
-          >
-            🔒 Academic Qualifications
-          </button>
-        )}
-        {(thesis || (isGeneralInfoComplete() && isAcademicQualificationsComplete())) ? (
-          <button 
-            onClick={() => setSubTab('guide')}
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: subTab === 'guide' ? '3px solid #133A26' : '3px solid transparent', 
-              color: subTab === 'guide' ? '#133A26' : '#6B7280', 
-              cursor: 'pointer', 
-              transition: 'all 0.2s' 
-            }}
-          >
-            🤝 Preferred Guide Preference
-          </button>
-        ) : (
-          <button 
-            disabled
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: '3px solid transparent', 
-              color: '#9CA3AF', 
-              cursor: 'not-allowed', 
-              opacity: 0.6
-            }}
-            title="Complete and save all Academic Qualifications to unlock"
-          >
-            🔒 Preferred Guide Preference
-          </button>
-        )}
+        <button 
+          onClick={() => setSubTab('academic')}
+          style={{ 
+            padding: '10px 16px', 
+            fontSize: '0.9rem', 
+            fontWeight: 600, 
+            background: 'none', 
+            border: 'none', 
+            borderBottom: subTab === 'academic' ? '3px solid #133A26' : '3px solid transparent', 
+            color: subTab === 'academic' ? '#133A26' : '#6B7280', 
+            cursor: 'pointer', 
+            transition: 'all 0.2s' 
+          }}
+        >
+          🎓 Academic Qualifications
+        </button>
+        <button 
+          onClick={() => setSubTab('guide')}
+          style={{ 
+            padding: '10px 16px', 
+            fontSize: '0.9rem', 
+            fontWeight: 600, 
+            background: 'none', 
+            border: 'none', 
+            borderBottom: subTab === 'guide' ? '3px solid #133A26' : '3px solid transparent', 
+            color: subTab === 'guide' ? '#133A26' : '#6B7280', 
+            cursor: 'pointer', 
+            transition: 'all 0.2s' 
+          }}
+        >
+          🤝 Preferred Guide Preference
+        </button>
       </div>
 
       <form onSubmit={subTab === 'academic' ? handleSaveAcademicDetails : handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -6130,10 +4606,6 @@ const ProfileTab = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
                   <div style={{ gridColumn: 'span 2', borderBottom: '1px solid #BBF7D0', paddingBottom: '8px', marginBottom: '4px' }}>
                     <h4 style={{ margin: 0, color: '#133A26', fontSize: '0.95rem', fontWeight: 700 }}>Thesis & Research Details</h4>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>SH no.</span>
-                    <strong style={{ color: '#059669', fontSize: '0.9rem', fontWeight: 700 }}>{user?.profile?.shNo || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Enrollment Number</span>
@@ -6247,20 +4719,16 @@ const ProfileTab = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>SH no. (Auto Generated)</label>
-                    <input type="text" className="form-input" value={user?.profile?.shNo || '—'} disabled style={{ background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0', cursor: 'not-allowed' }} />
-                  </div>
-                  <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>University Enrollment Number <span style={{ color: '#EF4444' }}>*</span></label>
                     <input type="text" className="form-input" placeholder="Enter enrollment number" value={enrollmentNumber} onChange={e => setEnrollmentNumber(e.target.value)} required />
                   </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Date of Admission <span style={{ color: '#EF4444' }}>*</span></label>
                     <input type="date" className="form-input" value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} required />
                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mode of Ph.D. <span style={{ color: '#EF4444' }}>*</span></label>
                     <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)} required>
@@ -6269,9 +4737,6 @@ const ProfileTab = () => {
                       <option value="Part-time">Part-time / Sponsored</option>
                     </select>
                   </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Area of Specialization <span style={{ color: '#EF4444' }}>*</span></label>
                     <input type="text" className="form-input" placeholder="e.g. Machine Learning, Structural Bio" value={specialization} onChange={e => setSpecialization(e.target.value)} required />
@@ -6746,135 +5211,6 @@ const ProfileTab = () => {
               )}
             </div>
 
-            {/* M.Phil Qualifications */}
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>M.Phil Details</h4>
-                {getDocBadge('mphil', user?.profile?.qualifications?.mphil?.certificateUrl)}
-              </div>
-              
-              {!editModes.mphil ? (
-                <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '16px' }}>
-                    <div>
-                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Completed M.Phil?</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{mphilDone || 'NO'}</strong>
-                    </div>
-                    {mphilDone === 'YES' && (
-                      <>
-                        <div>
-                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University/Institution</span>
-                          <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{mphilUniversity || '—'}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Passing Year</span>
-                          <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{mphilPassingYear || '—'}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained</span>
-                          <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{mphilMarksObtained || '—'}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Total Marks</span>
-                          <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{mphilTotalMarks || '—'}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage</span>
-                          <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{mphilPercentage || '—'}%</strong>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
-                    <div>
-                      {mphilDone === 'YES' && getUploadButton('mphil', user?.profile?.qualifications?.mphil?.certificateUrl)}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, mphil: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
-                    >
-                      ✏️ Edit M.Phil Details
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Have you completed M.Phil?</label>
-                      <select className="form-input" value={mphilDone} onChange={e => setMphilDone(e.target.value)}>
-                        <option value="">Select option...</option>
-                        <option value="NO">No</option>
-                        <option value="YES">Yes</option>
-                      </select>
-                    </div>
-                    {mphilDone === 'YES' && (
-                      <>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>University / Institution</label>
-                          <input type="text" className="form-input" placeholder="e.g. Delhi University" value={mphilUniversity} onChange={e => setMphilUniversity(e.target.value)} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Passing Year</label>
-                          <input type="text" className="form-input" placeholder="e.g. 2022" value={mphilPassingYear} onChange={e => setMphilPassingYear(e.target.value)} />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  {mphilDone === 'YES' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'flex-end' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Marks Obtained</label>
-                        <input type="number" className="form-input" placeholder="Marks Obtained" value={mphilMarksObtained} onChange={e => {
-                          setMphilMarksObtained(e.target.value);
-                          if (mphilTotalMarks) {
-                            setMphilPercentage(((parseFloat(e.target.value) / parseFloat(mphilTotalMarks)) * 100).toFixed(2));
-                          }
-                        }} />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Total Marks</label>
-                        <input type="number" className="form-input" placeholder="Total Marks" value={mphilTotalMarks} onChange={e => {
-                          setMphilTotalMarks(e.target.value);
-                          if (mphilMarksObtained) {
-                            setMphilPercentage(((parseFloat(mphilMarksObtained) / parseFloat(e.target.value)) * 100).toFixed(2));
-                          }
-                        }} />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Percentage (%)</label>
-                        <input type="text" className="form-input" placeholder="Percentage" value={mphilPercentage} readOnly />
-                      </div>
-                      <div>
-                        {getUploadButton('mphil', user?.profile?.qualifications?.mphil?.certificateUrl)}
-                      </div>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
-                    {user?.profile?.qualifications?.mphil?.university && (
-                      <button
-                        type="button"
-                        onClick={() => setEditModes(prev => ({ ...prev, mphil: false }))}
-                        style={{ background: '#6B7280', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => saveSection('mphil')}
-                      disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
-                    >
-                      💾 Save M.Phil Details
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
             {/* NET JRF Qualifications */}
             <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -6994,114 +5330,63 @@ const ProfileTab = () => {
               )}
             </div>
 
-            {/* Fellowships Card */}
+            {/* Other Achievements Card */}
             <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>National & International Fellowships (Optional)</h4>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Other Qualifications / Fellowships (DST INSPIRE, NFSC, RGNF, etc.)</h4>
+                {getDocBadge('other', user?.profile?.qualifications?.other?.certificateUrl)}
               </div>
               
-              {!editModes.fellowships ? (
+              {!editModes.other ? (
                 <div>
-                  {fellowships.length > 0 ? fellowships.map((f, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '16px' }}>
-                      <div><span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Fellowship Type</span><strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{f.type === 'Other' ? f.otherType : f.type || '—'}</strong></div>
-                      <div><span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Awarding Body</span><strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{f.awardingBody || '—'}</strong></div>
-                      <div><span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Award Date</span><strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{f.awardDate || '—'}</strong></div>
-                      <div><span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Reference No. / ID</span><strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{f.referenceNo || '—'}</strong></div>
-                      <div><span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Duration</span><strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{f.duration || '—'}</strong></div>
-                      <div><span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Amount</span><strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{f.amount || '—'}</strong></div>
-                      <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-                        {getUploadButton(`fellowship_${i}`, user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl)}
-                      </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Academic/Fellowship Details</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{otherDetails || '—'}</strong>
                     </div>
-                  )) : (
-                    <div style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: '16px' }}>No fellowships added.</div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
+                    <div>
+                      {getUploadButton('other', user?.profile?.qualifications?.other?.certificateUrl)}
+                    </div>
                     <button
                       type="button"
                       disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, fellowships: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, other: true }))}
+                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
-                      ✏️ Edit / Add Fellowships
+                      ✏️ Edit Other Details
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  {fellowships.map((f, i) => (
-                    <div key={i} style={{ background: '#ffffff', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <strong style={{ color: '#1E293B', fontSize: '0.9rem' }}>Fellowship #{i + 1}</strong>
-                        <button type="button" onClick={() => { const updated = [...fellowships]; updated.splice(i, 1); setFellowships(updated); }} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}>Remove</button>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Fellowship Type</label>
-                          <select className="form-input" value={f.type || ''} onChange={e => { const updated = [...fellowships]; updated[i].type = e.target.value; setFellowships(updated); }}>
-                            <option value="">Select Fellowship...</option>
-                            <option value="DST INSPIRE">DST INSPIRE</option>
-                            <option value="CSIR NET JRF">CSIR NET JRF</option>
-                            <option value="UGC NET JRF">UGC NET JRF</option>
-                            <option value="NFSC">NFSC</option>
-                            <option value="RGNF">RGNF</option>
-                            <option value="PMRF">PMRF</option>
-                            <option value="Fulbright">Fulbright</option>
-                            <option value="DAAD">DAAD</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                        {f.type === 'Other' && (
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Please Specify Fellowship</label>
-                            <input type="text" className="form-input" value={f.otherType || ''} onChange={e => { const updated = [...fellowships]; updated[i].otherType = e.target.value; setFellowships(updated); }} />
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Awarding Body</label>
-                          <input type="text" className="form-input" value={f.awardingBody || ''} onChange={e => { const updated = [...fellowships]; updated[i].awardingBody = e.target.value; setFellowships(updated); }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Award Date</label>
-                          <input type="date" className="form-input" value={f.awardDate || ''} onChange={e => { const updated = [...fellowships]; updated[i].awardDate = e.target.value; setFellowships(updated); }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Reference No. / ID</label>
-                          <input type="text" className="form-input" value={f.referenceNo || ''} onChange={e => { const updated = [...fellowships]; updated[i].referenceNo = e.target.value; setFellowships(updated); }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Duration</label>
-                          <input type="text" className="form-input" placeholder="e.g. 5 Years" value={f.duration || ''} onChange={e => { const updated = [...fellowships]; updated[i].duration = e.target.value; setFellowships(updated); }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Amount</label>
-                          <input type="text" className="form-input" placeholder="e.g. 31,000/month" value={f.amount || ''} onChange={e => { const updated = [...fellowships]; updated[i].amount = e.target.value; setFellowships(updated); }} />
-                        </div>
-                      </div>
-                      <div style={{ marginTop: '12px' }}>
-                        {getUploadButton(`fellowship_${i}`, user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl)}
-                      </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'flex-end' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Academic/Fellowship Details</label>
+                      <input type="text" className="form-input" placeholder="Describe fellowship/awards or additional exams cleared" value={otherDetails} onChange={e => setOtherDetails(e.target.value)} />
                     </div>
-                  ))}
-                  <button type="button" onClick={() => setFellowships([...fellowships, { type: '', otherType: '', awardingBody: '', awardDate: '', referenceNo: '', amount: '', duration: '' }])} style={{ background: '#F1F5F9', color: '#334155', border: '1px dashed #CBD5E1', padding: '8px 16px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', width: '100%', marginBottom: '16px' }}>+ Add More Fellowships</button>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
+                    <div>
+                      {getUploadButton('other', user?.profile?.qualifications?.other?.certificateUrl)}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
+                    {user?.profile?.qualifications?.other?.details && (
+                      <button
+                        type="button"
+                        onClick={() => setEditModes(prev => ({ ...prev, other: false }))}
+                        style={{ background: '#6B7280', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+                      >
+                        Cancel
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => { setFellowships(user?.profile?.qualifications?.fellowships || []); setEditModes(prev => ({ ...prev, fellowships: false })); }}
-                      style={{ background: '#6B7280', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => saveSection('fellowships')}
+                      onClick={() => saveSection('other')}
                       disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
                     >
-                      💾 Save Fellowships
+                      💾 Save Other Details
                     </button>
                   </div>
                 </>
@@ -7147,92 +5432,33 @@ const ProfileTab = () => {
           </div>
         )}
         <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #E5E7EB' }}>
-          {/* If thesis is submitted and pending, show pending badge */}
-          {thesis && thesis.status === 'REGISTRATION_PENDING' && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 700, padding: '10px 16px' }}>
-              ⏳ Awaiting HOD Verification
-            </div>
+          {!thesis && !(subTab === 'general' && !editModes.general) && (
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="btn-primary" 
+              style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              {loading ? 'Saving Changes...' : subTab === 'academic' ? '💾 Save Academic Details' : subTab === 'guide' ? '💾 Save Guide Preference' : '💾 Save General Info'}
+            </button>
           )}
 
-          {/* Onboarding mode (no thesis submitted yet) */}
           {!thesis && (
-            <>
-              {/* General Tab Bottom Buttons */}
-              {subTab === 'general' && (
-                <>
-                  {editModes.general ? (
-                    <button 
-                      type="submit" 
-                      disabled={loading} 
-                      className="btn-primary" 
-                      style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                    >
-                      {loading ? 'Saving Changes...' : '💾 Save General Info'}
-                    </button>
-                  ) : (
-                    isGeneralInfoComplete() && (
-                      <button 
-                        type="button"
-                        onClick={() => setSubTab('academic')}
-                        className="btn-primary" 
-                        style={{ flex: 1, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
-                      >
-                        Move to next step: Academic Qualifications ➔
-                      </button>
-                    )
-                  )}
-                </>
-              )}
+            <button 
+              type="button"
+              disabled={registering}
+              onClick={handleProfileRegistrationSubmit}
+              className="btn-primary" 
+              style={{ flex: 1.2, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
+            >
+              {registering ? 'Submitting...' : '🚀 Submit PhD Profile for HOD Approval'}
+            </button>
+          )}
 
-              {/* Academic Tab Bottom Buttons */}
-              {subTab === 'academic' && (
-                isAcademicQualificationsComplete() && (
-                  <button 
-                    type="button"
-                    onClick={() => setSubTab('guide')}
-                    className="btn-primary" 
-                    style={{ flex: 1, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
-                  >
-                    Move to next step: Preferred Guide Selection ➔
-                  </button>
-                )
-              )}
-
-              {/* Guide Tab Bottom Buttons */}
-              {subTab === 'guide' && (
-                <>
-                  <button 
-                    type="submit" 
-                    disabled={loading} 
-                    className="btn-primary" 
-                    style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                  >
-                    {loading ? 'Saving Changes...' : '💾 Save Guide Preference'}
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={registering || !preferredGuideId}
-                    onClick={handleProfileRegistrationSubmit}
-                    className="btn-primary" 
-                    style={{ 
-                      flex: 1.2, 
-                      background: preferredGuideId ? '#059669' : '#9CA3AF', 
-                      color: 'white',
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      gap: '8px', 
-                      border: 'none', 
-                      cursor: preferredGuideId ? 'pointer' : 'not-allowed',
-                      boxShadow: preferredGuideId ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : 'none' 
-                    }}
-                    title={!preferredGuideId ? "Please select a preferred supervisor/guide to enable submission" : ""}
-                  >
-                    {registering ? 'Submitting...' : '🚀 Submit PhD Profile for HOD Approval'}
-                  </button>
-                </>
-              )}
-            </>
+          {thesis && thesis.status === 'REGISTRATION_PENDING' && (
+            <div style={{ flex: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 700, padding: '10px 16px' }}>
+              ⏳ Awaiting HOD Verification
+            </div>
           )}
         </div>
       </form>
@@ -7240,529 +5466,9 @@ const ProfileTab = () => {
   );
 };
 
-// ── All Milestone Records Component ──
-const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
-  const [drcMeetings, setDrcMeetings] = useState([]);
-  const [racSessions, setRacSessions] = useState([]);
-  const [expandedPhase, setExpandedPhase] = useState(null);
-
-  useEffect(() => {
-    if (thesis?._id) {
-      axios.get(`${API}/lifecycle/drc/thesis/${thesis._id}`, getAuthHeader())
-        .then(res => {
-          if (Array.isArray(res.data)) setDrcMeetings(res.data);
-        })
-        .catch(() => {});
-
-      axios.get(`${API}/lifecycle/rac/thesis/${thesis._id}`, getAuthHeader())
-        .then(res => {
-          if (Array.isArray(res.data)) setRacSessions(res.data);
-        })
-        .catch(() => {});
-    }
-  }, [thesis?._id]);
-
-  const currentStatus = thesis?.status || 'REGISTRATION_PENDING';
-
-  const PHASES = [
-    { key: 'REGISTRATION_PENDING', label: 'Registration & Enrollment', desc: 'Admission details, tentative topic and guide preference verification.' },
-    { key: 'COURSEWORK', label: 'Doctoral Coursework Clearance', desc: 'Mandatory exams in Research Methodology, Research Analysis, and Electives.' },
-    { key: 'SYNOPSIS_PENDING', label: 'Research Synopsis & DRC Approval', desc: 'Presentation and approval of synopsis before the Departmental Research Committee.' },
-    { key: 'ACTIVE_RESEARCH', label: 'Active Research & Progress Reviews', desc: 'Periodic progress reports and RAC evaluation panels.' },
-    { key: 'PRE_SUBMISSION', label: 'Pre-Submission Colloquium', desc: 'Expert panel defense, plagiarism similarity clearance and rough draft review.' },
-    { key: 'SUBMITTED', label: 'Thesis Evaluation & Viva-Voce', desc: 'External examiner review process and final oral defense.' },
-    { key: 'AWARDED', label: 'Degree Conferral', desc: 'Final audit clearance and official Ph.D. degree award resolution.' }
-  ];
-
-  const currentStepIdx = PHASES.findIndex(p => p.key === currentStatus);
-  const activeStepIdx = currentStepIdx === -1 ? 0 : currentStepIdx;
-
-  const toggleExpand = (idx) => {
-    setExpandedPhase(expandedPhase === idx ? null : idx);
-  };
-
-  const getStatusColor = (idx) => {
-    if (idx < activeStepIdx) return { border: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', text: '#10B981', badge: 'COMPLETED' };
-    if (idx === activeStepIdx) return { border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', text: '#3B82F6', badge: 'IN PROGRESS' };
-    return { border: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)', text: '#6B7280', badge: 'LOCKED' };
-  };
-
-  const renderReadOnlySection = (title, items) => {
-    if (!items || items.length === 0) return null;
-    return (
-      <div style={{ marginBottom: 20 }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary, #374151)', marginBottom: 8, borderBottom: '1px solid var(--color-border, #E5E7EB)', paddingBottom: 4 }}>{title}</h4>
-        <div style={{ background: 'var(--color-bg, #F9FAFB)', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border, #E5E7EB)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-            <thead>
-              <tr style={{ background: 'var(--color-sidebar, #F3F4F6)', color: 'var(--color-text-secondary, #4B5563)', textAlign: 'left' }}>
-                <th style={{ padding: '8px 12px' }}>Subject Name</th>
-                <th style={{ padding: '8px 12px' }}>Subject Code</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Marks Obtained</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Max Marks</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Exam Month & Year</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((row, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid var(--color-border, #E5E7EB)' }}>
-                  <td style={{ padding: '8px 12px', color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectName}</td>
-                  <td style={{ padding: '8px 12px', color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectCode || '-'}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.marksObtained}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.maxMarks}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{formatMonthYear(row.examinationMonthYear)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <style>{`
-        .milestone-record-header:hover {
-          background: rgba(59, 130, 246, 0.04) !important;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-      {/* Subpage Header card */}
-      <div className="card" style={{ 
-        padding: 24, 
-        borderRadius: 16, 
-        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)', 
-        border: '1px solid rgba(59, 130, 246, 0.15)' 
-      }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)' }}>
-          📜 Ph.D. Milestone Progression Records
-        </h3>
-        <p style={{ color: 'var(--color-text-secondary, #475569)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-          Here is a detailed, audited historical ledger of all your academic milestones. Click on any milestone phase card to view grades, supervisor reviews, scheduled committee meetings, file attachments, and feedback.
-        </p>
-      </div>
-
-      {/* Accordion / Cards List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {PHASES.map((phase, idx) => {
-          const { border, bg, text, badge } = getStatusColor(idx);
-          const isExpanded = expandedPhase === idx;
-          const isLocked = badge === 'LOCKED';
-
-          return (
-            <div 
-              key={phase.key}
-              style={{
-                background: 'var(--color-surface, #FFFFFF)',
-                border: `1px solid ${isExpanded ? '#3B82F6' : 'var(--color-border, #E2E8F0)'}`,
-                borderLeft: `6px solid ${border}`,
-                borderRadius: '16px',
-                boxShadow: isExpanded ? '0 10px 25px -5px rgba(0,0,0,0.06)' : '0 2px 8px rgba(0,0,0,0.02)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Card Header clickable bar */}
-              <div 
-                onClick={() => !isLocked && toggleExpand(idx)}
-                style={{
-                  padding: '20px 24px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  cursor: isLocked ? 'not-allowed' : 'pointer',
-                  background: isExpanded ? 'rgba(59, 130, 246, 0.02)' : 'transparent',
-                  userSelect: 'none'
-                }}
-                className="milestone-record-header"
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '80%' }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: border,
-                    color: '#FFFFFF',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    flexShrink: 0
-                  }}>
-                    {idx + 1}
-                  </div>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)' }}>
-                      {phase.label}
-                    </h4>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                      {phase.desc}
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{
-                    padding: '4px 10px',
-                    borderRadius: '12px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.03em',
-                    background: bg,
-                    color: text
-                  }}>
-                    {badge}
-                  </span>
-                  {!isLocked && (
-                    <span style={{ 
-                      color: 'var(--color-text-muted, #94A3B8)',
-                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s',
-                      fontSize: '10px',
-                      display: 'inline-block'
-                    }}>
-                      ▼
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Collapsible Panel Content */}
-              {isExpanded && !isLocked && (
-                <div style={{
-                  padding: '20px 24px 24px 72px',
-                  borderTop: '1px solid var(--color-border, #F1F5F9)',
-                  background: 'var(--color-bg, rgba(248, 250, 252, 0.3))',
-                  animation: 'fadeIn 0.25s ease-out'
-                }}>
-                  <div>
-                    {phase.key === 'REGISTRATION_PENDING' && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px', fontSize: '0.85rem' }}>
-                        <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Enrollment Number</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.enrollmentNumber || 'N/A'}</strong>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Registration Date</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.startDate ? new Date(thesis.startDate).toLocaleDateString() : new Date(thesis.createdAt).toLocaleDateString()}</strong>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Department</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.department}</strong>
-                        </div>
-                        <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Assigned Guide</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.supervisorId?.name || 'Pending Supervisor Assignment'}</strong>
-                        </div>
-                        <div style={{ gridColumn: 'span 2' }}>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Tentative Research Topic</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)', lineHeight: 1.4 }}>{thesis.title || 'N/A'}</strong>
-                        </div>
-                        <div style={{ gridColumn: 'span 2' }}>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Research Abstract Outline</div>
-                          <p style={{ color: 'var(--color-text-primary, #334155)', margin: '4px 0 0', lineHeight: 1.5 }}>{thesis.abstract || 'N/A'}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {phase.key === 'COURSEWORK' && (
-                      <div>
-                        {thesis.courseworkDetails ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                            {thesis.courseworkDetails.researchEthics?.length > 0 && 
-                              renderReadOnlySection('Research and Publication Ethics', thesis.courseworkDetails.researchEthics)}
-                            {thesis.courseworkDetails.researchMethodology?.length > 0 && 
-                              renderReadOnlySection('Research Methodology', thesis.courseworkDetails.researchMethodology)}
-                            {thesis.courseworkDetails.elective?.length > 0 && 
-                              renderReadOnlySection('Discipline-Specific Elective Course', thesis.courseworkDetails.elective)}
-                            {thesis.courseworkDetails.others?.length > 0 && 
-                              renderReadOnlySection('Others', thesis.courseworkDetails.others)}
-
-                            {thesis.courseworkUploadProof && (
-                              <div style={{ marginTop: 8, padding: '10px 14px', background: 'var(--color-bg, #F9FAFB)', borderRadius: 8, border: '1px solid var(--color-border, #E5E7EB)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)' }}>Upload Proof:</span>
-                                <a 
-                                  href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
-                                  target="_blank" 
-                                  rel="noreferrer" 
-                                  style={{ fontSize: '0.82rem', fontWeight: 800, color: '#2563EB', textDecoration: 'underline' }}
-                                >
-                                  View Uploaded Proof
-                                </a>
-                              </div>
-                            )}
-                            
-                            <div style={{ 
-                              background: 'rgba(16, 185, 129, 0.15)', 
-                              border: '1px solid rgba(16, 185, 129, 0.3)', 
-                              borderRadius: '8px', 
-                              padding: '12px 16px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              fontSize: '0.82rem',
-                              color: '#10B981',
-                              alignSelf: 'flex-start'
-                            }}>
-                              <span>✓</span> 
-                              <span>Coursework results successfully verified and locked on HOD Clearance.</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', fontStyle: 'italic' }}>
-                            Coursework details have not been submitted or verification is pending.
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {phase.key === 'SYNOPSIS_PENDING' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', padding: 16, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Approved Research Topic</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)', display: 'block', fontSize: '0.9rem', marginBottom: 12 }}>{thesis.title}</strong>
-                          
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Synopsis Document Proposal</div>
-                          {thesis.synopsisUrl || milestones.find(m => m.type === 'SYNOPSIS')?.documentUrl ? (
-                            <a 
-                              href={`${API_BASE_URL}${thesis.synopsisUrl || milestones.find(m => m.type === 'SYNOPSIS')?.documentUrl}`} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0284C7', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'underline', marginTop: 4 }}
-                            >
-                              📄 View Submitted Proposal Synopsis PDF
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: '0.8rem', color: '#EF4444' }}>No synopsis document uploaded.</span>
-                          )}
-                        </div>
-
-                        {/* DRC evaluation details */}
-                        <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>📆</span> Departmental Research Committee (DRC) Evaluation
-                          </h5>
-                          {drcMeetings.length === 0 ? (
-                            <div style={{ fontSize: '0.8rem', color: '#fbbf24' }}>
-                              No DRC evaluation sessions scheduled.
-                            </div>
-                          ) : (
-                            drcMeetings.map((drc, idx) => (
-                              <div key={idx} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px dashed rgba(245, 158, 11, 0.3)' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 12 : 0, marginBottom: idx < drcMeetings.length - 1 ? 12 : 0 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Session Allotment Result</span>
-                                  <span style={{ background: drc.status === 'APPROVED' ? '#D1FAE5' : '#FEE2E2', color: drc.status === 'APPROVED' ? '#065F46' : '#991B1B', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                                    {drc.status}
-                                  </span>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.8rem', color: '#fbbf24' }}>
-                                  <div>Date: <strong>{new Date(drc.scheduledDate).toLocaleDateString()}</strong></div>
-                                  <div>Time: <strong>{drc.scheduledTime}</strong></div>
-                                  <div style={{ gridColumn: 'span 2' }}>Venue: <strong>{drc.venue}</strong></div>
-                                  {drc.committeeMembers && <div style={{ gridColumn: 'span 2' }}>Committee: <strong>{drc.committeeMembers}</strong></div>}
-                                  {drc.remarks && (
-                                    <div style={{ gridColumn: 'span 2', background: 'var(--color-surface, #FFFFFF)', padding: 8, borderRadius: 6, borderLeft: '3px solid #D97706', marginTop: 4 }}>
-                                      Committee Remarks: <em>"{drc.remarks}"</em>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {phase.key === 'ACTIVE_RESEARCH' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        {/* RAC Sessions */}
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>📊</span> Research Advisory Committee (RAC) Progress Reviews
-                          </h5>
-                          {racSessions.length === 0 ? (
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>
-                              No RAC progress reviews recorded yet. Reviews occur at 6-month intervals.
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {racSessions.map((rac, idx) => (
-                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 6 }}>
-                                  <div>
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-primary, #334155)' }}>RAC Session #{idx + 1}</span>
-                                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary, #94A3B8)', marginTop: 2 }}>
-                                      Date: {new Date(rac.scheduledDate).toLocaleDateString()} | Committee: {rac.committeeMembers || 'Guide & Panel'}
-                                    </div>
-                                  </div>
-                                  <span style={{
-                                    background: rac.status === 'SATISFACTORY' ? '#D1FAE5' : '#FEE2E2',
-                                    color: rac.status === 'SATISFACTORY' ? '#065F46' : '#991B1B',
-                                    padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700
-                                  }}>
-                                    {rac.status}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 6-Month Progress Reports */}
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>📅</span> 6-Month Progress Reports History
-                          </h5>
-                          {milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT').length === 0 ? (
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>
-                              No progress report milestones generated yet.
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT').map((rep) => (
-                                <div key={rep._id} style={{ padding: 12, background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 6 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                    <strong style={{ fontSize: '0.8rem', color: 'var(--color-text-primary, #1E293B)' }}>{rep.title}</strong>
-                                    <span style={{
-                                      background: rep.status === 'APPROVED' ? '#D1FAE5' : rep.status === 'SUBMITTED' ? '#DBEAFE' : '#FEF3C7',
-                                      color: rep.status === 'APPROVED' ? '#065F46' : rep.status === 'SUBMITTED' ? '#1D4ED8' : '#D97706',
-                                      padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700
-                                    }}>
-                                      {rep.status}
-                                    </span>
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                                    <span>Due Date: {new Date(rep.dueDate).toLocaleDateString()}</span>
-                                    {rep.documentUrl && (
-                                      <a href={`${API_BASE_URL}${rep.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#0284C7', fontWeight: 600 }}>
-                                        View Uploaded Report
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {phase.key === 'PRE_SUBMISSION' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
-                            Pre-Submission Package Documents
-                          </h5>
-                          {milestones.find(m => m.type === 'PRE_SUBMISSION') ? (
-                            (() => {
-                              const preM = milestones.find(m => m.type === 'PRE_SUBMISSION');
-                              return (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                                    <span style={{ color: 'var(--color-text-secondary, #64748B)' }}>Submission Status:</span>
-                                    <strong style={{ color: '#3B82F6' }}>{preM.status}</strong>
-                                  </div>
-                                  {preM.documentUrl && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}>
-                                      <span>📄</span>
-                                      <a href={`${API_BASE_URL}${preM.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700 }}>
-                                        View Rough Thesis Draft Complete
-                                      </a>
-                                    </div>
-                                  )}
-                                  {preM.plagiarismReportUrl && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}>
-                                      <span>📊</span>
-                                      <a href={`${API_BASE_URL}${preM.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 700 }}>
-                                        View Plagiarism Clearance Certificate
-                                      </a>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>Pre-submission package not uploaded.</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {phase.key === 'SUBMITTED' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
-                            Thesis Board Evaluation Dispatch Tracking
-                          </h5>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.8rem', color: 'var(--color-text-primary, #334155)' }}>
-                            <div>Dispatch Status: <strong>{thesis.dispatchDate ? 'DISPATCHED TO EXAMINERS' : 'AWAITING DISPATCH'}</strong></div>
-                            {thesis.dispatchDate && (
-                              <>
-                                <div>Dispatch Date: <strong>{new Date(thesis.dispatchDate).toLocaleDateString()}</strong></div>
-                                <div>Shipping Method: <strong>{thesis.dispatchMethod || 'N/A'}</strong></div>
-                                <div>Tracking Reference: <strong>{thesis.dispatchTrackingNumber || 'N/A'}</strong></div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
-                            Viva-Voce Oral Defense Examination
-                          </h5>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.8rem', color: 'var(--color-text-primary, #334155)' }}>
-                            <div>Defense Status: <strong>{thesis.vivaStatus || 'AWAITING EVALUATION BOARD REPORT'}</strong></div>
-                            {thesis.vivaDate && (
-                              <>
-                                <div>Date Scheduled: <strong>{new Date(thesis.vivaDate).toLocaleDateString()}</strong></div>
-                                <div>Time / Venue: <strong>{thesis.vivaTime} / {thesis.vivaVenue || 'N/A'}</strong></div>
-                              </>
-                            )}
-                            {thesis.vivaRemarks && (
-                              <div style={{ gridColumn: 'span 2', background: 'var(--color-surface, #FFFFFF)', padding: 10, borderLeft: '4px solid #10B981', borderRadius: 6 }}>
-                                Panel Remarks: <strong>"{thesis.vivaRemarks}"</strong>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {phase.key === 'AWARDED' && (
-                      <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 8, padding: 16 }}>
-                        <h5 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 800, color: '#10B981', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span>🏆</span> Ph.D. Degree Conferred Successfully!
-                        </h5>
-                        <div style={{ fontSize: '0.8rem', color: '#10B981', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <div>Academic Senate Approval Date: <strong>{thesis.awardedAt ? new Date(thesis.awardedAt).toLocaleDateString() : 'N/A'}</strong></div>
-                          {thesis.notificationNumber && <div>Award Notification Number: <strong>{thesis.notificationNumber}</strong></div>}
-                          <div>Clearance Status: <strong>Library, Department, and Admin Clearances COMPLETED</strong></div>
-                          
-                          <div style={{ marginTop: 12, borderTop: '1px solid rgba(16, 185, 129, 0.3)', paddingTop: 8 }}>
-                            🎉 <strong>HPU Academic Council congratulates Dr. {user?.name}!</strong> Your doctorate degree is formally awarded.
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
 // ── Main Dashboard ──
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState('profile');
-  const [milestonesSubTab, setMilestonesSubTab] = useState('active');
   const { user } = useContext(AuthContext);
   const { thesis, milestones, loading, fetchMyThesis, submitMilestone } = useContext(ThesisContext);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(user && !user.profileCompleted);
@@ -7787,7 +5493,7 @@ const StudentDashboard = () => {
     preSubmission: 'Pre-Submission Package',
     changes: 'Request Changes', 
     certificates: 'Certificates', 
-    workspace: 'Workspace', 
+    milestones: 'Milestones', 
     documents: 'Documents', 
     meetings: 'Meetings', 
     profile: 'Profile' 
@@ -7824,97 +5530,29 @@ const StudentDashboard = () => {
       case 'overview': return <OverviewPage thesis={thesis} milestones={milestones} setActiveTab={setActiveTab} user={user} />;
       case 'rac': return <RACProgressTab thesis={thesis} />;
       case 'publications': return <ResearchOutputsTab thesis={thesis} />;
-      case 'preSubmission': return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} user={user} />;
-      case 'finalSubmission': return <FinalSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} user={user} />;
+      case 'preSubmission': return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} />;
       case 'sixMonthReports': return <SixMonthReportsTab thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'chapterDrafts': return <ChapterDraftsTab thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'changes': return <RequestChangesTab thesis={thesis} />;
       case 'certificates': return <CertificatesTab thesis={thesis} />;
       case 'meetings': return <MeetingsTab thesis={thesis} />;
       case 'documents': return <DocumentsTab thesis={thesis} />;
-      case 'workspace':
+      case 'milestones':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <MilestoneTimeline thesis={thesis} milestones={milestones} />
-            
-            {/* Custom Sub Tab Selector for Milestones */}
-            <div style={{
-              display: 'flex',
-              background: 'var(--color-bg, #F1F5F9)',
-              padding: '6px',
-              borderRadius: '12px',
-              gap: '8px',
-              maxWidth: '450px',
-              margin: '8px 0',
-              border: '1px solid var(--color-border, #E2E8F0)',
-              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
-            }} className="milestone-tabs-container">
-              <button 
-                onClick={() => setMilestonesSubTab('active')}
-                style={{
-                  flex: 1,
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  background: milestonesSubTab === 'active' ? 'var(--color-surface, #FFFFFF)' : 'transparent',
-                  color: milestonesSubTab === 'active' ? 'var(--color-primary, #1A5A3B)' : 'var(--color-text-secondary, #64748B)',
-                  boxShadow: milestonesSubTab === 'active' ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none'
-                }}
-              >
-                🎯 Active Task Workspace
-              </button>
-              <button 
-                onClick={() => setMilestonesSubTab('records')}
-                style={{
-                  flex: 1,
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  background: milestonesSubTab === 'records' ? 'var(--color-surface, #FFFFFF)' : 'transparent',
-                  color: milestonesSubTab === 'records' ? 'var(--color-primary, #1A5A3B)' : 'var(--color-text-secondary, #64748B)',
-                  boxShadow: milestonesSubTab === 'records' ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none'
-                }}
-              >
-                📜 All Milestone Records
-              </button>
-            </div>
-
-            {milestonesSubTab === 'active' ? (
-              (() => {
-                if (thesis.status === 'COURSEWORK') return <CourseworkPhase thesis={thesis} />;
-                if (thesis.status === 'SYNOPSIS_PENDING') return <SynopsisPhase thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
-                if (thesis.status === 'ACTIVE_RESEARCH') return <ActiveResearch thesis={thesis} milestones={milestones} onSubmit={submitMilestone} setActiveTab={setActiveTab} />;
-                if (thesis.status === 'PRE_SUBMISSION') return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} user={user} />;
-                if (thesis.status === 'SUBMITTED') {
-                  const finalM = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-                  if (finalM && finalM.status === 'APPROVED') {
-                    return <SubmittedView thesis={thesis} />;
-                  }
-                  return <FinalSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} user={user} />;
-                }
-                if (thesis.status === 'AWARDED') return <SubmittedView thesis={thesis} />;
-                return <div className="card" style={{ padding: 32, color: '#6b7280' }}>No milestones yet.</div>;
-              })()
-            ) : (
-              <AllMilestonesRecords thesis={thesis} milestones={milestones} user={user} />
-            )}
+            {(() => {
+              if (thesis.status === 'COURSEWORK') return <CourseworkPhase thesis={thesis} />;
+              if (thesis.status === 'SYNOPSIS_PENDING') return <SynopsisPhase thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
+              if (thesis.status === 'ACTIVE_RESEARCH') return <ActiveResearch thesis={thesis} milestones={milestones} onSubmit={submitMilestone} setActiveTab={setActiveTab} />;
+              if (thesis.status === 'PRE_SUBMISSION') return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
+              if (['PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status)) return <SubmittedView thesis={thesis} />;
+              return <div className="card" style={{ padding: 32, color: '#6b7280' }}>No milestones yet.</div>;
+            })()}
           </div>
         );
       case 'thesis':
-        if (thesis.status === 'SUBMITTED') {
-          const finalM = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-          if (finalM && finalM.status === 'APPROVED') {
-            return <SubmittedView thesis={thesis} />;
-          }
-        }
+        if (['PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status)) return <SubmittedView thesis={thesis} />;
         if (thesis.status === 'AWARDED') return <AwardedView thesis={thesis} />;
         return (
           <div className="card">

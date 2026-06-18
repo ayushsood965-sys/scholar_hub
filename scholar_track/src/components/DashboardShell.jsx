@@ -1,0 +1,191 @@
+import React, { useContext, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Home, Clock, CalendarRange, Shield, Settings, Users, FileCheck,
+  AlertTriangle, BookOpen, BarChart3, LogOut, Bell, Menu, X,
+  ClipboardCheck, Gavel, Calendar
+} from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
+import { NotificationContext } from '../context/NotificationContext';
+import ThemeToggle from './ThemeToggle';
+
+const roleNavConfig = {
+  STUDENT: [
+    { key: 'overview', icon: Home, label: 'Overview' },
+    { key: 'attendance', icon: Clock, label: 'My Attendance' },
+    { key: 'leave', icon: CalendarRange, label: 'Leave Management' },
+    { key: 'corrections', icon: FileCheck, label: 'Corrections' },
+  ],
+  FACULTY: [
+    { key: 'overview', icon: Home, label: 'Overview' },
+    { key: 'mark', icon: ClipboardCheck, label: 'Mark Attendance' },
+    { key: 'leaves', icon: CalendarRange, label: 'Leave Approvals' },
+    { key: 'corrections', icon: FileCheck, label: 'Corrections Queue' },
+    { key: 'timetable', icon: Calendar, label: 'Timetable Master' },
+  ],
+  HOD: [
+    { key: 'overview', icon: Home, label: 'Department Overview' },
+    { key: 'policies', icon: Shield, label: 'Policy Config' },
+    { key: 'master', icon: Settings, label: 'Master Data' },
+    { key: 'defaulters', icon: AlertTriangle, label: 'Defaulters' },
+    { key: 'approvals', icon: Gavel, label: 'Approvals' },
+    { key: 'audit', icon: BookOpen, label: 'Audit Trail' },
+  ],
+  SUPER_ADMIN: [
+    { key: 'overview', icon: Home, label: 'System Overview' },
+    { key: 'policies', icon: Shield, label: 'Global Policies' },
+    { key: 'holidays', icon: Calendar, label: 'Holiday Calendar' },
+  ],
+};
+
+const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, children }) => {
+  const { user, logout } = useContext(AuthContext);
+  const { unreadCount } = useContext(NotificationContext);
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navItems = roleNavConfig[role] ?? roleNavConfig.STUDENT;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const roleDashMap = {
+    STUDENT: '/student-dashboard',
+    FACULTY: '/faculty-dashboard',
+    HOD: '/hod-dashboard',
+    SUPER_ADMIN: '/super-dashboard',
+  };
+
+  return (
+    <div className="app-layout">
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+              zIndex: 99, display: 'none'
+            }}
+            className="sidebar-mobile-overlay"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-logo">
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'linear-gradient(135deg, #A5D6A7, #2E9E5B)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.1rem'
+          }}>
+            📊
+          </div>
+          <h2>Scholar<span>Track</span></h2>
+        </div>
+
+        <nav className="sidebar-nav">
+          <div className="sidebar-section-label">Navigation</div>
+          {navItems.map(item => (
+            <button
+              key={item.key}
+              className={`nav-item ${activeTab === item.key ? 'active' : ''}`}
+              onClick={() => {
+                onTabChange(item.key);
+                setSidebarOpen(false);
+              }}
+            >
+              <item.icon className="nav-icon" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <div className="sidebar-user-info">
+            <div className="sidebar-avatar">
+              {user?.name?.[0]?.toUpperCase() ?? 'U'}
+            </div>
+            <div>
+              <div className="sidebar-user-name">{user?.name ?? 'User'}</div>
+              <div className="sidebar-user-role">{role?.replace('_', ' ')}</div>
+            </div>
+          </div>
+          <button
+            className="nav-item"
+            onClick={handleLogout}
+            style={{ color: '#EF4444' }}
+          >
+            <LogOut className="nav-icon" style={{ color: '#EF4444' }} />
+            Log Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="main-content">
+        {/* Header */}
+        <header className="app-header">
+          <div className="header-left">
+            <button
+              className="header-icon-btn"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              style={{ display: 'none' }}
+              id="mobile-menu-btn"
+            >
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <h1 className="header-title">{headerTitle ?? 'Dashboard'}</h1>
+          </div>
+
+          <div className="header-right">
+            <ThemeToggle />
+
+            <button className="header-icon-btn" style={{ position: 'relative' }}>
+              <Bell size={18} />
+              {(unreadCount ?? 0) > 0 && <span className="notification-badge" />}
+            </button>
+
+            <div className="header-avatar">
+              {user?.name?.[0]?.toUpperCase() ?? 'U'}
+            </div>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <div className="dashboard-area" style={{ position: 'relative' }}>
+          {/* Animated Blobs */}
+          <div className="liquid-bg-wrapper" style={{ zIndex: 1 }}>
+            <div className="liquid-blob blob-1" />
+            <div className="liquid-blob blob-2" />
+            <div className="liquid-blob blob-3" />
+          </div>
+
+          {/* Content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              style={{ position: 'relative', zIndex: 10 }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardShell;

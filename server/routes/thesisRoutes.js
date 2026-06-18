@@ -11,7 +11,8 @@ const {
   searchGlobalTheses,
   submitCourseworkDetails, approveCourseworkFaculty, rejectCourseworkFaculty,
   approveCourseworkHOD, rejectCourseworkHOD,
-  schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome
+  schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome,
+  finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails
 } = require('../controllers/thesisController');
 
 const storage = multer.diskStorage({
@@ -46,6 +47,10 @@ router.put('/:id/transfer', protect, authorize('ADMIN', 'HOD', 'FACULTY'), trans
 router.put('/:id/force-pre-submission', protect, authorize('HOD', 'FACULTY'), forcePreSubmission);
 router.put('/:id/pre-submission/schedule', protect, authorize('HOD'), schedulePreSubmissionSeminar);
 router.put('/:id/pre-submission/record-outcome', protect, authorize('HOD'), recordPreSubmissionSeminarOutcome);
+router.put('/:id/final-approve-hod', protect, authorize('HOD'), finalApproveHOD);
+router.put('/:id/final-reject-hod', protect, authorize('HOD'), finalRejectHOD);
+router.put('/:id/external-evaluation', protect, authorize('ADMIN', 'HOD'), logExternalEvaluation);
+router.get('/:id/eligibility', protect, authorize('ADMIN', 'HOD'), getEligibilityDetails);
 
 // Faculty
 router.get('/assigned', protect, authorize('FACULTY'), getAssignedTheses);
@@ -54,6 +59,7 @@ router.put('/:id/drc', protect, authorize('FACULTY'), drcApprove);
 router.put('/:id/schedule-seminar', protect, authorize('FACULTY'), scheduleSeminar);
 router.put('/:id/seminar', protect, authorize('FACULTY'), seminarClear);
 router.put('/:id/final-approve', protect, authorize('FACULTY'), finalApprove);
+router.put('/:id/final-reject', protect, authorize('FACULTY'), finalReject);
 
 // Global search cross-department
 router.get('/search/global', protect, authorize('ADMIN', 'HOD', 'FACULTY'), searchGlobalTheses);
