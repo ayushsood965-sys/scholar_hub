@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Clock, CalendarRange, Shield, Settings, Users, FileCheck,
   AlertTriangle, BookOpen, BarChart3, LogOut, Bell, Menu, X,
-  ClipboardCheck, Gavel, Calendar
+  ClipboardCheck, Gavel, Calendar, User, Building
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
@@ -16,26 +16,33 @@ const roleNavConfig = {
     { key: 'attendance', icon: Clock, label: 'My Attendance' },
     { key: 'leave', icon: CalendarRange, label: 'Leave Management' },
     { key: 'corrections', icon: FileCheck, label: 'Corrections' },
+    { key: 'profile', icon: User, label: 'Profile' },
   ],
   FACULTY: [
     { key: 'overview', icon: Home, label: 'Overview' },
     { key: 'mark', icon: ClipboardCheck, label: 'Mark Attendance' },
     { key: 'leaves', icon: CalendarRange, label: 'Leave Approvals' },
     { key: 'corrections', icon: FileCheck, label: 'Corrections Queue' },
-    { key: 'timetable', icon: Calendar, label: 'Timetable Master' },
   ],
   HOD: [
     { key: 'overview', icon: Home, label: 'Department Overview' },
     { key: 'policies', icon: Shield, label: 'Policy Config' },
-    { key: 'master', icon: Settings, label: 'Master Data' },
-    { key: 'defaulters', icon: AlertTriangle, label: 'Defaulters' },
+    { key: 'leaveRules', icon: Settings, label: 'Leave Rules' },
+    { key: 'timetable', icon: Calendar, label: 'Timetable Builder' },
+    { key: 'cloneTimetable', icon: CalendarRange, label: 'Clone Timetable' },
     { key: 'approvals', icon: Gavel, label: 'Approvals' },
+    { key: 'defaulters', icon: AlertTriangle, label: 'Defaulters' },
     { key: 'audit', icon: BookOpen, label: 'Audit Trail' },
   ],
   SUPER_ADMIN: [
     { key: 'overview', icon: Home, label: 'System Overview' },
-    { key: 'policies', icon: Shield, label: 'Global Policies' },
+    { key: 'sessions', icon: CalendarRange, label: 'Academic Sessions' },
+    { key: 'degreeTypes', icon: Settings, label: 'Degree Types' },
+    { key: 'degreeNames', icon: Settings, label: 'Degree Names' },
+    { key: 'semesters', icon: Settings, label: 'Semesters' },
+    { key: 'degreeDeptMap', icon: Building, label: 'Degree-Dept Map' },
     { key: 'holidays', icon: Calendar, label: 'Holiday Calendar' },
+    { key: 'departments', icon: Building, label: 'Departments' },
   ],
 };
 

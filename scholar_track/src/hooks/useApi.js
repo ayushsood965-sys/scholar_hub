@@ -34,4 +34,8 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+const useApi = () => {
+  return api;
+};
+
+export default useApi;

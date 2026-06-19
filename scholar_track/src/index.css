@@ -796,6 +796,18 @@ img {
   border: 1px solid rgba(107, 114, 128, 0.12);
 }
 
+.badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.08);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
 .badge-primary {
   background: rgba(var(--color-primary-rgb), 0.08);
   color: var(--color-primary);
@@ -2115,3 +2127,9 @@ img {
   color: var(--color-text-muted);
   margin-top: 4px;
 }
+
+/* --- Grid Utilities --- */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+

@@ -1,27 +1,15 @@
 const HolidayCalendar = require('../models/attendance/HolidayCalendar');
 const AttendancePolicyMaster = require('../models/attendance/AttendancePolicyMaster');
 const LeaveTypeMaster = require('../models/attendance/LeaveTypeMaster');
+const DegreeTypeMaster = require('../models/attendance/DegreeTypeMaster');
 
-/**
- * Checks if a date falls on a weekend.
- * By default, Sunday is a weekend. If PG/UG, Saturday is also a weekend.
- * @param {Date} date 
- * @param {Boolean} includeSaturday 
- * @returns {Boolean}
- */
 const isWeekend = (date, includeSaturday = false) => {
   const day = date.getDay();
-  if (day === 0) return true; // Sunday is always weekend
-  if (includeSaturday && day === 6) return true; // Saturday is weekend if specified
+  if (day === 0) return true;
+  if (includeSaturday && day === 6) return true;
   return false;
 };
 
-/**
- * Checks if a date falls in any active holiday in the HolidayCalendar.
- * @param {Date} date 
- * @param {Array} holidays 
- * @returns {Boolean}
- */
 const isHoliday = (date, holidays) => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -33,7 +21,6 @@ const isHoliday = (date, holidays) => {
     end.setHours(23, 59, 59, 999);
 
     if (holiday.isRecurring) {
-      // Compare month and date only
       const currentMonth = d.getMonth();
       const currentDate = d.getDate();
       const startMonth = start.getMonth();
@@ -41,25 +28,19 @@ const isHoliday = (date, holidays) => {
       const endMonth = end.getMonth();
       const endDateVal = end.getDate();
 
-      // Simple single-day recurring holiday comparison
       if (startMonth === endMonth) {
         return currentMonth === startMonth && currentDate >= startDateVal && currentDate <= endDateVal;
       }
     }
-
     return d >= start && d <= end;
   });
 };
 
-/**
- * Returns all academic working days in a date range, filtering weekends and holidays.
- */
 const getWorkingDays = (startDate, endDate, holidays, includeSaturday = false) => {
   const workingDays = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
   
-  // Set end cap to today if end date is in the future
   const today = new Date();
   const cap = end > today ? today : end;
 
@@ -71,9 +52,6 @@ const getWorkingDays = (startDate, endDate, holidays, includeSaturday = false) =
   return workingDays;
 };
 
-/**
- * Calculates timetable lecture expected dates.
- */
 const getTimetableLectures = (startDate, endDate, dayOfWeek, holidays) => {
   const lectureDates = [];
   const start = new Date(startDate);
@@ -96,66 +74,61 @@ const getTimetableLectures = (startDate, endDate, dayOfWeek, holidays) => {
   return lectureDates;
 };
 
-/**
- * Main Calculator Engine
- */
-const calculateStudentStats = async (studentId, departmentId, programType, session, records, rawHolidays, rawTimetables) => {
-  // 1. Fetch policy
-  let policy = await AttendancePolicyMaster.findOne({ departmentId, programType, isActive: true });
-  if (!policy) {
-    policy = await AttendancePolicyMaster.findOne({ departmentId: null, programType, isActive: true });
+const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables) => {
+  const departmentId = student.department; // String name or ID, but policy uses ID. Wait, policy uses ObjectId
+  const deptQuery = student.departmentId || null; // Might need to resolve actual dept ID from user if needed, but fallback to global
+  
+  // Resolve programType from degreeTypeId
+  let programType = 'PG';
+  let isPhD = false;
+  if (student.profile?.degreeTypeId) {
+    const dt = await DegreeTypeMaster.findById(student.profile.degreeTypeId);
+    if (dt) {
+      if (dt.code === 'PHD') { programType = 'PhD'; isPhD = true; }
+      else if (dt.code === 'UG') programType = 'UG';
+      else if (dt.code === 'PG') programType = 'PG';
+      else if (dt.code === 'DIPLOMA') programType = 'Diploma';
+    }
   }
+
+  // 1. Fetch policy
+  let policy = await AttendancePolicyMaster.findOne({ programType, isActive: true }).sort({ departmentId: -1 });
   if (!policy) {
-    // Hardcoded fallback
     policy = {
       minRequiredPercentage: 75,
       warningThreshold: 80,
       maxCondonationPercentage: 10,
       editLockHours: 48,
-      allowHalfDay: true,
-      allowMedicalLeave: true,
-      allowDutyLeave: true,
       isActive: true
     };
   }
 
-  // 2. Fetch active leave types for resolving credit status
-  const leaveTypes = await LeaveTypeMaster.find({
-    $or: [{ departmentId }, { departmentId: null }],
-    isActive: true
-  });
-
-  const countsAsPresentMap = {};
-  const requiresDocumentMap = {};
-  leaveTypes.forEach(lt => {
-    countsAsPresentMap[lt.leaveCode] = lt.countsAsPresent;
-    requiresDocumentMap[lt.leaveCode] = lt.requiresDocument;
-  });
-
   // Filter holidays applicable to this department or global
-  const holidays = rawHolidays.filter(h => !h.departmentId || h.departmentId.toString() === departmentId.toString());
+  // Assuming student.departmentId is populated or we rely on string matching if rawHolidays has department ref
+  const holidays = rawHolidays.filter(h => !h.departmentId || (student.departmentId && h.departmentId.toString() === student.departmentId.toString()));
 
   let totalWorkingDays = 0;
   let expectedDates = [];
+  let totalExpectedClasses = 0;
 
-  // PhD scholars checked-in daily. PG/UG follows class timetable schedules
-  if (programType === 'PhD') {
-    // PhD: Saturday is typically a working day in research labs, Sunday is not
-    expectedDates = getWorkingDays(session.startDate, session.endDate, holidays, false);
+  if (isPhD) {
+    expectedDates = getWorkingDays(session.startDate, session.endDate, holidays, true); // PhD has Sat working
     totalWorkingDays = expectedDates.length;
+    totalExpectedClasses = totalWorkingDays;
   } else {
-    // PG / UG: Gather all scheduled timetable slot occurrences
     const studentSlots = rawTimetables || [];
     const datesSet = new Set();
     studentSlots.forEach(slot => {
       const dates = getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
-      dates.forEach(dt => datesSet.add(dt.toDateString()));
+      dates.forEach(dt => {
+        datesSet.add(dt.toDateString());
+        totalExpectedClasses++;
+      });
     });
     expectedDates = Array.from(datesSet).map(ds => new Date(ds)).sort((a,b) => a-b);
     totalWorkingDays = expectedDates.length;
   }
 
-  // Map record date strings for O(1) checks
   const recordMap = {};
   records.forEach(rec => {
     const dStr = new Date(rec.date).toDateString();
@@ -164,12 +137,7 @@ const calculateStudentStats = async (studentId, departmentId, programType, sessi
 
   let presentCount = 0;
   let absentCount = 0;
-  let lateCount = 0;
-  let presentLeavesCount = 0;
   let excusedLeavesCount = 0;
-  let halfDayPresentCount = 0;
-  let halfDayAbsentCount = 0;
-  let researchTripCount = 0;
 
   const processedLogs = expectedDates.map(date => {
     const dateStr = date.toDateString();
@@ -179,51 +147,41 @@ const calculateStudentStats = async (studentId, departmentId, programType, sessi
     let remarks = '';
     let isLocked = false;
     let recordId = null;
+    let classes = [];
 
     if (existingRecord) {
       status = existingRecord.status;
       remarks = existingRecord.remarks || '';
       isLocked = existingRecord.isLocked;
       recordId = existingRecord._id;
+      classes = existingRecord.classes || [];
 
-      // Increments based on status type
-      if (status === 'PRESENT') presentCount++;
-      else if (status === 'ABSENT' || status === 'NOT_MARKED') absentCount++;
-      else if (status === 'LATE') {
-        presentCount++;
-        lateCount++;
-      } else if (status === 'LATE_EXCUSED') {
-        presentCount++;
-        lateCount++;
-      } else if (status === 'HALF_DAY_PRESENT') {
-        halfDayPresentCount++;
-        presentCount += 0.5;
-      } else if (status === 'HALF_DAY_ABSENT') {
-        halfDayAbsentCount++;
-        absentCount += 0.5;
-      } else if (status === 'ON_RESEARCH' || status === 'FIELD_VISIT') {
-        researchTripCount++;
-        presentCount++; // counts as full day present
-      } else if (status === 'HOLIDAY') {
-        // holidays don't penalize, skip
-      } else if (status === 'CANCELLED') {
-        // cancelled lectures skip
+      if (isPhD) {
+        if (status === 'PRESENT') presentCount++;
+        else if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) presentCount++; // Auto-credited
+        else if (status === 'ABSENT' || status === 'NOT_MARKED') absentCount++;
       } else {
-        // It is a leave status (e.g. CASUAL_LEAVE, MEDICAL_LEAVE, DUTY_LEAVE)
-        const isCPresent = countsAsPresentMap[status] ?? false;
-        if (isCPresent) {
-          presentLeavesCount++;
+        if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
+          // Leave override acts as present for all scheduled classes that day
+          const scheduledClassesToday = rawTimetables.filter(t => t.dayOfWeek === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]).length;
+          presentCount += scheduledClassesToday;
         } else {
-          // Excused: reduces the working days denominator
-          excusedLeavesCount++;
+          // Count class level checkboxes
+          classes.forEach(c => {
+            if (c.selected) presentCount++;
+            else absentCount++;
+          });
         }
       }
     } else {
-      // Future dates are not marked, but don't count as absent until the day is past
       const today = new Date();
       today.setHours(0,0,0,0);
       if (date < today) {
-        absentCount++;
+        if (isPhD) absentCount++;
+        else {
+          const scheduledClassesToday = rawTimetables.filter(t => t.dayOfWeek === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]).length;
+          absentCount += scheduledClassesToday;
+        }
       } else {
         status = 'FUTURE';
       }
@@ -234,15 +192,13 @@ const calculateStudentStats = async (studentId, departmentId, programType, sessi
       status,
       remarks,
       isLocked,
-      recordId
+      recordId,
+      classes
     };
   });
 
-  const effectivePresent = presentCount + presentLeavesCount;
-  const effectiveWorkingDays = totalWorkingDays - excusedLeavesCount;
-
-  const percentage = effectiveWorkingDays > 0 
-    ? parseFloat(((effectivePresent / effectiveWorkingDays) * 100).toFixed(2))
+  const percentage = totalExpectedClasses > 0 
+    ? parseFloat(((presentCount / totalExpectedClasses) * 100).toFixed(2))
     : 100;
 
   const minRequired = policy.minRequiredPercentage;
@@ -251,44 +207,36 @@ const calculateStudentStats = async (studentId, departmentId, programType, sessi
   const isDefaulter = percentage < minRequired;
   const isWarning = percentage < warningLevel && percentage >= minRequired;
 
-  // 4. ERP Prediction Math
   let safeAbsences = 0;
   let classesToAttend = 0;
 
   if (percentage >= minRequired) {
-    // Solve: (P / (W - E + A)) >= minRequired / 100 -> A <= (P * 100 / minRequired) - (W - E)
     if (minRequired > 0) {
-      safeAbsences = Math.floor((effectivePresent * 100 / minRequired) - effectiveWorkingDays);
+      safeAbsences = Math.floor((presentCount * 100 / minRequired) - totalExpectedClasses);
       if (safeAbsences < 0) safeAbsences = 0;
     }
   } else {
-    // Solve: ((P + F) / (W - E + F)) >= minRequired / 100 -> F >= (minRequired * (W - E) - 100 * P) / (100 - minRequired)
     if (minRequired < 100) {
-      classesToAttend = Math.ceil((minRequired * effectiveWorkingDays - 100 * effectivePresent) / (100 - minRequired));
+      classesToAttend = Math.ceil((minRequired * totalExpectedClasses - 100 * presentCount) / (100 - minRequired));
       if (classesToAttend < 0) classesToAttend = 0;
     } else {
-      classesToAttend = effectiveWorkingDays - effectivePresent;
+      classesToAttend = totalExpectedClasses - presentCount;
     }
   }
 
   return {
     percentage,
     totalWorkingDays,
-    effectiveWorkingDays,
+    totalExpectedClasses,
     presentDays: presentCount,
     absentDays: absentCount,
-    excusedLeaveDays: excusedLeavesCount,
-    creditedLeaveDays: presentLeavesCount,
-    lateDays: lateCount,
-    halfDays: halfDayPresentCount + halfDayAbsentCount,
-    researchTripDays: researchTripCount,
     isDefaulter,
     isWarning,
     minRequiredPercentage: minRequired,
     warningThreshold: warningLevel,
     safeAbsencesRemaining: safeAbsences,
     consecutiveClassesToAttend: classesToAttend,
-    logs: processedLogs.reverse() // show latest first
+    logs: processedLogs.reverse()
   };
 };
 

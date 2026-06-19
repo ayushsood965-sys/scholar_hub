@@ -1,120 +1,126 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, CalendarRange, FileCheck } from 'lucide-react';
-import api from '../../hooks/useApi';
-import StatusBadge from '../../components/ui/StatusBadge';
-import EmptyState from '../../components/ui/EmptyState';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import DataTable from '../../components/ui/DataTable';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 const ApprovalsTab = () => {
-  const toast = useToast();
-  const [section, setSection] = useState('leaves');
   const [leaves, setLeaves] = useState([]);
   const [corrections, setCorrections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState('leaves'); // leaves | corrections
+  
+  const api = useApi();
+  const toast = useToast();
 
-  const fetchAll = async () => {
+  const fetchApprovals = async () => {
     try {
-      const [lRes, cRes] = await Promise.all([
-        api.get('/attendance/leave/pending-hod'),
-        api.get('/attendance/corrections/pending-hod'),
+      const [leaveRes, corrRes] = await Promise.all([
+        api.get('/attendance/leave/pending'),
+        api.get('/attendance/corrections/pending')
       ]);
-      setLeaves(lRes.data ?? []);
-      setCorrections(cRes.data ?? []);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      setLeaves(leaveRes.data);
+      setCorrections(corrRes.data);
+    } catch (err) {
+      toast.error('Failed to load pending approvals');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchApprovals(); }, []);
 
   const handleLeaveAction = async (id, action) => {
     try {
-      await api.put(`/attendance/leave/${id}/hod-action`, { action, remarks: `${action} by HOD` });
-      toast.success(`Leave ${action.toLowerCase()}!`);
-      fetchAll();
-    } catch (err) { toast.error(err?.response?.data?.message ?? 'Failed.'); }
+      await api.put(`/attendance/leave/${id}/action`, { action, remarks: `HOD ${action}` });
+      toast.success(`Leave ${action.toLowerCase()} successfully`);
+      fetchApprovals();
+    } catch (err) {
+      toast.error('Error processing leave');
+    }
   };
 
   const handleCorrectionAction = async (id, action) => {
     try {
-      await api.put(`/attendance/corrections/${id}/hod-action`, { action, remarks: `${action} by HOD` });
-      toast.success(`Correction ${action.toLowerCase()}!`);
-      fetchAll();
-    } catch (err) { toast.error(err?.response?.data?.message ?? 'Failed.'); }
+      await api.put(`/attendance/corrections/${id}/action`, { action, remarks: `HOD ${action}` });
+      toast.success(`Correction ${action.toLowerCase()} successfully`);
+      fetchApprovals();
+    } catch (err) {
+      toast.error('Error processing correction');
+    }
   };
 
-  if (loading) return <SkeletonLoader type="table" count={5} />;
+  const leaveColumns = [
+    { header: 'Student Name', accessor: (row) => row.studentId?.name || 'Unknown' },
+    { header: 'Leave Type', accessor: 'leaveType' },
+    { header: 'Dates', accessor: (row) => `${new Date(row.startDate).toLocaleDateString()} - ${new Date(row.endDate).toLocaleDateString()}` },
+    { header: 'Reason', accessor: 'reason' },
+    {
+      header: 'Actions',
+      accessor: (row) => (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-sm" style={{ background: '#10B981', color: '#fff' }} onClick={() => handleLeaveAction(row._id, 'APPROVE')}>
+            <CheckCircle size={16} />
+          </button>
+          <button className="btn btn-sm" style={{ background: '#EF4444', color: '#fff' }} onClick={() => handleLeaveAction(row._id, 'REJECT')}>
+            <XCircle size={16} />
+          </button>
+        </div>
+      )
+    }
+  ];
+
+  const correctionColumns = [
+    { header: 'Student Name', accessor: (row) => row.studentId?.name || 'Unknown' },
+    { header: 'Record Date', accessor: (row) => row.recordId?.date ? new Date(row.recordId.date).toLocaleDateString() : 'Unknown' },
+    { header: 'Requested Status', accessor: 'requestedStatus' },
+    { header: 'Reason', accessor: 'reason' },
+    {
+      header: 'Actions',
+      accessor: (row) => (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-sm" style={{ background: '#10B981', color: '#fff' }} onClick={() => handleCorrectionAction(row._id, 'APPROVE')}>
+            <CheckCircle size={16} />
+          </button>
+          <button className="btn btn-sm" style={{ background: '#EF4444', color: '#fff' }} onClick={() => handleCorrectionAction(row._id, 'REJECT')}>
+            <XCircle size={16} />
+          </button>
+        </div>
+      )
+    }
+  ];
+
+  if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
-    <div>
-      <div className="tab-header">
-        <button className={`tab-btn ${section === 'leaves' ? 'active' : ''}`} onClick={() => setSection('leaves')}>
-          <CalendarRange size={16} /> Leave Requests ({leaves.length})
+    <div className="glass-panel p-xl">
+      <div className="mb-lg">
+        <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Pending Approvals</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Approve or reject leaves and attendance corrections.</p>
+      </div>
+
+      <div className="tab-header mb-lg" style={{ display: 'flex', gap: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+        <button 
+          className={`tab-btn ${activeSubTab === 'leaves' ? 'active' : ''}`} 
+          style={{ background: 'none', border: 'none', color: activeSubTab === 'leaves' ? '#3B82F6' : 'var(--text-secondary)', fontWeight: activeSubTab === 'leaves' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}
+          onClick={() => setActiveSubTab('leaves')}
+        >
+          Leave Requests ({leaves.length})
         </button>
-        <button className={`tab-btn ${section === 'corrections' ? 'active' : ''}`} onClick={() => setSection('corrections')}>
-          <FileCheck size={16} /> Corrections ({corrections.length})
+        <button 
+          className={`tab-btn ${activeSubTab === 'corrections' ? 'active' : ''}`} 
+          style={{ background: 'none', border: 'none', color: activeSubTab === 'corrections' ? '#3B82F6' : 'var(--text-secondary)', fontWeight: activeSubTab === 'corrections' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '1rem' }}
+          onClick={() => setActiveSubTab('corrections')}
+        >
+          Corrections ({corrections.length})
         </button>
       </div>
 
-      {section === 'leaves' && (
-        leaves.length === 0 ? (
-          <EmptyState icon={CalendarRange} title="No pending leaves" message="All leave requests have been processed." />
-        ) : (
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead><tr><th>Scholar</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Faculty</th><th>Actions</th></tr></thead>
-              <tbody>
-                {leaves.map((l, i) => (
-                  <motion.tr key={l._id ?? i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
-                    <td style={{ fontWeight: 600 }}>{l.studentId?.name ?? '—'}</td>
-                    <td><span className="badge badge-primary">{l.leaveType}</span></td>
-                    <td>{new Date(l.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                    <td>{new Date(l.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                    <td>{l.totalDays}</td>
-                    <td style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{l.reason}</td>
-                    <td><StatusBadge status={l.facultyStatus ?? l.supervisorStatus} /></td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="btn btn-sm btn-success" onClick={() => handleLeaveAction(l._id, 'APPROVE')}><CheckCircle size={14} /></button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleLeaveAction(l._id, 'REJECT')}><XCircle size={14} /></button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-
-      {section === 'corrections' && (
-        corrections.length === 0 ? (
-          <EmptyState icon={FileCheck} title="No pending corrections" message="All corrections have been processed." />
-        ) : (
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead><tr><th>Scholar</th><th>Date</th><th>Requested Status</th><th>Reason</th><th>Faculty</th><th>Actions</th></tr></thead>
-              <tbody>
-                {corrections.map((c, i) => (
-                  <motion.tr key={c._id ?? i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
-                    <td style={{ fontWeight: 600 }}>{c.studentId?.name ?? '—'}</td>
-                    <td>{c.recordId?.date ? new Date(c.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}</td>
-                    <td><StatusBadge status={c.requestedStatus} /></td>
-                    <td style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{c.reason}</td>
-                    <td><StatusBadge status={c.facultyAction} /></td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="btn btn-sm btn-success" onClick={() => handleCorrectionAction(c._id, 'APPROVE')}><CheckCircle size={14} /></button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleCorrectionAction(c._id, 'REJECT')}><XCircle size={14} /></button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
+      {activeSubTab === 'leaves' ? (
+        <DataTable columns={leaveColumns} data={leaves} />
+      ) : (
+        <DataTable columns={correctionColumns} data={corrections} />
       )}
     </div>
   );

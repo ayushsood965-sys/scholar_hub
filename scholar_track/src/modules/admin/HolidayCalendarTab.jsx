@@ -1,119 +1,106 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, Plus, Save, Trash2 } from 'lucide-react';
-import api from '../../hooks/useApi';
-import Modal from '../../components/ui/Modal';
-import EmptyState from '../../components/ui/EmptyState';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import DataTable from '../../components/ui/DataTable';
+import Modal from '../../components/ui/Modal';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { Trash2 } from 'lucide-react';
 
 const HolidayCalendarTab = () => {
-  const toast = useToast();
-  const [holidays, setHolidays] = useState([]);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ holidayName: '', date: '', holidayType: 'NATIONAL' });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ title: '', startDate: '', endDate: '', isRecurring: false });
+  const api = useApi();
+  const toast = useToast();
 
-  const fetch = async () => {
+  const fetchData = async () => {
     try {
-      const { data } = await api.get('/attendance/holidays');
-      setHolidays(data ?? []);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      const res = await api.get('/attendance/holidays');
+      setData(res.data);
+    } catch (err) {
+      toast.error('Failed to load holidays');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleSave = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.holidayName.trim() || !form.date) {
-      toast.error('Please enter name and date.');
-      return;
-    }
-    setSaving(true);
     try {
-      const payload = {
-        holidayName: form.holidayName,
-        startDate: form.date,
-        endDate: form.date,
-        isRecurring: false,
-        holidayType: form.holidayType
-      };
-      await api.post('/attendance/holidays', payload);
-      toast.success('Holiday added!');
-      setShowModal(false);
-      setForm({ holidayName: '', date: '', holidayType: 'NATIONAL' });
-      fetch();
-    } catch (err) { toast.error(err?.response?.data?.message ?? 'Failed.'); }
-    finally { setSaving(false); }
+      await api.post('/attendance/holidays', formData);
+      toast.success('Holiday created');
+      setModalOpen(false);
+      setFormData({ title: '', startDate: '', endDate: '', isRecurring: false });
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error creating holiday');
+    }
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure?')) return;
     try {
       await api.delete(`/attendance/holidays/${id}`);
-      toast.success('Holiday removed.');
-      fetch();
-    } catch (err) { toast.error('Failed to remove holiday.'); }
+      toast.success('Deleted successfully');
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to delete');
+    }
   };
 
-  if (loading) return <SkeletonLoader type="table" count={6} />;
+  const columns = [
+    { header: 'Holiday Title', accessor: 'title' },
+    { header: 'Start Date', accessor: (row) => new Date(row.startDate).toLocaleDateString() },
+    { header: 'End Date', accessor: (row) => new Date(row.endDate).toLocaleDateString() },
+    { header: 'Recurring (Yearly)', accessor: (row) => row.isRecurring ? 'Yes' : 'No' },
+    {
+      header: 'Actions',
+      accessor: (row) => (
+        <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleDelete(row._id)}>
+          <Trash2 size={16} />
+        </button>
+      )
+    }
+  ];
+
+  if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-lg">
+    <div className="glass-panel p-xl">
+      <div className="flex justify-between items-center mb-lg">
         <div>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Global Holiday Calendar</h2>
-          <p className="text-sm text-muted">University-wide holidays excluded from attendance calculations</p>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Holiday Calendar</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Manage university-wide holidays.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <Plus size={16} /> Add Holiday
-        </button>
+        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>Add Holiday</button>
       </div>
 
-      {holidays.length === 0 ? (
-        <EmptyState icon={Calendar} title="No global holidays" message="Add university-wide holidays." />
-      ) : (
-        <div className="data-table-wrapper">
-          <table className="data-table">
-            <thead><tr><th>Holiday</th><th>Date</th><th>Type</th><th>Actions</th></tr></thead>
-            <tbody>
-              {holidays.map((h, i) => (
-                <motion.tr key={h._id ?? i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
-                  <td style={{ fontWeight: 600 }}>{h.holidayName}</td>
-                  <td>{new Date(h.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                  <td><span className="badge badge-neutral">{h.holidayType}</span></td>
-                  <td>
-                    <button className="btn btn-sm btn-danger btn-icon" onClick={() => handleDelete(h._id)}>
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable columns={columns} data={data} />
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Global Holiday">
-        <form onSubmit={handleSave}>
-          <div className="form-group"><label className="form-label">Holiday Name</label><input className="form-input" value={form.holidayName} onChange={e => setForm(p => ({ ...p, holidayName: e.target.value }))} placeholder="e.g., Independence Day" /></div>
-          <div className="grid-2">
-            <div className="form-group"><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
-            <div className="form-group"><label className="form-label">Type</label>
-              <select className="form-input" value={form.holidayType} onChange={e => setForm(p => ({ ...p, holidayType: e.target.value }))}>
-                <option value="NATIONAL">National</option>
-                <option value="STATE">State</option>
-                <option value="RESTRICTED">Restricted</option>
-                <option value="OPTIONAL">Optional</option>
-                <option value="DEPARTMENTAL">Departmental</option>
-                <option value="EMERGENCY_CLOSURE">Emergency Closure</option>
-              </select>
-            </div>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Holiday">
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Title (e.g. Diwali)</label>
+            <input className="form-input" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}><Save size={14} /> {saving ? 'Adding...' : 'Add Holiday'}</button>
+          <div className="form-group">
+            <label className="form-label">Start Date</label>
+            <input type="date" className="form-input" required value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">End Date</label>
+            <input type="date" className="form-input" required value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
+          </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input type="checkbox" id="recurring" checked={formData.isRecurring} onChange={e => setFormData({...formData, isRecurring: e.target.checked})} />
+            <label htmlFor="recurring" className="form-label" style={{ marginBottom: 0 }}>Repeats yearly on this date?</label>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save</button>
           </div>
         </form>
       </Modal>
@@ -122,4 +109,3 @@ const HolidayCalendarTab = () => {
 };
 
 export default HolidayCalendarTab;
-

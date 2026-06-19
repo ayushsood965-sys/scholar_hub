@@ -7,11 +7,31 @@ const timetableMasterSchema = new mongoose.Schema(
       ref: 'Department',
       required: true
     },
-    courseCode: {
+    sessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AcademicSessionMaster',
+      required: true
+    },
+    degreeTypeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DegreeTypeMaster',
+      required: true
+    },
+    degreeNameId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DegreeNameMaster',
+      required: true
+    },
+    semesterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SemesterMaster',
+      required: true
+    },
+    subjectCode: {
       type: String,
       required: true
     },
-    courseName: {
+    subjectName: {
       type: String,
       required: true
     },

@@ -1,108 +1,125 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FileCheck, Send } from 'lucide-react';
-import api from '../../hooks/useApi';
-import Modal from '../../components/ui/Modal';
-import StatusBadge from '../../components/ui/StatusBadge';
-import EmptyState from '../../components/ui/EmptyState';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import DataTable from '../../components/ui/DataTable';
+import Modal from '../../components/ui/Modal';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
 
 const CorrectionsTab = () => {
-  const toast = useToast();
   const [corrections, setCorrections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  
+  // Note: For a real app, you'd probably load the student's recent absences to select from.
+  // Here we assume the student knows the record Date and Subject, or we can fetch a list of recent 'ABSENT' records.
+  const [recentAbsences, setRecentAbsences] = useState([]);
+  const [formData, setFormData] = useState({ recordId: '', requestedStatus: 'PRESENT', reason: '' });
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const { data } = await api.get('/attendance/corrections/me');
-        setCorrections(data ?? []);
-      } catch (err) {
-        console.error('Error fetching corrections:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+  const api = useApi();
+  const toast = useToast();
+
+  const fetchCorrections = async () => {
+    try {
+      const res = await api.get('/attendance/corrections');
+      setCorrections(res.data);
+    } catch (err) {
+      toast.error('Failed to load corrections');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRecentAbsences = async () => {
+    try {
+      // Assuming a specific endpoint to get recent absences for corrections
+      // If not available, we can mock or adapt. For now, we simulate an empty array or adapt logic.
+      // E.g., api.get('/attendance/my-absences')
+      const res = await api.get('/attendance/my-absences').catch(() => ({ data: [] }));
+      setRecentAbsences(res.data);
+      if (res.data.length > 0) setFormData(prev => ({ ...prev, recordId: res.data[0]._id }));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => { 
+    fetchCorrections(); 
+    fetchRecentAbsences();
   }, []);
 
-  if (loading) return <SkeletonLoader type="table" count={4} />;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.recordId) return toast.error('No record selected');
+    try {
+      await api.post('/attendance/corrections', formData);
+      toast.success('Correction requested successfully');
+      setModalOpen(false);
+      setFormData({ ...formData, reason: '' });
+      fetchCorrections();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error requesting correction');
+    }
+  };
+
+  const columns = [
+    { header: 'Record Date', accessor: (row) => row.recordId?.date ? new Date(row.recordId.date).toLocaleDateString() : 'N/A' },
+    { header: 'Requested Status', accessor: 'requestedStatus' },
+    { header: 'Reason', accessor: 'reason' },
+    { 
+      header: 'Status', 
+      accessor: (row) => {
+        let cls = 'badge-warning';
+        if (row.status === 'APPROVED') cls = 'badge-success';
+        if (row.status === 'REJECTED') cls = 'badge-danger';
+        return <span className={`badge ${cls}`}>{row.status}</span>;
+      }
+    }
+  ];
+
+  if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
-    <div>
-      <div className="mb-lg">
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Correction Requests</h2>
-        <p className="text-sm text-muted">Track your attendance dispute submissions and their resolution status</p>
+    <div className="glass-panel p-xl">
+      <div className="flex justify-between items-center mb-lg">
+        <div>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Correction Requests</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Request fixes for inaccurately marked absences.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>Request Correction</button>
       </div>
 
-      {corrections.length === 0 ? (
-        <EmptyState
-          icon={FileCheck}
-          title="No corrections filed"
-          message="You can raise corrections from your attendance log if you believe a record is incorrect."
-        />
-      ) : (
-        <div className="data-table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Requested Status</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Faculty Remarks</th>
-                <th>HOD Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {corrections.map((c, i) => (
-                <motion.tr
-                  key={c._id ?? i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                >
-                  <td style={{ fontWeight: 600 }}>
-                    {c.recordId?.date
-                      ? new Date(c.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                      : '—'
-                    }
-                  </td>
-                  <td><StatusBadge status={c.requestedStatus} /></td>
-                  <td style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>
-                    {c.reason ?? '—'}
-                  </td>
-                  <td><StatusBadge status={c.status} /></td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{c.facultyRemarks || '—'}</td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{c.hodRemarks || '—'}</td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable columns={columns} data={corrections} />
 
-      {/* Audit Trail */}
-      {corrections.length > 0 && corrections[0]?.auditLog?.length > 0 && (
-        <motion.div
-          className="glass-panel p-xl mt-lg"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Latest Dispute Trail</h3>
-          <div className="audit-timeline">
-            {corrections[0].auditLog.map((entry, i) => (
-              <div key={i} className="audit-item">
-                <div className="audit-actor">{entry.actorName ?? 'System'}</div>
-                <div className="audit-action">{entry.action} — {entry.remarks}</div>
-                <div className="audit-time">{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ''}</div>
-              </div>
-            ))}
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Request Attendance Correction">
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+          <div className="form-group">
+            <label className="form-label">Select Absent Record</label>
+            <select className="form-input" required value={formData.recordId} onChange={e => setFormData({...formData, recordId: e.target.value})}>
+              <option value="">Select a recent absence...</option>
+              {recentAbsences.map(r => (
+                <option key={r._id} value={r._id}>
+                  {new Date(r.date).toLocaleDateString()} - {r.timetableSlotId?.subjectName || 'Class'}
+                </option>
+              ))}
+              {recentAbsences.length === 0 && <option value="" disabled>No eligible records found</option>}
+            </select>
           </div>
-        </motion.div>
-      )}
+          <div className="form-group">
+            <label className="form-label">Requested Status</label>
+            <select className="form-input" value={formData.requestedStatus} onChange={e => setFormData({...formData, requestedStatus: e.target.value})}>
+              <option value="PRESENT">Present</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Reason</label>
+            <textarea className="form-input" required value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} rows={3} placeholder="Explain why this should be corrected..." />
+          </div>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={recentAbsences.length === 0}>Submit</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

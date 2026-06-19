@@ -1,85 +1,106 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, BookOpen, Users, Clock } from 'lucide-react';
-import { AuthContext } from '../../context/AuthContext';
-import api from '../../hooks/useApi';
-import StatCard from '../../components/ui/StatCard';
+import { Users, Clock, CalendarRange, AlertTriangle } from 'lucide-react';
+import useApi from '../../hooks/useApi';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { useToast } from '../../context/ToastContext';
+import DataTable from '../../components/ui/DataTable';
 
 const OverviewTab = () => {
-  const { user } = useContext(AuthContext);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const api = useApi();
+  const toast = useToast();
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchStats = async () => {
       try {
-        const { data } = await api.get('/attendance/dashboard/faculty');
-        setStats(data);
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
+        const res = await api.get('/attendance/dashboard/faculty');
+        setStats(res.data);
+      } catch (err) {
+        toast.error('Failed to load faculty stats');
+      } finally {
+        setLoading(false);
+      }
     };
-    fetch();
-  }, []);
+    fetchStats();
+  }, [api, toast]);
 
-  if (loading) return <SkeletonLoader type="stats" count={4} />;
+  if (loading) return <SkeletonLoader count={1} height={400} />;
+  
+  const safeStats = stats || {
+    name: 'Faculty',
+    todayClasses: [],
+    pendingLeaves: 0,
+    pendingCorrections: 0,
+    markedToday: []
+  };
+
+  const todayClassesColumns = [
+    { header: 'Time', accessor: (row) => `${row.startTime} - ${row.endTime}` },
+    { header: 'Subject', accessor: 'subjectName' },
+    { header: 'Degree', accessor: (row) => `${row.degreeNameId?.name || 'N/A'}` },
+    { header: 'Semester', accessor: (row) => `${row.semesterId?.name || 'N/A'}` },
+    { 
+      header: 'Status', 
+      accessor: (row) => {
+        // Find if attendance is already marked for this slot today
+        const isMarked = safeStats.markedToday?.some(m => m.timetableSlotId === row._id);
+        return isMarked ? <span className="badge badge-success">Marked</span> : <span className="badge badge-warning">Pending</span>;
+      }
+    }
+  ];
 
   return (
-    <div>
-      <motion.div className="welcome-banner glass-panel" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="welcome-tag"><Sparkles size={12} /> Faculty Dashboard</div>
-        <h1 className="welcome-title">Welcome, {user?.name ?? 'Faculty'}</h1>
-        <p className="welcome-subtitle">Department of {user?.department ?? 'N/A'} · Active Session: {stats?.sessionName ?? 'No Active Session'}</p>
-      </motion.div>
-
-      <div className="grid-3" style={{ marginBottom: '28px' }}>
-        <StatCard icon={BookOpen} value={stats?.coursesScheduled ?? 0} label="Courses Scheduled" delay={0.05} />
-        <StatCard icon={Users} value={stats?.managedScholars ?? 0} label="Scholars Managed" delay={0.1} />
-        <StatCard icon={Clock} value={stats?.recentLogs?.length ?? 0} label="Recent Logs" delay={0.15} />
+    <div className="overview-tab">
+      <div className="welcome-banner mb-lg">
+        <div className="welcome-tag">FACULTY OVERVIEW</div>
+        <h2 className="welcome-title">Welcome back, {safeStats.name}</h2>
+        <p className="welcome-subtitle">Here is your schedule for today.</p>
       </div>
 
-      {/* Timetable Slots */}
-      {stats?.courses?.length > 0 && (
-        <motion.div className="glass-panel p-xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px' }}>My Course Schedule</h3>
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead><tr><th>Course</th><th>Day</th><th>Time</th></tr></thead>
-              <tbody>
-                {stats.courses.map((c, i) => (
-                  <motion.tr key={c._id ?? i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 * i }}>
-                    <td style={{ fontWeight: 600 }}>{c.courseName ?? c.courseCode ?? '—'}</td>
-                    <td>{c.dayOfWeek}</td>
-                    <td>{c.startTime} — {c.endTime}</td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="grid-3 mb-lg">
+        <motion.div className="stat-card clay-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="stat-icon" style={{ background: '#3B82F620', color: '#3B82F6' }}>
+            <Clock size={24} />
+          </div>
+          <div className="stat-content">
+            <h3>{safeStats.todayClasses?.length || 0}</h3>
+            <p>Classes Today</p>
           </div>
         </motion.div>
-      )}
 
-      {/* Recent Activity */}
-      {stats?.recentLogs?.length > 0 && (
-        <motion.div className="glass-panel p-xl mt-lg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px' }}>Recent Marking Activity</h3>
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead><tr><th>Student</th><th>Date</th><th>Status</th><th>Course</th></tr></thead>
-              <tbody>
-                {stats.recentLogs.slice(0, 10).map((log, i) => (
-                  <tr key={log._id ?? i}>
-                    <td style={{ fontWeight: 600 }}>{log.studentId?.name ?? '—'}</td>
-                    <td>{new Date(log.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                    <td><span className={`badge ${log.status === 'PRESENT' ? 'badge-present' : log.status === 'ABSENT' ? 'badge-absent' : 'badge-late'}`}>{log.status}</span></td>
-                    <td style={{ color: 'var(--color-text-muted)' }}>{log.courseName ?? 'Daily'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <motion.div className="stat-card clay-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <div className="stat-icon" style={{ background: '#10B98120', color: '#10B981' }}>
+            <CalendarRange size={24} />
+          </div>
+          <div className="stat-content">
+            <h3>{safeStats.pendingLeaves || 0}</h3>
+            <p>Pending Leaves</p>
           </div>
         </motion.div>
-      )}
+
+        <motion.div className="stat-card clay-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="stat-icon" style={{ background: '#EF444420', color: '#EF4444' }}>
+            <AlertTriangle size={24} />
+          </div>
+          <div className="stat-content">
+            <h3>{safeStats.pendingCorrections || 0}</h3>
+            <p>Pending Corrections</p>
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="glass-panel p-xl mb-lg">
+        <h3 style={{ marginBottom: '16px', color: 'var(--text-primary)' }}>Today's Schedule</h3>
+        {safeStats.todayClasses?.length > 0 ? (
+          <DataTable columns={todayClassesColumns} data={safeStats.todayClasses} />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)' }}>
+            No classes scheduled for today.
+          </div>
+        )}
+      </div>
     </div>
   );
 };

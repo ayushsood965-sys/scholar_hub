@@ -363,6 +363,42 @@ const uploadDocument = async (req, res) => {
   }
 };
 
+// GET /api/auth/students — Filter and fetch department scholars
+const getStudentsFiltered = async (req, res) => {
+  try {
+    const { department, session, degreeType, degreeName, subject } = req.query;
+
+    const query = {
+      role: 'STUDENT',
+      isActive: true
+    };
+
+    if (req.user.role === 'SUPER_ADMIN') {
+      if (department) query.department = department;
+    } else {
+      query.department = req.user.department;
+    }
+
+    if (session) {
+      query['profile.academicSession'] = session;
+    }
+    if (degreeType) {
+      query['profile.degreeType'] = degreeType;
+    }
+    if (degreeName) {
+      query['profile.degreeName'] = { $regex: new RegExp(degreeName, 'i') };
+    }
+    if (subject) {
+      query['profile.subject'] = { $regex: new RegExp(subject, 'i') };
+    }
+
+    const students = await User.find(query).select('name username department profile');
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // PUT /api/auth/users/:id/verify — Verify a user account (HOD or Super Admin action)
 const verifyUser = async (req, res) => {
   try {
@@ -386,4 +422,4 @@ const verifyUser = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, getMe };
+module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, getMe, getStudentsFiltered };

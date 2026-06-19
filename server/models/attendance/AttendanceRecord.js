@@ -18,6 +18,21 @@ const attendanceRecordSchema = new mongoose.Schema(
       ref: 'TimetableMaster',
       default: null
     },
+    degreeTypeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DegreeTypeMaster',
+      default: null
+    },
+    degreeNameId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DegreeNameMaster',
+      default: null
+    },
+    semesterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SemesterMaster',
+      default: null
+    },
     courseCode: {
       type: String,
       default: 'DAILY' // For PhD daily logs
@@ -25,6 +40,17 @@ const attendanceRecordSchema = new mongoose.Schema(
     courseName: {
       type: String,
       default: 'Daily Check-In'
+    },
+    classes: [
+      {
+        timetableSlotId: { type: mongoose.Schema.Types.ObjectId, ref: 'TimetableMaster' },
+        subjectName: String,
+        selected: { type: Boolean, default: false }
+      }
+    ],
+    isLeaveOverride: {
+      type: Boolean,
+      default: false
     },
     facultyId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -43,13 +69,7 @@ const attendanceRecordSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: [
-        'PRESENT', 'ABSENT', 'LATE', 'LATE_EXCUSED', 
-        'DUTY_LEAVE', 'MEDICAL_LEAVE', 'CASUAL_LEAVE', 
-        'HALF_DAY_PRESENT', 'HALF_DAY_ABSENT', 'ON_RESEARCH', 
-        'CONFERENCE', 'FIELD_VISIT', 'SEMINAR', 'HOLIDAY', 
-        'CANCELLED', 'NOT_MARKED'
-      ],
+      enum: ['PRESENT', 'ABSENT', 'ON_LEAVE', 'NOT_APPLICABLE'],
       required: true
     },
     leaveRequestId: {

@@ -1,67 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { BookOpen } from 'lucide-react';
-import api from '../../hooks/useApi';
-import EmptyState from '../../components/ui/EmptyState';
+import useApi from '../../hooks/useApi';
+import { useToast } from '../../context/ToastContext';
+import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 
 const AuditTab = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const api = useApi();
+  const toast = useToast();
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchLogs = async () => {
       try {
-        const { data } = await api.get('/attendance/audit-trail');
-        setLogs(data ?? []);
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
+        const res = await api.get('/attendance/dashboard/hod');
+        setLogs(res.data.auditLogs || []);
+      } catch (err) {
+        toast.error('Failed to load audit logs');
+      } finally {
+        setLoading(false);
+      }
     };
-    fetch();
-  }, []);
+    fetchLogs();
+  }, [api, toast]);
 
-  if (loading) return <SkeletonLoader type="table" count={8} />;
+  const columns = [
+    { header: 'Date', accessor: (row) => new Date(row.updatedAt).toLocaleString() },
+    { header: 'Student', accessor: (row) => row.studentId?.name || 'Unknown' },
+    { header: 'Record Date', accessor: (row) => new Date(row.date).toLocaleDateString() },
+    { header: 'Marked By', accessor: (row) => row.markedBy?.name || 'System' },
+    { 
+      header: 'Status', 
+      accessor: (row) => {
+        let badgeClass = 'badge-neutral';
+        if (row.status === 'PRESENT') badgeClass = 'badge-success';
+        else if (row.status === 'ABSENT') badgeClass = 'badge-danger';
+        else if (row.status === 'ON_LEAVE') badgeClass = 'badge-warning';
+        return <span className={`badge ${badgeClass}`}>{row.status}</span>;
+      } 
+    },
+    { header: 'Locked', accessor: (row) => row.isLocked ? <span className="badge badge-warning">Yes</span> : 'No' }
+  ];
+
+  if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
-    <div>
+    <div className="glass-panel p-xl">
       <div className="mb-lg">
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Audit Trail</h2>
-        <p className="text-sm text-muted">Chronological log of all attendance-related actions in your department</p>
+        <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Audit Trail</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Chronological log of recent attendance modifications.</p>
       </div>
 
-      {logs.length === 0 ? (
-        <EmptyState icon={BookOpen} title="No audit logs" message="Audit entries will appear here as attendance actions are performed." />
-      ) : (
-        <motion.div
-          className="glass-panel p-xl"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <div className="audit-timeline">
-            {logs.map((entry, i) => (
-              <motion.div
-                key={entry._id ?? i}
-                className="audit-item"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.03 }}
-              >
-                <div className="audit-actor">{entry.actorName ?? entry.performedBy?.name ?? 'System'}</div>
-                <div className="audit-action">
-                  <span style={{ fontWeight: 600 }}>{entry.actionType ?? entry.action}</span>
-                  {entry.details && <> — {typeof entry.details === 'string' ? entry.details : JSON.stringify(entry.details)}</>}
-                </div>
-                <div className="audit-time">
-                  {entry.timestamp ?? entry.createdAt
-                    ? new Date(entry.timestamp ?? entry.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                    : ''
-                  }
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+      <DataTable columns={columns} data={logs} />
     </div>
   );
 };

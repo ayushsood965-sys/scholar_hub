@@ -3848,6 +3848,8 @@ const ProfileTab = () => {
   const [thesisTitle, setThesisTitle] = useState(user?.profile?.thesisTitle || '');
   const [thesisSummary, setThesisSummary] = useState(user?.profile?.thesisSummary || '');
   const [thesisKeywords, setThesisKeywords] = useState(user?.profile?.thesisKeywords || '');
+  const [academicSession, setAcademicSession] = useState(user?.profile?.academicSession || '');
+  const [sessions, setSessions] = useState([]);
   // Class 10
   const [class10Roll, setClass10Roll] = useState(user?.profile?.qualifications?.class10?.rollNo || '');
   const [class10Board, setClass10Board] = useState(user?.profile?.qualifications?.class10?.board || '');
@@ -3920,6 +3922,7 @@ const ProfileTab = () => {
       setThesisTitle(user.profile.thesisTitle || '');
       setThesisSummary(user.profile.thesisSummary || '');
       setThesisKeywords(user.profile.thesisKeywords || '');
+      setAcademicSession(user.profile.academicSession || '');
       const q = user.profile.qualifications;
       setClass10Roll(q?.class10?.rollNo || '');
       setClass10Board(q?.class10?.board || '');
@@ -4003,6 +4006,16 @@ const ProfileTab = () => {
       .catch(err => console.error('Error fetching department faculty:', err));
   }, [user?.department]);
 
+  useEffect(() => {
+    axios.get(`${API_URL}/attendance/sessions`, getAuthHeader())
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setSessions(res.data);
+        }
+      })
+      .catch(err => console.error('Error fetching academic sessions:', err));
+  }, []);
+
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -4084,6 +4097,7 @@ const ProfileTab = () => {
       thesisTitle,
       thesisSummary,
       thesisKeywords,
+      academicSession,
       qualifications: {
         class10: {
           rollNo: class10Roll,
@@ -4351,7 +4365,7 @@ const ProfileTab = () => {
       !dob || !gender || !category || !fatherName || !motherName || !nationality || 
       !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
       !phoneNumber || !address || !areaOfInterest ||
-      !thesisTitle || !thesisSummary || !thesisKeywords
+      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession
     ) {
       toast.error('please fill in all the details before submitting the form.');
       return;
@@ -4623,6 +4637,10 @@ const ProfileTab = () => {
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Specialization</span>
                     <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{specialization || '—'}</strong>
                   </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Academic Session</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{academicSession || '—'}</strong>
+                  </div>
                   <div style={{ gridColumn: 'span 2' }}>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Area of Research Interest</span>
                     <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{areaOfInterest || '—'}</strong>
@@ -4740,6 +4758,18 @@ const ProfileTab = () => {
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Area of Specialization <span style={{ color: '#EF4444' }}>*</span></label>
                     <input type="text" className="form-input" placeholder="e.g. Machine Learning, Structural Bio" value={specialization} onChange={e => setSpecialization(e.target.value)} required />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Academic Session <span style={{ color: '#EF4444' }}>*</span></label>
+                    <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)} required style={{ height: '42px' }}>
+                      <option value="">Select Academic Session...</option>
+                      {sessions.map(s => (
+                        <option key={s._id} value={s.sessionName}>{s.sessionName}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

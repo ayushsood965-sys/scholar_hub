@@ -4,9 +4,11 @@ import { AuthContext } from '../context/AuthContext';
 import DashboardShell from '../components/DashboardShell';
 import OverviewTab from '../modules/hod/OverviewTab';
 import PolicyConfigTab from '../modules/hod/PolicyConfigTab';
-import MasterDataTab from '../modules/hod/MasterDataTab';
-import DefaultersTab from '../modules/hod/DefaultersTab';
+import LeaveRulesTab from '../modules/hod/LeaveRulesTab';
+import TimetableTab from '../modules/hod/TimetableTab';
+import CloneTimetableTab from '../modules/hod/CloneTimetableTab';
 import ApprovalsTab from '../modules/hod/ApprovalsTab';
+import DefaultersTab from '../modules/hod/DefaultersTab';
 import AuditTab from '../modules/hod/AuditTab';
 
 const HodDashboard = () => {
@@ -20,9 +22,11 @@ const HodDashboard = () => {
   const titles = {
     overview: 'Department Overview',
     policies: 'Policy Configuration',
-    master: 'Master Data Management',
-    defaulters: 'Defaulters & Warnings',
+    leaveRules: 'Leave Rules',
+    timetable: 'Timetable Builder',
+    cloneTimetable: 'Clone Timetable',
     approvals: 'Leave & Correction Approvals',
+    defaulters: 'Defaulters & Warnings',
     audit: 'Audit Trail',
   };
 
@@ -30,9 +34,11 @@ const HodDashboard = () => {
     <DashboardShell role="HOD" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]}>
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'policies' && <PolicyConfigTab />}
-      {activeTab === 'master' && <MasterDataTab />}
-      {activeTab === 'defaulters' && <DefaultersTab />}
+      {activeTab === 'leaveRules' && <LeaveRulesTab />}
+      {activeTab === 'timetable' && <TimetableTab />}
+      {activeTab === 'cloneTimetable' && <CloneTimetableTab />}
       {activeTab === 'approvals' && <ApprovalsTab />}
+      {activeTab === 'defaulters' && <DefaultersTab />}
       {activeTab === 'audit' && <AuditTab />}
     </DashboardShell>
   );

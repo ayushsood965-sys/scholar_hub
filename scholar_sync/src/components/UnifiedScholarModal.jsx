@@ -768,6 +768,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           <div><strong>Department:</strong> <span style={{ color: '#475569' }}>{thesis.department || 'N/A'}</span></div>
           <div><strong>Admission Date:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.admissionDate ? new Date(thesis.scholarId.profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
           <div><strong>Ph.D. Mode:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.phdMode || 'N/A'}</span></div>
+          <div><strong>Academic Session:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.academicSession || 'N/A'}</span></div>
           <div><strong>Specialization:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.specialization || 'N/A'}</span></div>
           <div><strong>Area of Research Interest:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.areaOfInterest || 'N/A'}</span></div>
           <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: '#0F172A', fontWeight: 700 }}>{thesis.scholarId?.profile?.thesisTitle || thesis.title || 'N/A'}</span></div>

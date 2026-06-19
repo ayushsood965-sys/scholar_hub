@@ -6,7 +6,6 @@ import OverviewTab from '../modules/faculty/OverviewTab';
 import MarkAttendanceTab from '../modules/faculty/MarkAttendanceTab';
 import LeaveApprovalsTab from '../modules/faculty/LeaveApprovalsTab';
 import CorrectionsTab from '../modules/faculty/CorrectionsTab';
-import TimetableTab from '../modules/faculty/TimetableTab';
 
 const FacultyDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -21,7 +20,6 @@ const FacultyDashboard = () => {
     mark: 'Mark Attendance',
     leaves: 'Leave Approvals',
     corrections: 'Corrections Queue',
-    timetable: 'Timetable Master',
   };
 
   return (
@@ -30,7 +28,6 @@ const FacultyDashboard = () => {
       {activeTab === 'mark' && <MarkAttendanceTab />}
       {activeTab === 'leaves' && <LeaveApprovalsTab />}
       {activeTab === 'corrections' && <CorrectionsTab />}
-      {activeTab === 'timetable' && <TimetableTab />}
     </DashboardShell>
   );
 };

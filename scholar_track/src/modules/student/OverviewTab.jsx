@@ -1,90 +1,90 @@
-import React, { useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, User, GraduationCap } from 'lucide-react';
-import { AuthContext } from '../../context/AuthContext';
+import { Activity, Clock, AlertCircle } from 'lucide-react';
+import useApi from '../../hooks/useApi';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { useToast } from '../../context/ToastContext';
 
 const OverviewTab = () => {
-  const { user } = useContext(AuthContext);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const api = useApi();
+  const toast = useToast();
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get('/attendance/dashboard/student');
+        setStats(res.data);
+      } catch (err) {
+        toast.error('Failed to load student stats');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [api, toast]);
+
+  if (loading) return <SkeletonLoader count={1} height={400} />;
+  
+  const safeStats = stats || {
+    name: 'Student',
+    semesterName: 'N/A',
+    degreeName: 'N/A',
+    overallPercentage: 0,
+    classesAttended: 0,
+    totalClasses: 0,
+    policyWarning: false,
+    minRequiredPercentage: 75,
+    consecutiveClassesToAttend: 0
+  };
 
   return (
-    <div>
-      {/* Welcome Banner */}
-      <motion.div
-        className="welcome-banner glass-panel"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="welcome-tag">
-          <Sparkles size={12} /> Student Dashboard
-        </div>
-        <h1 className="welcome-title">Welcome, {user?.name ?? 'Scholar'}</h1>
-        <p className="welcome-subtitle">
-          Department of {user?.department ?? 'Computer Science'} · Research Scholar
-        </p>
-      </motion.div>
+    <div className="overview-tab">
+      <div className="welcome-banner mb-lg">
+        <div className="welcome-tag">STUDENT OVERVIEW</div>
+        <h2 className="welcome-title">Welcome back, {safeStats.name}</h2>
+        <p className="welcome-subtitle">Semester: {safeStats.semesterName || 'N/A'} | {safeStats.degreeName || 'N/A'}</p>
+      </div>
 
-      <div className="grid-2">
-        {/* Personal Profile */}
-        <motion.div
-          className="glass-panel p-xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-primary)' }}>
-            <User size={20} /> Personal Profile
-          </h3>
-          <div className="flex flex-col gap-lg">
-            {[
-              { label: 'Full Name', value: user?.name },
-              { label: 'Username', value: user?.username },
-              { label: 'Email', value: user?.profile?.email || user?.username },
-              { label: 'Role', value: 'Student / Research Scholar' },
-              { label: 'SH Number', value: user?.profile?.shNo || 'Auto-generated' },
-            ].map((item, i) => (
-              <div key={i}>
-                <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {item.label}
-                </span>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, marginTop: '3px' }}>
-                  {item.value ?? '—'}
-                </div>
-              </div>
-            ))}
+      <div className="grid-3 mb-lg">
+        <motion.div className="stat-card clay-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="stat-icon" style={{ background: '#3B82F620', color: '#3B82F6' }}>
+            <Activity size={24} />
+          </div>
+          <div className="stat-content">
+            <h3>{safeStats.overallPercentage}%</h3>
+            <p>Overall Attendance</p>
           </div>
         </motion.div>
 
-        {/* Academic Info */}
-        <motion.div
-          className="glass-panel p-xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-primary)' }}>
-            <GraduationCap size={20} /> Academic Information
-          </h3>
-          <div className="flex flex-col gap-lg">
-            {[
-              { label: 'Department', value: user?.department },
-              { label: 'Program Type', value: user?.profile?.phdMode ? `PhD (${user.profile.phdMode})` : 'PhD' },
-              { label: 'Enrollment Number', value: user?.profile?.enrollmentNumber },
-              { label: 'Area of Interest', value: user?.profile?.areaOfInterest },
-              { label: 'Research Title', value: user?.profile?.thesisTitle },
-            ].map((item, i) => (
-              <div key={i}>
-                <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {item.label}
-                </span>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, marginTop: '3px', lineHeight: item.label === 'Research Title' ? 1.4 : 1.2, fontStyle: item.label === 'Research Title' ? 'italic' : 'normal' }}>
-                  {item.value || '—'}
-                </div>
-              </div>
-            ))}
+        <motion.div className="stat-card clay-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <div className="stat-icon" style={{ background: '#10B98120', color: '#10B981' }}>
+            <Clock size={24} />
+          </div>
+          <div className="stat-content">
+            <h3>{safeStats.classesAttended} / {safeStats.totalClasses}</h3>
+            <p>Classes Attended</p>
+          </div>
+        </motion.div>
+
+        <motion.div className="stat-card clay-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="stat-icon" style={{ background: '#EF444420', color: '#EF4444' }}>
+            <AlertCircle size={24} />
+          </div>
+          <div className="stat-content">
+            <h3>{safeStats.policyWarning ? 'WARNING' : 'GOOD'}</h3>
+            <p>Status</p>
           </div>
         </motion.div>
       </div>
+
+      {safeStats.policyWarning && (
+        <div className="glass-panel p-xl" style={{ borderLeft: '4px solid #EF4444', marginBottom: '24px' }}>
+          <h3 style={{ color: '#EF4444', marginBottom: '8px' }}>Attendance Warning</h3>
+          <p style={{ color: 'var(--text-primary)' }}>Your attendance is below the required threshold of {safeStats.minRequiredPercentage}%. You need to attend the next <strong>{safeStats.consecutiveClassesToAttend}</strong> classes to recover.</p>
+        </div>
+      )}
     </div>
   );
 };
