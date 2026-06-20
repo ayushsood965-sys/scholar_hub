@@ -390,6 +390,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
     { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
     { key: 'publications', label: 'Research Outputs', Icon: Award },
     { key: 'preSubmission', label: 'Pre-Submission', Icon: ClipboardList },
+    { key: 'finalSubmission', label: 'Final Submission and Defense', Icon: Book },
     { key: 'meetings', label: 'Meetings', Icon: Calendar },
     { key: 'documents', label: 'Documents', Icon: FileText },
     { key: 'changes', label: 'Request Changes', Icon: Edit },
@@ -427,6 +428,10 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             if (key === 'preSubmission') {
               const hasPreMilestone = milestones && milestones.some(m => m.type === 'PRE_SUBMISSION');
               return !(['PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
+            }
+            if (key === 'finalSubmission') {
+              const hasFinalMilestone = milestones && milestones.some(m => m.type === 'FINAL_SUBMISSION');
+              return !(['PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status) || hasFinalMilestone);
             }
             if (key === 'certificates') {
               return !['SUBMITTED', 'AWARDED'].includes(status);
@@ -1096,14 +1101,10 @@ const ActiveResearch = ({ thesis, milestones, onSubmit, setActiveTab }) => {
 const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
   const toast = useToast();
   const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
-  const finalMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
   
   const [fileThesis, setFileThesis] = useState(null);
   const [filePlagiarism, setFilePlagiarism] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const [fileFinalThesis, setFileFinalThesis] = useState(null);
-  const [submittingFinal, setSubmittingFinal] = useState(false);
 
   if (!preMilestone) {
     return (
@@ -1139,33 +1140,6 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
       toast.error(err.response?.data?.message || 'Error submitting package.');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleFinalSubmit = async (e) => {
-    e.preventDefault();
-    if (!fileFinalThesis) return toast.warning('Please upload your final thesis PDF.');
-    if (!finalMilestone) return toast.error('Final submission milestone not found.');
-
-    setSubmittingFinal(true);
-    try {
-      const formData = new FormData();
-      formData.append('document', fileFinalThesis);
-
-      await axios.post(`${API_URL}/milestones/${finalMilestone._id}/submit`, formData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      toast.success('Final Ph.D. thesis uploaded successfully! Awaiting supervisor digital sign-off.');
-      setFileFinalThesis(null);
-      if (onSubmit) await onSubmit();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Error uploading final thesis.');
-    } finally {
-      setSubmittingFinal(false);
     }
   };
 
@@ -1272,63 +1246,227 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit }) => {
               )}
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
-          {finalMilestone && (
-            <div className="card">
-              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text, #0F172A)' }}>
-                <span>🚀</span> Final Thesis Package Submission
-              </h3>
-              
-              {finalMilestone.status === 'PENDING' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
-                  <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-                    Please compile and upload your absolute final, hard-bound equivalent Ph.D. thesis document here. Ensure that all corrections, suggestions, and feedback received from the expert panel during your offline defense colloquium are fully incorporated.
-                  </p>
+// ── Final Bound Thesis Submission & Evaluation Tab ──
+const FinalSubmissionTab = ({ thesis, milestones = [], onSubmit }) => {
+  const toast = useToast();
+  const finalMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
+  const [fileFinalThesis, setFileFinalThesis] = useState(null);
+  const [submittingFinal, setSubmittingFinal] = useState(false);
 
-                  <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
-                        Final Hard-Bound Equivalent Thesis (PDF format only) *
-                      </label>
-                      <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileFinalThesis(e.target.files[0])} />
-                    </div>
+  if (!finalMilestone) {
+    return (
+      <div className="card" style={{ padding: 24, textAlign: 'center', color: '#64748B' }}>
+        ⏳ Final bound thesis submission is locked. You must clear the Pre-Submission Seminar first.
+      </div>
+    );
+  }
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                      <button type="submit" className="btn-primary" disabled={submittingFinal} style={{ background: '#EA580C', padding: '10px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {submittingFinal ? 'Uploading Final Thesis...' : '🚀 Submit Final Thesis Package'}
-                      </button>
-                    </div>
-                  </form>
+  const handleFinalSubmit = async (e) => {
+    e.preventDefault();
+    if (!fileFinalThesis) return toast.warning('Please upload your final thesis PDF.');
+
+    setSubmittingFinal(true);
+    try {
+      const formData = new FormData();
+      formData.append('document', fileFinalThesis);
+
+      await axios.post(`${API_URL}/milestones/${finalMilestone._id}/submit`, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      toast.success('Final Ph.D. thesis uploaded successfully! Awaiting supervisor digital sign-off.');
+      setFileFinalThesis(null);
+      if (onSubmit) await onSubmit();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error uploading final thesis.');
+    } finally {
+      setSubmittingFinal(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div className="card" style={{ 
+        padding: 24, 
+        borderRadius: 16, 
+        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.03) 100%)', 
+        border: '1px solid rgba(59, 130, 246, 0.15)' 
+      }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: '1rem', fontWeight: 800, color: 'var(--color-text, #0F172A)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          📚 Final Submission and Defense
+        </h4>
+        <p style={{ color: 'var(--color-text-secondary, #475569)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
+          This tab displays all activities related to your final bound thesis submission, supervisor and HOD sign-offs, external examiner reviews, and public viva-voce defense.
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Step 1: Student Final Thesis Upload */}
+        <div className="card" style={{ borderLeft: '4px solid #3B82F6', padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 1: Student Final Thesis Upload</h4>
+            <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: finalMilestone.status === 'PENDING' ? '#FEF3C7' : '#D1FAE5', color: finalMilestone.status === 'PENDING' ? '#D97706' : '#065F46' }}>
+              {finalMilestone.status === 'PENDING' ? 'Awaiting Upload' : 'Uploaded'}
+            </span>
+          </div>
+
+          {(finalMilestone.status === 'PENDING' || finalMilestone.status === 'REVISION_REQUIRED') ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+              <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
+                Please compile and upload your absolute final, hard-bound equivalent Ph.D. thesis document here. Ensure that all corrections, suggestions, and feedback received from the expert panel during your offline defense colloquium are fully incorporated.
+              </p>
+              {finalMilestone.comments?.length > 0 && (
+                <div style={{ padding: 10, background: '#FEF2F2', borderLeft: '3px solid #EF4444', borderRadius: 6, fontSize: '0.8rem', color: '#991B1B' }}>
+                  <strong>Correction Required:</strong> "{finalMilestone.comments[finalMilestone.comments.length - 1].text}"
                 </div>
               )}
-
-              {['SUBMITTED', 'PENDING_HOD', 'APPROVED'].includes(finalMilestone.status) && (
-                <div style={{ textAlign: 'center', padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                  <div style={{ fontSize: '3.5rem' }}>{finalMilestone.status === 'APPROVED' ? '🎉' : '⏳'}</div>
-                  <h4 style={{ fontWeight: 700, color: 'var(--color-text, #0F172A)', margin: 0 }}>
-                    {finalMilestone.status === 'APPROVED' ? 'Thesis Digitally Signed-off & Approved' :
-                     finalMilestone.status === 'PENDING_HOD' ? 'Awaiting HOD Digital Sign-off' :
-                     'Awaiting Supervisor Digital Sign-off'}
-                  </h4>
-                  <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', maxWidth: 500, margin: 0, lineHeight: 1.5 }}>
-                    {finalMilestone.status === 'APPROVED' ? 'Your final bound thesis package has been approved and signed off by the supervisor and HOD. It has been submitted for evaluation.' :
-                     finalMilestone.status === 'PENDING_HOD' ? 'Your supervisor has signed off! It is now pending final approval at the HOD end.' :
-                     'Your final complete thesis document has been submitted and forwarded to your assigned Faculty Supervisor for digital signature and sign-off.'}
-                  </p>
-                  
-                  {finalMilestone.documentUrl && (
-                    <div style={{ marginTop: 8 }}>
-                      <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#EA580C', fontWeight: 600, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        📄 View Submitted Final Thesis
-                      </a>
-                    </div>
-                  )}
+              <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
+                    Final Hard-Bound Equivalent Thesis (PDF format only) *
+                  </label>
+                  <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileFinalThesis(e.target.files[0])} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                  <button type="submit" className="btn-primary" disabled={submittingFinal} style={{ background: '#EA580C', padding: '10px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {submittingFinal ? 'Uploading Final Thesis...' : '🚀 Submit Final Thesis Package'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem', marginTop: 8 }}>
+              <div><strong>Uploaded On:</strong> {new Date(finalMilestone.submittedAt || finalMilestone.updatedAt).toLocaleString()}</div>
+              {finalMilestone.documentUrl && (
+                <div style={{ marginTop: 4 }}>
+                  <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: '0.75rem', color: '#EA580C', borderColor: '#FDBA74' }}>
+                    📄 View Submitted Final Bound Thesis PDF
+                  </a>
                 </div>
               )}
             </div>
           )}
         </div>
-      )}
+
+        {/* Step 2: Supervisor Digital Sign-off */}
+        {finalMilestone.status !== 'PENDING' && (
+          <div className="card" style={{ borderLeft: `4px solid ${['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? '#10B981' : finalMilestone.status === 'REVISION_REQUIRED' ? '#EF4444' : '#3B82F6'}`, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 2: Supervisor Digital Sign-off</h4>
+              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: ['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? '#D1FAE5' : finalMilestone.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#DBEAFE', color: ['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? '#065F46' : finalMilestone.status === 'REVISION_REQUIRED' ? '#991B1B' : '#1E40AF' }}>
+                {['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? 'Approved' : finalMilestone.status === 'REVISION_REQUIRED' ? 'Corrections Requested' : 'Pending Approval'}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 6 }}>
+              {finalMilestone.comments?.filter(c => c.text?.toLowerCase().includes('supervisor')).map((c, i) => (
+                <div key={i} style={{ marginTop: 4 }}><strong>{c.authorName}:</strong> "{c.text}" <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>({new Date(c.createdAt).toLocaleDateString()})</span></div>
+              )) || 'Awaiting supervisor signature review.'}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: HOD Final Digital Sign-off */}
+        {finalMilestone.status !== 'PENDING' && ['PENDING_HOD', 'APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) && (
+          <div className="card" style={{ borderLeft: `4px solid ${['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? '#10B981' : '#3B82F6'}`, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 3: HOD Final Digital Sign-off</h4>
+              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: ['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? '#D1FAE5' : '#DBEAFE', color: ['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? '#065F46' : '#1E40AF' }}>
+                {['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? 'Approved' : 'Pending HOD Approval'}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 6 }}>
+              {['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) ? 'HOD digitally signed off final thesis package.' : 'Awaiting HOD final verification and clearance.'}
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Dispatch Tracking */}
+        {finalMilestone.status !== 'PENDING' && ['APPROVED', 'SUBMITTED', 'AWARDED'].includes(finalMilestone.status) && (
+          <div className="card" style={{ borderLeft: `4px solid ${thesis.dispatchDate ? '#10B981' : '#F59E0B'}`, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 4: External Evaluation Dispatch Tracking</h4>
+              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: thesis.dispatchDate ? '#D1FAE5' : '#FEF3C7', color: thesis.dispatchDate ? '#065F46' : '#92400E' }}>
+                {thesis.dispatchDate ? 'Dispatched' : 'Awaiting Dispatch'}
+              </span>
+            </div>
+            {thesis.dispatchDate ? (
+              <div style={{ fontSize: '0.82rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', marginTop: 8 }}>
+                <div><strong>Dispatch Date:</strong> {new Date(thesis.dispatchDate).toLocaleDateString()}</div>
+                <div><strong>Method:</strong> {thesis.dispatchMethod}</div>
+                <div style={{ gridColumn: 'span 2' }}><strong>Tracking Reference:</strong> {thesis.dispatchTrackingNumber || 'None'}</div>
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 6 }}>
+                Your signed-off thesis is being prepared for dispatch to external evaluators by HOD/Academic Branch.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 5: External Evaluation Results */}
+        {thesis.dispatchDate && (
+          <div className="card" style={{ borderLeft: `4px solid ${thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#10B981' : thesis.externalEvaluationStatus === 'FAILED' ? '#EF4444' : '#F59E0B'}`, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 5: External Examiner Evaluation Results</h4>
+              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#D1FAE5' : thesis.externalEvaluationStatus === 'FAILED' ? '#FEE2E2' : '#FEF3C7', color: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#065F46' : thesis.externalEvaluationStatus === 'FAILED' ? '#991B1B' : '#92400E' }}>
+                {thesis.externalEvaluationStatus === 'SUCCESSFUL' ? 'Successful' : thesis.externalEvaluationStatus === 'FAILED' ? 'Failed / Rejected' : 'Awaiting Reports'}
+              </span>
+            </div>
+            {thesis.externalEvaluationStatus !== 'PENDING' ? (
+              <div style={{ fontSize: '0.82rem', marginTop: 8 }}>
+                <div><strong>Evaluation Concluded:</strong> {thesis.externalEvaluationLoggedAt ? new Date(thesis.externalEvaluationLoggedAt).toLocaleString() : 'N/A'}</div>
+                {thesis.externalEvaluationRemarks && (
+                  <div style={{ marginTop: 6, background: '#F8FAFC', padding: 8, borderRadius: 6, border: '1px solid #E2E8F0', fontStyle: 'italic' }}>
+                    "{thesis.externalEvaluationRemarks}"
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 6 }}>
+                Awaiting evaluation reports from external examiners.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 6: Viva-Voce Oral Defense */}
+        {thesis.externalEvaluationStatus === 'SUCCESSFUL' && (
+          <div className="card" style={{ borderLeft: `4px solid ${thesis.vivaStatus === 'SUCCESSFUL' ? '#10B981' : thesis.vivaStatus === 'UNSUCCESSFUL' ? '#EF4444' : thesis.vivaStatus === 'SCHEDULED' ? '#3B82F6' : '#94A3B8'}`, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800 }}>Step 6: Viva-Voce oral defense colloquium</h4>
+              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: thesis.vivaStatus === 'SUCCESSFUL' ? '#D1FAE5' : thesis.vivaStatus === 'UNSUCCESSFUL' ? '#FEE2E2' : thesis.vivaStatus === 'SCHEDULED' ? '#DBEAFE' : '#E2E8F0', color: thesis.vivaStatus === 'SUCCESSFUL' ? '#065F46' : thesis.vivaStatus === 'UNSUCCESSFUL' ? '#991B1B' : thesis.vivaStatus === 'SCHEDULED' ? '#1E40AF' : '#475569' }}>
+                {thesis.vivaStatus === 'SUCCESSFUL' ? 'Passed / Successful' : thesis.vivaStatus === 'UNSUCCESSFUL' ? 'Corrections Required' : thesis.vivaStatus === 'SCHEDULED' ? 'Scheduled' : 'Awaiting Schedule'}
+              </span>
+            </div>
+            {thesis.vivaStatus !== 'NOT_SCHEDULED' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.82rem', marginTop: 8 }}>
+                <div><strong>Date:</strong> {thesis.vivaDate ? new Date(thesis.vivaDate).toLocaleDateString() : 'N/A'}</div>
+                <div><strong>Time:</strong> {thesis.vivaTime}</div>
+                <div><strong>Venue:</strong> {thesis.vivaVenue}</div>
+                <div><strong>Board Panel:</strong> {thesis.vivaPanel || 'None'}</div>
+                {thesis.vivaRemarks && (
+                  <div style={{ gridColumn: 'span 2', background: '#F8FAFC', padding: 8, borderRadius: 6, border: '1px solid #E2E8F0', marginTop: 6, fontStyle: 'italic' }}>
+                    "{thesis.vivaRemarks}"
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 6 }}>
+                Awaiting scheduling of the final viva defense.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -5545,6 +5683,7 @@ const StudentDashboard = () => {
     sixMonthReports: '6-Month Progress Reports',
     chapterDrafts: 'Chapter Drafts Workspace',
     preSubmission: 'Pre-Submission Package',
+    finalSubmission: 'Final Submission and Defense',
     changes: 'Request Changes', 
     certificates: 'Certificates', 
     milestones: 'Milestones', 
@@ -5585,6 +5724,7 @@ const StudentDashboard = () => {
       case 'rac': return <RACProgressTab thesis={thesis} />;
       case 'publications': return <ResearchOutputsTab thesis={thesis} />;
       case 'preSubmission': return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} />;
+      case 'finalSubmission': return <FinalSubmissionTab thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} />;
       case 'sixMonthReports': return <SixMonthReportsTab thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'chapterDrafts': return <ChapterDraftsTab thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'changes': return <RequestChangesTab thesis={thesis} />;
