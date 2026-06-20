@@ -72,6 +72,7 @@ const userSchema = new mongoose.Schema(
       thesisTitle: { type: String, default: '' },
       thesisSummary: { type: String, default: '' },
       thesisKeywords: { type: String, default: '' },
+      isPhD: { type: Boolean, default: true },
       degreeTypeId: { type: String, default: '' },
       degreeNameId: { type: String, default: '' },
       semesterId: { type: String, default: '' },

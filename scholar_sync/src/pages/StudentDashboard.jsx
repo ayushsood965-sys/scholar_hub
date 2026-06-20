@@ -3849,6 +3849,7 @@ const ProfileTab = () => {
   const [thesisSummary, setThesisSummary] = useState(user?.profile?.thesisSummary || '');
   const [thesisKeywords, setThesisKeywords] = useState(user?.profile?.thesisKeywords || '');
   const [academicSession, setAcademicSession] = useState(user?.profile?.academicSession || '');
+  const [degreeType, setDegreeType] = useState(user?.profile?.degreeType || 'Ph.D.');
   const [sessions, setSessions] = useState([]);
   // Class 10
   const [class10Roll, setClass10Roll] = useState(user?.profile?.qualifications?.class10?.rollNo || '');
@@ -3923,6 +3924,7 @@ const ProfileTab = () => {
       setThesisSummary(user.profile.thesisSummary || '');
       setThesisKeywords(user.profile.thesisKeywords || '');
       setAcademicSession(user.profile.academicSession || '');
+      setDegreeType(user.profile.degreeType || 'Ph.D.');
       const q = user.profile.qualifications;
       setClass10Roll(q?.class10?.rollNo || '');
       setClass10Board(q?.class10?.board || '');
@@ -4098,6 +4100,7 @@ const ProfileTab = () => {
       thesisSummary,
       thesisKeywords,
       academicSession,
+      degreeType,
       qualifications: {
         class10: {
           rollNo: class10Roll,
@@ -4365,7 +4368,7 @@ const ProfileTab = () => {
       !dob || !gender || !category || !fatherName || !motherName || !nationality || 
       !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
       !phoneNumber || !address || !areaOfInterest ||
-      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession
+      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession || !degreeType
     ) {
       toast.error('please fill in all the details before submitting the form.');
       return;
@@ -4641,6 +4644,14 @@ const ProfileTab = () => {
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Academic Session</span>
                     <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{academicSession || '—'}</strong>
                   </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree Type</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{degreeType || 'Ph.D.'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Department</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.department || '—'}</strong>
+                  </div>
                   <div style={{ gridColumn: 'span 2' }}>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Area of Research Interest</span>
                     <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{areaOfInterest || '—'}</strong>
@@ -4751,8 +4762,8 @@ const ProfileTab = () => {
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mode of Ph.D. <span style={{ color: '#EF4444' }}>*</span></label>
                     <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)} required>
                       <option value="">Select Mode...</option>
-                      <option value="Full-time">Full-time Regular</option>
-                      <option value="Part-time">Part-time / Sponsored</option>
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
                     </select>
                   </div>
                   <div>
@@ -4770,6 +4781,19 @@ const ProfileTab = () => {
                         <option key={s._id} value={s.sessionName}>{s.sessionName}</option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Degree Type <span style={{ color: '#EF4444' }}>*</span></label>
+                    <select className="form-input" value={degreeType} onChange={e => setDegreeType(e.target.value)} required style={{ height: '42px' }}>
+                      <option value="Ph.D.">Ph.D.</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Department</label>
+                    <input type="text" className="form-input" value={user?.department || ''} disabled style={{ background: '#F1F5F9', color: '#64748B' }} />
                   </div>
                 </div>
 

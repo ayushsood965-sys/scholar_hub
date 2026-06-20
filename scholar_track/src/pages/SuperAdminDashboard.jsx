@@ -11,6 +11,7 @@ import SemesterMasterTab from '../modules/admin/SemesterMasterTab';
 import DegreeDeptMappingTab from '../modules/admin/DegreeDeptMappingTab';
 import HolidayCalendarTab from '../modules/admin/HolidayCalendarTab';
 import DepartmentsTab from '../modules/admin/DepartmentsTab';
+import UserVerificationTab from '../modules/admin/UserVerificationTab';
 
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -22,6 +23,7 @@ const SuperAdminDashboard = () => {
 
   const titles = {
     overview: 'System Overview',
+    users: 'User Verification',
     sessions: 'Academic Sessions',
     degreeTypes: 'Degree Types',
     degreeNames: 'Degree Names',
@@ -35,6 +37,7 @@ const SuperAdminDashboard = () => {
   return (
     <DashboardShell role="SUPER_ADMIN" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]}>
       {activeTab === 'overview' && <OverviewTab />}
+      {activeTab === 'users' && <UserVerificationTab />}
       {activeTab === 'sessions' && <SessionMasterTab />}
       {activeTab === 'degreeTypes' && <DegreeTypeMasterTab />}
       {activeTab === 'degreeNames' && <DegreeNameMasterTab />}

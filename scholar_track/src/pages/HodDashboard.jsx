@@ -10,6 +10,7 @@ import CloneTimetableTab from '../modules/hod/CloneTimetableTab';
 import ApprovalsTab from '../modules/hod/ApprovalsTab';
 import DefaultersTab from '../modules/hod/DefaultersTab';
 import AuditTab from '../modules/hod/AuditTab';
+import StaffProfileTab from '../modules/profile/StaffProfileTab';
 
 const HodDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -28,10 +29,13 @@ const HodDashboard = () => {
     approvals: 'Leave & Correction Approvals',
     defaulters: 'Defaulters & Warnings',
     audit: 'Audit Trail',
+    profile: 'Profile',
   };
 
+  const isLocked = user && !user.isVerified;
+
   return (
-    <DashboardShell role="HOD" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]}>
+    <DashboardShell role="HOD" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]} isLocked={isLocked}>
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'policies' && <PolicyConfigTab />}
       {activeTab === 'leaveRules' && <LeaveRulesTab />}
@@ -40,6 +44,7 @@ const HodDashboard = () => {
       {activeTab === 'approvals' && <ApprovalsTab />}
       {activeTab === 'defaulters' && <DefaultersTab />}
       {activeTab === 'audit' && <AuditTab />}
+      {activeTab === 'profile' && <StaffProfileTab />}
     </DashboardShell>
   );
 };

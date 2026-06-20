@@ -1029,6 +1029,18 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Specialization</div>
                     <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.specialization || 'N/A'}</div>
                   </div>
+                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Academic Session</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.academicSession || 'N/A'}</div>
+                  </div>
+                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Degree Type</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.degreeType || 'Ph.D.'}</div>
+                  </div>
+                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Department</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{thesis.scholarId?.department || thesis.department || 'N/A'}</div>
+                  </div>
                 </div>
 
                 {/* Tentative Area of Research */}

@@ -146,7 +146,7 @@ router.post('/students', verifySeedPassword, async (req, res) => {
           degreeTypeId: mscForensic ? mscForensic.degreeTypeId : null,
           degreeNameId: mscForensic ? mscForensic._id : null,
           semesterId: sem1 ? sem1._id : null,
-          isPhD: false
+          isPhD: true
         }
       });
     }
@@ -165,7 +165,7 @@ router.post('/students', verifySeedPassword, async (req, res) => {
           degreeTypeId: btech ? btech.degreeTypeId : null,
           degreeNameId: btech ? btech._id : null,
           semesterId: sem1 ? sem1._id : null,
-          isPhD: false
+          isPhD: true
         }
       });
     }

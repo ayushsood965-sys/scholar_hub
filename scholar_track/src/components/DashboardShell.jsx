@@ -23,6 +23,7 @@ const roleNavConfig = {
     { key: 'mark', icon: ClipboardCheck, label: 'Mark Attendance' },
     { key: 'leaves', icon: CalendarRange, label: 'Leave Approvals' },
     { key: 'corrections', icon: FileCheck, label: 'Corrections Queue' },
+    { key: 'profile', icon: User, label: 'Profile' },
   ],
   HOD: [
     { key: 'overview', icon: Home, label: 'Department Overview' },
@@ -33,9 +34,11 @@ const roleNavConfig = {
     { key: 'approvals', icon: Gavel, label: 'Approvals' },
     { key: 'defaulters', icon: AlertTriangle, label: 'Defaulters' },
     { key: 'audit', icon: BookOpen, label: 'Audit Trail' },
+    { key: 'profile', icon: User, label: 'Profile' },
   ],
   SUPER_ADMIN: [
     { key: 'overview', icon: Home, label: 'System Overview' },
+    { key: 'users', icon: Users, label: 'User Verification' },
     { key: 'sessions', icon: CalendarRange, label: 'Academic Sessions' },
     { key: 'degreeTypes', icon: Settings, label: 'Degree Types' },
     { key: 'degreeNames', icon: Settings, label: 'Degree Names' },
@@ -47,11 +50,17 @@ const roleNavConfig = {
   ],
 };
 
-const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, children }) => {
+const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = false, children }) => {
   const { user, logout } = useContext(AuthContext);
   const { unreadCount } = useContext(NotificationContext);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (isLocked && activeTab !== 'profile') {
+      onTabChange('profile');
+    }
+  }, [isLocked, activeTab, onTabChange]);
 
   const navItems = roleNavConfig[role] ?? roleNavConfig.STUDENT;
 
@@ -102,19 +111,25 @@ const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, children })
 
         <nav className="sidebar-nav">
           <div className="sidebar-section-label">Navigation</div>
-          {navItems.map(item => (
-            <button
-              key={item.key}
-              className={`nav-item ${activeTab === item.key ? 'active' : ''}`}
-              onClick={() => {
-                onTabChange(item.key);
-                setSidebarOpen(false);
-              }}
-            >
-              <item.icon className="nav-icon" />
-              {item.label}
-            </button>
-          ))}
+          {navItems.map(item => {
+            const isDisabled = isLocked && item.key !== 'profile';
+            return (
+              <button
+                key={item.key}
+                className={`nav-item ${activeTab === item.key ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                onClick={() => {
+                  if (isDisabled) return;
+                  onTabChange(item.key);
+                  setSidebarOpen(false);
+                }}
+                style={isDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+              >
+                <item.icon className="nav-icon" />
+                {item.label}
+                {isDisabled && <span style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>🔒</span>}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="sidebar-bottom">

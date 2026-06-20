@@ -6,6 +6,7 @@ import OverviewTab from '../modules/faculty/OverviewTab';
 import MarkAttendanceTab from '../modules/faculty/MarkAttendanceTab';
 import LeaveApprovalsTab from '../modules/faculty/LeaveApprovalsTab';
 import CorrectionsTab from '../modules/faculty/CorrectionsTab';
+import StaffProfileTab from '../modules/profile/StaffProfileTab';
 
 const FacultyDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -20,14 +21,18 @@ const FacultyDashboard = () => {
     mark: 'Mark Attendance',
     leaves: 'Leave Approvals',
     corrections: 'Corrections Queue',
+    profile: 'Profile',
   };
 
+  const isLocked = user && !user.isVerified;
+
   return (
-    <DashboardShell role="FACULTY" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]}>
+    <DashboardShell role="FACULTY" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]} isLocked={isLocked}>
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'mark' && <MarkAttendanceTab />}
       {activeTab === 'leaves' && <LeaveApprovalsTab />}
       {activeTab === 'corrections' && <CorrectionsTab />}
+      {activeTab === 'profile' && <StaffProfileTab />}
     </DashboardShell>
   );
 };

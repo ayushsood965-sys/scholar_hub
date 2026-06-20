@@ -11,6 +11,7 @@ const connectDB = async () => {
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     await backfillSHNos();
+    await backfillPhdStatus();
   } catch (error) {
     console.log(`⚠️ Connection to primary MongoDB failed: ${error.message}`);
     console.log('🔄 Spawning an in-memory MongoDB server as fallback...');
@@ -25,6 +26,7 @@ const connectDB = async () => {
       const conn = await mongoose.connect(mongoUri);
       console.log(`🚀 In-Memory MongoDB Started and Connected: ${mongoUri}`);
       await backfillSHNos();
+      await backfillPhdStatus();
     } catch (innerError) {
       console.error(`❌ Fallback in-memory MongoDB failed: ${innerError.message}`);
       process.exit(1);
@@ -54,6 +56,21 @@ const backfillSHNos = async () => {
     }
   } catch (err) {
     console.error('Error backfilling SH no.:', err);
+  }
+};
+
+const backfillPhdStatus = async () => {
+  try {
+    const User = require('../models/User');
+    const result = await User.updateMany(
+      { role: 'STUDENT', $or: [{ 'profile.isPhD': { $exists: false } }, { 'profile.isPhD': false }] },
+      { $set: { 'profile.isPhD': true } }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`[Migration] Backfilled isPhD = true for ${result.modifiedCount} students.`);
+    }
+  } catch (err) {
+    console.error('Error backfilling isPhD status:', err);
   }
 };
 
