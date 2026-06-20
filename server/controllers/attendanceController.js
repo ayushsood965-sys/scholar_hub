@@ -16,6 +16,7 @@ const DegreeTypeMaster = require('../models/attendance/DegreeTypeMaster');
 const DegreeNameMaster = require('../models/attendance/DegreeNameMaster');
 const SemesterMaster = require('../models/attendance/SemesterMaster');
 const DegreeDepartmentMapping = require('../models/attendance/DegreeDepartmentMapping');
+const DegreeTypeMapping = require('../models/attendance/DegreeTypeMapping');
 
 const { calculateStudentStats } = require('../utils/attendanceCalculator');
 
@@ -106,6 +107,27 @@ exports.createDegreeDeptMapping = async (req, res) => {
 exports.deleteDegreeDeptMapping = async (req, res) => {
   try {
     const data = await DegreeDepartmentMapping.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    res.status(200).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+exports.getDegreeTypeMappings = async (req, res) => {
+  try {
+    const data = await DegreeTypeMapping.find({ isActive: true })
+      .populate('degreeNameId')
+      .populate('degreeTypeId');
+    res.status(200).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.createDegreeTypeMapping = async (req, res) => {
+  try {
+    const data = await DegreeTypeMapping.create(req.body);
+    res.status(201).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.deleteDegreeTypeMapping = async (req, res) => {
+  try {
+    const data = await DegreeTypeMapping.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };

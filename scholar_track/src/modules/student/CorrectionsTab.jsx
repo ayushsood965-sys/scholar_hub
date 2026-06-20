@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { Trash2, X, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CorrectionsTab = () => {
   const [corrections, setCorrections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   
   // Note: For a real app, you'd probably load the student's recent absences to select from.
   // Here we assume the student knows the record Date and Subject, or we can fetch a list of recent 'ABSENT' records.
@@ -53,7 +54,7 @@ const CorrectionsTab = () => {
     try {
       await api.post('/attendance/corrections', formData);
       toast.success('Correction requested successfully');
-      setModalOpen(false);
+      setFormOpen(false);
       setFormData({ ...formData, reason: '' });
       fetchCorrections();
     } catch (err) {
@@ -85,46 +86,72 @@ const CorrectionsTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Correction Requests</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Request fixes for inaccurately marked absences.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>Request Correction</button>
+        {!formOpen && (
+          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+            <Plus size={16} /> Request Correction
+          </button>
+        )}
       </div>
 
-      <DataTable columns={columns} data={corrections} />
+      <AnimatePresence>
+        {formOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="inline-form-card">
+              <div className="inline-form-header">
+                <span className="inline-form-title">
+                  <Plus size={18} /> Request Attendance Correction
+                </span>
+                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Select Absent Record</label>
+                    <select className="form-input" required value={formData.recordId} onChange={e => setFormData({...formData, recordId: e.target.value})}>
+                      <option value="">Select a recent absence...</option>
+                      {recentAbsences.map(r => {
+                        const classesStr = r.classes && r.classes.length > 0
+                          ? r.classes.map(c => c.subjectName).join(', ')
+                          : r.courseName || 'Daily Check-In';
+                        return (
+                          <option key={r._id} value={r._id}>
+                            {new Date(r.date).toLocaleDateString()} - {classesStr}
+                          </option>
+                        );
+                      })}
+                      {recentAbsences.length === 0 && <option value="" disabled>No eligible records found</option>}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Requested Status</label>
+                    <select className="form-input" value={formData.requestedStatus} onChange={e => setFormData({...formData, requestedStatus: e.target.value})}>
+                      <option value="PRESENT">Present</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Reason</label>
+                  <textarea className="form-input" required value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} rows={3} placeholder="Explain why this should be corrected..." />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={recentAbsences.length === 0}>Submit</button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Request Attendance Correction">
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
-          <div className="form-group">
-            <label className="form-label">Select Absent Record</label>
-            <select className="form-input" required value={formData.recordId} onChange={e => setFormData({...formData, recordId: e.target.value})}>
-              <option value="">Select a recent absence...</option>
-              {recentAbsences.map(r => {
-                const classesStr = r.classes && r.classes.length > 0
-                  ? r.classes.map(c => c.subjectName).join(', ')
-                  : r.courseName || 'Daily Check-In';
-                return (
-                  <option key={r._id} value={r._id}>
-                    {new Date(r.date).toLocaleDateString()} - {classesStr}
-                  </option>
-                );
-              })}
-              {recentAbsences.length === 0 && <option value="" disabled>No eligible records found</option>}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Requested Status</label>
-            <select className="form-input" value={formData.requestedStatus} onChange={e => setFormData({...formData, requestedStatus: e.target.value})}>
-              <option value="PRESENT">Present</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Reason</label>
-            <textarea className="form-input" required value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} rows={3} placeholder="Explain why this should be corrected..." />
-          </div>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={recentAbsences.length === 0}>Submit</button>
-          </div>
-        </form>
-      </Modal>
+      <DataTable columns={columns} data={corrections} />
     </div>
   );
 };

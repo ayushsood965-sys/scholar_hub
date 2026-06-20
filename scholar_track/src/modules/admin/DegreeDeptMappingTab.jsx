@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DegreeDeptMappingTab = () => {
   const [data, setData] = useState([]);
   const [degreeNames, setDegreeNames] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({ degreeNameId: '', departmentId: '' });
   const api = useApi();
   const toast = useToast();
@@ -43,7 +43,7 @@ const DegreeDeptMappingTab = () => {
     try {
       await api.post('/attendance/masters/degree-dept-mappings', formData);
       toast.success('Mapping created');
-      setModalOpen(false);
+      setFormOpen(false);
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error creating mapping');
@@ -84,33 +84,59 @@ const DegreeDeptMappingTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Degree-Department Mappings</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Assign degrees to respective departments.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>Add Mapping</button>
+        {!formOpen && (
+          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+            <Plus size={16} /> Add Mapping
+          </button>
+        )}
       </div>
 
-      <DataTable columns={columns} data={data} />
+      <AnimatePresence>
+        {formOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="inline-form-card">
+              <div className="inline-form-header">
+                <span className="inline-form-title">
+                  <Plus size={18} /> Add Degree-Department Mapping
+                </span>
+                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Degree Name</label>
+                    <select className="form-input" required value={formData.degreeNameId} onChange={e => setFormData({...formData, degreeNameId: e.target.value})}>
+                      <option value="">Select Degree...</option>
+                      {degreeNames.map(d => <option key={d._id} value={d._id}>{d.name} ({d.degreeTypeId?.code || ''})</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Department</label>
+                    <select className="form-input" required value={formData.departmentId} onChange={e => setFormData({...formData, departmentId: e.target.value})}>
+                      <option value="">Select Department...</option>
+                      {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Save Mapping</button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Mapping">
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Degree Name</label>
-            <select className="form-input" required value={formData.degreeNameId} onChange={e => setFormData({...formData, degreeNameId: e.target.value})}>
-              <option value="">Select Degree...</option>
-              {degreeNames.map(d => <option key={d._id} value={d._id}>{d.name} ({d.degreeTypeId?.code || ''})</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Department</label>
-            <select className="form-input" required value={formData.departmentId} onChange={e => setFormData({...formData, departmentId: e.target.value})}>
-              <option value="">Select Department...</option>
-              {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-            </select>
-          </div>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save</button>
-          </div>
-        </form>
-      </Modal>
+      <DataTable columns={columns} data={data} />
     </div>
   );
 };

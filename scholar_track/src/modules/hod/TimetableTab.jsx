@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Trash2, Plus } from 'lucide-react';
-import Modal from '../../components/ui/Modal';
+import { Trash2, Plus, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TimetableTab = () => {
   const [sessions, setSessions] = useState([]);
@@ -17,7 +17,7 @@ const TimetableTab = () => {
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({ dayOfWeek: 'Monday', startTime: '09:00', endTime: '10:00', subjectCode: '', subjectName: '', facultyId: '' });
 
   const api = useApi();
@@ -74,7 +74,7 @@ const TimetableTab = () => {
     try {
       await api.post('/attendance/timetables', { ...formData, ...filters });
       toast.success('Slot added');
-      setModalOpen(false);
+      setFormOpen(false);
       setFormData({ ...formData, subjectCode: '', subjectName: '' });
       fetchTimetable();
     } catch (err) {
@@ -153,10 +153,72 @@ const TimetableTab = () => {
         <div>
           <div className="flex justify-between items-center mb-lg">
             <h3 style={{ color: 'var(--text-primary)' }}>Weekly Schedule</h3>
-            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-              <Plus size={18} style={{ marginRight: '8px' }} /> Add Slot
-            </button>
+            {!formOpen && (
+              <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+                <Plus size={18} /> Add Slot
+              </button>
+            )}
           </div>
+
+          <AnimatePresence>
+            {formOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div className="inline-form-card">
+                  <div className="inline-form-header">
+                    <span className="inline-form-title">
+                      <Plus size={18} /> Add Timetable Slot
+                    </span>
+                    <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <form onSubmit={handleSubmit}>
+                    <div className="grid-3">
+                      <div className="form-group">
+                        <label className="form-label">Day of Week</label>
+                        <select className="form-input" required value={formData.dayOfWeek} onChange={e => setFormData({...formData, dayOfWeek: e.target.value})}>
+                          {days.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Start Time (HH:MM)</label>
+                        <input type="time" className="form-input" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">End Time (HH:MM)</label>
+                        <input type="time" className="form-input" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Subject Code</label>
+                        <input className="form-input" required value={formData.subjectCode} onChange={e => setFormData({...formData, subjectCode: e.target.value})} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Subject Name</label>
+                        <input className="form-input" required value={formData.subjectName} onChange={e => setFormData({...formData, subjectName: e.target.value})} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Faculty</label>
+                        <select className="form-input" required value={formData.facultyId} onChange={e => setFormData({...formData, facultyId: e.target.value})}>
+                          <option value="">Select Faculty...</option>
+                          {faculties.map(f => <option key={f._id} value={f._id}>{f.name} ({f.department})</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
+                      <button type="submit" className="btn btn-primary">Save Slot</button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="timetable-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
             {days.map(day => {
@@ -187,44 +249,6 @@ const TimetableTab = () => {
           </div>
         </div>
       )}
-
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Timetable Slot">
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">Day of Week</label>
-            <select className="form-input" required value={formData.dayOfWeek} onChange={e => setFormData({...formData, dayOfWeek: e.target.value})}>
-              {days.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Start Time (HH:MM)</label>
-            <input type="time" className="form-input" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">End Time (HH:MM)</label>
-            <input type="time" className="form-input" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Subject Code</label>
-            <input className="form-input" required value={formData.subjectCode} onChange={e => setFormData({...formData, subjectCode: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Subject Name</label>
-            <input className="form-input" required value={formData.subjectName} onChange={e => setFormData({...formData, subjectName: e.target.value})} />
-          </div>
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">Faculty</label>
-            <select className="form-input" required value={formData.facultyId} onChange={e => setFormData({...formData, facultyId: e.target.value})}>
-              <option value="">Select Faculty...</option>
-              {faculties.map(f => <option key={f._id} value={f._id}>{f.name} ({f.department})</option>)}
-            </select>
-          </div>
-          <div style={{ gridColumn: 'span 2', display: 'flex', gap: '12px', marginTop: '16px' }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Slot</button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 };

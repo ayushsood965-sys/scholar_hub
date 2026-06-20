@@ -39,6 +39,7 @@ const roleNavConfig = {
     { key: 'sessions', icon: CalendarRange, label: 'Academic Sessions' },
     { key: 'degreeTypes', icon: Settings, label: 'Degree Types' },
     { key: 'degreeNames', icon: Settings, label: 'Degree Names' },
+    { key: 'degreeTypeMap', icon: Shield, label: 'Degree-Type Map' },
     { key: 'semesters', icon: Settings, label: 'Semesters' },
     { key: 'degreeDeptMap', icon: Building, label: 'Degree-Dept Map' },
     { key: 'holidays', icon: Calendar, label: 'Holiday Calendar' },

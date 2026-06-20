@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DegreeNameMasterTab = () => {
   const [data, setData] = useState([]);
   const [degreeTypes, setDegreeTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({ degreeTypeId: '', name: '', code: '' });
   const api = useApi();
   const toast = useToast();
@@ -40,7 +40,7 @@ const DegreeNameMasterTab = () => {
     try {
       await api.post('/attendance/masters/degree-names', formData);
       toast.success('Degree Name created');
-      setModalOpen(false);
+      setFormOpen(false);
       setFormData({ ...formData, name: '', code: '' });
       fetchData();
     } catch (err) {
@@ -82,34 +82,60 @@ const DegreeNameMasterTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Degree Names</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>e.g. M.Sc. Computer Science, B.Tech ECE</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>Add Degree Name</button>
+        {!formOpen && (
+          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+            <Plus size={16} /> Add Degree Name
+          </button>
+        )}
       </div>
 
-      <DataTable columns={columns} data={data} />
+      <AnimatePresence>
+        {formOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="inline-form-card">
+              <div className="inline-form-header">
+                <span className="inline-form-title">
+                  <Plus size={18} /> Add Degree Name
+                </span>
+                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="grid-3">
+                  <div className="form-group">
+                    <label className="form-label">Degree Type</label>
+                    <select className="form-input" required value={formData.degreeTypeId} onChange={e => setFormData({...formData, degreeTypeId: e.target.value})}>
+                      <option value="">Select Type...</option>
+                      {degreeTypes.map(t => <option key={t._id} value={t._id}>{t.name} ({t.code})</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Name (e.g. B.Tech Computer Science)</label>
+                    <input className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Code (e.g. BTECH-CS)</label>
+                    <input className="form-input" required value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Save Degree Name</button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Degree Name">
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Degree Type</label>
-            <select className="form-input" required value={formData.degreeTypeId} onChange={e => setFormData({...formData, degreeTypeId: e.target.value})}>
-              <option value="">Select Type...</option>
-              {degreeTypes.map(t => <option key={t._id} value={t._id}>{t.name} ({t.code})</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Name (e.g. B.Tech Computer Science)</label>
-            <input className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Code (e.g. BTECH-CS)</label>
-            <input className="form-input" required value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} />
-          </div>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save</button>
-          </div>
-        </form>
-      </Modal>
+      <DataTable columns={columns} data={data} />
     </div>
   );
 };

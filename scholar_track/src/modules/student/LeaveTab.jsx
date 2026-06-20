@@ -2,16 +2,15 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Plus, FileText, Upload, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, X, FileText, Upload, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const LeaveTab = () => {
   const [leaves, setLeaves] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -96,7 +95,7 @@ const LeaveTab = () => {
         documentUrl: formData.documentUrl
       });
       toast.success('Leave requested successfully');
-      setModalOpen(false);
+      setFormOpen(false);
       setFormData({
         leaveTypeId: leaveTypes[0]?._id || '',
         startDate: '',
@@ -146,98 +145,124 @@ const LeaveTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Leave Applications</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Submit leave requests and monitor recommendation/approval status.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-          <Plus size={18} style={{ marginRight: '8px' }} /> Apply Leave
-        </button>
+        {!formOpen && (
+          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+            <Plus size={18} /> Apply Leave
+          </button>
+        )}
       </div>
 
-      <DataTable columns={columns} data={leaves} />
-
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Apply for Leave">
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">Leave Type</label>
-            <select 
-              className="form-input" 
-              required 
-              value={formData.leaveTypeId} 
-              onChange={e => setFormData({...formData, leaveTypeId: e.target.value})}
-            >
-              <option value="">Select Leave Type...</option>
-              {leaveTypes.map(t => <option key={t._id} value={t._id}>{t.leaveName} ({t.leaveCode})</option>)}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Start Date</label>
-            <input 
-              type="date" 
-              className="form-input" 
-              required 
-              value={formData.startDate} 
-              onChange={e => setFormData({...formData, startDate: e.target.value})} 
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Number of Days</label>
-            <input 
-              type="number" 
-              min="1" 
-              className="form-input" 
-              required 
-              value={formData.totalDays} 
-              onChange={e => setFormData({...formData, totalDays: Math.max(1, parseInt(e.target.value, 10) || 1)})} 
-            />
-          </div>
-
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">End Date (Auto-Calculated)</label>
-            <div className="form-input" style={{ background: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-              <Calendar size={16} />
-              {formData.endDate ? new Date(formData.endDate).toLocaleDateString() : 'Select Start Date & Days'}
-            </div>
-          </div>
-
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">Reason</label>
-            <textarea 
-              className="form-input" 
-              required 
-              value={formData.reason} 
-              onChange={e => setFormData({...formData, reason: e.target.value})} 
-              rows={3} 
-              placeholder="Provide a detailed explanation for your leave..."
-            />
-          </div>
-
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">Supporting Document (Optional)</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', margin: 0 }}>
-                <Upload size={16} />
-                {uploading ? 'Uploading...' : 'Choose File'}
-                <input 
-                  type="file" 
-                  disabled={uploading} 
-                  onChange={handleFileUpload} 
-                  style={{ display: 'none' }} 
-                />
-              </label>
-              {formData.documentUrl && (
-                <span style={{ color: '#10B981', fontSize: '0.85rem', fontWeight: '500' }}>
-                  ✓ Document attached
+      <AnimatePresence>
+        {formOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="inline-form-card">
+              <div className="inline-form-header">
+                <span className="inline-form-title">
+                  <Plus size={18} /> Apply for Leave
                 </span>
-              )}
-            </div>
-          </div>
+                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="grid-3">
+                  <div className="form-group">
+                    <label className="form-label">Leave Type</label>
+                    <select 
+                      className="form-input" 
+                      required 
+                      value={formData.leaveTypeId} 
+                      onChange={e => setFormData({...formData, leaveTypeId: e.target.value})}
+                    >
+                      <option value="">Select Leave Type...</option>
+                      {leaveTypes.map(t => <option key={t._id} value={t._id}>{t.leaveName} ({t.leaveCode})</option>)}
+                    </select>
+                  </div>
 
-          <div style={{ gridColumn: 'span 2', display: 'flex', gap: '12px', marginTop: '16px' }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={uploading}>Submit Application</button>
-          </div>
-        </form>
-      </Modal>
+                  <div className="form-group">
+                    <label className="form-label">Start Date</label>
+                    <input 
+                      type="date" 
+                      className="form-input" 
+                      required 
+                      value={formData.startDate} 
+                      onChange={e => setFormData({...formData, startDate: e.target.value})} 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Number of Days</label>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      className="form-input" 
+                      required 
+                      value={formData.totalDays} 
+                      onChange={e => setFormData({...formData, totalDays: Math.max(1, parseInt(e.target.value, 10) || 1)})} 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">End Date (Auto-Calculated)</label>
+                    <div className="form-input" style={{ background: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                      <Calendar size={16} />
+                      {formData.endDate ? new Date(formData.endDate).toLocaleDateString() : 'Select Start Date & Days'}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Supporting Document (Optional)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '42px' }}>
+                      <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', margin: 0 }}>
+                        <Upload size={16} />
+                        {uploading ? 'Uploading...' : 'Choose File'}
+                        <input 
+                          type="file" 
+                          disabled={uploading} 
+                          onChange={handleFileUpload} 
+                          style={{ display: 'none' }} 
+                        />
+                      </label>
+                      {formData.documentUrl && (
+                        <span style={{ color: '#10B981', fontSize: '0.85rem', fontWeight: '500' }}>
+                          ✓ Document attached
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Reason</label>
+                  <textarea 
+                    className="form-input" 
+                    required 
+                    value={formData.reason} 
+                    onChange={e => setFormData({...formData, reason: e.target.value})} 
+                    rows={3} 
+                    placeholder="Provide a detailed explanation for your leave..."
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={uploading}>Submit Application</button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <DataTable columns={columns} data={leaves} />
     </div>
   );
 };

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Edit2 } from 'lucide-react';
+import { Edit2, X, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PolicyConfigTab = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     programType: 'PG', minRequiredPercentage: 75, warningThreshold: 80,
     maxCondonationPercentage: 10, editLockHours: 48,
@@ -37,7 +37,7 @@ const PolicyConfigTab = () => {
     try {
       await api.post('/attendance/policies', formData);
       toast.success('Policy updated successfully');
-      setModalOpen(false);
+      setFormOpen(false);
       fetchData();
     } catch (err) {
       toast.error('Error updating policy');
@@ -46,7 +46,7 @@ const PolicyConfigTab = () => {
 
   const handleEdit = (policy) => {
     setFormData(policy);
-    setModalOpen(true);
+    setFormOpen(true);
   };
 
   const columns = [
@@ -58,7 +58,7 @@ const PolicyConfigTab = () => {
       header: 'Actions',
       accessor: (row) => (
         <button className="btn btn-sm btn-outline" onClick={() => handleEdit(row)}>
-          <Edit2 size={16} /> Edit
+          <Edit2 size={16} style={{ marginRight: '4px' }} /> Edit
         </button>
       )
     }
@@ -73,57 +73,83 @@ const PolicyConfigTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Policy Configuration</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Configure attendance policies per program type.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => {
-          setFormData({
-            programType: 'PG', minRequiredPercentage: 75, warningThreshold: 80,
-            maxCondonationPercentage: 10, editLockHours: 48,
-            allowHalfDay: true, allowMedicalLeave: true, allowDutyLeave: true,
-            allowCorrection: true, correctionWindowDays: 14
-          });
-          setModalOpen(true);
-        }}>Add/Update Policy</button>
+        {!formOpen && (
+          <button className="btn btn-primary" onClick={() => {
+            setFormData({
+              programType: 'PG', minRequiredPercentage: 75, warningThreshold: 80,
+              maxCondonationPercentage: 10, editLockHours: 48,
+              allowHalfDay: true, allowMedicalLeave: true, allowDutyLeave: true,
+              allowCorrection: true, correctionWindowDays: 14
+            });
+            setFormOpen(true);
+          }}>
+            <Plus size={16} /> Add/Update Policy
+          </button>
+        )}
       </div>
 
-      <DataTable columns={columns} data={data} />
+      <AnimatePresence>
+        {formOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="inline-form-card">
+              <div className="inline-form-header">
+                <span className="inline-form-title">
+                  <Plus size={18} /> Configure Policy
+                </span>
+                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="grid-3">
+                  <div className="form-group">
+                    <label className="form-label">Program Type</label>
+                    <select className="form-input" value={formData.programType} onChange={e => setFormData({...formData, programType: e.target.value})}>
+                      <option value="PhD">PhD</option>
+                      <option value="PG">PG</option>
+                      <option value="UG">UG</option>
+                      <option value="Diploma">Diploma</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Min. Required %</label>
+                    <input type="number" className="form-input" required value={formData.minRequiredPercentage} onChange={e => setFormData({...formData, minRequiredPercentage: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Warning Threshold %</label>
+                    <input type="number" className="form-input" required value={formData.warningThreshold} onChange={e => setFormData({...formData, warningThreshold: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Max Condonation %</label>
+                    <input type="number" className="form-input" required value={formData.maxCondonationPercentage} onChange={e => setFormData({...formData, maxCondonationPercentage: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Faculty Edit Lock (Hours)</label>
+                    <input type="number" className="form-input" required value={formData.editLockHours} onChange={e => setFormData({...formData, editLockHours: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Correction Window (Days)</label>
+                    <input type="number" className="form-input" required value={formData.correctionWindowDays} onChange={e => setFormData({...formData, correctionWindowDays: e.target.value})} />
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Save Policy</button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Configure Policy">
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">Program Type</label>
-            <select className="form-input" value={formData.programType} onChange={e => setFormData({...formData, programType: e.target.value})}>
-              <option value="PhD">PhD</option>
-              <option value="PG">PG</option>
-              <option value="UG">UG</option>
-              <option value="Diploma">Diploma</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Min. Required %</label>
-            <input type="number" className="form-input" required value={formData.minRequiredPercentage} onChange={e => setFormData({...formData, minRequiredPercentage: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Warning Threshold %</label>
-            <input type="number" className="form-input" required value={formData.warningThreshold} onChange={e => setFormData({...formData, warningThreshold: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Max Condonation %</label>
-            <input type="number" className="form-input" required value={formData.maxCondonationPercentage} onChange={e => setFormData({...formData, maxCondonationPercentage: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Faculty Edit Lock (Hours)</label>
-            <input type="number" className="form-input" required value={formData.editLockHours} onChange={e => setFormData({...formData, editLockHours: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Correction Window (Days)</label>
-            <input type="number" className="form-input" required value={formData.correctionWindowDays} onChange={e => setFormData({...formData, correctionWindowDays: e.target.value})} />
-          </div>
-          
-          <div style={{ gridColumn: 'span 2', display: 'flex', gap: '12px', marginTop: '16px' }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save</button>
-          </div>
-        </form>
-      </Modal>
+      <DataTable columns={columns} data={data} />
     </div>
   );
 };

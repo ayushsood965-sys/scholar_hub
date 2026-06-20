@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { X, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SessionMasterTab = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({ sessionName: '', startDate: '', endDate: '' });
   const api = useApi();
   const toast = useToast();
@@ -31,7 +32,7 @@ const SessionMasterTab = () => {
     try {
       await api.post('/attendance/sessions', formData);
       toast.success('Session created successfully');
-      setModalOpen(false);
+      setFormOpen(false);
       setFormData({ sessionName: '', startDate: '', endDate: '' });
       fetchSessions();
     } catch (err) {
@@ -80,31 +81,57 @@ const SessionMasterTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Academic Sessions</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Manage university-wide academic sessions.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>Create Session</button>
+        {!formOpen && (
+          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+            <Plus size={16} /> Create Session
+          </button>
+        )}
       </div>
 
-      <DataTable columns={columns} data={sessions} />
+      <AnimatePresence>
+        {formOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="inline-form-card">
+              <div className="inline-form-header">
+                <span className="inline-form-title">
+                  <Plus size={18} /> Create New Session
+                </span>
+                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="grid-3">
+                  <div className="form-group">
+                    <label className="form-label">Session Name (e.g. 2025-26 Even)</label>
+                    <input className="form-input" required value={formData.sessionName} onChange={e => setFormData({...formData, sessionName: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Start Date</label>
+                    <input type="date" className="form-input" required value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">End Date</label>
+                    <input type="date" className="form-input" required value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Save Session</button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create New Session">
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Session Name (e.g. 2025-26 Even)</label>
-            <input className="form-input" required value={formData.sessionName} onChange={e => setFormData({...formData, sessionName: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Start Date</label>
-            <input type="date" className="form-input" required value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">End Date</label>
-            <input type="date" className="form-input" required value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
-          </div>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save</button>
-          </div>
-        </form>
-      </Modal>
+      <DataTable columns={columns} data={sessions} />
     </div>
   );
 };
