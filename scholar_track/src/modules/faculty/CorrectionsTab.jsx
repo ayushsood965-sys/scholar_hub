@@ -43,11 +43,11 @@ const CorrectionsTab = () => {
       header: 'Actions',
       accessor: (row) => (
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-sm" style={{ background: '#10B981', color: '#fff' }} onClick={() => handleAction(row._id, 'APPROVE')}>
-            <CheckCircle size={16} />
+          <button className="btn btn-sm btn-outline" style={{ borderColor: '#10B981', color: '#10B981', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => handleAction(row._id, 'RECOMMEND')}>
+            <CheckCircle size={14} /> Recommend
           </button>
-          <button className="btn btn-sm" style={{ background: '#EF4444', color: '#fff' }} onClick={() => handleAction(row._id, 'REJECT')}>
-            <XCircle size={16} />
+          <button className="btn btn-sm btn-outline" style={{ borderColor: '#EF4444', color: '#EF4444', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => handleAction(row._id, 'REJECT')}>
+            <XCircle size={14} /> Reject
           </button>
         </div>
       )

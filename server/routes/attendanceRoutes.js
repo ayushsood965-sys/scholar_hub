@@ -3,6 +3,19 @@ const router = express.Router();
 const attendanceController = require('../controllers/attendanceController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const requireDepartment = require('../middleware/requireDepartment');
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+const upload = multer({ storage });
+
 
 // ==========================================
 // 1. MASTER ROUTES (SUPER ADMIN)
@@ -89,5 +102,17 @@ router.get('/dashboard/student', protect, authorize('STUDENT'), requireDepartmen
 router.get('/dashboard/faculty', protect, authorize('FACULTY'), requireDepartment, attendanceController.getFacultyDashboardStats);
 router.get('/dashboard/hod', protect, authorize('HOD'), requireDepartment, attendanceController.getHodDashboardStats);
 router.get('/dashboard/super', protect, authorize('SUPER_ADMIN'), attendanceController.getSuperAdminDashboardStats);
+
+// Student absences for corrections selection
+router.get('/my-absences', protect, authorize('STUDENT'), attendanceController.getMyAbsences);
+
+// File Upload endpoint
+router.post('/upload', protect, upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.status(200).json({ fileUrl });
+});
 
 module.exports = router;

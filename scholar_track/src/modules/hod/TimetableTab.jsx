@@ -48,8 +48,11 @@ const TimetableTab = () => {
 
   useEffect(() => { fetchMasterData(); }, []);
 
+  const selectedType = degreeTypes.find(d => d._id === filters.degreeTypeId);
+  const isPhD = selectedType?.code?.toUpperCase() === 'PHD';
+
   const fetchTimetable = async () => {
-    if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || !filters.semesterId) return;
+    if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || (!isPhD && !filters.semesterId)) return;
     setLoading(true);
     try {
       const res = await api.get('/attendance/timetables', { params: filters });
@@ -65,7 +68,7 @@ const TimetableTab = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || !filters.semesterId) {
+    if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || (!isPhD && !filters.semesterId)) {
       return toast.error('Please select all filters first');
     }
     try {
@@ -112,7 +115,7 @@ const TimetableTab = () => {
           {sessions.map(s => <option key={s._id} value={s._id}>{s.sessionName}</option>)}
         </select>
         <select className="form-input" value={filters.degreeTypeId} onChange={e => {
-          setFilters({...filters, degreeTypeId: e.target.value, degreeNameId: ''});
+          setFilters({...filters, degreeTypeId: e.target.value, degreeNameId: '', semesterId: ''});
         }}>
           <option value="">Select Degree Type...</option>
           {degreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
@@ -121,15 +124,28 @@ const TimetableTab = () => {
           <option value="">Select Degree...</option>
           {availableDegreeNames.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
         </select>
-        <select className="form-input" value={filters.semesterId} onChange={e => setFilters({...filters, semesterId: e.target.value})}>
-          <option value="">Select Semester...</option>
-          {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+        <select 
+          className="form-input" 
+          value={filters.semesterId} 
+          onChange={e => setFilters({...filters, semesterId: e.target.value})}
+          disabled={!filters.degreeTypeId || isPhD}
+          style={{ opacity: isPhD ? 0.3 : 1 }}
+        >
+          <option value="">{isPhD ? 'Semester (N/A)' : 'Select Semester...'}</option>
+          {!isPhD && semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
         </select>
       </div>
 
-      {!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || !filters.semesterId ? (
+      {!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || (!isPhD && !filters.semesterId) ? (
         <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
           Please select all filters to view or build the timetable.
+        </div>
+      ) : isPhD ? (
+        <div className="clay-card p-xl text-center" style={{ color: 'var(--text-secondary)', padding: '60px' }}>
+          <h3>PhD Scholars Configuration</h3>
+          <p style={{ marginTop: '8px', fontSize: '0.95rem' }}>
+            PhD scholars do not operate on weekly timetables or semesters. Attendance is automatically mapped to daily working days check-ins.
+          </p>
         </div>
       ) : loading ? (
         <SkeletonLoader count={3} height={100} />

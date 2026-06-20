@@ -20,7 +20,7 @@ const CorrectionsTab = () => {
 
   const fetchCorrections = async () => {
     try {
-      const res = await api.get('/attendance/corrections');
+      const res = await api.get('/attendance/corrections/me');
       setCorrections(res.data);
     } catch (err) {
       toast.error('Failed to load corrections');
@@ -96,11 +96,16 @@ const CorrectionsTab = () => {
             <label className="form-label">Select Absent Record</label>
             <select className="form-input" required value={formData.recordId} onChange={e => setFormData({...formData, recordId: e.target.value})}>
               <option value="">Select a recent absence...</option>
-              {recentAbsences.map(r => (
-                <option key={r._id} value={r._id}>
-                  {new Date(r.date).toLocaleDateString()} - {r.timetableSlotId?.subjectName || 'Class'}
-                </option>
-              ))}
+              {recentAbsences.map(r => {
+                const classesStr = r.classes && r.classes.length > 0
+                  ? r.classes.map(c => c.subjectName).join(', ')
+                  : r.courseName || 'Daily Check-In';
+                return (
+                  <option key={r._id} value={r._id}>
+                    {new Date(r.date).toLocaleDateString()} - {classesStr}
+                  </option>
+                );
+              })}
               {recentAbsences.length === 0 && <option value="" disabled>No eligible records found</option>}
             </select>
           </div>

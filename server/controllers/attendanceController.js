@@ -298,6 +298,22 @@ exports.getAttendanceMatrix = async (req, res) => {
       date: targetDate,
       sessionId
     });
+
+    // Calculate lock status based on policy
+    let policy = await AttendancePolicyMaster.findOne({ departmentId, programType: dt?.code || 'PG' });
+    if (!policy) {
+      policy = await AttendancePolicyMaster.findOne({ departmentId: null, programType: dt?.code || 'PG' });
+    }
+    const editLockHours = policy ? policy.editLockHours : 48;
+
+    let isLocked = false;
+    const sampleRecord = records.find(r => r.createdAt);
+    if (sampleRecord) {
+      const hoursSinceCreation = (new Date() - new Date(sampleRecord.createdAt)) / (1000 * 60 * 60);
+      if (hoursSinceCreation > editLockHours) {
+        isLocked = true;
+      }
+    }
     
     const matrix = students.map(st => {
       const existing = records.find(r => r.studentId.toString() === st._id.toString());
@@ -307,7 +323,7 @@ exports.getAttendanceMatrix = async (req, res) => {
       };
     });
 
-    res.status(200).json({ students: matrix, classes, isPhD });
+    res.status(200).json({ students: matrix, classes, isPhD, isLocked });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
@@ -321,31 +337,72 @@ exports.markAttendanceBulk = async (req, res) => {
     const dt = await DegreeTypeMaster.findById(degreeTypeId);
     const isPhD = dt && dt.code === 'PHD';
 
-    const operations = records.map(rec => ({
-      updateOne: {
-        filter: {
-          studentId: rec.studentId,
-          date: new Date(date)
-        },
-        update: {
-          $set: {
-            studentId: rec.studentId,
-            sessionId,
-            degreeTypeId,
-            degreeNameId: isPhD ? null : degreeNameId,
-            semesterId: isPhD ? null : semesterId,
-            facultyId,
-            departmentId,
-            date: new Date(date),
-            status: rec.status,
-            classes: rec.classes || [],
-            markedBy: facultyId,
-            markedAt: new Date()
-          }
-        },
-        upsert: true
+    // Get policy lock duration
+    let policy = await AttendancePolicyMaster.findOne({ departmentId, programType: dt?.code || 'PG' });
+    if (!policy) {
+      policy = await AttendancePolicyMaster.findOne({ departmentId: null, programType: dt?.code || 'PG' });
+    }
+    const editLockHours = policy ? policy.editLockHours : 48;
+
+    // Check if dynamic lock is active (records created more than editLockHours ago)
+    const existingRecords = await AttendanceRecord.find({
+      departmentId,
+      date: new Date(date),
+      sessionId
+    });
+    const sampleRecord = existingRecords.find(r => r.createdAt);
+    if (sampleRecord) {
+      const hoursSinceCreation = (new Date() - new Date(sampleRecord.createdAt)) / (1000 * 60 * 60);
+      if (hoursSinceCreation > editLockHours) {
+        return res.status(400).json({ message: `Attendance register is locked. The ${editLockHours}-hour editing window has expired.` });
       }
-    }));
+    }
+
+    const operations = records.map(rec => {
+      const existing = existingRecords.find(er => er.studentId.toString() === rec.studentId.toString());
+      if (existing && (existing.isLeaveOverride || existing.lockReason === 'Approved Leave')) {
+        // Preserve approved leave overrides
+        return {
+          updateOne: {
+            filter: { studentId: rec.studentId, date: new Date(date) },
+            update: {
+              $set: {
+                status: 'ON_LEAVE',
+                isLeaveOverride: true,
+                lockReason: 'Approved Leave',
+                isLocked: true
+              }
+            }
+          }
+        };
+      }
+
+      return {
+        updateOne: {
+          filter: {
+            studentId: rec.studentId,
+            date: new Date(date)
+          },
+          update: {
+            $set: {
+              studentId: rec.studentId,
+              sessionId,
+              degreeTypeId,
+              degreeNameId: isPhD ? null : degreeNameId,
+              semesterId: isPhD ? null : semesterId,
+              facultyId,
+              departmentId,
+              date: new Date(date),
+              status: rec.status,
+              classes: rec.classes || [],
+              markedBy: facultyId,
+              markedAt: new Date()
+            }
+          },
+          upsert: true
+        }
+      };
+    });
 
     let txSuccess = false;
     try {
@@ -571,6 +628,19 @@ exports.getFacultyDashboardStats = async (req, res) => {
 exports.getHodDashboardStats = async (req, res) => {
   try {
     const session = await AcademicSessionMaster.findOne({ isCurrent: true });
+    if (!session) {
+      return res.status(200).json({
+        sessionName: 'No Active Session',
+        totalStudentsCount: 0,
+        averageDeptPercentage: 100,
+        defaulterCount: 0,
+        warningCount: 0,
+        defaulters: [],
+        warnings: [],
+        rosterStats: [],
+        auditLogs: []
+      });
+    }
     const students = await User.find({ department: req.user.department, role: 'STUDENT', isActive: true }).select('name profile email username');
     const holidays = await HolidayCalendar.find({ isActive: true });
     
@@ -613,5 +683,20 @@ exports.getSuperAdminDashboardStats = async (req, res) => {
   } catch (error) { 
     console.error("Error in getSuperAdminDashboardStats:", error);
     res.status(500).json({ message: error.message }); 
+  }
+};
+
+exports.getMyAbsences = async (req, res) => {
+  try {
+    const records = await AttendanceRecord.find({
+      studentId: req.user._id,
+      status: 'ABSENT'
+    })
+    .populate('timetableId')
+    .populate('classes.timetableSlotId')
+    .sort({ date: -1 });
+    res.status(200).json(records);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
