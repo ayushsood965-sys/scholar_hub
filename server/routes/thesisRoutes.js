@@ -50,7 +50,7 @@ router.put('/:id/pre-submission/record-outcome', protect, authorize('HOD'), reco
 router.put('/:id/final-approve-hod', protect, authorize('HOD'), finalApproveHOD);
 router.put('/:id/final-reject-hod', protect, authorize('HOD'), finalRejectHOD);
 router.put('/:id/external-evaluation', protect, authorize('ADMIN', 'HOD'), logExternalEvaluation);
-router.get('/:id/eligibility', protect, authorize('ADMIN', 'HOD'), getEligibilityDetails);
+router.get('/:id/eligibility', protect, authorize('ADMIN', 'HOD', 'FACULTY'), getEligibilityDetails);
 
 // Faculty
 router.get('/assigned', protect, authorize('FACULTY'), getAssignedTheses);

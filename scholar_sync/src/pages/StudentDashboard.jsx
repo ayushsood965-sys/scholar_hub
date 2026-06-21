@@ -4688,7 +4688,7 @@ const CertificatesTab = ({ thesis }) => {
       type: 'RAC',
       title: 'Research Progress Certificate',
       desc: 'Official certificate verifying satisfactory periodic Research Advisory Committee reviews.',
-      enabled: hasVerifiedRacs
+      enabled: ['SUBMITTED', 'AWARDED'].includes(thesis.status) || hasVerifiedRacs
     }
   ];
 
