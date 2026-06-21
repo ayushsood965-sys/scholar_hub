@@ -23,14 +23,10 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const api = useApi();
   const toast = useToast();
 
-  // Basic Non-PhD fields
-  const [nonPhdForm, setNonPhdForm] = useState({
-    enrollmentNumber: '',
-    semesterId: '',
-    degreeNameId: '',
-    degreeTypeId: '',
-    isPhD: true,
-  });
+  const [degreeTypeId, setDegreeTypeId] = useState('');
+  const [degreeNameId, setDegreeNameId] = useState('');
+  const [semesterId, setSemesterId] = useState('');
+  const [isPhD, setIsPhD] = useState(true);
 
   // Masters lists for non-PhD
   const [semesters, setSemesters] = useState([]);
@@ -120,92 +116,86 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       setProfile(u);
 
       const isPhDVal = u.profile?.isPhD !== undefined ? u.profile.isPhD : true;
+      setIsPhD(isPhDVal);
 
-      setNonPhdForm({
-        enrollmentNumber: u.profile?.enrollmentNumber || '',
-        semesterId: u.profile?.semesterId?._id || '',
-        degreeNameId: u.profile?.degreeNameId?._id || '',
-        degreeTypeId: u.profile?.degreeTypeId?._id || '',
-        isPhD: isPhDVal,
+      // Initialize fields for everyone
+      setDob(u.profile?.dob ? u.profile.dob.split('T')[0] : '');
+      setGender(u.profile?.gender || '');
+      setCategory(u.profile?.category || '');
+      setFatherName(u.profile?.fatherName || '');
+      setMotherName(u.profile?.motherName || '');
+      setNationality(u.profile?.nationality || 'Indian');
+      setAdmissionDate(u.profile?.admissionDate ? u.profile.admissionDate.split('T')[0] : '');
+      setEnrollmentNumber(u.profile?.enrollmentNumber || '');
+      setPhdMode(u.profile?.phdMode || '');
+      setSpecialization(u.profile?.specialization || '');
+      setPhoneNumber(u.profile?.phoneNumber || '');
+      setAddress(u.profile?.address || '');
+      setAreaOfInterest(u.profile?.areaOfInterest || '');
+      setAcademicBackground(u.profile?.academicBackground || '');
+      setPreferredGuideId(u.profile?.preferredGuideId || '');
+      setThesisTitle(u.profile?.thesisTitle || '');
+      setThesisSummary(u.profile?.thesisSummary || '');
+      setThesisKeywords(u.profile?.thesisKeywords || '');
+      setAcademicSession(u.profile?.academicSession || '');
+      setDegreeType(u.profile?.degreeType || (isPhDVal ? 'Ph.D.' : ''));
+      setDegreeTypeId(u.profile?.degreeTypeId?._id || u.profile?.degreeTypeId || '');
+      setDegreeNameId(u.profile?.degreeNameId?._id || u.profile?.degreeNameId || '');
+      setSemesterId(u.profile?.semesterId?._id || u.profile?.semesterId || '');
+
+      const q = u.profile?.qualifications || {};
+      setClass10Roll(q.class10?.rollNo || '');
+      setClass10Board(q.class10?.board || '');
+      setClass10School(q.class10?.school || '');
+      setClass10Marks(q.class10?.marksObtained || '');
+      setClass10Total(q.class10?.totalMarks || '');
+      setClass10Percentage(q.class10?.percentage || '');
+
+      setClass12Roll(q.class12?.rollNo || '');
+      setClass12Board(q.class12?.board || '');
+      setClass12School(q.class12?.school || '');
+      setClass12Marks(q.class12?.marksObtained || '');
+      setClass12Total(q.class12?.totalMarks || '');
+      setClass12Percentage(q.class12?.percentage || '');
+
+      setGradRoll(q.graduation?.rollNo || '');
+      setGradDegree(q.graduation?.degree || '');
+      setGradCollege(q.graduation?.college || '');
+      setGradUniversity(q.graduation?.university || '');
+      setGradMarks(q.graduation?.marksObtained || '');
+      setGradTotal(q.graduation?.totalMarks || '');
+      setGradPercentage(q.graduation?.percentage || '');
+
+      setPgRoll(q.postGraduation?.rollNo || '');
+      setPgDegree(q.postGraduation?.degree || '');
+      setPgCollege(q.postGraduation?.college || '');
+      setPgUniversity(q.postGraduation?.university || '');
+      setPgMarks(q.postGraduation?.marksObtained || '');
+      setPgTotal(q.postGraduation?.totalMarks || '');
+      setPgPercentage(q.postGraduation?.percentage || '');
+
+      setNetJrfQualified(
+        q.netJrf?.qualified === true ? 'YES' : 
+        q.netJrf?.qualified === false ? 'NO' : ''
+      );
+      setNetJrfCertNumber(q.netJrf?.certNumber || '');
+      setNetJrfRoll(q.netJrf?.rollNo || '');
+      setNetJrfRank(q.netJrf?.rank || '');
+      setNetJrfScore(q.netJrf?.score || '');
+      setNetJrfIssueDate(q.netJrf?.issueDate ? q.netJrf.issueDate.split('T')[0] : '');
+
+      setOtherDetails(q.other?.details || '');
+
+      // Set edit modes
+      setEditModes({
+        general: !thesis && (!u.profile?.dob || (isPhDVal && !u.profile?.phdMode)),
+        class10: !thesis && !q.class10?.rollNo,
+        class12: !thesis && !q.class12?.rollNo,
+        graduation: !thesis && !q.graduation?.rollNo,
+        postGraduation: !thesis && !q.postGraduation?.rollNo,
+        netJrf: !thesis && (q.netJrf?.qualified === undefined || (q.netJrf?.qualified === true && !q.netJrf?.rollNo)),
+        other: !thesis && !q.other?.details
       });
-
-      if (isPhDVal) {
-        // Initialize PhD fields
-        setDob(u.profile?.dob ? u.profile.dob.split('T')[0] : '');
-        setGender(u.profile?.gender || '');
-        setCategory(u.profile?.category || '');
-        setFatherName(u.profile?.fatherName || '');
-        setMotherName(u.profile?.motherName || '');
-        setNationality(u.profile?.nationality || 'Indian');
-        setAdmissionDate(u.profile?.admissionDate ? u.profile.admissionDate.split('T')[0] : '');
-        setEnrollmentNumber(u.profile?.enrollmentNumber || '');
-        setPhdMode(u.profile?.phdMode || '');
-        setSpecialization(u.profile?.specialization || '');
-        setPhoneNumber(u.profile?.phoneNumber || '');
-        setAddress(u.profile?.address || '');
-        setAreaOfInterest(u.profile?.areaOfInterest || '');
-        setAcademicBackground(u.profile?.academicBackground || '');
-        setPreferredGuideId(u.profile?.preferredGuideId || '');
-        setThesisTitle(u.profile?.thesisTitle || '');
-        setThesisSummary(u.profile?.thesisSummary || '');
-        setThesisKeywords(u.profile?.thesisKeywords || '');
-        setAcademicSession(u.profile?.academicSession || '');
-        setDegreeType(u.profile?.degreeType || 'Ph.D.');
-
-        const q = u.profile?.qualifications || {};
-        setClass10Roll(q.class10?.rollNo || '');
-        setClass10Board(q.class10?.board || '');
-        setClass10School(q.class10?.school || '');
-        setClass10Marks(q.class10?.marksObtained || '');
-        setClass10Total(q.class10?.totalMarks || '');
-        setClass10Percentage(q.class10?.percentage || '');
-
-        setClass12Roll(q.class12?.rollNo || '');
-        setClass12Board(q.class12?.board || '');
-        setClass12School(q.class12?.school || '');
-        setClass12Marks(q.class12?.marksObtained || '');
-        setClass12Total(q.class12?.totalMarks || '');
-        setClass12Percentage(q.class12?.percentage || '');
-
-        setGradRoll(q.graduation?.rollNo || '');
-        setGradDegree(q.graduation?.degree || '');
-        setGradCollege(q.graduation?.college || '');
-        setGradUniversity(q.graduation?.university || '');
-        setGradMarks(q.graduation?.marksObtained || '');
-        setGradTotal(q.graduation?.totalMarks || '');
-        setGradPercentage(q.graduation?.percentage || '');
-
-        setPgRoll(q.postGraduation?.rollNo || '');
-        setPgDegree(q.postGraduation?.degree || '');
-        setPgCollege(q.postGraduation?.college || '');
-        setPgUniversity(q.postGraduation?.university || '');
-        setPgMarks(q.postGraduation?.marksObtained || '');
-        setPgTotal(q.postGraduation?.totalMarks || '');
-        setPgPercentage(q.postGraduation?.percentage || '');
-
-        setNetJrfQualified(
-          q.netJrf?.qualified === true ? 'YES' : 
-          q.netJrf?.qualified === false ? 'NO' : ''
-        );
-        setNetJrfCertNumber(q.netJrf?.certNumber || '');
-        setNetJrfRoll(q.netJrf?.rollNo || '');
-        setNetJrfRank(q.netJrf?.rank || '');
-        setNetJrfScore(q.netJrf?.score || '');
-        setNetJrfIssueDate(q.netJrf?.issueDate ? q.netJrf.issueDate.split('T')[0] : '');
-
-        setOtherDetails(q.other?.details || '');
-
-        // Set edit modes
-        setEditModes({
-          general: !thesis && (!u.profile?.dob || !u.profile?.phdMode),
-          class10: !thesis && !q.class10?.rollNo,
-          class12: !thesis && !q.class12?.rollNo,
-          graduation: !thesis && !q.graduation?.rollNo,
-          postGraduation: !thesis && !q.postGraduation?.rollNo,
-          netJrf: !thesis && (q.netJrf?.qualified === undefined || (q.netJrf?.qualified === true && !q.netJrf?.rollNo)),
-          other: !thesis && !q.other?.details
-        });
-      }
     } catch (err) {
       toast.error('Failed to load profile details');
     } finally {
@@ -245,16 +235,14 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     if (user) fetchMastersData();
   }, [user]);
 
-  const handleNonPhdSave = async () => {
-    try {
-      await api.put('/auth/profile', { profile: nonPhdForm });
-      toast.success('Academic profile details saved successfully');
-      setIsEditingNonPhd(false);
-      fetchProfile();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Error updating academic details');
+  useEffect(() => {
+    if (isPhD && degreeTypes.length > 0 && !degreeTypeId) {
+      const phdType = degreeTypes.find(t => t.code === 'PHD' || t.name?.toLowerCase().includes('phd'));
+      if (phdType) {
+        setDegreeTypeId(phdType._id);
+      }
     }
-  };
+  }, [isPhD, degreeTypes, degreeTypeId]);
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -309,7 +297,10 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         dob, gender, category, fatherName, motherName, nationality,
         admissionDate, enrollmentNumber, phdMode, specialization,
         phoneNumber, address, areaOfInterest, academicBackground,
-        thesisTitle, thesisSummary, thesisKeywords, academicSession, degreeType: 'Ph.D.'
+        thesisTitle, thesisSummary, thesisKeywords, academicSession,
+        degreeTypeId, degreeNameId, semesterId, isPhD,
+        degreeType: isPhD ? 'Ph.D.' : (degreeTypes.find(t => t._id === degreeTypeId)?.name || ''),
+        degreeName: degreeNames.find(n => n._id === degreeNameId)?.name || '',
       };
     } else if (sectionKey === 'class10') {
       if (!class10Roll.trim() || !class10Board.trim() || !class10School.trim() || !class10Marks.trim() || !class10Total.trim() || !class10Percentage.trim()) {
@@ -406,12 +397,12 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   };
 
   const handleProfileRegistrationSubmit = async () => {
-    // 1. Details Validation
     if (
       !dob || !gender || !category || !fatherName || !motherName || !nationality || 
       !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
       !phoneNumber || !address || !areaOfInterest ||
-      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession
+      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession ||
+      !degreeTypeId || !semesterId
     ) {
       toast.error('Please fill in all the general and Ph.D. details before submitting.');
       return;
@@ -502,12 +493,16 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
   if (loading) return <SkeletonLoader count={1} height={400} />;
 
-  const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === nonPhdForm.degreeTypeId);
+  const filteredDegreeTypes = isPhD 
+    ? degreeTypes.filter(t => t.code === 'PHD' || t.name?.toLowerCase().includes('phd'))
+    : degreeTypes.filter(t => t.code !== 'PHD' && !t.name?.toLowerCase().includes('phd'));
+
+  const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === degreeTypeId || d.degreeTypeId === degreeTypeId);
 
   return (
     <div className="glass-panel p-xl">
       {/* PhD Status Alert Banner */}
-      {nonPhdForm.isPhD && (
+      {isPhD && (
         <div style={{ marginBottom: '24px' }}>
           {!thesis && (
             <div style={{
@@ -594,12 +589,15 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
             <select 
               className="form-input" 
               style={{ width: '80px', padding: '6px 12px' }}
-              value={nonPhdForm.isPhD ? 'true' : 'false'}
+              value={isPhD ? 'true' : 'false'}
               onChange={async (e) => {
                 const val = e.target.value === 'true';
-                setNonPhdForm({ ...nonPhdForm, isPhD: val });
+                setIsPhD(val);
+                if (!val && subTab === 'guide') {
+                  setSubTab('general');
+                }
                 // Instantly update on user record
-                await api.put('/auth/profile', { profile: { ...nonPhdForm, isPhD: val } });
+                await api.put('/auth/profile', { profile: { ...profile?.profile, isPhD: val } });
                 fetchProfile();
               }}
             >
@@ -608,82 +606,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
             </select>
           </div>
         )}
-
-        {/* Edit controls for non-PhD */}
-        {!nonPhdForm.isPhD && (
-          !isEditingNonPhd ? (
-            <button className="btn btn-outline" onClick={() => setIsEditingNonPhd(true)}>Edit Details</button>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn btn-secondary" onClick={() => setIsEditingNonPhd(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleNonPhdSave}>Save Details</button>
-            </div>
-          )
-        )}
       </div>
 
-      {/* ─── RENDER NON-PhD FORM ─── */}
-      {!nonPhdForm.isPhD && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-          <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input className="form-input" disabled value={profile?.name || ''} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <input className="form-input" disabled value={profile?.email || ''} />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Enrollment Number</label>
-            <input 
-              className="form-input" 
-              disabled={!isEditingNonPhd} 
-              value={isEditingNonPhd ? nonPhdForm.enrollmentNumber : (profile?.profile?.enrollmentNumber || 'N/A')}
-              onChange={e => setNonPhdForm({...nonPhdForm, enrollmentNumber: e.target.value})}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Degree Type</label>
-            {isEditingNonPhd ? (
-              <select className="form-input" value={nonPhdForm.degreeTypeId} onChange={e => setNonPhdForm({...nonPhdForm, degreeTypeId: e.target.value, degreeNameId: ''})}>
-                <option value="">Select Type...</option>
-                {degreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-              </select>
-            ) : (
-              <input className="form-input" disabled value={profile?.profile?.degreeTypeId?.name || 'N/A'} />
-            )}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Degree Name</label>
-            {isEditingNonPhd ? (
-              <select className="form-input" value={nonPhdForm.degreeNameId} onChange={e => setNonPhdForm({...nonPhdForm, degreeNameId: e.target.value})} disabled={!nonPhdForm.degreeTypeId}>
-                <option value="">Select Degree...</option>
-                {availableDegreeNames.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-              </select>
-            ) : (
-              <input className="form-input" disabled value={profile?.profile?.degreeNameId?.name || 'N/A'} />
-            )}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Current Semester</label>
-            {isEditingNonPhd ? (
-              <select className="form-input" value={nonPhdForm.semesterId} onChange={e => setNonPhdForm({...nonPhdForm, semesterId: e.target.value})}>
-                <option value="">Select Semester...</option>
-                {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-              </select>
-            ) : (
-              <input className="form-input" disabled value={profile?.profile?.semesterId?.name || 'N/A'} />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ─── RENDER PhD FORM ─── */}
-      {nonPhdForm.isPhD && (
+      <div>
         <div>
           {/* Sub Tab Header */}
           <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--color-border-solid)', marginBottom: '24px', paddingBottom: '12px' }}>
@@ -754,31 +679,89 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     {editModes.general && !thesis ? (
                       <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)}>
                         <option value="">Select Session...</option>
-                        {sessions.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
+                        {sessions.map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
                       </select>
                     ) : (
                       <input className="form-input" disabled value={academicSession || 'N/A'} />
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Degree Type</label>
-                    <input className="form-input" disabled value="Ph.D." />
+                    <label className="form-label">Current Semester</label>
+                    {editModes.general && !thesis ? (
+                      <select className="form-input" value={semesterId} onChange={e => setSemesterId(e.target.value)}>
+                        <option value="">Select Semester...</option>
+                        {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                      </select>
+                    ) : (
+                      <input className="form-input" disabled value={semesters.find(s => s._id === semesterId)?.name || 'N/A'} />
+                    )}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
                   <div className="form-group">
-                    <label className="form-label">Ph.D. Mode</label>
+                    <label className="form-label">Degree Type</label>
                     {editModes.general && !thesis ? (
-                      <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)}>
-                        <option value="">Select Mode...</option>
-                        <option value="Full Time">Full Time</option>
-                        <option value="Part Time">Part Time</option>
+                      <select 
+                        className="form-input" 
+                        value={degreeTypeId} 
+                        onChange={e => {
+                          setDegreeTypeId(e.target.value);
+                          setDegreeNameId('');
+                        }}
+                        disabled={isPhD}
+                      >
+                        <option value="">Select Type...</option>
+                        {filteredDegreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                       </select>
                     ) : (
-                      <input className="form-input" disabled value={phdMode || 'N/A'} />
+                      <input className="form-input" disabled value={degreeTypes.find(t => t._id === degreeTypeId)?.name || (isPhD ? 'Ph.D.' : 'N/A')} />
                     )}
                   </div>
+                  <div className="form-group">
+                    <label className="form-label">Degree Name</label>
+                    {editModes.general && !thesis ? (
+                      <select 
+                        className="form-input" 
+                        value={degreeNameId} 
+                        onChange={e => setDegreeNameId(e.target.value)}
+                        disabled={isPhD && availableDegreeNames.length === 0}
+                      >
+                        {isPhD && availableDegreeNames.length === 0 ? (
+                          <option value="">Ph.D. Research</option>
+                        ) : (
+                          <>
+                            <option value="">Select Degree...</option>
+                            {availableDegreeNames.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                          </>
+                        )}
+                      </select>
+                    ) : (
+                      <input className="form-input" disabled value={degreeNames.find(n => n._id === degreeNameId)?.name || (isPhD ? 'Ph.D. Research' : 'N/A')} />
+                    )}
+                  </div>
+                  {isPhD ? (
+                    <div className="form-group">
+                      <label className="form-label">Ph.D. Mode</label>
+                      {editModes.general && !thesis ? (
+                        <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)}>
+                          <option value="">Select Mode...</option>
+                          <option value="Full Time">Full Time</option>
+                          <option value="Part Time">Part Time</option>
+                        </select>
+                      ) : (
+                        <input className="form-input" disabled value={phdMode || 'N/A'} />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label className="form-label">Ph.D. Mode</label>
+                      <input className="form-input" disabled value="N/A" />
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Date of Birth</label>
                     <input 
@@ -802,9 +785,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <input className="form-input" disabled value={gender || 'N/A'} />
                     )}
                   </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Category</label>
                     {editModes.general && !thesis ? (
@@ -819,25 +799,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     ) : (
                       <input className="form-input" disabled value={category || 'N/A'} />
                     )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Nationality</label>
-                    <input 
-                      className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
-                      value={nationality} 
-                      onChange={e => setNationality(e.target.value)} 
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Admission Date</label>
-                    <input 
-                      type="date" 
-                      className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
-                      value={admissionDate} 
-                      onChange={e => setAdmissionDate(e.target.value)} 
-                    />
                   </div>
                 </div>
 
@@ -871,17 +832,19 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', marginTop: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Specialization</label>
-                    <input 
-                      className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
-                      value={specialization} 
-                      onChange={e => setSpecialization(e.target.value)} 
-                      placeholder="e.g. Image Processing, Machine Learning"
-                    />
-                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: isPhD ? '1fr 2fr' : '1fr', gap: '20px', marginTop: '12px' }}>
+                  {isPhD && (
+                    <div className="form-group">
+                      <label className="form-label">Specialization</label>
+                      <input 
+                        className="form-input" 
+                        disabled={!editModes.general || !!thesis} 
+                        value={specialization} 
+                        onChange={e => setSpecialization(e.target.value)} 
+                        placeholder="e.g. Image Processing, Machine Learning"
+                      />
+                    </div>
+                  )}
                   <div className="form-group">
                     <label className="form-label">Contact Address</label>
                     <input 
@@ -893,43 +856,45 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--color-border-solid)', marginTop: '24px', paddingTop: '20px' }}>
-                  <h4 style={{ color: 'var(--color-primary)', fontSize: '0.95rem', marginBottom: '16px' }}>Tentative Thesis Parameters</h4>
-                  <div className="form-group">
-                    <label className="form-label">Thesis Title / Broad Area of Interest</label>
-                    <input 
-                      className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
-                      value={thesisTitle} 
-                      onChange={e => setThesisTitle(e.target.value)} 
-                      placeholder="Enter research proposal title"
-                    />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginTop: '12px' }}>
+                {isPhD && (
+                  <div style={{ borderTop: '1px solid var(--color-border-solid)', marginTop: '24px', paddingTop: '20px' }}>
+                    <h4 style={{ color: 'var(--color-primary)', fontSize: '0.95rem', marginBottom: '16px' }}>Tentative Thesis Parameters</h4>
                     <div className="form-group">
-                      <label className="form-label">Short Abstract / Focus Area</label>
-                      <textarea 
+                      <label className="form-label">Thesis Title / Broad Area of Interest</label>
+                      <input 
                         className="form-input" 
                         disabled={!editModes.general || !!thesis} 
-                        value={thesisSummary} 
-                        onChange={e => setThesisSummary(e.target.value)} 
-                        rows="3"
-                        placeholder="Write a brief abstract of your proposed PhD research"
+                        value={thesisTitle} 
+                        onChange={e => setThesisTitle(e.target.value)} 
+                        placeholder="Enter research proposal title"
                       />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Keywords (Comma separated)</label>
-                      <textarea 
-                        className="form-input" 
-                        disabled={!editModes.general || !!thesis} 
-                        value={thesisKeywords} 
-                        onChange={e => setThesisKeywords(e.target.value)} 
-                        rows="3"
-                        placeholder="e.g. deep learning, computer vision, cnn"
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginTop: '12px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Short Abstract / Focus Area</label>
+                        <textarea 
+                          className="form-input" 
+                          disabled={!editModes.general || !!thesis} 
+                          value={thesisSummary} 
+                          onChange={e => setThesisSummary(e.target.value)} 
+                          rows="3"
+                          placeholder="Write a brief abstract of your proposed PhD research"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Keywords (Comma separated)</label>
+                        <textarea 
+                          className="form-input" 
+                          disabled={!editModes.general || !!thesis} 
+                          value={thesisKeywords} 
+                          onChange={e => setThesisKeywords(e.target.value)} 
+                          rows="3"
+                          placeholder="e.g. deep learning, computer vision, cnn"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -1071,48 +1036,50 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                 </div>
 
                 {/* NET JRF */}
-                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ color: 'var(--text-primary)' }}>National Entrance Exams (NET / JRF / GATE)</h4>
-                    {getDocBadge('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
-                  </div>
-                  {!editModes.netJrf ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <div>Qualified: <strong>{netJrfQualified}</strong> {netJrfQualified === 'YES' && `| Cert No: ${netJrfCertNumber} | Roll: ${netJrfRoll} | AIR: ${netJrfRank} | Date: ${netJrfIssueDate}`}</div>
-                      {!thesis && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, netJrf: true})}>Edit</button>}
+                {isPhD && (
+                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ color: 'var(--text-primary)' }}>National Entrance Exams (NET / JRF / GATE)</h4>
+                      {getDocBadge('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
                     </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                        <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
-                          <option value="">Qualified NET JRF?</option>
-                          <option value="YES">Yes</option>
-                          <option value="NO">No</option>
-                        </select>
-                        {netJrfQualified === 'YES' && (
-                          <>
-                            <input className="form-input" placeholder="Award Letter Number" value={netJrfCertNumber} onChange={e => setNetJrfCertNumber(e.target.value)} />
-                            <input className="form-input" placeholder="Roll No" value={netJrfRoll} onChange={e => setNetJrfRoll(e.target.value)} />
-                          </>
-                        )}
+                    {!editModes.netJrf ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <div>Qualified: <strong>{netJrfQualified}</strong> {netJrfQualified === 'YES' && `| Cert No: ${netJrfCertNumber} | Roll: ${netJrfRoll} | AIR: ${netJrfRank} | Date: ${netJrfIssueDate}`}</div>
+                        {!thesis && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, netJrf: true})}>Edit</button>}
                       </div>
-                      {netJrfQualified === 'YES' && (
+                    ) : (
+                      <div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                          <input className="form-input" placeholder="All India Rank" value={netJrfRank} onChange={e => setNetJrfRank(e.target.value)} />
-                          <input className="form-input" placeholder="Normalized Score" value={netJrfScore} onChange={e => setNetJrfScore(e.target.value)} />
-                          <input className="form-input" type="date" value={netJrfIssueDate} onChange={e => setNetJrfIssueDate(e.target.value)} />
+                          <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
+                            <option value="">Qualified NET JRF?</option>
+                            <option value="YES">Yes</option>
+                            <option value="NO">No</option>
+                          </select>
+                          {netJrfQualified === 'YES' && (
+                            <>
+                              <input className="form-input" placeholder="Award Letter Number" value={netJrfCertNumber} onChange={e => setNetJrfCertNumber(e.target.value)} />
+                              <input className="form-input" placeholder="Roll No" value={netJrfRoll} onChange={e => setNetJrfRoll(e.target.value)} />
+                            </>
+                          )}
                         </div>
-                      )}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
-                        {netJrfQualified === 'YES' && getUploadButton('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.netJrf?.qualified !== undefined && <button className="btn btn-sm btn-secondary" type="button" onClick={() => setEditModes({...editModes, netJrf: false})}>Cancel</button>}
-                          <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('netJrf')}>Save NET JRF</button>
+                        {netJrfQualified === 'YES' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                            <input className="form-input" placeholder="All India Rank" value={netJrfRank} onChange={e => setNetJrfRank(e.target.value)} />
+                            <input className="form-input" placeholder="Normalized Score" value={netJrfScore} onChange={e => setNetJrfScore(e.target.value)} />
+                            <input className="form-input" type="date" value={netJrfIssueDate} onChange={e => setNetJrfIssueDate(e.target.value)} />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
+                          {netJrfQualified === 'YES' && getUploadButton('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {profile?.profile?.qualifications?.netJrf?.qualified !== undefined && <button className="btn btn-sm btn-secondary" type="button" onClick={() => setEditModes({...editModes, netJrf: false})}>Cancel</button>}
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('netJrf')}>Save NET JRF</button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1193,7 +1160,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
             </div>
           </form>
         </div>
-      )}
+      </div>
     </div>
   );
 };

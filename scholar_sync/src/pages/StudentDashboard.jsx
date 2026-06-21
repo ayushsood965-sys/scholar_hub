@@ -404,6 +404,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
     { key: 'profile', label: 'Profile', Icon: User },
     { key: 'thesis', label: 'My Thesis', Icon: Book },
     { key: 'workspace', label: 'Workspace', Icon: Flag },
+    { key: 'synopsis', label: 'Synopsis', Icon: ClipboardList },
     { key: 'rac', label: 'RAC Progress', Icon: Layers },
     { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
     { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
@@ -432,6 +433,10 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             const status = thesis.status;
             if (key === 'thesis' || key === 'workspace' || key === 'certificates') {
               return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
+            }
+            if (key === 'synopsis') {
+              const hasSynopsisMilestone = milestones && milestones.some(m => m.type === 'SYNOPSIS');
+              return !(['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status) || hasSynopsisMilestone);
             }
             if ([
               'rac', 
@@ -2677,7 +2682,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
       color: '#DC2626',
       bg: '#FEE2E2',
       progress: 40,
-      nextAction: `Your supervisor requested corrections. Feedback: "${synopsisMilestone.comments?.[synopsisMilestone.comments.length - 1]?.text || 'Please check supervisor comments.'}". Go to "Research Synopsis" to re-upload your revised proposal.`
+      nextAction: `Your supervisor requested corrections. Feedback: "${synopsisMilestone.comments?.[synopsisMilestone.comments.length - 1]?.text || 'Please check supervisor comments.'}". Go to "Synopsis" to re-upload your revised proposal.`
     } : {
       label: 'Synopsis Submission',
       color: '#8B5CF6',
@@ -5014,6 +5019,16 @@ const ProfileTab = () => {
   useEffect(() => {
     fetchMe();
   }, []);
+  const [sessions, setSessions] = useState([]);
+  useEffect(() => {
+    axios.get(`${API_URL}/attendance/sessions`, getAuthHeader())
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setSessions(res.data);
+        }
+      })
+      .catch(err => console.error('Error fetching sessions:', err));
+  }, []);
   const [registering, setRegistering] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState('');
@@ -5046,6 +5061,8 @@ const ProfileTab = () => {
   const [thesisTitle, setThesisTitle] = useState(user?.profile?.thesisTitle || '');
   const [thesisSummary, setThesisSummary] = useState(user?.profile?.thesisSummary || '');
   const [thesisKeywords, setThesisKeywords] = useState(user?.profile?.thesisKeywords || '');
+  const [academicSession, setAcademicSession] = useState(user?.profile?.academicSession || '');
+  const [degreeType, setDegreeType] = useState(user?.profile?.degreeType || 'Ph.D.');
   // Class 10
   const [class10Roll, setClass10Roll] = useState(user?.profile?.qualifications?.class10?.rollNo || '');
   const [class10Board, setClass10Board] = useState(user?.profile?.qualifications?.class10?.board || '');
@@ -5128,6 +5145,8 @@ const ProfileTab = () => {
       setThesisTitle(user.profile.thesisTitle || '');
       setThesisSummary(user.profile.thesisSummary || '');
       setThesisKeywords(user.profile.thesisKeywords || '');
+      setAcademicSession(user.profile.academicSession || '');
+      setDegreeType(user.profile.degreeType || 'Ph.D.');
       const q = user.profile.qualifications;
       setClass10Roll(q?.class10?.rollNo || '');
       setClass10Board(q?.class10?.board || '');
@@ -5238,7 +5257,8 @@ const ProfileTab = () => {
       areaOfInterest && areaOfInterest.trim() &&
       thesisTitle && thesisTitle.trim() &&
       thesisSummary && thesisSummary.trim() &&
-      thesisKeywords && thesisKeywords.trim()
+      thesisKeywords && thesisKeywords.trim() &&
+      academicSession && academicSession.trim()
     );
   };
 
@@ -5355,6 +5375,8 @@ const ProfileTab = () => {
       thesisTitle,
       thesisSummary,
       thesisKeywords,
+      academicSession,
+      degreeType: 'Ph.D.',
       qualifications: {
         class10: {
           rollNo: class10Roll,
@@ -5651,7 +5673,7 @@ const ProfileTab = () => {
       !dob || !gender || !category || !fatherName || !motherName || !nationality || 
       !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
       !phoneNumber || !address || !areaOfInterest ||
-      !thesisTitle || !thesisSummary || !thesisKeywords
+      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession
     ) {
       toast.error('please fill in all the details before submitting the form.');
       return;
@@ -5732,6 +5754,8 @@ const ProfileTab = () => {
         thesisTitle,
         thesisSummary,
         thesisKeywords,
+        academicSession,
+        degreeType: 'Ph.D.',
         qualifications: {
           class10: {
             rollNo: class10Roll,
@@ -6055,6 +6079,18 @@ const ProfileTab = () => {
                     <h4 style={{ margin: 0, color: '#133A26', fontSize: '0.95rem', fontWeight: 700 }}>Thesis & Research Details</h4>
                   </div>
                   <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Academic Session</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{academicSession || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree Type</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{degreeType || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Department</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.department || '—'}</strong>
+                  </div>
+                  <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>SH no.</span>
                     <strong style={{ color: '#059669', fontSize: '0.9rem', fontWeight: 700 }}>{user?.profile?.shNo || '—'}</strong>
                   </div>
@@ -6166,6 +6202,24 @@ const ProfileTab = () => {
 
                 <div style={{ borderBottom: '2px solid #E5E7EB', paddingBottom: '8px', marginTop: '16px', marginBottom: '8px' }}>
                   <h4 style={{ margin: 0, color: '#133A26', fontSize: '1rem', fontWeight: 700 }}>Thesis & Research Details</h4>
+                </div>
+
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Academic Session <span style={{ color: '#EF4444' }}>*</span></label>
+                    <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)} required>
+                      <option value="">Select Session...</option>
+                      {sessions.map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Degree Type</label>
+                    <input type="text" className="form-input" value="Ph.D." disabled style={{ background: '#F1F5F9', color: '#64748B' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Department</label>
+                    <input type="text" className="form-input" value={user?.department} disabled style={{ background: '#F1F5F9', color: '#64748B' }} />
+                  </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -7703,6 +7757,7 @@ const StudentDashboard = () => {
   const titles = { 
     overview: 'Student Dashboard', 
     thesis: 'My Thesis', 
+    synopsis: 'Research Synopsis',
     rac: 'RAC Progress', 
     publications: 'Research Outputs', 
     sixMonthReports: '6-Month Progress Reports',
@@ -7745,6 +7800,7 @@ const StudentDashboard = () => {
 
     switch (activeTab) {
       case 'overview': return <OverviewPage thesis={thesis} milestones={milestones} setActiveTab={setActiveTab} user={user} />;
+      case 'synopsis': return <SynopsisPhase thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'rac': return <RACProgressTab thesis={thesis} />;
       case 'publications': return <ResearchOutputsTab thesis={thesis} />;
       case 'preSubmission': return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} user={user} />;
