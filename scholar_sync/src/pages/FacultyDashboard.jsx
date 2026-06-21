@@ -992,8 +992,6 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                     <div><strong>Mode of Ph.D.:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.phdMode || 'N/A'}</span></div>
                     <div><strong>Specialization:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.specialization || 'N/A'}</span></div>
                     <div><strong>Research Interest:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.areaOfInterest || 'N/A'}</span></div>
-                    <div><strong>Degree Type:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.degreeType || 'Ph.D.'}</span></div>
-                    <div><strong>Academic Session:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.academicSession || 'N/A'}</span></div>
                     <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: '#0F172A', fontWeight: 700 }}>{thesis.scholarId?.profile?.thesisTitle || thesis.title || 'N/A'}</span></div>
                     <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: '#475569', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{thesis.scholarId?.profile?.thesisSummary || thesis.abstract || 'N/A'}</span></div>
                     <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
