@@ -6029,9 +6029,6 @@ const ProfileTab = () => {
             {!editModes.general ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
-                  <div style={{ gridColumn: 'span 2', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '4px' }}>
-                    <h4 style={{ margin: 0, color: '#133A26', fontSize: '0.95rem', fontWeight: 700 }}>Personal Details</h4>
-                  </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Full Name</span>
                     <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.name || '—'}</strong>
@@ -6130,9 +6127,6 @@ const ProfileTab = () => {
               </div>
             ) : (
               <>
-                <div style={{ borderBottom: '2px solid #E5E7EB', paddingBottom: '8px', marginBottom: '8px' }}>
-                  <h4 style={{ margin: 0, color: '#133A26', fontSize: '1rem', fontWeight: 700 }}>Personal Details</h4>
-                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Full Name</label>
