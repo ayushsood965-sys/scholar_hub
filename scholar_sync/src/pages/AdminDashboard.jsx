@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Home, Users, FileText, BarChart2, Settings, LogOut, Bell, CheckCircle2, User, GraduationCap, ShieldCheck, Clock, XCircle, Layers, Award, Edit, File, Plus, Calendar, Search } from 'lucide-react';
+import { Home, Users, FileText, BarChart2, Settings, LogOut, Bell, CheckCircle2, User, GraduationCap, ShieldCheck, Clock, XCircle, Layers, Award, Edit, File, Plus, Calendar, Search, BookOpen } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -1028,18 +1028,6 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                   <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Specialization</div>
                     <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.specialization || 'N/A'}</div>
-                  </div>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
-                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Academic Session</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.academicSession || 'N/A'}</div>
-                  </div>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
-                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Degree Type</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.degreeType || 'Ph.D.'}</div>
-                  </div>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
-                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Department</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{thesis.scholarId?.department || thesis.department || 'N/A'}</div>
                   </div>
                 </div>
 
@@ -4394,6 +4382,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
     { key: 'profile', label: 'My Profile', Icon: User },
     { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
     ...(user?.role === 'HOD' ? [{ key: 'meetings', label: 'Guidance Meetings', Icon: Calendar }] : []),
+    ...(user?.role === 'HOD' ? [{ key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen }] : []),
     ...(user?.role === 'HOD' || user?.role === 'ADMIN' ? [{ key: 'scholar_search', label: 'Search Scholars', Icon: Search }] : []),
     ...(user?.role === 'HOD' ? [{ key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText }] : []),
     ...(user?.role === 'ADMIN' ? [{ key: 'global_transfers', label: 'Global Transfers', Icon: Layers }] : []),
@@ -4768,7 +4757,8 @@ const AdminDashboard = () => {
     defaulters: 'Progress Report Defaulter Tracking',
     scholar_search: 'Search Scholar Details',
     detailed_reports: 'Detailed Academic Reports',
-    public_config: 'Public Portal Config'
+    public_config: 'Public Portal Config',
+    coursework_approvals: 'Coursework Approvals'
   };
 
   const renderContent = () => {
@@ -4806,6 +4796,7 @@ const AdminDashboard = () => {
     switch (activeTab) {
       case 'overview': return <OverviewPage theses={allTheses} onSelectThesis={handleSelectThesis} user={user} setActiveTab={handleTabChange} />;
       case 'scholars': return <ManageScholars theses={allTheses} onSelectThesis={handleSelectThesis} onAction={handleAction} subRole={user?.role} />;
+      case 'coursework_approvals': return <ManageScholars theses={allTheses.filter(t => t.status === 'COURSEWORK' && t.courseworkStatus === 'PENDING_HOD')} onSelectThesis={handleSelectThesis} onAction={handleAction} subRole="HOD" />;
       case 'global_transfers': return <GlobalTransfersTab theses={allTheses} onRefresh={fetchAllTheses} />;
       case 'requests': return <HODChangeRequestsTab user={user} />;
       case 'meetings': return <MeetingsTab user={user} />;
