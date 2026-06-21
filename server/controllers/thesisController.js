@@ -139,6 +139,23 @@ const verifyEnrollment = async (req, res) => {
 
     thesis.enrollmentVerified = true;
     thesis.status = 'COURSEWORK';
+    thesis.courseworkStatus = 'NOT_SUBMITTED';
+    thesis.courseworkCompleted = false;
+    thesis.courseworkDetails = {
+      researchEthics: [],
+      researchMethodology: [],
+      elective: [],
+      others: []
+    };
+    thesis.courseworkUploadProof = null;
+    thesis.courseworkApprovals = {
+      facultyApproved: false,
+      facultyApproverId: null,
+      facultyApprovedAt: null,
+      hodApproved: false,
+      hodApproverId: null,
+      hodApprovedAt: null
+    };
     thesis.auditLog.push({ action: 'ENROLLMENT_VERIFIED', note: `Verified by HOD on ${new Date().toDateString()}` });
     await thesis.save();
 

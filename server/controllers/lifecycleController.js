@@ -624,6 +624,8 @@ const scheduleDRC = async (req, res) => {
     });
     await thesis.save();
 
+    const scholar = await User.findById(thesis.scholarId);
+
     await createNotification({
       recipient: thesis.scholarId,
       title: `📆 ${dynamicTitle} Scheduled!`,
@@ -633,6 +635,16 @@ const scheduleDRC = async (req, res) => {
       type: 'INFO',
       link: 'overview'
     });
+
+    if (thesis.supervisorId) {
+      await createNotification({
+        recipient: thesis.supervisorId,
+        title: `📆 ${dynamicTitle} Scheduled!`,
+        message: `HOD has scheduled the Departmental Research Committee (DRC) synopsis evaluation meeting for your scholar "${scholar?.name || 'Scholar'}" on ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`,
+        type: 'INFO',
+        link: 'overview'
+      });
+    }
 
     res.status(201).json(newDRC);
   } catch (err) {
@@ -700,6 +712,19 @@ const submitDRCResult = async (req, res) => {
         type: 'SUCCESSFUL_ACTION',
         link: 'overview'
       });
+
+      if (thesis && thesis.supervisorId) {
+        const scholar = await User.findById(drc.scholarId);
+        await createNotification({
+          recipient: thesis.supervisorId,
+          title: `🎉 ${drc.title || 'DRC'} Approved!`,
+          message: drc.isSynopsisApproval
+            ? `The DRC panel has APPROVED the research synopsis for your scholar "${scholar?.name || 'Scholar'}".`
+            : `The DRC meeting for your scholar "${scholar?.name || 'Scholar'}" has been APPROVED.`,
+          type: 'SUCCESSFUL_ACTION',
+          link: 'overview'
+        });
+      }
     } else {
       await createNotification({
         recipient: drc.scholarId,
@@ -710,6 +735,19 @@ const submitDRCResult = async (req, res) => {
         type: 'PENDING_ACTION',
         link: drc.isSynopsisApproval ? 'thesis' : 'overview'
       });
+
+      if (thesis && thesis.supervisorId) {
+        const scholar = await User.findById(drc.scholarId);
+        await createNotification({
+          recipient: thesis.supervisorId,
+          title: `⚠️ ${drc.title || 'DRC'} Revision Required`,
+          message: drc.isSynopsisApproval
+            ? `The DRC panel has requested revisions for the research synopsis of your scholar "${scholar?.name || 'Scholar'}". Remarks: "${remarks}".`
+            : `The DRC panel has requested revisions/actions for your scholar "${scholar?.name || 'Scholar'}". Remarks: "${remarks}".`,
+          type: 'PENDING_ACTION',
+          link: 'overview'
+        });
+      }
     }
 
     res.json(drc);

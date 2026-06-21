@@ -813,7 +813,7 @@ const CourseworkPhase = ({ thesis }) => {
   const [others, setOthers] = useState(
     thesis.courseworkDetails?.others?.length > 0
       ? thesis.courseworkDetails.others
-      : [createEmptyRow()]
+      : []
   );
 
   const handleRowChange = (section, index, field, value) => {
@@ -874,11 +874,7 @@ const CourseworkPhase = ({ thesis }) => {
     const setter = setters[section];
     const getter = getters[section];
     if (setter && getter) {
-      if (getter.length > 1) {
-        setter(getter.filter((_, i) => i !== index));
-      } else if (section === 'others') {
-        setter([createEmptyRow()]);
-      }
+      setter(getter.filter((_, i) => i !== index));
     }
   };
 
@@ -888,36 +884,43 @@ const CourseworkPhase = ({ thesis }) => {
     setError('');
 
     // Pre-validation
-    const checkSection = (sectionRows, name, isOptional = false) => {
+    const checkSection = (sectionRows, name) => {
       for (const row of sectionRows) {
-        if (isOptional && !row.subjectName.trim() && !row.subjectCode.trim() && !row.marksObtained && !row.maxMarks) {
-          continue;
-        }
         if (!row.subjectName.trim()) {
           throw new Error(`Subject Name is required in all active rows of ${name}.`);
         }
         const obtained = Number(row.marksObtained);
         const max = Number(row.maxMarks);
         if (isNaN(obtained) || obtained < 0) {
-          throw new Error(`Valid Marks Obtained is required in ${name}.`);
+          throw new Error(`Valid Marks Obtained is required in all active rows of ${name}.`);
         }
         if (isNaN(max) || max <= 0) {
-          throw new Error(`Valid Maximum Marks (greater than 0) is required in ${name}.`);
+          throw new Error(`Valid Maximum Marks (greater than 0) is required in all active rows of ${name}.`);
         }
         if (obtained > max) {
           throw new Error(`Marks Obtained (${obtained}) cannot exceed Maximum Marks (${max}) in ${name}.`);
         }
         if (!row.examinationMonthYear) {
-          throw new Error(`Examination Month & Year is required in ${name}.`);
+          throw new Error(`Examination Month & Year is required in all active rows of ${name}.`);
         }
       }
     };
 
     try {
+      if (researchEthics.length === 0) {
+        throw new Error('At least one entry is required in Research and Publication Ethics.');
+      }
+      if (researchMethodology.length === 0) {
+        throw new Error('At least one entry is required in Research Methodology.');
+      }
+      if (elective.length === 0) {
+        throw new Error('At least one entry is required in Discipline-Specific Elective Course.');
+      }
+
       checkSection(researchEthics, 'Research and Publication Ethics');
       checkSection(researchMethodology, 'Research Methodology');
       checkSection(elective, 'Discipline-Specific Elective Course');
-      checkSection(others, 'Others', true);
+      checkSection(others, 'Others (Optional)');
 
       if (!proofFile && !thesis.courseworkUploadProof) {
         throw new Error('Upload Proof is required.');
@@ -948,6 +951,17 @@ const CourseworkPhase = ({ thesis }) => {
 
   // Helper to resolve HOD/supervisor status styles
   const getStatusBanner = () => {
+    if (thesis.courseworkStatus === 'APPROVED') {
+      return (
+        <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46', padding: 16, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <CheckCircle2 size={24} />
+          <div>
+            <div style={{ fontWeight: 600 }}>Coursework Verified & Approved</div>
+            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Your coursework results have been successfully verified and approved by HOD. Coursework phase is locked.</div>
+          </div>
+        </div>
+      );
+    }
     if (thesis.courseworkStatus === 'PENDING_FACULTY') {
       return (
         <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1E40AF', padding: 16, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1025,117 +1039,213 @@ const CourseworkPhase = ({ thesis }) => {
     );
   };
 
-  const renderEditableSection = (title, section, items) => (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #E2E8F0', paddingBottom: 6 }}>
-        <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>{title}</h4>
-      </div>
+  const renderEditableSection = (title, section, items) => {
+    const sectionMeta = {
+      researchEthics: {
+        color: '#3B82F6',
+        bgLight: 'rgba(59, 130, 246, 0.02)',
+        icon: '⚖️',
+        title: 'Research and Publication Ethics'
+      },
+      researchMethodology: {
+        color: '#8B5CF6',
+        bgLight: 'rgba(139, 92, 246, 0.02)',
+        icon: '📊',
+        title: 'Research Methodology'
+      },
+      elective: {
+        color: '#10B981',
+        bgLight: 'rgba(16, 185, 129, 0.02)',
+        icon: '🧩',
+        title: 'Discipline-Specific Elective Course'
+      },
+      others: {
+        color: '#F59E0B',
+        bgLight: 'rgba(245, 158, 11, 0.02)',
+        icon: '📁',
+        title: 'Others (Optional)'
+      }
+    };
 
-      {/* Row Table Headers */}
-      <div style={{ display: 'flex', gap: 12, padding: '0 12px 6px 12px', borderBottom: '1px solid #E2E8F0', marginBottom: 8, fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
-        <div style={{ flex: 2 }}>Subject Name</div>
-        <div style={{ flex: 1.5 }}>Subject Code</div>
-        <div style={{ flex: 1, textAlign: 'center' }}>Obtained</div>
-        <div style={{ flex: 1, textAlign: 'center' }}>Max Marks</div>
-        <div style={{ flex: 1.5, textAlign: 'center' }}>Exam Month & Year</div>
-        {(items.length > 1 || section === 'others') && <div style={{ width: 24 }} />}
-      </div>
+    const meta = sectionMeta[section] || { color: '#64748B', bgLight: '#F8FAFC', icon: '📘' };
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.map((row, idx) => (
-          <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ flex: 2 }}>
-              <input
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem' }}
-                placeholder="Subject Name"
-                value={row.subjectName}
-                onChange={(e) => handleRowChange(section, idx, 'subjectName', e.target.value)}
-                required={section !== 'others'}
-              />
-            </div>
-            <div style={{ flex: 1.5 }}>
-              <input
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem' }}
-                placeholder="Code (optional)"
-                value={row.subjectCode}
-                onChange={(e) => handleRowChange(section, idx, 'subjectCode', e.target.value)}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <input
-                type="number"
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem', textAlign: 'center' }}
-                placeholder="Obtained"
-                value={row.marksObtained}
-                onChange={(e) => handleRowChange(section, idx, 'marksObtained', e.target.value)}
-                min="0"
-                required={section !== 'others'}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <input
-                type="number"
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem', textAlign: 'center' }}
-                placeholder="Max Marks"
-                value={row.maxMarks}
-                onChange={(e) => handleRowChange(section, idx, 'maxMarks', e.target.value)}
-                min="1"
-                required={section !== 'others'}
-              />
-            </div>
-            <div style={{ flex: 1.5 }}>
-              <input
-                type="month"
-                className="form-input"
-                style={{ padding: '6px 12px', fontSize: '0.88rem', color: row.examinationMonthYear ? 'inherit' : '#94A3B8' }}
-                value={row.examinationMonthYear}
-                onChange={(e) => handleRowChange(section, idx, 'examinationMonthYear', e.target.value)}
-                required={section !== 'others'}
-              />
-            </div>
-            {(items.length > 1 || section === 'others') && (
-              <button
-                type="button"
-                style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 4 }}
-                onClick={() => removeRow(section, idx)}
-                title="Remove Row"
-              >
-                🗑️
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 12 }}>
-        <button 
-          type="button" 
-          onClick={() => addRow(section)} 
-          style={{ 
-            padding: '6px 12px', 
-            fontSize: '0.75rem', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 4,
-            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
-            border: '1px solid #BFDBFE',
-            color: '#1E40AF',
-            borderRadius: '6px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.05)'
-          }}
-        >
-          <Plus size={14} /> Add Row
-        </button>
-      </div>
-    </div>
-  );
+    return (
+      <div style={{ 
+        marginBottom: 32, 
+        background: '#FFFFFF', 
+        borderRadius: '16px', 
+        padding: '24px', 
+        border: '1px solid #E2E8F0',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.01)',
+        transition: 'all 0.3s ease'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid #F1F5F9', paddingBottom: 12 }}>
+          <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '1.2rem' }}>{meta.icon}</span> {title}
+          </h4>
+          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: meta.color, background: `${meta.color}15`, padding: '4px 10px', borderRadius: '12px' }}>
+            {items.length} {items.length === 1 ? 'Subject' : 'Subjects'}
+          </span>
+        </div>
 
-  const isPending = thesis.courseworkStatus === 'PENDING_FACULTY' || thesis.courseworkStatus === 'PENDING_HOD';
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {items.map((row, idx) => (
+            <div key={idx} style={{ 
+              background: '#FFFFFF', 
+              borderRadius: '14px', 
+              padding: '20px', 
+              border: '1px solid #E2E8F0',
+              borderLeft: `4px solid ${meta.color}`,
+              position: 'relative',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01)',
+              transition: 'all 0.2s ease',
+              animation: 'fadeIn 0.2s ease-out'
+            }}>
+              {/* Card Header (Subject Counter and Delete Action) */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>
+                  📚 Subject #{idx + 1}
+                </span>
+                
+                {/* Delete button */}
+                <button
+                  type="button"
+                  style={{ 
+                    background: 'transparent',
+                    border: 'none', 
+                    color: '#EF4444', 
+                    cursor: 'pointer', 
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    gap: 4,
+                    lineHeight: 1,
+                    transition: 'all 0.2s',
+                    userSelect: 'none'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = '#FEE2E2';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                  onClick={() => removeRow(section, idx)}
+                  title="Remove Row"
+                >
+                  <X size={14} /> Remove
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Subject Name *</label>
+                  <input
+                    className="form-input"
+                    style={{ padding: '10px 14px', fontSize: '0.85rem', width: '100%', boxSizing: 'border-box', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                    placeholder="e.g. Advanced Research Ethics & Plagiarism"
+                    value={row.subjectName}
+                    onChange={(e) => handleRowChange(section, idx, 'subjectName', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Subject Code</label>
+                  <input
+                    className="form-input"
+                    style={{ padding: '10px 14px', fontSize: '0.85rem', width: '100%', boxSizing: 'border-box', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                    placeholder="e.g. CPE-RPE-01"
+                    value={row.subjectCode}
+                    onChange={(e) => handleRowChange(section, idx, 'subjectCode', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Exam Month & Year *</label>
+                  <input
+                    type="month"
+                    className="form-input"
+                    style={{ padding: '10px 14px', fontSize: '0.85rem', width: '100%', boxSizing: 'border-box', borderRadius: '8px', border: '1px solid #CBD5E1', color: row.examinationMonthYear ? 'inherit' : '#94A3B8' }}
+                    value={row.examinationMonthYear}
+                    onChange={(e) => handleRowChange(section, idx, 'examinationMonthYear', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Marks Obtained *</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{ padding: '10px 14px', fontSize: '0.85rem', width: '100%', boxSizing: 'border-box', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                    placeholder="Marks obtained"
+                    value={row.marksObtained}
+                    onChange={(e) => handleRowChange(section, idx, 'marksObtained', e.target.value)}
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Maximum Marks *</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{ padding: '10px 14px', fontSize: '0.85rem', width: '100%', boxSizing: 'border-box', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                    placeholder="Maximum marks"
+                    value={row.maxMarks}
+                    onChange={(e) => handleRowChange(section, idx, 'maxMarks', e.target.value)}
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 20 }}>
+          <button 
+            type="button" 
+            onClick={() => addRow(section)} 
+            style={{ 
+              padding: '10px 20px', 
+              fontSize: '0.8rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6,
+              background: '#FFFFFF',
+              border: `1.5px dashed ${meta.color}`,
+              color: meta.color,
+              borderRadius: '10px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
+              transition: 'all 0.2s',
+              outline: 'none'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = `${meta.color}08`;
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = '#FFFFFF';
+              e.currentTarget.style.transform = 'none';
+            }}
+            className="add-row-btn"
+          >
+            <Plus size={15} /> Add Subject
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const isLocked = ['PENDING_FACULTY', 'PENDING_HOD', 'APPROVED'].includes(thesis.courseworkStatus);
 
   return (
     <div ref={cardRef} className={`card ${shake ? 'shake-on-error' : ''}`} style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>
@@ -1165,7 +1275,7 @@ const CourseworkPhase = ({ thesis }) => {
         </div>
       )}
 
-      {isPending ? (
+      {isLocked ? (
         <div>
           {renderReadOnlySection('Research and Publication Ethics', thesis.courseworkDetails?.researchEthics || [])}
           {renderReadOnlySection('Research Methodology', thesis.courseworkDetails?.researchMethodology || [])}
@@ -1187,7 +1297,7 @@ const CourseworkPhase = ({ thesis }) => {
           )}
 
           <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#6B7280', fontSize: '0.85rem', background: '#F9FAFB', padding: 12, borderRadius: 8 }}>
-            <Lock size={16} /> Coursework details are locked while approval is pending.
+            <Lock size={16} /> {thesis.courseworkStatus === 'APPROVED' ? 'Coursework details are approved and locked.' : 'Coursework details are locked while approval is pending.'}
           </div>
         </div>
       ) : (
@@ -1276,9 +1386,13 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
   const [drcMeetings, setDrcMeetings] = useState([]);
 
   useEffect(() => {
-    if (synopsisMilestone && synopsisMilestone.status === 'APPROVED') {
+    if (synopsisMilestone) {
       axios.get(`${API}/lifecycle/drc/thesis/${thesis._id}`, getAuthHeader())
-        .then(res => setDrcMeetings(res.data))
+        .then(res => {
+          if (Array.isArray(res.data)) {
+            setDrcMeetings(res.data);
+          }
+        })
         .catch(() => {});
     }
   }, [thesis._id, synopsisMilestone]);
@@ -1347,10 +1461,14 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
               label = 'Approved & Verified';
             }
           } else if (synopsisMilestone.status === 'REVISION_REQUIRED') {
+            const synDrcs = drcMeetings.filter(d => d.isSynopsisApproval);
+            const lastSynDrc = synDrcs.length > 0 ? synDrcs[0] : null;
+            const isDrcUnsatisfactory = lastSynDrc && lastSynDrc.status === 'REVISION_REQUIRED';
+
             bg = '#FEF2F2';
             border = '#FCA5A5';
             color = '#DC2626';
-            label = 'Correction Needed';
+            label = isDrcUnsatisfactory ? 'DRC Outcome Unsatisfactory' : 'Correction Needed';
           }
 
           return (
@@ -1361,6 +1479,24 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
                   {label}
                 </span>
               </div>
+              {(() => {
+                const synDrcs = drcMeetings.filter(d => d.isSynopsisApproval);
+                const lastSynDrc = synDrcs.length > 0 ? synDrcs[0] : null;
+                if (lastSynDrc && lastSynDrc.status === 'REVISION_REQUIRED') {
+                  return (
+                    <div style={{ marginTop: 12, padding: 12, background: 'rgba(255, 255, 255, 0.8)', borderRadius: 6, borderLeft: '4px solid #DC2626' }}>
+                      <div style={{ fontWeight: 700, color: '#991B1B', marginBottom: 4 }}>⚠️ DRC Outcome: Unsatisfactory</div>
+                      <div style={{ fontSize: '0.85rem', color: '#7F1D1D', fontStyle: 'italic' }}>
+                        Remarks: "{lastSynDrc.remarks || 'No remarks provided'}"
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#4B5563', marginTop: 6 }}>
+                        Please revise your synopsis document and research abstract according to the panel comments and resubmit below.
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               {synopsisMilestone.comments?.length > 0 && (
                 <div style={{ marginTop: 12, padding: 12, background: 'rgba(255, 255, 255, 0.7)', borderRadius: 6 }}>
                   <div style={{ fontWeight: 600, color: '#991B1B', marginBottom: 4 }}>Faculty Feedback / Directives:</div>
@@ -7834,7 +7970,7 @@ const ProfileTab = () => {
                 <option value="">Select Preferred Guide...</option>
                 {faculties.map(fac => (
                   <option key={fac._id} value={fac._id}>
-                    {fac.name} ({fac.subRole === 'HOD' ? 'HOD / ' : ''}Faculty)
+                    {fac.name} ({(fac.role === 'HOD' || fac.subRole === 'HOD') ? 'HOD' : 'Faculty'})
                   </option>
                 ))}
               </select>
@@ -8175,7 +8311,117 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                     )}
 
                     {phase.key === 'COURSEWORK' && (
-                      <div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {(() => {
+                          const cwStatus = thesis.courseworkStatus || 'NOT_SUBMITTED';
+                          
+                          if (cwStatus === 'APPROVED') {
+                            return (
+                              <div style={{ 
+                                background: '#ECFDF5', 
+                                border: '1px solid #A7F3D0', 
+                                borderRadius: '8px', 
+                                padding: '12px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                fontSize: '0.82rem',
+                                color: '#065F46',
+                                alignSelf: 'flex-start'
+                              }}>
+                                <span>✓</span> 
+                                <span>Coursework results successfully verified and locked on HOD Clearance.</span>
+                              </div>
+                            );
+                          }
+                          
+                          if (cwStatus === 'PENDING_FACULTY') {
+                            return (
+                              <div style={{ 
+                                background: '#EFF6FF', 
+                                border: '1px solid #BFDBFE', 
+                                borderRadius: '8px', 
+                                padding: '12px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                fontSize: '0.82rem',
+                                color: '#1E3A8A',
+                                alignSelf: 'flex-start'
+                              }}>
+                                <span>⏳</span> 
+                                <span>Coursework details submitted. Awaiting Supervisor verification and approval.</span>
+                              </div>
+                            );
+                          }
+
+                          if (cwStatus === 'PENDING_HOD') {
+                            return (
+                              <div style={{ 
+                                background: '#FFFBEB', 
+                                border: '1px solid #FDE68A', 
+                                borderRadius: '8px', 
+                                padding: '12px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                fontSize: '0.82rem',
+                                color: '#78350F',
+                                alignSelf: 'flex-start'
+                              }}>
+                                <span>⏳</span> 
+                                <span>Coursework verified by Supervisor. Pending final clearance from HOD.</span>
+                              </div>
+                            );
+                          }
+
+                          if (cwStatus === 'REJECTED') {
+                            return (
+                              <div style={{ 
+                                background: '#FEE2E2', 
+                                border: '1px solid #FCA5A5', 
+                                borderRadius: '8px', 
+                                padding: '12px 16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 6,
+                                fontSize: '0.82rem',
+                                color: '#991B1B',
+                                alignSelf: 'flex-start'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span>❌</span> 
+                                  <strong>Coursework details rejected / correction required.</strong>
+                                </div>
+                                {thesis.courseworkRemarks && (
+                                  <div style={{ fontSize: '0.78rem', color: '#7F1D1D', borderTop: '1px dashed #FCA5A5', paddingTop: 4, marginTop: 4 }}>
+                                    <strong>Remarks:</strong> {thesis.courseworkRemarks}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          // NOT_SUBMITTED or fallback
+                          return (
+                            <div style={{ 
+                              background: '#F1F5F9', 
+                              border: '1px solid #E2E8F0', 
+                              borderRadius: '8px', 
+                              padding: '12px 16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              fontSize: '0.82rem',
+                              color: '#475569',
+                              alignSelf: 'flex-start'
+                            }}>
+                              <span>✏️</span> 
+                              <span>Coursework details not yet submitted. Please enter your coursework grades in the active task workspace.</span>
+                            </div>
+                          );
+                        })()}
+
                         {thesis.courseworkDetails ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                             {thesis.courseworkDetails.researchEthics?.length > 0 && 
@@ -8200,22 +8446,6 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                                 </a>
                               </div>
                             )}
-                            
-                            <div style={{ 
-                              background: 'rgba(16, 185, 129, 0.15)', 
-                              border: '1px solid rgba(16, 185, 129, 0.3)', 
-                              borderRadius: '8px', 
-                              padding: '12px 16px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              fontSize: '0.82rem',
-                              color: '#10B981',
-                              alignSelf: 'flex-start'
-                            }}>
-                              <span>✓</span> 
-                              <span>Coursework results successfully verified and locked on HOD Clearance.</span>
-                            </div>
                           </div>
                         ) : (
                           <div style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', fontStyle: 'italic' }}>

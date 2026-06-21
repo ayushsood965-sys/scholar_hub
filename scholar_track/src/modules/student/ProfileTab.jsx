@@ -1681,7 +1681,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <option value="">Select Preferred Guide...</option>
                     {faculties.map(fac => (
                       <option key={fac._id} value={fac._id}>
-                        {fac.name} ({fac.subRole || 'Faculty'})
+                        {fac.name} ({(fac.role === 'HOD' || fac.subRole === 'HOD') ? 'HOD' : (fac.subRole || 'Faculty')})
                       </option>
                     ))}
                   </select>

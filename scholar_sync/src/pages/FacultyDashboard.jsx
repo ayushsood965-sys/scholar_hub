@@ -1224,7 +1224,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <select className="form-input" style={{ padding: '5px 10px', height: 'auto', fontSize: '0.85rem' }} value={selSupervisor} onChange={e => setSelSupervisor(e.target.value)} disabled={!!thesis.supervisorId}>
                 <option value="">Assign Department Supervisor...</option>
-                {faculty.filter(f => f.department === thesis.department).map(f => <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Supervisor'})</option>)}
+                {faculty.filter(f => f.department === thesis.department).map(f => <option key={f._id} value={f._id}>{f.name} ({(f.role === 'HOD' || f.subRole === 'HOD') ? 'HOD' : (f.designation || f.subRole || 'Supervisor')})</option>)}
               </select>
               <button className="btn-primary" onClick={() => act(() => onAssign(selSupervisor))} disabled={!selSupervisor || !!thesis.supervisorId || loading} style={{ padding: '5px 14px', fontSize: '0.85rem', opacity: thesis.supervisorId ? 0.6 : 1, cursor: thesis.supervisorId ? 'not-allowed' : 'pointer' }}>
                 {thesis.supervisorId ? '✓ Supervisor Assigned' : 'Assign'}

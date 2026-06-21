@@ -33,10 +33,10 @@ const ApprovalsTab = () => {
       setCorrections(corrRes.data);
       setRegistrations(regRes.data);
 
-      // Filter faculties to only active, verified supervisors in the same department
+      // Filter faculties to only active, verified supervisors/HODs in the same department
       const deptFaculty = facultyRes.data.filter(f => 
         f.department === user?.department && 
-        f.role === 'FACULTY' && 
+        (f.role === 'FACULTY' || f.role === 'HOD') && 
         f.isActive && 
         f.isVerified
       );
@@ -359,7 +359,7 @@ const ApprovalsTab = () => {
                         >
                           <option value="">Select Supervisor...</option>
                           {faculties.map(f => (
-                            <option key={f._id} value={f._id}>{f.name}</option>
+                            <option key={f._id} value={f._id}>{f.name} ({(f.role === 'HOD' || f.subRole === 'HOD') ? 'HOD' : (f.subRole || 'Supervisor')})</option>
                           ))}
                         </select>
                       </td>

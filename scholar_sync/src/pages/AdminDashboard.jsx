@@ -1110,7 +1110,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                         disabled={!!thesis.supervisorId}
                       >
                         <option value="">Choose department supervisor...</option>
-                        {faculty.filter(f => f.department === thesis.department).map(f => <option key={f._id} value={f._id}>Prof. {f.name} ({f.subRole || 'Supervisor'})</option>)}
+                        {faculty.filter(f => f.department === thesis.department).map(f => <option key={f._id} value={f._id}>Prof. {f.name} ({(f.role === 'HOD' || f.subRole === 'HOD') ? 'HOD' : (f.subRole || 'Supervisor')})</option>)}
                       </select>
                     </div>
                     <button 

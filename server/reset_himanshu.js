@@ -22,6 +22,23 @@ connectDB().then(async () => {
       thesis.status = 'REGISTRATION_PENDING';
       thesis.enrollmentVerified = false;
       thesis.supervisorId = null;
+      thesis.courseworkStatus = 'NOT_SUBMITTED';
+      thesis.courseworkCompleted = false;
+      thesis.courseworkDetails = {
+        researchEthics: [],
+        researchMethodology: [],
+        elective: [],
+        others: []
+      };
+      thesis.courseworkUploadProof = null;
+      thesis.courseworkApprovals = {
+        facultyApproved: false,
+        facultyApproverId: null,
+        facultyApprovedAt: null,
+        hodApproved: false,
+        hodApproverId: null,
+        hodApprovedAt: null
+      };
       // Clear coursework/synopsis milestones if they were auto-generated or progressed
       // Wait, let's keep details clean
       await thesis.save();

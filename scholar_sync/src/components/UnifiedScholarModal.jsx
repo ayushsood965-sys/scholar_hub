@@ -378,6 +378,17 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [semOutcomeStatus, setSemOutcomeStatus] = useState('CLEARED');
   const [semOutcomeRemarks, setSemOutcomeRemarks] = useState('');
 
+  // Synopsis DRC States
+  const [synDrcDate, setSynDrcDate] = useState('');
+  const [synDrcTime, setSynDrcTime] = useState('');
+  const [synDrcVenue, setSynDrcVenue] = useState('');
+  const [synDrcCommittee, setSynDrcCommittee] = useState('');
+  const [synDrcAgenda, setSynDrcAgenda] = useState('DRC for Synopsis Approval');
+
+  // Synopsis DRC outcome record states
+  const [synDrcOutcomeStatus, setSynDrcOutcomeStatus] = useState('APPROVED');
+  const [synDrcOutcomeRemarks, setSynDrcOutcomeRemarks] = useState('');
+
   const user = isReadOnly ? { ...contextUser, role: '', _id: '' } : contextUser;
   const subRole = isReadOnly ? '' : propSubRole;
 
@@ -1025,6 +1036,57 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     { key: 'audit', label: 'Audit Log', icon: '📜' },
   ].filter(t => t.show !== false);
 
+  const handleSynopsisHodApprove = async (milestoneId) => {
+    if (!synDrcDate || !synDrcTime || !synDrcVenue) {
+      return toast.warning('Please fill out Date, Time, and Venue for the synopsis DRC meeting.');
+    }
+    setLoading(true);
+    try {
+      // 1. Schedule DRC
+      const drcPayload = {
+        thesisId: thesis._id,
+        scheduledDate: synDrcDate,
+        scheduledTime: synDrcTime,
+        venue: synDrcVenue,
+        committeeMembers: synDrcCommittee,
+        agenda: synDrcAgenda,
+        isSynopsisApproval: true
+      };
+      await axios.post(`${API}/lifecycle/drc/schedule`, drcPayload, getAuthHeader());
+
+      // 2. Review/approve milestone
+      await onReview(milestoneId, 'APPROVE', remarks[milestoneId]);
+      
+      toast.success('Synopsis approved and DRC scheduled successfully.');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve synopsis and schedule DRC');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSynopsisDrcOutcome = async (drcId) => {
+    if (!synDrcOutcomeRemarks.trim()) {
+      return toast.warning('Please enter evaluation remarks for the DRC outcome.');
+    }
+    setLoading(true);
+    try {
+      await axios.put(`${API}/lifecycle/drc/${drcId}/result`, {
+        status: synDrcOutcomeStatus,
+        remarks: synDrcOutcomeRemarks
+      }, getAuthHeader());
+
+      toast.success('DRC outcome recorded successfully.');
+      setSynDrcOutcomeRemarks('');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to record DRC outcome');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderSynopsis = () => {
     const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
     if (!synopsisMilestone) {
@@ -1158,14 +1220,43 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               onChange={e => setRemarks(r => ({ ...r, [synopsisMilestone._id]: e.target.value }))}
               style={{ marginBottom: 12, width: '100%', borderColor: '#FCD34D', background: '#FFFFFF' }}
             />
+            {subRole === 'HOD' && isPendingHOD && (
+              <div style={{ marginTop: '14px', borderTop: '1px solid #FCD34D', paddingTop: '14px', marginBottom: '14px' }}>
+                <h5 style={{ margin: '0 0 8px', color: '#B45309', fontSize: '0.85rem', fontWeight: 800 }}>📅 Schedule Synopsis DRC Evaluation Meeting</h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Meeting Date *</label>
+                    <input type="date" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcDate} onChange={e => setSynDrcDate(e.target.value)} />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Meeting Time *</label>
+                    <input type="time" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcTime} onChange={e => setSynDrcTime(e.target.value)} />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Venue *</label>
+                    <input type="text" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcVenue} onChange={e => setSynDrcVenue(e.target.value)} placeholder="e.g. Dept Committee Room, Block A" />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Committee Members</label>
+                    <input type="text" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcCommittee} onChange={e => setSynDrcCommittee(e.target.value)} placeholder="e.g. Prof. R.K. Sharma, Dr. S. Verma" />
+                  </div>
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10 }}>
               <button 
                 className="btn-primary" 
-                onClick={() => act(() => onReview(synopsisMilestone._id, 'APPROVE', remarks[synopsisMilestone._id]))} 
+                onClick={() => {
+                  if (subRole === 'HOD') {
+                    handleSynopsisHodApprove(synopsisMilestone._id);
+                  } else {
+                    act(() => onReview(synopsisMilestone._id, 'APPROVE', remarks[synopsisMilestone._id]));
+                  }
+                }} 
                 disabled={loading} 
                 style={{ flex: 1, padding: '10px', background: '#059669' }}
               >
-                {subRole === 'HOD' ? '✓ Grant HOD Final Approval' : '✓ Approve & Forward to HOD'}
+                {subRole === 'HOD' ? '✓ Approve Synopsis & Schedule DRC' : '✓ Approve & Forward to HOD'}
               </button>
               <button 
                 className="btn-outline" 
@@ -1191,9 +1282,83 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </div>
         )}
 
-        {isApproved && thesis.status === 'SYNOPSIS_PENDING' && (
-          <div style={{ background: '#ECFDF5', borderLeft: '4px solid #10B981', color: '#065F46', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
-            ✅ Synopsis approved by HOD! DRC meeting evaluation is now pending. Please proceed to the <strong>DRC</strong> tab to schedule or record the meeting.
+        {isApproved && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {thesis.status === 'SYNOPSIS_PENDING' ? (
+              <div style={{ background: '#ECFDF5', borderLeft: '4px solid #10B981', color: '#065F46', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+                ✅ Synopsis approved by HOD! DRC meeting evaluation is now pending.
+              </div>
+            ) : (
+              <div style={{ background: '#ECFDF5', borderLeft: '4px solid #059669', color: '#047857', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+                ✅ Synopsis officially approved by HOD and cleared by Departmental Research Committee (DRC)!
+              </div>
+            )}
+            
+            {(() => {
+              const synDrcs = drcMeetings.filter(d => d.isSynopsisApproval);
+              if (synDrcs.length > 0) {
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {synDrcs.map(drc => (
+                      <div key={drc._id} className="usm-card" style={{ border: '1px solid #CBD5E1', padding: 20, background: '#F8FAFC' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>🏛️</span> Synopsis DRC Evaluation
+                          </span>
+                          <span style={{ 
+                            padding: '3px 10px', 
+                            borderRadius: 12, 
+                            fontSize: '0.72rem', 
+                            fontWeight: 700, 
+                            background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', 
+                            color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' 
+                          }}>
+                            {drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : 'Scheduled'}
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.85rem', color: '#334155', background: '#FFFFFF', padding: 16, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: drc.status === 'SCHEDULED' && subRole === 'HOD' ? 16 : 0 }}>
+                          <div><strong>Date:</strong> {new Date(drc.scheduledDate).toLocaleDateString()}</div>
+                          <div><strong>Time:</strong> {drc.scheduledTime}</div>
+                          <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {drc.venue}</div>
+                          {drc.committeeMembers && <div style={{ gridColumn: 'span 2' }}><strong>Committee:</strong> {drc.committeeMembers}</div>}
+                          {drc.remarks && (
+                            <div style={{ gridColumn: 'span 2', background: drc.status === 'APPROVED' ? '#F0FDF4' : '#FEF2F2', padding: 8, borderRadius: 6, color: drc.status === 'APPROVED' ? '#15803D' : '#991B1B', borderLeft: `3px solid ${drc.status === 'APPROVED' ? '#16A34A' : '#EF4444'}`, marginTop: 4 }}>
+                              <strong>Outcome Remarks:</strong> {drc.remarks}
+                            </div>
+                          )}
+                        </div>
+
+                        {drc.status === 'SCHEDULED' && subRole === 'HOD' && (
+                          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: 16, borderRadius: 8 }}>
+                            <h5 style={{ margin: '0 0 10px', color: '#92400E', fontSize: '0.85rem', fontWeight: 800 }}>📋 Record DRC Outcome</h5>
+                            <div className="form-group">
+                              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#92400E', marginBottom: 6 }}>Evaluation Status *</label>
+                              <select className="form-input" style={{ width: '100%', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcOutcomeStatus} onChange={e => setSynDrcOutcomeStatus(e.target.value)}>
+                                <option value="APPROVED">Satisfactory (Move candidate to Active Research)</option>
+                                <option value="REVISION_REQUIRED">Unsatisfactory (Revert candidate to Synopsis revision)</option>
+                              </select>
+                            </div>
+                            <div className="form-group" style={{ marginTop: 10 }}>
+                              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#92400E', marginBottom: 6 }}>Committee Remarks / Feedback *</label>
+                              <textarea className="form-input" rows="3" style={{ width: '100%', borderColor: '#FCD34D', background: '#FFFFFF' }} value={synDrcOutcomeRemarks} onChange={e => setSynDrcOutcomeRemarks(e.target.value)} placeholder="Provide final remarks from the DRC panel..." />
+                            </div>
+                            <button className="btn-primary" style={{ marginTop: 8, padding: '8px 16px', background: '#D97706' }} onClick={() => handleSynopsisDrcOutcome(drc._id)} disabled={loading}>
+                              {loading ? 'Recording...' : 'Submit DRC Outcome'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+              return (
+                <div className="usm-card" style={{ padding: 16, background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic', textAlign: 'center' }}>
+                  ⏳ DRC meeting has not been scheduled yet.
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1831,7 +1996,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 >
                   <option value="">Select Supervisor...</option>
                   {faculty.filter(f => f.department === thesis.department).map(f => (
-                    <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Faculty'})</option>
+                    <option key={f._id} value={f._id}>{f.name} ({(f.role === 'HOD' || f.subRole === 'HOD') ? 'HOD' : (f.designation || f.subRole || 'Supervisor')})</option>
                   ))}
                 </select>
               )}
