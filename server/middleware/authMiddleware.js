@@ -26,9 +26,22 @@ const authorize = (...roles) => {
     if (!req.user) {
       return res.status(403).json({ message: 'Role is not authorized' });
     }
-    // HOD is a superset of FACULTY — allow HOD wherever FACULTY is permitted
     const userRole = req.user.role;
-    const allowed = roles.includes(userRole) || (userRole === 'HOD' && roles.includes('FACULTY'));
+    const userSubRole = req.user.subRole;
+
+    // Resolve if user acts as HOD
+    const isHOD = userRole === 'HOD' || userSubRole === 'HOD';
+
+    let allowed = false;
+    if (roles.includes(userRole)) {
+      allowed = true;
+    } else if (isHOD && roles.includes('HOD')) {
+      allowed = true;
+    } else if (isHOD && roles.includes('FACULTY')) {
+      // HOD is a superset of FACULTY
+      allowed = true;
+    }
+
     if (!allowed) {
       return res.status(403).json({ message: 'Role is not authorized' });
     }

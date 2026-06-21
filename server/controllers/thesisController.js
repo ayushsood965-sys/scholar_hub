@@ -344,9 +344,18 @@ const getEligibilityDetails = async (req, res) => {
     const thesis = await Thesis.findById(req.params.id);
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
-    // HOD department check
-    if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
-      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    // HOD and Faculty authorization checks
+    const isHod = req.user.role === 'HOD' || req.user.subRole === 'HOD';
+    if (isHod) {
+      if (thesis.department !== req.user.department) {
+        return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+      }
+    } else if (req.user.role === 'FACULTY') {
+      const isSupervisor = thesis.supervisorId && thesis.supervisorId.toString() === req.user._id.toString();
+      const isSameDept = thesis.department === req.user.department;
+      if (!isSupervisor && !isSameDept) {
+        return res.status(403).json({ message: "Not authorized to view this scholar's eligibility." });
+      }
     }
 
     const User = require('../models/User');
@@ -377,6 +386,18 @@ const getEligibilityDetails = async (req, res) => {
     const approvedReportsCount = reports.filter(r => r.status === 'APPROVED').length;
     const reportsCleared = approvedReportsCount >= requiredReportsCount;
 
+    // Active research period check
+    const admissionDate = scholar?.profile?.admissionDate ? new Date(scholar.profile.admissionDate) : null;
+    const referenceDate = admissionDate && !isNaN(admissionDate.getTime()) ? admissionDate : (thesis.startDate ? new Date(thesis.startDate) : null);
+    
+    let activeMonths = 0;
+    if (referenceDate) {
+      const diffMs = new Date() - referenceDate;
+      activeMonths = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.4375)));
+    }
+    const requiredMonths = hasMphil ? 18 : 36;
+    const durationCleared = activeMonths >= requiredMonths;
+
     // 6. Publications check
     const verifiedJournals = await Publication.countDocuments({ thesisId: thesis._id, type: 'JOURNAL', status: 'VERIFIED' });
     const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
@@ -400,6 +421,7 @@ const getEligibilityDetails = async (req, res) => {
       { name: 'Scholar Enrollment Verified', status: enrollmentVerified, details: enrollmentVerified ? 'Verified' : 'Enrollment registration must be verified by HOD' },
       { name: 'Research Synopsis Approved', status: synopsisApproved, details: synopsisApproved ? 'Approved' : 'Synopsis document review must be approved' },
       { name: 'DRC Evaluation Cleared', status: drcCleared, details: drcCleared ? 'Approved' : 'Department Research Committee must approve synopsis' },
+      { name: `Active Research Duration (Min ${requiredMonths} Months)`, status: durationCleared, details: `${activeMonths} months completed (Required: ${requiredMonths} months for ${hasMphil ? 'M.Phil holder' : 'regular Ph.D.'})` },
       { name: `6-Month Progress Reports Approved (Min ${requiredReportsCount})`, status: reportsCleared, details: `${approvedReportsCount} / ${requiredReportsCount} reports cleared` },
       { name: 'Mandatory Research Publications Verified', status: publicationsCleared, details: `Journals: ${verifiedJournals}/2, Conferences: ${verifiedConferences}/2` },
       { name: 'Pre-Submission Colloquium Cleared', status: preSubmissionCleared, details: preSubmissionCleared ? 'Cleared' : 'Open colloquium presentation must be cleared' },
