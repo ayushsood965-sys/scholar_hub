@@ -256,6 +256,16 @@ const ApprovalsTab = () => {
                         <td style={{ padding: '8px' }}>{getDocLink(q.netJrf?.certificateUrl)}</td>
                       </tr>
                     )}
+                    {q.otherQuals && q.otherQuals.map((o, idx) => (
+                      <tr key={`other-${idx}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>Other ({o.type === 'Other' ? o.otherType : o.type})</td>
+                        <td style={{ padding: '8px' }}>{o.board || '—'}</td>
+                        <td style={{ padding: '8px' }}>{o.school || '—'}</td>
+                        <td style={{ padding: '8px' }}>{o.rollNo || '—'}</td>
+                        <td style={{ padding: '8px' }}>{o.marksObtained}/{o.totalMarks} ({o.percentage ? (o.percentage.endsWith('%') ? o.percentage : `${o.percentage}%`) : '—'})</td>
+                        <td style={{ padding: '8px' }}>{getDocLink(o.certificateUrl)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

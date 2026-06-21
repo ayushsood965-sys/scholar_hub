@@ -402,7 +402,6 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
   const items = [
     { key: 'overview', label: 'Dashboard', Icon: Home },
     { key: 'profile', label: 'Profile', Icon: User },
-    { key: 'thesis', label: 'My Thesis', Icon: Book },
     { key: 'workspace', label: 'Workspace', Icon: Flag },
     { key: 'synopsis', label: 'Synopsis', Icon: ClipboardList },
     { key: 'rac', label: 'RAC Progress', Icon: Layers },
@@ -431,7 +430,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             if (!thesis || thesis.status === 'REGISTRATION_PENDING') return true;
             
             const status = thesis.status;
-            if (key === 'thesis' || key === 'workspace' || key === 'certificates') {
+            if (key === 'workspace' || key === 'certificates') {
               return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
             }
             if (key === 'synopsis') {
@@ -6279,6 +6278,10 @@ const ProfileTab = () => {
           fellowships: fellowships.map((f, i) => ({
             ...f,
             certificateUrl: user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl || f.certificateUrl || ''
+          })),
+          otherQuals: otherQuals.map((o, i) => ({
+            ...o,
+            certificateUrl: user?.profile?.qualifications?.otherQuals?.[i]?.certificateUrl || o.certificateUrl || ''
           }))
         }
       };
@@ -6377,6 +6380,70 @@ const ProfileTab = () => {
         }}>
           <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>✅ Ph.D. Profile Registration Verified & Approved</div>
           <div>Your academic background, certificates, and enrollment parameters are officially approved and locked. Your supervisor assignment is complete!</div>
+        </div>
+      )}
+
+      {thesis && thesis.status !== 'REGISTRATION_PENDING' && (
+        <div style={{
+          background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
+          border: '1px solid #E2E8F0',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          marginBottom: '24px',
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '1.1rem' }}>🎓</span>
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ph.D. Registration Allocation Details</span>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px', fontSize: '0.85rem' }}>
+            <div style={{ gridColumn: 'span 2' }}>
+              <strong style={{ color: '#475569' }}>Thesis Title:</strong>
+              <div style={{ fontWeight: 700, color: '#0F172A', marginTop: '2px', fontSize: '0.9rem' }}>
+                {thesis.title || 'N/A'}
+              </div>
+            </div>
+            <div>
+              <strong style={{ color: '#475569' }}>Supervisor Assigned:</strong>
+              <div style={{ fontWeight: 700, color: '#0369A1', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                <span>👤</span> {thesis.supervisorId?.name || 'Pending Allocation'}
+              </div>
+            </div>
+            <div>
+              <strong style={{ color: '#475569' }}>Active Phase / Current Milestone:</strong>
+              <div style={{ marginTop: '2px' }}>
+                <span style={{ 
+                  fontWeight: 700, 
+                  color: '#059669', 
+                  background: '#D1FAE5', 
+                  padding: '3px 10px', 
+                  borderRadius: '12px', 
+                  fontSize: '0.8rem',
+                  display: 'inline-block'
+                }}>
+                  {(() => {
+                    const statusMap = {
+                      REGISTRATION_PENDING: 'Awaiting HOD Verification',
+                      COURSEWORK: 'Coursework Phase',
+                      SYNOPSIS_PENDING: 'Synopsis Submission Phase',
+                      ACTIVE_RESEARCH: 'Active Research Phase',
+                      PRE_SUBMISSION: 'Pre-Submission Seminar Phase',
+                      THESIS_SUBMITTED: 'Thesis Submitted',
+                      PENDING_SUPERVISOR: 'Pending Supervisor Approval',
+                      PENDING_HOD: 'Pending HOD Approval',
+                      SUBMITTED: 'Thesis Under Evaluation',
+                      AWARDED: 'Ph.D. Degree Awarded! 🎉'
+                    };
+                    return statusMap[thesis.status] || thesis.status;
+                  })()}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -8416,7 +8483,6 @@ const StudentDashboard = () => {
 
   const titles = { 
     overview: 'Student Dashboard', 
-    thesis: 'My Thesis', 
     synopsis: 'Research Synopsis',
     rac: 'RAC Progress', 
     publications: 'Research Outputs', 
@@ -8547,24 +8613,7 @@ const StudentDashboard = () => {
             )}
           </div>
         );
-      case 'thesis':
-        if (['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED'].includes(thesis.status)) {
-          const finalM = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-          if (finalM && finalM.status === 'APPROVED') {
-            return <SubmittedView thesis={thesis} />;
-          }
-        }
-        if (thesis.status === 'AWARDED') return <AwardedView thesis={thesis} />;
-        return (
-          <div className="card">
-            <h3 className="card-title">Thesis Details</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-              {[['Title', thesis.title],['Enrollment', thesis.enrollmentNumber],['Department', thesis.department],['Status', thesis.status],['Supervisor', thesis.supervisorId?.name || 'Pending'],['Start Date', thesis.startDate ? new Date(thesis.startDate).toLocaleDateString() : 'N/A']].map(([k, v]) => (
-                <div key={k}><div style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: 4 }}>{k}</div><div style={{ fontWeight: 600, color: '#111827' }}>{v}</div></div>
-              ))}
-            </div>
-          </div>
-        );
+
       case 'profile': return <ProfileTab />;
       default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: '#6b7280', marginTop: 8 }}>Content coming soon.</p></div>;
     }

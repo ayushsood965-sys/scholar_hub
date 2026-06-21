@@ -499,11 +499,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     fetchRacReviews();
     fetchChangeRequests();
     fetchAdditionalDocs();
-    if (subRole === 'HOD') {
-      axios.get(`${API}/auth/faculty`, getAuthHeader())
-        .then(r => setFaculty(r.data.filter(f => f.department === thesis.department)))
-        .catch(() => {});
-    }
+    axios.get(`${API}/auth/faculty`, getAuthHeader())
+      .then(r => setFaculty(r.data))
+      .catch(() => {});
   }, [thesis._id]);
 
   useEffect(() => {
@@ -1654,7 +1652,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       </div>
 
       <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
-        <div className="usm-section-title" style={{ marginBottom: '10px' }}>📝 Thesis & Research Details</div>
+        <div className="usm-section-title" style={{ marginBottom: '10px' }}>📝 Academic & Research Details</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
           <div><strong>SH no:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{thesis.scholarId?.profile?.shNo || 'N/A'}</span></div>
           <div><strong>Enrollment No:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
@@ -1662,7 +1660,20 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           <div><strong>Admission Date:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.admissionDate ? new Date(thesis.scholarId.profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
           <div><strong>Ph.D. Mode:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.phdMode || 'N/A'}</span></div>
           <div><strong>Specialization:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.specialization || 'N/A'}</span></div>
-          <div><strong>Area of Research Interest:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.areaOfInterest || 'N/A'}</span></div>
+          <div><strong>Academic Session:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.academicSession || 'N/A'}</span></div>
+          <div><strong>Degree Type:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.degreeType || 'N/A'}</span></div>
+          <div><strong>Degree Name:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.degreeName || 'N/A'}</span></div>
+          <div><strong>Subject:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.subject || 'N/A'}</span></div>
+          <div style={{ gridColumn: 'span 2' }}><strong>Academic Background:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.academicBackground || 'N/A'}</span></div>
+          <div style={{ gridColumn: 'span 2' }}><strong>Area of Research Interest:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.areaOfInterest || 'N/A'}</span></div>
+          <div style={{ gridColumn: 'span 2' }}>
+            <strong>Preferred Supervisor Choice:</strong>{' '}
+            <span style={{ color: '#4F46E5', fontWeight: 700, background: '#EEF2FF', border: '1px solid #C7D2FE', padding: '2px 8px', borderRadius: '4px', marginLeft: '6px' }}>
+              {thesis.scholarId?.profile?.preferredGuideId
+                ? (faculty.find(f => f._id === thesis.scholarId.profile.preferredGuideId)?.name || 'Loading Choice...')
+                : 'None Selected'}
+            </span>
+          </div>
           <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: '#0F172A', fontWeight: 700 }}>{thesis.scholarId?.profile?.thesisTitle || thesis.title || 'N/A'}</span></div>
           <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: '#475569', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4, marginTop: 4 }}>{thesis.scholarId?.profile?.thesisSummary || thesis.abstract || 'N/A'}</span></div>
           <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
@@ -1677,16 +1688,31 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             const q = thesis.scholarId?.profile?.qualifications?.[level];
             if (!q) return null;
             const labels = { class10: 'Class 10th', class12: 'Class 12th', graduation: 'Graduation', postGraduation: 'Post Graduation' };
+            const isSchool = level === 'class10' || level === 'class12';
             return (
               <div key={level} className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
                 <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
                   <span>{labels[level]}</span>
                   {q.certificateUrl ? <a href={`${API_BASE_URL}${q.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a> : <span style={{ color: '#94A3B8' }}>Pending</span>}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
-                  <div><strong>Roll:</strong> {q.rollNo || 'N/A'}</div>
-                  <div><strong>Board:</strong> {q.board || 'N/A'}</div>
-                  <div><strong>Marks:</strong> {q.marksObtained}/{q.totalMarks || 'N/A'} ({q.percentage}%)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
+                  <div><strong>Roll No:</strong> {q.rollNo || 'N/A'}</div>
+                  {isSchool ? (
+                    <>
+                      <div><strong>Board:</strong> {q.board || 'N/A'}</div>
+                      <div><strong>School:</strong> {q.school || 'N/A'}</div>
+                      <div style={{ gridColumn: 'span 3' }}>
+                        <strong>Marks/CGPA:</strong> {q.marksObtained}/{q.totalMarks || 'N/A'} ({q.percentage}%)
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div><strong>Degree:</strong> {q.degree || 'N/A'}</div>
+                      <div><strong>College:</strong> {q.college || 'N/A'}</div>
+                      <div style={{ gridColumn: 'span 2' }}><strong>University:</strong> {q.university || 'N/A'}</div>
+                      <div><strong>Marks/CGPA:</strong> {q.marksObtained}/{q.totalMarks || 'N/A'} ({q.percentage}%)</div>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -1708,13 +1734,21 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
             </div>
           )}
-          {thesis.scholarId?.profile?.qualifications?.netJrf && thesis.scholarId.profile.qualifications.netJrf.qualified !== 'No' && (
+          {thesis.scholarId?.profile?.qualifications?.netJrf && (thesis.scholarId.profile.qualifications.netJrf.qualified === true || thesis.scholarId.profile.qualifications.netJrf.qualified === 'YES' || thesis.scholarId.profile.qualifications.netJrf.qualified !== 'No') && (
             <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#ECFDF5', borderColor: '#A7F3D0' }}>
-              <div style={{ fontWeight: 700, color: '#065F46', marginBottom: 4 }}>NET / JRF Qualified</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
-                <div><strong>Status:</strong> {thesis.scholarId.profile.qualifications.netJrf.qualified || 'N/A'}</div>
-                <div><strong>Cert No:</strong> {thesis.scholarId.profile.qualifications.netJrf.certificateNo || 'N/A'}</div>
+              <div style={{ fontWeight: 700, color: '#065F46', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span>NET / JRF Qualified</span>
+                {thesis.scholarId.profile.qualifications.netJrf.certificateUrl ? (
+                  <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.netJrf.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#059669', fontWeight: 600 }}>📄 View Proof</a>
+                ) : null}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
+                <div><strong>Status:</strong> {thesis.scholarId.profile.qualifications.netJrf.qualified === true || thesis.scholarId.profile.qualifications.netJrf.qualified === 'YES' ? 'Yes' : 'No'}</div>
+                <div><strong>Cert No:</strong> {thesis.scholarId.profile.qualifications.netJrf.certNumber || thesis.scholarId.profile.qualifications.netJrf.certificateNo || 'N/A'}</div>
+                <div><strong>Roll No:</strong> {thesis.scholarId.profile.qualifications.netJrf.rollNo || 'N/A'}</div>
+                <div><strong>Rank:</strong> {thesis.scholarId.profile.qualifications.netJrf.rank || 'N/A'}</div>
                 <div><strong>Score:</strong> {thesis.scholarId.profile.qualifications.netJrf.score || 'N/A'}</div>
+                <div><strong>Issue Date:</strong> {thesis.scholarId.profile.qualifications.netJrf.issueDate ? new Date(thesis.scholarId.profile.qualifications.netJrf.issueDate).toLocaleDateString() : 'N/A'}</div>
               </div>
             </div>
           )}
@@ -1768,24 +1802,20 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             Please review the qualifications and credentials above. Verify the scholar and allocate their Research Advisor (Supervisor).
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Enrollment Status:</span>
-              {(!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') ? (
-                <button 
-                  className="btn-primary" 
-                  onClick={() => act(onVerify)} 
-                  disabled={loading} 
-                  style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
-                >
-                  ✓ Verify Enrollment & Move to Coursework
-                </button>
-              ) : (
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>
-                  ✓ Verified
+            
+            {/* Preferred Supervisor box */}
+            {!thesis.supervisorId && (
+              <div style={{ display: 'flex', gap: '4px', flexDirection: 'column', background: '#EEF2FF', border: '1px solid #C7D2FE', padding: '10px 12px', borderRadius: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Preferred Supervisor submitted by student</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#312E81' }}>
+                  {thesis.scholarId?.profile?.preferredGuideId
+                    ? (faculty.find(f => f._id === thesis.scholarId.profile.preferredGuideId)?.name || 'Loading choice...')
+                    : 'None Selected'}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
+            {/* Supervisor Selection / Info Row */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Supervisor:</span>
               {thesis.supervisorId ? (
@@ -1793,27 +1823,57 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   {thesis.supervisorId?.name || 'Assigned'}
                 </span>
               ) : (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
-                  <select 
-                    className="form-input" 
-                    style={{ padding: '6px 10px', height: 'auto', fontSize: '0.82rem', flex: 1 }} 
-                    value={selSupervisor} 
-                    onChange={e => setSelSupervisor(e.target.value)}
-                  >
-                    <option value="">Select Supervisor...</option>
-                    {faculty.filter(f => f.department === thesis.department).map(f => (
-                      <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Faculty'})</option>
-                    ))}
-                  </select>
-                  <button 
-                    className="btn-primary" 
-                    onClick={() => act(() => onAssign(selSupervisor))} 
-                    disabled={!selSupervisor || loading} 
-                    style={{ padding: '6px 14px', fontSize: '0.82rem' }}
-                  >
-                    Assign
-                  </button>
-                </div>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '6px 10px', height: 'auto', fontSize: '0.82rem', flex: 1, maxWidth: '300px' }} 
+                  value={selSupervisor} 
+                  onChange={e => setSelSupervisor(e.target.value)}
+                >
+                  <option value="">Select Supervisor...</option>
+                  {faculty.filter(f => f.department === thesis.department).map(f => (
+                    <option key={f._id} value={f._id}>{f.name} ({f.designation || f.subRole || 'Faculty'})</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Unified Action Button Row */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Action:</span>
+              {(!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') ? (
+                <button 
+                  className="btn-primary" 
+                  onClick={async () => {
+                    if (!thesis.supervisorId) {
+                      if (!selSupervisor) {
+                        toast.warning('Please select a supervisor first.');
+                        return;
+                      }
+                      setLoading(true);
+                      try {
+                        await onAssign(selSupervisor);
+                        await onVerify();
+                        toast.success('Supervisor assigned and profile verified successfully!');
+                      } catch (err) {
+                        toast.error(err.response?.data?.message || 'Error executing action.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    } else {
+                      act(onVerify);
+                    }
+                  }} 
+                  disabled={loading} 
+                  style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
+                >
+                  {!thesis.supervisorId 
+                    ? 'Verify Profile, Assign Supervisor & Move to Coursework' 
+                    : 'Verify Enrollment & Move to Coursework'}
+                </button>
+              ) : (
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>
+                  ✓ Verified & Supervisor Assigned
+                </span>
               )}
             </div>
           </div>

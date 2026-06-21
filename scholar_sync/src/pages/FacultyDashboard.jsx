@@ -1085,6 +1085,24 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                         </div>
                       </div>
                     )}
+                    {/* M.Phil Qualification */}
+                    {thesis.scholarId?.profile?.qualifications?.mphil && thesis.scholarId.profile.qualifications.mphil.done === true && (
+                      <div style={{ background: '#F8FAF5', padding: '10px', borderRadius: '8px', border: '1px solid #D7F3A0', fontSize: '0.78rem' }}>
+                        <div style={{ fontWeight: 700, color: '#4D7C0F', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>M.Phil Qualification</span>
+                          {thesis.scholarId.profile.qualifications.mphil.certificateUrl ? (
+                            <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.mphil.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#65A30D', fontWeight: 600 }}>📄 M.Phil Certificate</a>
+                          ) : (
+                            <span style={{ color: '#94A3B8' }}>Pending Proof</span>
+                          )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                          <div><strong>University:</strong> {thesis.scholarId.profile.qualifications.mphil.university || 'N/A'}</div>
+                          <div><strong>Passing Year:</strong> {thesis.scholarId.profile.qualifications.mphil.passingYear || 'N/A'}</div>
+                          <div><strong>Marks:</strong> {thesis.scholarId.profile.qualifications.mphil.marksObtained}/{thesis.scholarId.profile.qualifications.mphil.totalMarks || 'N/A'} ({thesis.scholarId.profile.qualifications.mphil.percentage}%)</div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* NET JRF */}
                     {thesis.scholarId?.profile?.qualifications?.netJrf && thesis.scholarId.profile.qualifications.netJrf.qualified !== 'No' && (
@@ -1121,6 +1139,25 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                             {f.certificateUrl && (
                               <div style={{ gridColumn: 'span 3', marginTop: 4 }}>
                                 <a href={`${API_BASE_URL}${f.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#0284C7', fontWeight: 600 }}>📄 View Fellowship Proof</a>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {thesis.scholarId?.profile?.qualifications?.otherQuals?.length > 0 && (
+                      <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.78rem' }}>
+                        <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>Other Qualifications</div>
+                        {thesis.scholarId.profile.qualifications.otherQuals.map((o, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', paddingBottom: '6px', marginBottom: '6px', borderBottom: idx !== thesis.scholarId.profile.qualifications.otherQuals.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
+                            <div><strong>Type:</strong> {o.type === 'Other' ? o.otherType : o.type || 'N/A'}</div>
+                            <div><strong>Roll:</strong> {o.rollNo || 'N/A'}</div>
+                            <div><strong>Board/Univ:</strong> {o.board || 'N/A'}</div>
+                            <div><strong>School/Inst:</strong> {o.school || 'N/A'}</div>
+                            <div><strong>Marks:</strong> {o.marksObtained}/{o.totalMarks || 'N/A'} ({o.percentage}%)</div>
+                            {o.certificateUrl && (
+                              <div style={{ gridColumn: 'span 3', marginTop: '2px' }}>
+                                <a href={`${API_BASE_URL}${o.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600 }}>📄 View Proof</a>
                               </div>
                             )}
                           </div>
