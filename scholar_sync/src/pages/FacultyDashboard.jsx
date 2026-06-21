@@ -54,7 +54,7 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <img src="/hpu_logo.png" alt="HPU Logo" style={{ width: 42, height: 42, objectFit: 'contain' }} />
         </div>
-        <h2>ScholarHub</h2>
+        <h2>Scholar Sync</h2>
         {subRole && <div style={{ textAlign: 'center', fontSize: '0.7rem', background: subRole === 'HOD' ? '#FEF3C7' : '#DBEAFE', color: subRole === 'HOD' ? '#D97706' : '#1D4ED8', borderRadius: 6, padding: '2px 8px', margin: '4px auto', width: 'fit-content' }}>{subRole}</div>}
       </div>
       <div className="sidebar-nav">

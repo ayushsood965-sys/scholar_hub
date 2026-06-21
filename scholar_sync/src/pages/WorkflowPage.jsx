@@ -206,7 +206,7 @@ const ParticleCanvas = () => {
 const MockSidebar = ({ items, frozenAll = false, activeIndex = 0, unlocking = false }) => (
   <div className="pres-mock-sidebar">
     <div className="pres-mock-sidebar-logo">
-      <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#10B981' }}>📚 ScholarHub</div>
+      <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#10B981' }}>📚 Scholar Sync</div>
     </div>
     {items.map((item, i) => {
       const isFrozen = frozenAll || (item.frozen && !unlocking);

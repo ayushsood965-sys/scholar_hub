@@ -4398,7 +4398,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <img src="/hpu_logo.png" alt="HPU Logo" style={{ width: 42, height: 42, objectFit: 'contain' }} />
         </div>
-        <h2>ScholarHub</h2>
+        <h2>Scholar Sync</h2>
       </div>
       <div className="sidebar-nav">
         {items.map(({ key, label, Icon }) => {
