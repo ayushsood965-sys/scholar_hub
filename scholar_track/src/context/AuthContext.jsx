@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
       addNotification('Document uploaded successfully!');
-      return { success: true };
+      return { success: true, user: updatedUser };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Document upload failed' };
     }

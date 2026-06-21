@@ -344,8 +344,23 @@ const uploadDocument = async (req, res) => {
     } else if (docType.startsWith('fellowship_')) {
       const index = parseInt(docType.split('_')[1], 10);
       if (!user.profile.qualifications.fellowships) user.profile.qualifications.fellowships = [];
-      if (!user.profile.qualifications.fellowships[index]) user.profile.qualifications.fellowships[index] = {};
-      user.profile.qualifications.fellowships[index].certificateUrl = fileUrl;
+      const fellowships = [...user.profile.qualifications.fellowships];
+      if (!fellowships[index]) fellowships[index] = {};
+      fellowships[index] = { ...fellowships[index], certificateUrl: fileUrl };
+      user.profile.qualifications = {
+        ...user.profile.qualifications,
+        fellowships
+      };
+    } else if (docType.startsWith('otherQuals_')) {
+      const index = parseInt(docType.split('_')[1], 10);
+      if (!user.profile.qualifications.otherQuals) user.profile.qualifications.otherQuals = [];
+      const otherQuals = [...user.profile.qualifications.otherQuals];
+      if (!otherQuals[index]) otherQuals[index] = {};
+      otherQuals[index] = { ...otherQuals[index], certificateUrl: fileUrl };
+      user.profile.qualifications = {
+        ...user.profile.qualifications,
+        otherQuals
+      };
     }
 
     user.markModified('profile');

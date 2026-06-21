@@ -15,10 +15,12 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [loading, setLoading] = useState(true);
   const [isEditingNonPhd, setIsEditingNonPhd] = useState(false);
   const [subTab, setSubTab] = useState('general'); // general | academic | guide
+  const [guideUnlocked, setGuideUnlocked] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState('');
   const [selectedFileNames, setSelectedFileNames] = useState({});
+  const [pendingFiles, setPendingFiles] = useState({});
 
   const api = useApi();
   const toast = useToast();
@@ -64,6 +66,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     class12: false,
     graduation: false,
     postGraduation: false,
+    otherQuals: false,
     netJrf: false,
     other: false
   });
@@ -107,6 +110,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [netJrfIssueDate, setNetJrfIssueDate] = useState('');
 
   const [otherDetails, setOtherDetails] = useState('');
+  const [otherQuals, setOtherQuals] = useState([]);
 
   const fetchProfile = async () => {
     try {
@@ -185,6 +189,24 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       setNetJrfIssueDate(q.netJrf?.issueDate ? q.netJrf.issueDate.split('T')[0] : '');
 
       setOtherDetails(q.other?.details || '');
+      setOtherQuals(prev => {
+        const dbQuals = q.otherQuals || [];
+        if (!prev || prev.length === 0) return dbQuals;
+        const merged = prev.map((localRow, idx) => {
+          if (idx < dbQuals.length) {
+            return {
+              ...dbQuals[idx],
+              ...localRow,
+              certificateUrl: dbQuals[idx]?.certificateUrl || localRow.certificateUrl
+            };
+          }
+          return localRow;
+        });
+        if (dbQuals.length > prev.length) {
+          merged.push(...dbQuals.slice(prev.length));
+        }
+        return merged;
+      });
 
       // Set edit modes
       setEditModes({
@@ -193,9 +215,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         class12: !thesis && !q.class12?.rollNo,
         graduation: !thesis && !q.graduation?.rollNo,
         postGraduation: !thesis && !q.postGraduation?.rollNo,
+        otherQuals: !thesis && !q.otherQuals,
         netJrf: !thesis && (q.netJrf?.qualified === undefined || (q.netJrf?.qualified === true && !q.netJrf?.rollNo)),
         other: !thesis && !q.other?.details
       });
+      if (u.profile?.preferredGuideId || thesis) {
+        setGuideUnlocked(true);
+      }
     } catch (err) {
       toast.error('Failed to load profile details');
     } finally {
@@ -259,29 +285,165 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }
   };
 
-  const handleDocUpload = async (e, docType) => {
+  const handleDocUpload = (e, docType) => {
     const file = e.target.files[0];
     if (!file) return;
-    try {
-      setSelectedFileNames(prev => ({ ...prev, [docType]: file.name }));
-      setUploadingDoc(docType);
-      const res = await uploadProfileDocument(file, docType);
-      if (res.success) {
-        toast.success('Certificate uploaded successfully!');
-        fetchProfile();
-      } else {
-        toast.error('Upload failed: ' + res.message);
+    setSelectedFileNames(prev => ({ ...prev, [docType]: file.name }));
+    setPendingFiles(prev => ({ ...prev, [docType]: file }));
+  };
+
+  const handleCancel = (sectionKey) => {
+    setEditModes(prev => ({ ...prev, [sectionKey]: false }));
+    setPendingFiles(prev => {
+      const next = { ...prev };
+      delete next[sectionKey];
+      if (sectionKey === 'otherQuals') {
+        Object.keys(next).forEach(k => {
+          if (k.startsWith('otherQuals_')) delete next[k];
+        });
       }
-    } catch (err) {
-      toast.error('Error uploading document');
-    } finally {
-      setUploadingDoc('');
-    }
+      return next;
+    });
+    setSelectedFileNames(prev => {
+      const next = { ...prev };
+      delete next[sectionKey];
+      if (sectionKey === 'otherQuals') {
+        Object.keys(next).forEach(k => {
+          if (k.startsWith('otherQuals_')) delete next[k];
+        });
+      }
+      return next;
+    });
+  };
+
+  const handleRemoveRow = (sectionKey, index) => {
+    const list = sectionKey === 'otherQuals' ? otherQuals : [];
+    const setList = sectionKey === 'otherQuals' ? setOtherQuals : () => {};
+    const prefix = sectionKey === 'otherQuals' ? 'otherQuals_' : 'fellowship_';
+
+    const updatedList = [...list];
+    updatedList.splice(index, 1);
+    setList(updatedList);
+
+    setPendingFiles(prev => {
+      const next = {};
+      Object.keys(prev).forEach(key => {
+        if (key.startsWith(prefix)) {
+          const idx = parseInt(key.split('_')[1], 10);
+          if (idx < index) {
+            next[key] = prev[key];
+          } else if (idx > index) {
+            next[`${prefix}${idx - 1}`] = prev[key];
+          }
+        } else {
+          next[key] = prev[key];
+        }
+      });
+      return next;
+    });
+
+    setSelectedFileNames(prev => {
+      const next = {};
+      Object.keys(prev).forEach(key => {
+        if (key.startsWith(prefix)) {
+          const idx = parseInt(key.split('_')[1], 10);
+          if (idx < index) {
+            next[key] = prev[key];
+          } else if (idx > index) {
+            next[`${prefix}${idx - 1}`] = prev[key];
+          }
+        } else {
+          next[key] = prev[key];
+        }
+      });
+      return next;
+    });
   };
 
   // PhD Section Save
   const saveSection = async (sectionKey) => {
     setLoading(true);
+
+    let tempQualifications = profile?.profile?.qualifications || {};
+
+    // --- STEP 1: Validate Text Input Fields ---
+    if (sectionKey === 'class10') {
+      if (!class10Roll.trim() || !class10Board.trim() || !class10School.trim() || !class10Marks.trim() || !class10Total.trim() || !class10Percentage.trim()) {
+        toast.error('Please fill in all Class 10 details.');
+        setLoading(false);
+        return;
+      }
+    } else if (sectionKey === 'class12') {
+      if (!class12Roll.trim() || !class12Board.trim() || !class12School.trim() || !class12Marks.trim() || !class12Total.trim() || !class12Percentage.trim()) {
+        toast.error('Please fill in all Class 12 details.');
+        setLoading(false);
+        return;
+      }
+    } else if (sectionKey === 'graduation') {
+      if (!gradRoll.trim() || !gradDegree.trim() || !gradCollege.trim() || !gradUniversity.trim() || !gradMarks.trim() || !gradTotal.trim() || !gradPercentage.trim()) {
+        toast.error('Please fill in all Graduation details.');
+        setLoading(false);
+        return;
+      }
+    } else if (sectionKey === 'postGraduation') {
+      if (!pgRoll.trim() || !pgDegree.trim() || pgCollege.trim() === '' || pgUniversity.trim() === '' || pgMarks.trim() === '' || pgTotal.trim() === '' || pgPercentage.trim() === '') {
+        toast.error('Please fill in all Post Graduation details.');
+        setLoading(false);
+        return;
+      }
+    } else if (sectionKey === 'netJrf') {
+      if (!netJrfQualified) {
+        toast.error('Please select whether you qualified for NET JRF.');
+        setLoading(false);
+        return;
+      }
+      if (netJrfQualified === 'YES') {
+        if (!netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
+          toast.error('Please fill in all NET JRF details before saving.');
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
+    // --- STEP 2: Validate Certificate Selection ---
+    if (['class10', 'class12', 'graduation', 'postGraduation'].includes(sectionKey)) {
+      const hasCert = tempQualifications[sectionKey]?.certificateUrl || pendingFiles[sectionKey];
+      if (!hasCert) {
+        toast.error(`Please select a certificate PDF to upload for ${sectionKey.replace(/([A-Z])/g, ' $1').toUpperCase()}`);
+        setLoading(false);
+        return;
+      }
+    } else if (sectionKey === 'netJrf' && netJrfQualified === 'YES') {
+      const hasCert = tempQualifications.netJrf?.certificateUrl || pendingFiles.netJrf;
+      if (!hasCert) {
+        toast.error('Please select a certificate PDF to upload for NET JRF');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // --- STEP 3: Upload Pending Certificate ---
+    if (['class10', 'class12', 'graduation', 'postGraduation', 'netJrf'].includes(sectionKey)) {
+      if (pendingFiles[sectionKey]) {
+        setUploadingDoc(sectionKey);
+        const uploadRes = await uploadProfileDocument(pendingFiles[sectionKey], sectionKey);
+        setUploadingDoc('');
+        if (!uploadRes.success) {
+          toast.error(`Certificate upload failed: ${uploadRes.message}`);
+          setLoading(false);
+          return;
+        }
+        tempQualifications = uploadRes.user?.profile?.qualifications || {};
+        setPendingFiles(prev => {
+          const next = { ...prev };
+          delete next[sectionKey];
+          return next;
+        });
+      }
+    }
+
+    // --- STEP 4: Format Payload & Send Update ---
     let sectionData = {};
     if (sectionKey === 'general') {
       if (phoneNumber) {
@@ -303,55 +465,35 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         degreeName: degreeNames.find(n => n._id === degreeNameId)?.name || '',
       };
     } else if (sectionKey === 'class10') {
-      if (!class10Roll.trim() || !class10Board.trim() || !class10School.trim() || !class10Marks.trim() || !class10Total.trim() || !class10Percentage.trim()) {
-        toast.error('Please fill in all Class 10 details.');
-        setLoading(false);
-        return;
-      }
       sectionData = {
         class10: {
           rollNo: class10Roll, board: class10Board, school: class10School,
           marksObtained: class10Marks, totalMarks: class10Total, percentage: class10Percentage,
-          certificateUrl: profile?.profile?.qualifications?.class10?.certificateUrl
+          certificateUrl: tempQualifications?.class10?.certificateUrl
         }
       };
     } else if (sectionKey === 'class12') {
-      if (!class12Roll.trim() || !class12Board.trim() || !class12School.trim() || !class12Marks.trim() || !class12Total.trim() || !class12Percentage.trim()) {
-        toast.error('Please fill in all Class 12 details.');
-        setLoading(false);
-        return;
-      }
       sectionData = {
         class12: {
           rollNo: class12Roll, board: class12Board, school: class12School,
           marksObtained: class12Marks, totalMarks: class12Total, percentage: class12Percentage,
-          certificateUrl: profile?.profile?.qualifications?.class12?.certificateUrl
+          certificateUrl: tempQualifications?.class12?.certificateUrl
         }
       };
     } else if (sectionKey === 'graduation') {
-      if (!gradRoll.trim() || !gradDegree.trim() || !gradCollege.trim() || !gradUniversity.trim() || !gradMarks.trim() || !gradTotal.trim() || !gradPercentage.trim()) {
-        toast.error('Please fill in all Graduation details.');
-        setLoading(false);
-        return;
-      }
       sectionData = {
         graduation: {
           rollNo: gradRoll, degree: gradDegree, college: gradCollege, university: gradUniversity,
           marksObtained: gradMarks, totalMarks: gradTotal, percentage: gradPercentage,
-          certificateUrl: profile?.profile?.qualifications?.graduation?.certificateUrl
+          certificateUrl: tempQualifications?.graduation?.certificateUrl
         }
       };
     } else if (sectionKey === 'postGraduation') {
-      if (!pgRoll.trim() || !pgDegree.trim() || !pgCollege.trim() || !pgUniversity.trim() || !pgMarks.trim() || !pgTotal.trim() || !pgPercentage.trim()) {
-        toast.error('Please fill in all Post Graduation details.');
-        setLoading(false);
-        return;
-      }
       sectionData = {
         postGraduation: {
           rollNo: pgRoll, degree: pgDegree, college: pgCollege, university: pgUniversity,
           marksObtained: pgMarks, totalMarks: pgTotal, percentage: pgPercentage,
-          certificateUrl: profile?.profile?.qualifications?.postGraduation?.certificateUrl
+          certificateUrl: tempQualifications?.postGraduation?.certificateUrl
         }
       };
     } else if (sectionKey === 'netJrf') {
@@ -360,14 +502,14 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           qualified: netJrfQualified === 'YES',
           certNumber: netJrfCertNumber, rollNo: netJrfRoll, rank: netJrfRank, score: netJrfScore,
           issueDate: netJrfIssueDate,
-          certificateUrl: profile?.profile?.qualifications?.netJrf?.certificateUrl
+          certificateUrl: tempQualifications?.netJrf?.certificateUrl
         }
       };
     } else if (sectionKey === 'other') {
       sectionData = {
         other: {
           details: otherDetails,
-          certificateUrl: profile?.profile?.qualifications?.other?.certificateUrl
+          certificateUrl: tempQualifications?.other?.certificateUrl
         }
       };
     }
@@ -377,7 +519,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       if (sectionKey === 'general') {
         payload = { ...sectionData };
       } else {
-        // Nested qualifications merge
         payload = {
           qualifications: {
             ...profile?.profile?.qualifications,
@@ -387,6 +528,187 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       }
       await updateProfile(payload);
       toast.success('Section saved successfully');
+      setEditModes(prev => ({ ...prev, [sectionKey]: false }));
+      fetchProfile();
+    } catch (err) {
+      toast.error('Failed to save details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSectionRow = async (sectionKey, rowIndex) => {
+    setLoading(true);
+
+    let tempQualifications = profile?.profile?.qualifications || {};
+
+    if (sectionKey === 'otherQuals') {
+      const o = otherQuals[rowIndex];
+      if (!o || !o.type || !o.rollNo || !o.board || !o.school || !o.marksObtained || !o.totalMarks || !o.percentage) {
+        toast.error(`Please fill in all details for Qualification #${rowIndex + 1} before saving.`);
+        setLoading(false);
+        return;
+      }
+      if (o.type === 'Other' && !o.otherType) {
+        toast.error(`Please specify the qualification type for Qualification #${rowIndex + 1}.`);
+        setLoading(false);
+        return;
+      }
+      const key = `otherQuals_${rowIndex}`;
+      const hasCert = tempQualifications?.otherQuals?.[rowIndex]?.certificateUrl || o.certificateUrl || pendingFiles[key];
+      if (!hasCert) {
+        toast.error(`Please select a certificate PDF to upload for Qualification #${rowIndex + 1}`);
+        setLoading(false);
+        return;
+      }
+
+      // Upload pending certificate if exists
+      let finalCertUrl = tempQualifications?.otherQuals?.[rowIndex]?.certificateUrl || o.certificateUrl || '';
+      if (pendingFiles[key]) {
+        setUploadingDoc(key);
+        const uploadRes = await uploadProfileDocument(pendingFiles[key], key);
+        setUploadingDoc('');
+        if (!uploadRes.success) {
+          toast.error(`Certificate upload failed for Qualification #${rowIndex + 1}: ${uploadRes.message}`);
+          setLoading(false);
+          return;
+        }
+        tempQualifications = uploadRes.user?.profile?.qualifications || {};
+        finalCertUrl = tempQualifications?.otherQuals?.[rowIndex]?.certificateUrl || '';
+        setPendingFiles(prev => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      }
+
+      // Construct payload array with only valid rows to prevent saving incomplete ones
+      const listToSave = [];
+      otherQuals.forEach((item, idx) => {
+        const isCurrent = idx === rowIndex;
+        const cert = isCurrent ? finalCertUrl : (item.certificateUrl || '');
+        
+        const hasFields = item.type && item.rollNo && item.board && item.school && item.marksObtained && item.totalMarks && item.percentage;
+        const hasSpecific = item.type !== 'Other' || item.otherType;
+        
+        if (isCurrent || (hasFields && hasSpecific && cert)) {
+          listToSave.push({
+            type: isCurrent ? o.type : item.type,
+            otherType: isCurrent ? o.otherType : item.otherType,
+            rollNo: isCurrent ? o.rollNo : item.rollNo,
+            board: isCurrent ? o.board : item.board,
+            school: isCurrent ? o.school : item.school,
+            marksObtained: isCurrent ? o.marksObtained : item.marksObtained,
+            totalMarks: isCurrent ? o.totalMarks : item.totalMarks,
+            percentage: isCurrent ? o.percentage : item.percentage,
+            certificateUrl: cert
+          });
+        }
+      });
+
+      const payload = {
+        qualifications: {
+          ...profile?.profile?.qualifications,
+          otherQuals: listToSave
+        }
+      };
+
+      try {
+        await updateProfile(payload);
+        toast.success(`Qualification #${rowIndex + 1} saved successfully!`);
+        fetchProfile();
+      } catch (err) {
+        toast.error('Failed to save details');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const saveSectionList = async (sectionKey) => {
+    setLoading(true);
+    let tempQualifications = profile?.profile?.qualifications || {};
+
+    const list = sectionKey === 'otherQuals' ? otherQuals : [];
+    const keyPrefix = sectionKey === 'otherQuals' ? 'otherQuals_' : '';
+
+    // 1. Validation
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i];
+      const key = `${keyPrefix}${i}`;
+      
+      if (sectionKey === 'otherQuals') {
+        if (!item.type || !item.rollNo || !item.board || !item.school || !item.marksObtained || !item.totalMarks || !item.percentage) {
+          toast.error(`Please fill in all details for Qualification #${i + 1} or remove the row before saving.`);
+          setLoading(false);
+          return;
+        }
+        if (item.type === 'Other' && !item.otherType) {
+          toast.error(`Please specify the qualification type for Qualification #${i + 1}.`);
+          setLoading(false);
+          return;
+        }
+        const hasCert = tempQualifications?.otherQuals?.[i]?.certificateUrl || item.certificateUrl || pendingFiles[key];
+        if (!hasCert) {
+          toast.error(`Please select a certificate PDF to upload for Qualification #${i + 1}`);
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
+    // 2. Upload pending files
+    const uploadedUrls = {};
+    for (let i = 0; i < list.length; i++) {
+      const key = `${keyPrefix}${i}`;
+      if (pendingFiles[key]) {
+        setUploadingDoc(key);
+        const uploadRes = await uploadProfileDocument(pendingFiles[key], key);
+        setUploadingDoc('');
+        if (!uploadRes.success) {
+          toast.error(`Certificate upload failed for item #${i + 1}: ${uploadRes.message}`);
+          setLoading(false);
+          return;
+        }
+        tempQualifications = uploadRes.user?.profile?.qualifications || {};
+        uploadedUrls[i] = tempQualifications?.[sectionKey]?.[i]?.certificateUrl || '';
+        setPendingFiles(prev => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      }
+    }
+
+    // 3. Construct list to save
+    const listToSave = [];
+    list.forEach((item, i) => {
+      const cert = uploadedUrls[i] || item.certificateUrl || '';
+      if (sectionKey === 'otherQuals') {
+        listToSave.push({
+          type: item.type,
+          otherType: item.otherType,
+          rollNo: item.rollNo,
+          board: item.board,
+          school: item.school,
+          marksObtained: item.marksObtained,
+          totalMarks: item.totalMarks,
+          percentage: item.percentage,
+          certificateUrl: cert
+        });
+      }
+    });
+
+    const payload = {
+      qualifications: {
+        ...profile?.profile?.qualifications,
+        [sectionKey]: listToSave
+      }
+    };
+
+    try {
+      await updateProfile(payload);
+      toast.success(`${sectionKey === 'otherQuals' ? 'Other Qualifications' : 'Fellowships'} saved successfully!`);
       setEditModes(prev => ({ ...prev, [sectionKey]: false }));
       fetchProfile();
     } catch (err) {
@@ -498,6 +820,64 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     : degreeTypes.filter(t => t.code !== 'PHD' && !t.name?.toLowerCase().includes('phd'));
 
   const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === degreeTypeId || d.degreeTypeId === degreeTypeId);
+
+  const handleProceedToGuide = () => {
+    setGuideUnlocked(true);
+    setSubTab('guide');
+    toast.success('Qualifications verified! Proceeding to Advisor Preference.');
+  };
+
+  const isGeneralInfoComplete = () => {
+    if (!isPhD) {
+      return !!(academicSession && degreeTypeId && semesterId && phoneNumber && address);
+    }
+    return !!(
+      dob && gender && category && fatherName && motherName && nationality &&
+      admissionDate && enrollmentNumber && phdMode && specialization &&
+      phoneNumber && address && areaOfInterest &&
+      thesisTitle && thesisSummary && thesisKeywords && academicSession &&
+      degreeTypeId && semesterId
+    );
+  };
+
+  const isAcademicQualificationsComplete = () => {
+    const q = profile?.profile?.qualifications;
+    if (!q) return false;
+
+    const class10Ok = !!(class10Roll && class10Board && class10School && class10Marks && class10Total && class10Percentage && q?.class10?.certificateUrl);
+    const class12Ok = !!(class12Roll && class12Board && class12School && class12Marks && class12Total && class12Percentage && q?.class12?.certificateUrl);
+    const gradOk = !!(gradRoll && gradDegree && gradCollege && gradUniversity && gradMarks && gradTotal && gradPercentage && q?.graduation?.certificateUrl);
+    const pgOk = !!(pgRoll && pgDegree && pgCollege && pgUniversity && pgMarks && pgTotal && pgPercentage && q?.postGraduation?.certificateUrl);
+
+    if (!class10Ok || !class12Ok || !gradOk || !pgOk) return false;
+
+    if (isPhD) {
+      if (netJrfQualified === 'YES') {
+        const netJrfOk = !!(netJrfCertNumber && netJrfRoll && netJrfRank && netJrfScore && netJrfIssueDate && q?.netJrf?.certificateUrl);
+        if (!netJrfOk) return false;
+      }
+    }
+
+    return true;
+  };
+
+  const hasAnySavedQualification = !!(
+    profile?.profile?.qualifications?.class10?.rollNo ||
+    profile?.profile?.qualifications?.class12?.rollNo ||
+    profile?.profile?.qualifications?.graduation?.rollNo ||
+    profile?.profile?.qualifications?.postGraduation?.rollNo ||
+    (profile?.profile?.qualifications?.otherQuals && profile?.profile?.qualifications?.otherQuals.length > 0)
+  );
+
+  const class10Saved = !!(
+    profile?.profile?.qualifications?.class10?.rollNo &&
+    profile?.profile?.qualifications?.class10?.certificateUrl
+  );
+  const class12Saved = !!(
+    profile?.profile?.qualifications?.class12?.rollNo &&
+    profile?.profile?.qualifications?.class12?.certificateUrl
+  );
+  const canProceedToGuide = class10Saved && class12Saved;
 
   return (
     <div className="glass-panel p-xl">
@@ -619,20 +999,42 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
             >
               1. General Details
             </button>
-            <button 
-              className={`tab-btn ${subTab === 'academic' ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', color: subTab === 'academic' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'academic' ? 'bold' : '500', cursor: 'pointer' }}
-              onClick={() => setSubTab('academic')}
-            >
-              2. Academic Qualifications
-            </button>
-            <button 
-              className={`tab-btn ${subTab === 'guide' ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', color: subTab === 'guide' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'guide' ? 'bold' : '500', cursor: 'pointer' }}
-              onClick={() => setSubTab('guide')}
-            >
-              3. Advisor Preference
-            </button>
+            {(thesis || profile?.profileCompleted || isGeneralInfoComplete()) ? (
+              <button 
+                className={`tab-btn ${subTab === 'academic' ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', color: subTab === 'academic' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'academic' ? 'bold' : '500', cursor: 'pointer' }}
+                onClick={() => setSubTab('academic')}
+              >
+                2. Academic Qualifications
+              </button>
+            ) : (
+              <button 
+                disabled
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted, #9CA3AF)', fontWeight: '500', cursor: 'not-allowed', opacity: 0.6 }}
+                title="Complete and save General Details to unlock"
+              >
+                🔒 2. Academic Qualifications
+              </button>
+            )}
+            {isPhD && (
+              (thesis || guideUnlocked || (isGeneralInfoComplete() && isAcademicQualificationsComplete())) ? (
+                <button 
+                  className={`tab-btn ${subTab === 'guide' ? 'active' : ''}`}
+                  style={{ background: 'none', border: 'none', color: subTab === 'guide' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'guide' ? 'bold' : '500', cursor: 'pointer' }}
+                  onClick={() => setSubTab('guide')}
+                >
+                  3. Advisor Preference
+                </button>
+              ) : (
+                <button 
+                  disabled
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted, #9CA3AF)', fontWeight: '500', cursor: 'not-allowed', opacity: 0.6 }}
+                  title="Complete academic qualifications to unlock"
+                >
+                  🔒 3. Advisor Preference
+                </button>
+              )
+            )}
           </div>
 
           <form onSubmit={e => { e.preventDefault(); saveSection(subTab); }}>
@@ -847,11 +1249,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   )}
                   <div className="form-group">
                     <label className="form-label">Contact Address</label>
-                    <input 
+                    <textarea 
                       className="form-input" 
                       disabled={!editModes.general || !!thesis} 
                       value={address} 
                       onChange={e => setAddress(e.target.value)} 
+                      rows={3}
+                      style={{ fontFamily: 'inherit', resize: 'vertical' }}
                     />
                   </div>
                 </div>
@@ -925,7 +1329,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
                         {getUploadButton('class10', profile?.profile?.qualifications?.class10?.certificateUrl)}
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.class10?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => setEditModes({...editModes, class10: false})}>Cancel</button>}
+                          {profile?.profile?.qualifications?.class10?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('class10')}>Cancel</button>}
                           <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('class10')}>Save Class 10</button>
                         </div>
                       </div>
@@ -957,7 +1361,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
                         {getUploadButton('class12', profile?.profile?.qualifications?.class12?.certificateUrl)}
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.class12?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => setEditModes({...editModes, class12: false})}>Cancel</button>}
+                          {profile?.profile?.qualifications?.class12?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('class12')}>Cancel</button>}
                           <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('class12')}>Save Class 12</button>
                         </div>
                       </div>
@@ -992,7 +1396,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
                         {getUploadButton('graduation', profile?.profile?.qualifications?.graduation?.certificateUrl)}
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.graduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => setEditModes({...editModes, graduation: false})}>Cancel</button>}
+                          {profile?.profile?.qualifications?.graduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('graduation')}>Cancel</button>}
                           <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('graduation')}>Save Graduation</button>
                         </div>
                       </div>
@@ -1027,9 +1431,152 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
                         {getUploadButton('postGraduation', profile?.profile?.qualifications?.postGraduation?.certificateUrl)}
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.postGraduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => setEditModes({...editModes, postGraduation: false})}>Cancel</button>}
+                          {profile?.profile?.qualifications?.postGraduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('postGraduation')}>Cancel</button>}
                           <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('postGraduation')}>Save Post Graduation</button>
                         </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Other Qualifications Card */}
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)', marginTop: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>Other Qualifications</h4>
+                  </div>
+                  
+                  {!editModes.otherQuals ? (
+                    <div>
+                      {otherQuals.length > 0 ? otherQuals.map((o, i) => (
+                        <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                          <div>
+                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Qualification Type</span>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.type === 'Other' ? o.otherType : o.type || '—'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.rollNo || '—'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board / University</span>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.board || '—'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Institution / School</span>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.school || '—'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.marksObtained || '0'} / {o.totalMarks || '0'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
+                          </div>
+                          <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+                            {getDocBadge(`otherQuals_${i}`, profile?.profile?.qualifications?.otherQuals?.[i]?.certificateUrl)}
+                          </div>
+                        </div>
+                      )) : (
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '16px' }}>No other qualifications added.</div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                        <button
+                          className="btn btn-sm btn-outline"
+                          type="button"
+                          disabled={!!thesis}
+                          onClick={() => !thesis && setEditModes(prev => ({ ...prev, otherQuals: true }))}
+                        >
+                          ✏️ Edit / Add Other Qualifications
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      {otherQuals.map((o, i) => (
+                        <div key={i} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>Qualification #{i + 1}</strong>
+                            <button className="btn btn-sm btn-danger" type="button" onClick={() => handleRemoveRow('otherQuals', i)} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}>Remove</button>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                            <div className="form-group">
+                              <label className="form-label">Qualification Type</label>
+                              <select className="form-input" value={o.type || ''} onChange={e => { const updated = [...otherQuals]; updated[i].type = e.target.value; setOtherQuals(updated); }}>
+                                <option value="">Select Option...</option>
+                                <option value="Certificate">Certificate</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            </div>
+                            {o.type === 'Other' && (
+                              <div className="form-group">
+                                <label className="form-label">Please Specify Qualification</label>
+                                <input type="text" className="form-input" placeholder="Specify..." value={o.otherType || ''} onChange={e => { const updated = [...otherQuals]; updated[i].otherType = e.target.value; setOtherQuals(updated); }} />
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                            <div className="form-group">
+                              <label className="form-label">Roll Number</label>
+                              <input type="text" className="form-input" placeholder="Roll Number" value={o.rollNo || ''} onChange={e => { const updated = [...otherQuals]; updated[i].rollNo = e.target.value; setOtherQuals(updated); }} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Board / University</label>
+                              <input type="text" className="form-input" placeholder="e.g. CBSE / Delhi University" value={o.board || ''} onChange={e => { const updated = [...otherQuals]; updated[i].board = e.target.value; setOtherQuals(updated); }} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Institution / School Name</label>
+                              <input type="text" className="form-input" placeholder="Institution Name" value={o.school || ''} onChange={e => { const updated = [...otherQuals]; updated[i].school = e.target.value; setOtherQuals(updated); }} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Marks Obtained</label>
+                              <input type="number" step="0.01" className="form-input" placeholder="Marks" value={o.marksObtained || ''} onChange={e => { const updated = [...otherQuals]; updated[i].marksObtained = e.target.value; setOtherQuals(updated); }} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'flex-end' }}>
+                            <div className="form-group">
+                              <label className="form-label">Total Max Marks</label>
+                              <input type="number" step="0.01" className="form-input" placeholder="Total scale" value={o.totalMarks || ''} onChange={e => { const updated = [...otherQuals]; updated[i].totalMarks = e.target.value; setOtherQuals(updated); }} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Percentage (%)</label>
+                              <input type="text" className="form-input" placeholder="e.g. 85%" value={o.percentage || ''} onChange={e => { const updated = [...otherQuals]; updated[i].percentage = e.target.value; setOtherQuals(updated); }} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {getUploadButton(`otherQuals_${i}`, o.certificateUrl)}
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-primary"
+                                onClick={() => saveSectionRow('otherQuals', i)}
+                                disabled={loading}
+                                style={{ height: '38px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                💾 Save
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <button className="btn btn-outline" type="button" onClick={() => setOtherQuals([...otherQuals, { type: '', otherType: '', rollNo: '', board: '', school: '', marksObtained: '', totalMarks: '', percentage: '' }])} style={{ width: '100%', marginBottom: '16px', borderStyle: 'dashed' }}>+ Add More Qualification</button>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          type="button"
+                          onClick={() => { setOtherQuals(profile?.profile?.qualifications?.otherQuals || []); handleCancel('otherQuals'); }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="btn btn-sm btn-primary"
+                          type="button"
+                          onClick={() => saveSectionList('otherQuals')}
+                          disabled={loading}
+                        >
+                          💾 Save & Close
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1072,7 +1619,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
                           {netJrfQualified === 'YES' && getUploadButton('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
                           <div style={{ display: 'flex', gap: '8px' }}>
-                            {profile?.profile?.qualifications?.netJrf?.qualified !== undefined && <button className="btn btn-sm btn-secondary" type="button" onClick={() => setEditModes({...editModes, netJrf: false})}>Cancel</button>}
+                            {profile?.profile?.qualifications?.netJrf?.qualified !== undefined && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('netJrf')}>Cancel</button>}
                             <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('netJrf')}>Save NET JRF</button>
                           </div>
                         </div>
@@ -1083,6 +1630,38 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
               </div>
             )}
 
+            {isPhD && hasAnySavedQualification && (
+              <div style={{ marginTop: '32px', padding: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleProceedToGuide}
+                  disabled={!canProceedToGuide}
+                  style={{
+                    background: canProceedToGuide ? '#059669' : '#9CA3AF',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    cursor: canProceedToGuide ? 'pointer' : 'not-allowed',
+                    boxShadow: canProceedToGuide ? '0 4px 6px -1px rgba(5, 150, 105, 0.2)' : 'none',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {canProceedToGuide ? '🔓' : '🔒'} Save & Proceed to Supervisor Selection
+                </button>
+                {!canProceedToGuide && (
+                  <span style={{ fontSize: '0.8rem', color: '#EF4444', fontWeight: 500 }}>
+                    * Please fill and save both Class 10 and Class 12 qualifications (including certificates) to unlock supervisor selection.
+                  </span>
+                )}
+              </div>
+            )}
             {/* TAB 3: Advisor Preference */}
             {subTab === 'guide' && (
               <div>

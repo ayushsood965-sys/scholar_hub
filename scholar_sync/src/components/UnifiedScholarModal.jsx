@@ -1738,6 +1738,25 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               ))}
             </div>
           )}
+          {thesis.scholarId?.profile?.qualifications?.otherQuals?.length > 0 && (
+            <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#F8FAFC', borderColor: '#CBD5E1' }}>
+              <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: 4 }}>Other Qualifications</div>
+              {thesis.scholarId.profile.qualifications.otherQuals.map((o, idx) => (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, paddingBottom: 6, marginBottom: 6, borderBottom: idx !== thesis.scholarId.profile.qualifications.otherQuals.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
+                  <div><strong>Type:</strong> {o.type === 'Other' ? o.otherType : o.type || 'N/A'}</div>
+                  <div><strong>Roll:</strong> {o.rollNo || 'N/A'}</div>
+                  <div><strong>Board/Univ:</strong> {o.board || 'N/A'}</div>
+                  <div><strong>School/Inst:</strong> {o.school || 'N/A'}</div>
+                  <div><strong>Marks:</strong> {o.marksObtained}/{o.totalMarks || 'N/A'} ({o.percentage}%)</div>
+                  {o.certificateUrl && (
+                    <div style={{ gridColumn: 'span 3', marginTop: 2 }}>
+                      <a href={`${API_BASE_URL}${o.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600 }}>📄 View Proof</a>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
