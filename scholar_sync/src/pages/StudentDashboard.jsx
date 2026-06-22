@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -3309,6 +3309,25 @@ const RACProgressTab = ({ thesis }) => {
   );
 };
 
+const getStatusDisplay = (status) => {
+  switch (status) {
+    case 'DRAFT':
+      return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+    case 'PENDING':
+      return { text: 'submitted and under review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+    case 'UNDER_REVIEW_HOD':
+      return { text: 'under review at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+    case 'VERIFIED':
+      return { text: 'Approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+    case 'REJECTED_BY_SUPERVISOR':
+      return { text: 'rejected by supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    case 'REJECTED_BY_HOD':
+      return { text: 'rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    default:
+      return { text: status, color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+  }
+};
+
 const ResearchOutputsTab = ({ thesis }) => {
   const toast = useToast();
   const [pubs, setPubs] = useState([]);
@@ -3316,6 +3335,7 @@ const ResearchOutputsTab = ({ thesis }) => {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [file, setFile] = useState(null);
+  const [editingPubId, setEditingPubId] = useState(null);
   const [form, setForm] = useState({ 
     title: '', 
     journalName: '', 
@@ -3325,7 +3345,11 @@ const ResearchOutputsTab = ({ thesis }) => {
     type: 'JOURNAL',
     doiUrl: '',
     iprType: '',
-    itemStatus: ''
+    itemStatus: '',
+    indexing: '',
+    volume: '',
+    issue: '',
+    pages: ''
   });
 
   const fetchPubs = async () => {
@@ -3340,10 +3364,29 @@ const ResearchOutputsTab = ({ thesis }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.journalName.trim()) {
-      return toast.warning(form.type === 'IPR' ? 'Please enter IPR title and office details.' : 'Please enter paper title and publisher details.');
+    if (!form.title.trim()) {
+      return toast.warning('Please enter the title.');
     }
-    if (!file) return toast.warning('Please upload a PDF proof document.');
+    if (form.type === 'JOURNAL') {
+      if (!form.journalName.trim()) return toast.warning('Please enter the Journal/Publisher name.');
+      if (!form.indexing) return toast.warning('Please select the Journal Indexing database.');
+    } else if (form.type === 'CONFERENCE') {
+      if (!form.journalName.trim()) return toast.warning('Please enter the Conference Name.');
+      if (!form.volume.trim()) return toast.warning('Please enter the Host / Organizing Institution.');
+      if (!form.issn.trim()) return toast.warning('Please enter the Conference Location / Venue.');
+      if (!form.indexing) return toast.warning('Please select the Conference Indexing database.');
+    } else if (form.type === 'IPR') {
+      if (!form.iprType) return toast.warning('Please select the IPR Type.');
+      if (!form.journalName.trim()) return toast.warning('Please enter the IPR Office / Issuing Organization.');
+      if (!form.volume.trim()) return toast.warning('Please enter the Inventors / Applicants.');
+      if (!form.issn.trim()) return toast.warning('Please enter the Application / Registration Number.');
+      if (!form.pages.trim()) return toast.warning('Please enter the Country / Region.');
+      if (form.itemStatus === 'Granted / Issued / Registered' && !form.issue.trim()) {
+        return toast.warning('Please enter the App/Grant ID.');
+      }
+    }
+
+    if (!editingPubId && !file) return toast.warning('Please upload a PDF proof document.');
     
     setSubmitting(true);
     try {
@@ -3358,47 +3401,107 @@ const ResearchOutputsTab = ({ thesis }) => {
       if (form.type === 'IPR') formData.append('iprType', form.iprType);
       formData.append('itemStatus', form.itemStatus);
       formData.append('doiUrl', form.doiUrl);
-      formData.append('document', file);
+      formData.append('indexing', form.indexing || '');
+      formData.append('volume', form.volume || '');
+      formData.append('issue', form.issue || '');
+      formData.append('pages', form.pages || '');
+      if (file) {
+        formData.append('document', file);
+      }
 
-      await axios.post(`${API}/publications`, formData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      if (editingPubId) {
+        await axios.put(`${API}/publications/${editingPubId}`, formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        toast.success(`${form.type === 'IPR' ? 'IPR' : 'Research Output'} updated successfully!`);
+      } else {
+        await axios.post(`${API}/publications`, formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        toast.success(`${form.type === 'IPR' ? 'IPR' : 'Research Output'} logged successfully & pending verification!`);
+      }
 
-      toast.success(`${form.type === 'IPR' ? 'IPR' : 'Scientific Publication'} logged successfully & pending verification!`);
       setShowForm(false);
-      setForm({ title: '', journalName: '', issn: '', publicationDate: '', paperLink: '', type: 'JOURNAL', doiUrl: '', iprType: '', itemStatus: '' });
+      setEditingPubId(null);
+      setForm({ title: '', journalName: '', issn: '', publicationDate: '', paperLink: '', type: 'JOURNAL', doiUrl: '', iprType: '', itemStatus: '', indexing: '', volume: '', issue: '', pages: '' });
       setFile(null);
       fetchPubs();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error logging research output.');
+      toast.error(err.response?.data?.message || 'Error saving research output.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleDeletePub = async (pubId) => {
+    if (!window.confirm('Are you sure you want to delete this draft research output?')) return;
+    try {
+      await axios.delete(`${API}/publications/${pubId}`, getAuthHeader());
+      toast.success('Research output deleted successfully.');
+      fetchPubs();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error deleting research output.');
+    }
+  };
+
+  const handleSendToSupervisor = async () => {
+    if (!window.confirm('Are you sure you want to send all draft research outputs to your supervisor for approval?')) return;
+    try {
+      await axios.put(`${API}/publications/thesis/${thesis._id}/submit-drafts`, {}, getAuthHeader());
+      toast.success('Research outputs submitted to supervisor successfully.');
+      fetchPubs();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error submitting research outputs.');
+    }
+  };
+
+  const handleEditClick = (p) => {
+    setForm({
+      title: p.title || '',
+      journalName: p.journalName || '',
+      issn: p.issn || '',
+      publicationDate: p.publicationDate ? p.publicationDate.split('T')[0] : '',
+      paperLink: p.paperLink || '',
+      type: p.type || 'JOURNAL',
+      doiUrl: p.doiUrl || '',
+      iprType: p.iprType || '',
+      itemStatus: p.itemStatus || '',
+      indexing: p.indexing || '',
+      volume: p.volume || '',
+      issue: p.issue || '',
+      pages: p.pages || ''
+    });
+    setEditingPubId(p._id);
+    setFile(null);
+    setShowForm(true);
+    setTimeout(() => {
+      const element = document.getElementById('new-research-output-form');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingPubId(null);
+    setForm({ title: '', journalName: '', issn: '', publicationDate: '', paperLink: '', type: 'JOURNAL', doiUrl: '', iprType: '', itemStatus: '', indexing: '', volume: '', issue: '', pages: '' });
+    setFile(null);
+  };
+
   const verifiedJournals = pubs.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
   const verifiedConferences = pubs.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
-  const loggedPatents = pubs.filter(p => p.type === 'PATENT' || p.type === 'IPR').length;
+  const loggedPatents = pubs.filter(p => (p.type === 'PATENT' || p.type === 'IPR') && p.status === 'VERIFIED').length;
 
-  const isIPR = form.type === 'PATENT' || form.type === 'IPR';
-  const isConf = form.type === 'CONFERENCE';
-  
-  const titleLabel = isIPR ? 'IPR / Patent Title *' : isConf ? 'Presentation/Paper Title *' : 'Paper Title *';
-  const titlePlaceholder = isIPR ? 'e.g. System and Method for Adaptive Threat Detection' : 'e.g. A Deep Learning Approach to Cybersecurity';
-  const journalLabel = isIPR ? 'IPR Office / Issuing Organization *' : isConf ? 'Conference Name & Location *' : 'Journal / Publisher *';
-  const journalPlaceholder = isIPR ? 'e.g. Indian Patent Office (IPO) / Copyright Office' : isConf ? 'e.g. IEEE ICC 2026, Paris' : 'e.g. IEEE Transactions on Forensics';
-  const issnLabel = isIPR ? 'IPR / Application Number' : 'ISSN / ISBN';
-  const issnPlaceholder = isIPR ? 'e.g. 202611012345' : 'e.g. 1549-3652';
-  const dateLabel = isIPR ? 'Date of Filing / Award *' : isConf ? 'Date of Presentation *' : 'Date of Acceptance/Print *';
-  const linkLabel = isIPR ? 'IPR URL / Link' : 'Paper/Publisher Link';
-  const linkPlaceholder = isIPR ? 'e.g. https://ipindiaservices.gov.in/...' : 'e.g. https://ieeexplore.ieee.org/document/...';
-  const doiLabel = isIPR ? 'IPR ID / App Ref Number' : 'DOI URL / Number';
-  const doiPlaceholder = isIPR ? 'e.g. PAT/2026/7890' : 'e.g. 10.1109/TIFS.2026.12345';
-  const proofLabel = isIPR ? 'Upload IPR Proof / Certificate (PDF format) *' : isConf ? 'Upload Proof of Presentation (PDF format) *' : 'Upload Proof of Acceptance (PDF format) *';
-  const typeLabel = isIPR ? 'Research Output Type *' : 'Publication / Presentation Type *';
+  const activePubs = pubs.filter(p => p.status === 'DRAFT' || p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD');
+  const reviewedPubs = pubs.filter(p => p.status === 'VERIFIED' || p.status === 'REJECTED_BY_SUPERVISOR' || p.status === 'REJECTED_BY_HOD');
+  const hasDrafts = activePubs.some(p => p.status === 'DRAFT');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -3502,7 +3605,7 @@ const ResearchOutputsTab = ({ thesis }) => {
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
               <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-text, #0F172A)' }}>{loggedPatents}</span>
-              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary, #64748B)', fontWeight: 500 }}>uploaded</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary, #64748B)', fontWeight: 500 }}>verified</span>
             </div>
             <div style={{ width: '100%', height: 6, background: 'var(--color-bg, #F1F5F9)', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
               <div style={{ width: '100%', height: '100%', background: '#3B82F6', borderRadius: 3 }} />
@@ -3519,104 +3622,265 @@ const ResearchOutputsTab = ({ thesis }) => {
               Log and track peer-reviewed journal papers, scientific conference presentations, and Intellectual Property Rights (IPRs) completed during your active Ph.D. tenure.
             </p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="btn-primary" style={{ background: 'var(--color-primary, #059669)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button onClick={() => { if (editingPubId) resetForm(); else setShowForm(!showForm); }} className="btn-primary" style={{ background: 'var(--color-primary, #059669)', display: 'flex', gap: 6, alignItems: 'center' }}>
             <Plus size={16} /> Log Research Output
           </button>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} style={{ background: 'var(--color-bg, #F8FAFC)', padding: 20, borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h4 style={{ margin: 0, color: 'var(--color-text, #0F172A)' }}>Log New Research Output</h4>
+          <form id="new-research-output-form" onSubmit={handleSubmit} style={{ background: 'var(--color-bg, #F8FAFC)', padding: 20, borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h4 style={{ margin: 0, color: 'var(--color-text, #0F172A)' }}>{editingPubId ? 'Edit Research Output' : 'Log New Research Output'}</h4>
             
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{typeLabel}</label>
-              <select className="form-input" required value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={{ maxWidth: '400px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Research Output Type *</label>
+              <select className="form-input" required value={form.type} onChange={e => setForm({ ...form, type: e.target.value, iprType: '', itemStatus: '', indexing: '', volume: '', issue: '', pages: '' })} style={{ maxWidth: '400px' }} disabled={!!editingPubId}>
                 <option value="JOURNAL">Journal Publication</option>
                 <option value="CONFERENCE">Conference Presentation</option>
                 <option value="IPR">Intellectual Property Rights (IPR)</option>
               </select>
             </div>
 
+            {/* JOURNAL FORM FIELDS */}
+            {form.type === 'JOURNAL' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Publication Status *</label>
+                    <select className="form-input" required value={form.itemStatus} onChange={e => setForm({ ...form, itemStatus: e.target.value })} style={{ width: '100%' }}>
+                      <option value="">-- Select Status --</option>
+                      <option value="Under Review">Under Review</option>
+                      <option value="Accepted">Accepted (In Press)</option>
+                      <option value="Published">Published</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Journal Indexing / Database *</label>
+                    <select className="form-input" required value={form.indexing} onChange={e => setForm({ ...form, indexing: e.target.value })} style={{ width: '100%' }}>
+                      <option value="">-- Select Indexing --</option>
+                      <option value="UGC-CARE List Group I">UGC-CARE List Group I</option>
+                      <option value="UGC-CARE List Group II (Scopus)">UGC-CARE List Group II (Scopus)</option>
+                      <option value="UGC-CARE List Group II (Web of Science)">UGC-CARE List Group II (Web of Science)</option>
+                      <option value="Other Peer-Reviewed Journal">Other Peer-Reviewed Journal</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Paper Title *</label>
+                    <input type="text" className="form-input" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. A Deep Learning Approach to Cybersecurity" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Journal / Publisher *</label>
+                    <input type="text" className="form-input" required value={form.journalName} onChange={e => setForm({ ...form, journalName: e.target.value })} placeholder="e.g. IEEE Transactions on Forensics" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Volume Number</label>
+                    <input type="text" className="form-input" value={form.volume} onChange={e => setForm({ ...form, volume: e.target.value })} placeholder="e.g. Vol. 14" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Issue Number</label>
+                    <input type="text" className="form-input" value={form.issue} onChange={e => setForm({ ...form, issue: e.target.value })} placeholder="e.g. Issue 3" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Page Range</label>
+                    <input type="text" className="form-input" value={form.pages} onChange={e => setForm({ ...form, pages: e.target.value })} placeholder="e.g. 120-135" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>ISSN / ISBN</label>
+                    <input type="text" className="form-input" value={form.issn} onChange={e => setForm({ ...form, issn: e.target.value })} placeholder="e.g. 1549-3652" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Date of Acceptance/Print *</label>
+                    <input type="date" className="form-input" required value={form.publicationDate} onChange={e => setForm({ ...form, publicationDate: e.target.value })} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Paper/Publisher Link</label>
+                    <input type="text" className="form-input" value={form.paperLink} onChange={e => setForm({ ...form, paperLink: e.target.value })} placeholder="e.g. https://ieeexplore.ieee.org/document/..." />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>DOI URL / Number</label>
+                    <input type="text" className="form-input" value={form.doiUrl} onChange={e => setForm({ ...form, doiUrl: e.target.value })} placeholder="e.g. 10.1109/TIFS.2026.12345" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Upload Proof of Acceptance / Publication (PDF format) {editingPubId ? '' : '*'}</label>
+                  <input type="file" className="form-input" required={!editingPubId} accept=".pdf" onChange={e => setFile(e.target.files[0])} />
+                  {editingPubId && <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 4 }}>Leave blank to keep the currently uploaded document.</div>}
+                </div>
+              </>
+            )}
+
+            {/* CONFERENCE FORM FIELDS */}
+            {form.type === 'CONFERENCE' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Conference Status *</label>
+                    <select className="form-input" required value={form.itemStatus} onChange={e => setForm({ ...form, itemStatus: e.target.value })} style={{ width: '100%' }}>
+                      <option value="">-- Select Status --</option>
+                      <option value="Submitted / Abstract Under Review">Submitted / Abstract Under Review</option>
+                      <option value="Accepted (Pending Presentation)">Accepted (Pending Presentation)</option>
+                      <option value="Presented (Oral / Poster)">Presented (Oral / Poster)</option>
+                      <option value="Presented & Published in Proceedings">Presented & Published in Proceedings</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Conference Indexing / Database *</label>
+                    <select className="form-input" required value={form.indexing} onChange={e => setForm({ ...form, indexing: e.target.value })} style={{ width: '100%' }}>
+                      <option value="">-- Select Indexing --</option>
+                      <option value="Scopus Indexed">Scopus Indexed</option>
+                      <option value="Web of Science (WoS) Indexed">Web of Science (WoS) Indexed</option>
+                      <option value="Google Scholar Indexed">Google Scholar Indexed</option>
+                      <option value="UGC-CARE Listed Proceedings">UGC-CARE Listed Proceedings</option>
+                      <option value="Other Peer-Reviewed Conference">Other Peer-Reviewed Conference</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Presentation/Paper Title *</label>
+                    <input type="text" className="form-input" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. A Deep Learning Approach to Cybersecurity" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Conference Name *</label>
+                    <input type="text" className="form-input" required value={form.journalName} onChange={e => setForm({ ...form, journalName: e.target.value })} placeholder="e.g. IEEE ICC 2026" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Host / Organizing Institution *</label>
+                    <input type="text" className="form-input" required value={form.volume} onChange={e => setForm({ ...form, volume: e.target.value })} placeholder="e.g. Paris Institute of Technology" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Conference Location / Venue *</label>
+                    <input type="text" className="form-input" required value={form.issn} onChange={e => setForm({ ...form, issn: e.target.value })} placeholder="e.g. Paris, France" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Date of Presentation *</label>
+                    <input type="date" className="form-input" required value={form.publicationDate} onChange={e => setForm({ ...form, publicationDate: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Proceedings DOI (Optional)</label>
+                    <input type="text" className="form-input" value={form.doiUrl} onChange={e => setForm({ ...form, doiUrl: e.target.value })} placeholder="e.g. 10.1109/ICC.2026.12345" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Proceedings / Paper Link (Optional)</label>
+                  <input type="text" className="form-input" value={form.paperLink} onChange={e => setForm({ ...form, paperLink: e.target.value })} placeholder="e.g. https://ieeexplore.ieee.org/document/..." />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Upload Proof of Presentation (PDF format) {editingPubId ? '' : '*'}</label>
+                  <input type="file" className="form-input" required={!editingPubId} accept=".pdf" onChange={e => setFile(e.target.files[0])} />
+                  {editingPubId && <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 4 }}>Leave blank to keep the currently uploaded document.</div>}
+                </div>
+              </>
+            )}
+
+            {/* IPR FORM FIELDS */}
             {form.type === 'IPR' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR Type *</label>
-                  <select className="form-input" required value={form.iprType || ''} onChange={e => setForm({ ...form, iprType: e.target.value })} style={{ width: '100%' }}>
-                    <option value="">-- Select IPR Type --</option>
-                    <option value="Patent">Patent</option>
-                    <option value="Copyright">Copyright</option>
-                    <option value="Trademark">Trademark</option>
-                    <option value="Design Registration">Design Registration</option>
-                    <option value="Geographical Indication">Geographical Indication</option>
-                    <option value="Trade Secret">Trade Secret</option>
-                  </select>
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR Type *</label>
+                    <select className="form-input" required value={form.iprType} onChange={e => setForm({ ...form, iprType: e.target.value })} style={{ width: '100%' }}>
+                      <option value="">-- Select IPR Type --</option>
+                      <option value="Patent">Patent</option>
+                      <option value="Copyright">Copyright</option>
+                      <option value="Trademark">Trademark</option>
+                      <option value="Design Registration">Design Registration</option>
+                      <option value="Geographical Indication">Geographical Indication</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR Status *</label>
+                    <select className="form-input" required value={form.itemStatus} onChange={e => setForm({ ...form, itemStatus: e.target.value })} style={{ width: '100%' }}>
+                      <option value="">-- Select Status --</option>
+                      <option value="Filed / Application Submitted">Filed / Application Submitted</option>
+                      <option value="Published (in Gazette/Journal)">Published (in Gazette/Journal)</option>
+                      <option value="Granted / Issued / Registered">Granted / Issued / Registered</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR Status *</label>
-                  <select className="form-input" required value={form.itemStatus || ''} onChange={e => setForm({ ...form, itemStatus: e.target.value })} style={{ width: '100%' }}>
-                    <option value="">-- Select Status --</option>
-                    <option value="Filed">Filed</option>
-                    <option value="Published">Published</option>
-                    <option value="Granted/Issued">Granted / Issued / Awarded</option>
-                  </select>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR / Patent Title *</label>
+                    <input type="text" className="form-input" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. System and Method for Adaptive Threat Detection" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR Office / Issuing Organization *</label>
+                    <input type="text" className="form-input" required value={form.journalName} onChange={e => setForm({ ...form, journalName: e.target.value })} placeholder="e.g. Indian Patent Office (IPO)" />
+                  </div>
                 </div>
-              </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Inventors / Applicants *</label>
+                    <input type="text" className="form-input" required value={form.volume} onChange={e => setForm({ ...form, volume: e.target.value })} placeholder="e.g. Dr. Ayush Sood, Prof. M. Roy" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Application / Registration Number *</label>
+                    <input type="text" className="form-input" required value={form.issn} onChange={e => setForm({ ...form, issn: e.target.value })} placeholder="e.g. 202611012345" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>App/Grant ID *</label>
+                    <input type="text" className="form-input" required value={form.issue} onChange={e => setForm({ ...form, issue: e.target.value })} placeholder="e.g. PAT/2026/7890" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Country / Region *</label>
+                    <input type="text" className="form-input" required value={form.pages} onChange={e => setForm({ ...form, pages: e.target.value })} placeholder="e.g. India" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Date of Filing / Award *</label>
+                    <input type="date" className="form-input" required value={form.publicationDate} onChange={e => setForm({ ...form, publicationDate: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR ID / Reference Number (Optional)</label>
+                    <input type="text" className="form-input" value={form.doiUrl} onChange={e => setForm({ ...form, doiUrl: e.target.value })} placeholder="e.g. Ref/IPO/4567" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>IPR URL / Registry Link (Optional)</label>
+                  <input type="text" className="form-input" value={form.paperLink} onChange={e => setForm({ ...form, paperLink: e.target.value })} placeholder="e.g. https://ipindiaservices.gov.in/..." />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Upload IPR Proof / Certificate (PDF format) {editingPubId ? '' : '*'}</label>
+                  <input type="file" className="form-input" required={!editingPubId} accept=".pdf" onChange={e => setFile(e.target.files[0])} />
+                  {editingPubId && <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 4 }}>Leave blank to keep the currently uploaded document.</div>}
+                </div>
+              </>
             )}
-            
-            {form.type !== 'IPR' && (
-              <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Publication Status *</label>
-                  <select className="form-input" required value={form.itemStatus || ''} onChange={e => setForm({ ...form, itemStatus: e.target.value })} style={{ maxWidth: '400px' }}>
-                    <option value="">-- Select Status --</option>
-                    <option value="Under Review">Under Review</option>
-                    <option value="Accepted">Accepted</option>
-                    <option value="Published/Presented">Published / Presented</option>
-                  </select>
-              </div>
-            )}
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{titleLabel}</label>
-                <input type="text" className="form-input" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder={titlePlaceholder} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{journalLabel}</label>
-                <input type="text" className="form-input" required value={form.journalName} onChange={e => setForm({ ...form, journalName: e.target.value })} placeholder={journalPlaceholder} />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{issnLabel}</label>
-                <input type="text" className="form-input" value={form.issn} onChange={e => setForm({ ...form, issn: e.target.value })} placeholder={issnPlaceholder} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{dateLabel}</label>
-                <input type="date" className="form-input" required value={form.publicationDate} onChange={e => setForm({ ...form, publicationDate: e.target.value })} />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{linkLabel}</label>
-                <input type="text" className="form-input" value={form.paperLink} onChange={e => setForm({ ...form, paperLink: e.target.value })} placeholder={linkPlaceholder} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{doiLabel}</label>
-                <input type="text" className="form-input" value={form.doiUrl} onChange={e => setForm({ ...form, doiUrl: e.target.value })} placeholder={doiPlaceholder} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>{proofLabel}</label>
-              <input type="file" className="form-input" required accept=".pdf" onChange={e => setFile(e.target.files[0])} />
-            </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setShowForm(false)} className="btn-outline" style={{ padding: '8px 16px' }}>Cancel</button>
+              <button type="button" onClick={resetForm} className="btn-outline" style={{ padding: '8px 16px' }}>Cancel</button>
               <button type="submit" className="btn-primary" disabled={submitting} style={{ background: '#133A26', padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {submitting ? 'Submitting...' : 'Submit Log'}
+                {submitting ? 'Submitting...' : editingPubId ? 'Update Log' : 'Submit Log'}
               </button>
             </div>
           </form>
@@ -3632,52 +3896,309 @@ const ResearchOutputsTab = ({ thesis }) => {
             No research outputs logged yet.
           </div>
         ) : (
-          <div className="file-list" style={{ overflowX: 'auto' }}>
-            <div className="file-header" style={{ minWidth: 700 }}>
-              <div style={{ flex: 2.2 }}>Title</div>
-              <div style={{ flex: 1.5 }}>Journal/Publisher/Office</div>
-              <div style={{ flex: 1 }}>Type</div>
-              <div style={{ flex: 1 }}>Date</div>
-              <div style={{ flex: 1 }}>Status</div>
-              <div style={{ flex: 1.8, textAlign: 'center' }}>Links & Proof</div>
-            </div>
-            {pubs.map(p => (
-              <div key={p._id} className="file-item" style={{ minWidth: 700, flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <div style={{ flex: 2.2, fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</div>
-                  <div style={{ flex: 1.5, fontSize: '0.9rem' }}>{p.journalName}</div>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ 
-                      padding: '2px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 700,
-                      background: p.type === 'JOURNAL' ? 'rgba(59, 130, 246, 0.1)' : p.type === 'CONFERENCE' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                      color: p.type === 'JOURNAL' ? '#2563EB' : p.type === 'CONFERENCE' ? '#7C3AED' : '#059669'
-                    }}>
-                      {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type}
-                    </span>
-                    {p.itemStatus && <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
-                  </div>
-                  <div style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ 
-                      padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
-                      background: p.status === 'VERIFIED' ? '#D1FAE5' : p.status === 'REJECTED' ? '#FEE2E2' : '#FEF3C7',
-                      color: p.status === 'VERIFIED' ? '#065F46' : p.status === 'REJECTED' ? '#991B1B' : '#D97706'
-                    }}>
-                      {p.status}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1.8, display: 'flex', gap: 12, justifyContent: 'center' }}>
-                    {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" title={p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Publisher Page'} style={{ fontSize: '0.82rem', color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><File size={16} /> Link</a>}
-                    {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" title="View Proof PDF" style={{ fontSize: '0.82rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Upload size={16} /> PDF</a>}
-                  </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            
+            {/* Section 1: Active & Draft Research Outputs */}
+            <div>
+              <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E293B', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📁</span> Active & Draft Research Outputs
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', background: '#E2E8F0', color: '#475569', borderRadius: 12 }}>
+                  {activePubs.length}
+                </span>
+              </h4>
+              
+              {activePubs.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 8, color: '#64748B', fontSize: '0.85rem' }}>
+                  No active or draft research outputs logged.
                 </div>
-                {p.remarks && (
-                  <div style={{ background: 'var(--color-bg, #F8FAFC)', borderLeft: '3px solid var(--color-border, #CBD5E1)', padding: '6px 12px', borderRadius: 6, fontSize: '0.8rem', color: 'var(--color-text-secondary, #475569)', marginTop: 4 }}>
-                    <strong>Supervisor Feedback:</strong> "{p.remarks}"
+              ) : (
+                <div className="file-list" style={{ overflowX: 'auto' }}>
+                  <div className="file-header" style={{ minWidth: 800 }}>
+                    <div style={{ flex: 2.2 }}>Title</div>
+                    <div style={{ flex: 1.5 }}>Journal/Publisher/Office</div>
+                    <div style={{ flex: 1 }}>Type</div>
+                    <div style={{ flex: 1 }}>Date</div>
+                    <div style={{ flex: 1 }}>Status</div>
+                    <div style={{ flex: 1.2, textAlign: 'center' }}>Links & Proof</div>
+                    <div style={{ flex: 1.5, textAlign: 'center' }}>Actions</div>
                   </div>
-                )}
+                  {activePubs.map(p => (
+                    <div key={p._id} className="file-item" style={{ minWidth: 800, flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <div style={{ flex: 2.2, fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</div>
+                        <div style={{ flex: 1.5, fontSize: '0.9rem' }}>{p.journalName}</div>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ 
+                            padding: '2px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 700,
+                            background: p.type === 'JOURNAL' ? 'rgba(59, 130, 246, 0.1)' : p.type === 'CONFERENCE' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                            color: p.type === 'JOURNAL' ? '#2563EB' : p.type === 'CONFERENCE' ? '#7C3AED' : '#059669'
+                          }}>
+                            {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type}
+                          </span>
+                          {p.itemStatus && <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
+                        </div>
+                        <div style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
+                        <div style={{ flex: 1 }}>
+                          {(() => {
+                            const display = getStatusDisplay(p.status);
+                            return (
+                              <span style={{ 
+                                padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
+                                background: display.bg,
+                                color: display.color,
+                                border: `1px solid ${display.border}`
+                              }}>
+                                {display.text}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div style={{ flex: 1.2, display: 'flex', gap: 12, justifyContent: 'center' }}>
+                          {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" title={p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Publisher Page'} style={{ fontSize: '0.82rem', color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><File size={16} /> Link</a>}
+                          {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" title="View Proof PDF" style={{ fontSize: '0.82rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Upload size={16} /> PDF</a>}
+                        </div>
+                        <div style={{ flex: 1.5, display: 'flex', gap: 8, justifyContent: 'center' }}>
+                          <button
+                            onClick={() => handleEditClick(p)}
+                            disabled={p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD'}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              background: (p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD') ? '#F1F5F9' : '#3B82F6',
+                              color: (p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD') ? '#94A3B8' : '#FFFFFF',
+                              border: 'none',
+                              cursor: (p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD') ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'opacity 0.2s'
+                            }}
+                          >
+                            <Edit size={14} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeletePub(p._id)}
+                            disabled={p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD'}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              background: (p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD') ? '#F1F5F9' : '#EF4444',
+                              color: (p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD') ? '#94A3B8' : '#FFFFFF',
+                              border: 'none',
+                              cursor: (p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD') ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'opacity 0.2s'
+                            }}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Detailed Sub-info Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)', margin: '8px 0', borderTop: '1px dashed var(--color-border, #E2E8F0)', paddingTop: 8 }}>
+                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Office/Org:' : p.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {p.journalName}</div>
+                        <div><strong>Type:</strong> {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type} {p.itemStatus && <span style={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem', marginLeft: 4 }}>({p.itemStatus})</span>}</div>
+                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Number:' : p.type === 'CONFERENCE' ? 'Location/Venue:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
+                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'Filing/Award Date:' : 'Date:'}</strong> {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}</div>
+
+                        {(p.type === 'PATENT' || p.type === 'IPR') && (
+                          <>
+                            <div><strong>Inventors/Applicants:</strong> {p.volume || 'N/A'}</div>
+                            <div><strong>App/Grant No:</strong> {p.issue || 'N/A'}</div>
+                            <div><strong>Country/Region:</strong> {p.pages || 'N/A'}</div>
+                          </>
+                        )}
+                        
+                        {p.type === 'JOURNAL' && (
+                          <>
+                            <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
+                            <div><strong>Volume:</strong> {p.volume || 'N/A'}</div>
+                            <div><strong>Issue:</strong> {p.issue || 'N/A'}</div>
+                            <div><strong>Pages:</strong> {p.pages || 'N/A'}</div>
+                          </>
+                        )}
+
+                        {p.type === 'CONFERENCE' && (
+                          <>
+                            <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
+                            <div><strong>Organizer:</strong> {p.volume || 'N/A'}</div>
+                          </>
+                        )}
+                        
+                        {p.doiUrl && <div style={{ gridColumn: 'span 2' }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR ID/Ref:' : p.type === 'CONFERENCE' ? 'Proceedings Link:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bulk submit drafts button */}
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={handleSendToSupervisor}
+                  disabled={!hasDrafts}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    background: hasDrafts ? '#059669' : '#CBD5E1',
+                    color: hasDrafts ? '#FFFFFF' : '#94A3B8',
+                    border: 'none',
+                    cursor: hasDrafts ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s',
+                    boxShadow: hasDrafts ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : 'none'
+                  }}
+                >
+                  <span>📤</span> Send to Supervisor for Approval
+                </button>
               </div>
-            ))}
+            </div>
+
+            {/* Section 2: Reviewed Research Outputs */}
+            <div>
+              <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E293B', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📋</span> Reviewed Research Outputs
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', background: '#E2E8F0', color: '#475569', borderRadius: 12 }}>
+                  {reviewedPubs.length}
+                </span>
+              </h4>
+
+              {reviewedPubs.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 8, color: '#64748B', fontSize: '0.85rem' }}>
+                  No reviewed research outputs yet.
+                </div>
+              ) : (
+                <div className="file-list" style={{ overflowX: 'auto' }}>
+                  <div className="file-header" style={{ minWidth: 800 }}>
+                    <div style={{ flex: 2.2 }}>Title</div>
+                    <div style={{ flex: 1.5 }}>Journal/Publisher/Office</div>
+                    <div style={{ flex: 1 }}>Type</div>
+                    <div style={{ flex: 1 }}>Date</div>
+                    <div style={{ flex: 1 }}>Status</div>
+                    <div style={{ flex: 1.2, textAlign: 'center' }}>Links & Proof</div>
+                    <div style={{ flex: 1.5, textAlign: 'center' }}>Actions</div>
+                  </div>
+                  {reviewedPubs.map(p => (
+                    <div key={p._id} className="file-item" style={{ minWidth: 800, flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <div style={{ flex: 2.2, fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</div>
+                        <div style={{ flex: 1.5, fontSize: '0.9rem' }}>{p.journalName}</div>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ 
+                            padding: '2px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 700,
+                            background: p.type === 'JOURNAL' ? 'rgba(59, 130, 246, 0.1)' : p.type === 'CONFERENCE' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                            color: p.type === 'JOURNAL' ? '#2563EB' : p.type === 'CONFERENCE' ? '#7C3AED' : '#059669'
+                          }}>
+                            {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type}
+                          </span>
+                          {p.itemStatus && <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
+                        </div>
+                        <div style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
+                        <div style={{ flex: 1 }}>
+                          {(() => {
+                            const display = getStatusDisplay(p.status);
+                            return (
+                              <span style={{ 
+                                padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
+                                background: display.bg,
+                                color: display.color,
+                                border: `1px solid ${display.border}`
+                              }}>
+                                {display.text}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div style={{ flex: 1.2, display: 'flex', gap: 12, justifyContent: 'center' }}>
+                          {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" title={p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Publisher Page'} style={{ fontSize: '0.82rem', color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><File size={16} /> Link</a>}
+                          {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" title="View Proof PDF" style={{ fontSize: '0.82rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Upload size={16} /> PDF</a>}
+                        </div>
+                        <div style={{ flex: 1.5, display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
+                          {p.status === 'VERIFIED' ? (
+                            <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span>✅</span> Reviewed & Approved
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleEditClick(p)}
+                              style={{
+                                padding: '5px 12px',
+                                borderRadius: '6px',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                background: '#3B82F6',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                transition: 'background-color 0.2s'
+                              }}
+                            >
+                              <Edit size={14} /> Edit
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Detailed Sub-info Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)', margin: '8px 0', borderTop: '1px dashed var(--color-border, #E2E8F0)', paddingTop: 8 }}>
+                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Office/Org:' : p.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {p.journalName}</div>
+                        <div><strong>Type:</strong> {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type} {p.itemStatus && <span style={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem', marginLeft: 4 }}>({p.itemStatus})</span>}</div>
+                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Number:' : p.type === 'CONFERENCE' ? 'Location/Venue:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
+                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'Filing/Award Date:' : 'Date:'}</strong> {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}</div>
+
+                        {(p.type === 'PATENT' || p.type === 'IPR') && (
+                          <>
+                            <div><strong>Inventors/Applicants:</strong> {p.volume || 'N/A'}</div>
+                            <div><strong>App/Grant No:</strong> {p.issue || 'N/A'}</div>
+                            <div><strong>Country/Region:</strong> {p.pages || 'N/A'}</div>
+                          </>
+                        )}
+                        
+                        {p.type === 'JOURNAL' && (
+                          <>
+                            <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
+                            <div><strong>Volume:</strong> {p.volume || 'N/A'}</div>
+                            <div><strong>Issue:</strong> {p.issue || 'N/A'}</div>
+                            <div><strong>Pages:</strong> {p.pages || 'N/A'}</div>
+                          </>
+                        )}
+
+                        {p.type === 'CONFERENCE' && (
+                          <>
+                            <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
+                            <div><strong>Organizer:</strong> {p.volume || 'N/A'}</div>
+                          </>
+                        )}
+                        
+                        {p.doiUrl && <div style={{ gridColumn: 'span 2' }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR ID/Ref:' : p.type === 'CONFERENCE' ? 'Proceedings Link:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
+                      </div>
+
+                      {p.remarks && (
+                        <div style={{ background: '#FEF2F2', borderLeft: '3px solid #EF4444', padding: '8px 12px', borderRadius: 6, fontSize: '0.8rem', color: '#991B1B', marginTop: 4 }}>
+                          <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> "{p.remarks}"
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </div>

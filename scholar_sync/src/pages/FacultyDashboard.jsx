@@ -346,8 +346,30 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
   return { text: status?.replace(/_/g, ' '), color: '#374151', bg: '#F3F4F6' };
 };
 
+const getStatusDisplay = (status) => {
+  switch (status) {
+    case 'DRAFT':
+      return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+    case 'PENDING':
+      return { text: 'submitted and under review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+    case 'UNDER_REVIEW_HOD':
+      return { text: 'under review at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+    case 'VERIFIED':
+      return { text: 'Approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+    case 'REJECTED_BY_SUPERVISOR':
+      return { text: 'rejected by supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    case 'REJECTED_BY_HOD':
+      return { text: 'rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    default:
+      return { text: status, color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+  }
+};
+
 // ── Faculty Document Evaluation Modal ──
 const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
+  const { user } = useContext(AuthContext);
+  const isHod = user?.role === 'HOD' || user?.subRole === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const showEvaluate = doc.status === 'SUBMITTED' || doc.status === 'PENDING' || (doc.status === 'UNDER_REVIEW_HOD' && isHod);
   const toast = useToast();
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -534,7 +556,7 @@ const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
             </div>
 
             <div style={{ display: 'flex', gap: 12, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: 16 }}>
-              {doc.status === 'SUBMITTED' || doc.status === 'PENDING' ? (
+              {showEvaluate ? (
                 <>
                   <button 
                     type="button" 
@@ -557,7 +579,7 @@ const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
                 </>
               ) : (
                 <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
-                  Already Evaluated: <span style={{ color: doc.status === 'APPROVED' || doc.status === 'VERIFIED' ? '#059669' : '#DC2626' }}>{doc.status}</span>
+                  Status: <span style={{ color: doc.status === 'VERIFIED' ? '#059669' : doc.status === 'UNDER_REVIEW_HOD' ? '#1D4ED8' : '#DC2626' }}>{getStatusDisplay(doc.status).text}</span>
                 </div>
               )}
             </div>
@@ -1933,14 +1955,28 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                     <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
                     <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading publications...</div>
                   </div>
-                ) : publications.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 20, color: 'var(--color-text-muted, #64748B)', fontSize: '0.85rem' }}>No scientific publications logged in vault.</div>
-                ) : (
-                  publications.map(p => (
+                                ) : (() => {
+                  const filteredPublications = publications.filter(p => p.status !== 'DRAFT');
+                  if (filteredPublications.length === 0) {
+                    return <div style={{ textAlign: 'center', padding: 20, color: 'var(--color-text-muted, #64748B)', fontSize: '0.85rem' }}>No scientific publications logged in vault.</div>;
+                  }
+                  return filteredPublications.map(p => (
                     <div key={p._id} style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', padding: 14, borderRadius: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</span>
-                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: p.status === 'VERIFIED' ? '#D1FAE5' : p.status === 'REJECTED' ? '#FEE2E2' : '#FEF3C7', color: p.status === 'VERIFIED' ? '#065F46' : p.status === 'REJECTED' ? '#991B1B' : p.status === 'QA_APPROVED' ? '#92400E' : '#92400E' }}>{p.status}</span>
+                        {(() => {
+                          const display = getStatusDisplay(p.status);
+                          return (
+                            <span style={{ 
+                              padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700,
+                              background: display.bg,
+                              color: display.color,
+                              border: `1px solid ${display.border}`
+                            }}>
+                              {display.text}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)', margin: '6px 0' }}>
                         <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Office/Org:' : p.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {p.journalName}</div>
@@ -1981,11 +2017,11 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                       )}
                       {p.remarks && (
                         <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', color: '#92400E', margin: '8px 0' }}>
-                          <strong>Supervisor Remarks:</strong> {p.remarks}
+                          <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> {p.remarks}
                         </div>
                       )}
 
-                      {p.status === 'PENDING' && (
+                      {((p.status === 'PENDING' && subRole !== 'HOD') || (p.status === 'UNDER_REVIEW_HOD' && (subRole === 'HOD' || user?.role === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'))) && (
                         <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
                           <button 
                             type="button" 
@@ -2004,8 +2040,9 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                         </div>
                       )}
                     </div>
-                  ))
-                )}
+                  ));
+                })()
+                }
               </div>
             )}
             {activeResearchTab === 'drc' && (() => {

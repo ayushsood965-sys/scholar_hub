@@ -7,7 +7,10 @@ const {
   submitPublication,
   getPublicationsByThesis,
   getDeptPublications,
-  verifyPublication
+  verifyPublication,
+  updatePublication,
+  deletePublication,
+  submitDrafts
 } = require('../controllers/publicationController');
 
 const storage = multer.diskStorage({
@@ -23,5 +26,8 @@ router.post('/', protect, upload.single('document'), submitPublication);
 router.get('/thesis/:thesisId', protect, getPublicationsByThesis);
 router.get('/department/:department', protect, getDeptPublications);
 router.put('/:id/verify', protect, verifyPublication);
+router.put('/:id', protect, upload.single('document'), updatePublication);
+router.delete('/:id', protect, deletePublication);
+router.put('/thesis/:thesisId/submit-drafts', protect, submitDrafts);
 
 module.exports = router;

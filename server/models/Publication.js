@@ -6,6 +6,10 @@ const PublicationSchema = new mongoose.Schema({
   type: { type: String, enum: ['JOURNAL', 'CONFERENCE', 'PATENT', 'IPR'], default: 'JOURNAL' },
   iprType: { type: String },
   itemStatus: { type: String },
+  indexing: { type: String },
+  volume: { type: String },
+  issue: { type: String },
+  pages: { type: String },
   title: { type: String, required: true },
   journalName: { type: String, required: true },
   issn: { type: String },
@@ -14,7 +18,7 @@ const PublicationSchema = new mongoose.Schema({
   doiUrl: { type: String },
   attachmentUrl: { type: String },
   documentUrl: { type: String }, // Handles PDF upload
-  status: { type: String, enum: ['PENDING', 'VERIFIED', 'REJECTED'], default: 'PENDING' },
+  status: { type: String, enum: ['DRAFT', 'PENDING', 'UNDER_REVIEW_HOD', 'VERIFIED', 'REJECTED_BY_SUPERVISOR', 'REJECTED_BY_HOD'], default: 'DRAFT' },
   remarks: { type: String, default: '' }
 }, { timestamps: true });
 

@@ -2349,6 +2349,25 @@ const ManageFaculty = () => {
   );
 };
 
+const getStatusDisplay = (status) => {
+  switch (status) {
+    case 'DRAFT':
+      return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+    case 'PENDING':
+      return { text: 'submitted and under review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+    case 'UNDER_REVIEW_HOD':
+      return { text: 'under review at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+    case 'VERIFIED':
+      return { text: 'Approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+    case 'REJECTED_BY_SUPERVISOR':
+      return { text: 'rejected by supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    case 'REJECTED_BY_HOD':
+      return { text: 'rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    default:
+      return { text: status, color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+  }
+};
+
 // ── HOD Document Evaluation Modal ──
 const HODDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
   const toast = useToast();
@@ -2537,7 +2556,7 @@ const HODDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
             </div>
 
             <div style={{ display: 'flex', gap: 12, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: 16 }}>
-              {doc.status === 'SUBMITTED' || doc.status === 'PENDING' ? (
+              {doc.status === 'SUBMITTED' || doc.status === 'PENDING' || doc.status === 'UNDER_REVIEW_HOD' ? (
                 <>
                   <button 
                     type="button" 
@@ -2560,7 +2579,7 @@ const HODDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
                 </>
               ) : (
                 <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
-                  Already Evaluated: <span style={{ color: doc.status === 'APPROVED' || doc.status === 'VERIFIED' ? '#059669' : '#DC2626' }}>{doc.status}</span>
+                  Status: <span style={{ color: doc.status === 'VERIFIED' ? '#059669' : '#DC2626' }}>{getStatusDisplay(doc.status).text}</span>
                 </div>
               )}
             </div>
@@ -2672,7 +2691,7 @@ const HODDocumentManager = ({ theses }) => {
   };
 
   const pendingChaptersCount = chapterDrafts.filter(c => c.status === 'SUBMITTED').length;
-  const pendingPublicationsCount = publications.filter(p => p.status === 'PENDING').length;
+  const pendingPublicationsCount = publications.filter(p => p.status === 'UNDER_REVIEW_HOD').length;
   const pendingReportsCount = researchOutputs.filter(r => r.status === 'SUBMITTED').length;
 
   return (
@@ -2902,13 +2921,17 @@ const HODDocumentManager = ({ theses }) => {
           )}
 
           {/* Publications Tab */}
-          {activeTab === 'publications' && (
-            <div>
-              {publications.length === 0 ? (
+          {activeTab === 'publications' && (() => {
+            const filteredPublications = publications.filter(p => p.status !== 'DRAFT');
+            if (filteredPublications.length === 0) {
+              return (
                 <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                   No scientific publications logged by scholars in your department yet.
                 </div>
-              ) : (
+              );
+            }
+            return (
+              <div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
@@ -2922,7 +2945,7 @@ const HODDocumentManager = ({ theses }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {publications.map(p => (
+                    {filteredPublications.map(p => (
                       <tr key={p._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontWeight: 700, color: '#1E293B' }}>{p.scholarName}</div>
@@ -2946,13 +2969,19 @@ const HODDocumentManager = ({ theses }) => {
                           {p.doiUrl && <div style={{ fontSize: '0.75rem', marginTop: 4 }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'App Number:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          <span style={{ 
-                            padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, 
-                            background: p.status === 'VERIFIED' ? '#D1FAE5' : p.status === 'REJECTED' ? '#FEE2E2' : '#FEF3C7', 
-                            color: p.status === 'VERIFIED' ? '#065F46' : p.status === 'REJECTED' ? '#991B1B' : '#92400E' 
-                          }}>
-                            {p.status}
-                          </span>
+                          {(() => {
+                            const display = getStatusDisplay(p.status);
+                            return (
+                              <span style={{ 
+                                padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700,
+                                background: display.bg,
+                                color: display.color,
+                                border: `1px solid ${display.border}`
+                              }}>
+                                {display.text}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -2961,21 +2990,27 @@ const HODDocumentManager = ({ theses }) => {
                           </div>
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          <button 
-                            onClick={() => setSelectedDoc({ ...p, docType: 'PUBLICATION' })}
-                            className="btn-action" 
-                            style={{ background: '#133A26', padding: '6px 14px', fontSize: '0.78rem' }}
-                          >
-                            Evaluate
-                          </button>
+                          {p.status === 'UNDER_REVIEW_HOD' ? (
+                            <button 
+                              onClick={() => setSelectedDoc({ ...p, docType: 'PUBLICATION' })}
+                              className="btn-action" 
+                              style={{ background: '#133A26', padding: '6px 14px', fontSize: '0.78rem' }}
+                            >
+                              Evaluate
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>
+                              —
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* Research Outputs Tab */}
           {activeTab === 'reports' && (

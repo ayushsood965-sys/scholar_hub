@@ -84,6 +84,28 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
   return { text: status?.replace(/_/g, ' '), color: '#374151', bg: '#F3F4F6' };
 };
 
+// ── Publication status display helper ──
+const getStatusDisplay = (status) => {
+  switch (status) {
+    case 'DRAFT':
+      return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+    case 'PENDING':
+      return { text: 'Submitted — Under Review at Supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+    case 'UNDER_REVIEW_HOD':
+      return { text: 'Forwarded to HOD — Pending Final Approval', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+    case 'VERIFIED':
+      return { text: 'Approved ✓', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+    case 'REJECTED_BY_SUPERVISOR':
+      return { text: 'Rejected by Supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    case 'REJECTED_BY_HOD':
+      return { text: 'Rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    case 'REJECTED':
+      return { text: 'Rejected', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+    default:
+      return { text: status || 'Unknown', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+  }
+};
+
 // ── Status Pipeline ──
 const PIPELINE_STAGES = [
   { key: 'REGISTRATION_PENDING', label: 'Registration' },
@@ -238,6 +260,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
 
 // ── Document Evaluation Sub-Modal ──
 const DocEvalModal = ({ doc, onClose, onRefresh }) => {
+  const { user } = useContext(AuthContext);
   const toast = useToast();
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -327,16 +350,27 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 12, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: 16 }}>
-              {(doc.status === 'SUBMITTED' || doc.status === 'PENDING') ? (
-                <>
-                  <button type="button" onClick={() => handleReview('REVISION')} disabled={loading} className="btn-outline" style={{ flex: 1, padding: '12px', fontSize: '0.85rem', color: '#DC2626', borderColor: '#FCA5A5', fontWeight: 700 }}>✗ Request Revision</button>
-                  <button type="button" onClick={() => handleReview('APPROVE')} disabled={loading} className="btn-primary" style={{ flex: 1, padding: '12px', fontSize: '0.85rem', background: '#059669', fontWeight: 700 }}>✓ Approve</button>
-                </>
-              ) : (
-                <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
-                  Already Evaluated: <span style={{ color: doc.status === 'APPROVED' || doc.status === 'VERIFIED' ? '#059669' : '#DC2626' }}>{doc.status}</span>
-                </div>
-              )}
+              {(() => {
+                const isHodUser = user?.role === 'HOD' || user?.subRole === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+                const showEvaluate = doc.docType === 'PUBLICATION'
+                  ? (doc.status === 'PENDING' || (doc.status === 'UNDER_REVIEW_HOD' && isHodUser))
+                  : (doc.status === 'SUBMITTED' || doc.status === 'PENDING');
+
+                if (showEvaluate) {
+                  return (
+                    <>
+                      <button type="button" onClick={() => handleReview('REVISION')} disabled={loading} className="btn-outline" style={{ flex: 1, padding: '12px', fontSize: '0.85rem', color: '#DC2626', borderColor: '#FCA5A5', fontWeight: 700 }}>✗ Request Revision</button>
+                      <button type="button" onClick={() => handleReview('APPROVE')} disabled={loading} className="btn-primary" style={{ flex: 1, padding: '12px', fontSize: '0.85rem', background: '#059669', fontWeight: 700 }}>✓ Approve</button>
+                    </>
+                  );
+                } else {
+                  return (
+                    <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
+                      Status: <span style={{ color: doc.status === 'VERIFIED' ? '#059669' : doc.status === 'UNDER_REVIEW_HOD' ? '#1D4ED8' : '#DC2626' }}>{doc.status}</span>
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         </div>
@@ -547,8 +581,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const corePendingMilestonesDocs = corePendingMilestones.filter(m => m.type !== 'PRE_SUBMISSION');
   const verifiedJournals = publications.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
   const verifiedConferences = publications.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
-  const pendingOutputsCount = publications.filter(p => p.status === 'PENDING').length;
-  const pendingDocCount = corePendingMilestonesDocs.length + milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
+  const isHodUser = subRole === 'HOD' || user?.role === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const pendingOutputsCount = publications.filter(p => isHodUser ? p.status === 'UNDER_REVIEW_HOD' : p.status === 'PENDING').length;
+  const pendingReportsCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
+  const pendingChaptersCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === 'CHAPTER_DRAFT').length;
+  const pendingDocCount = corePendingMilestonesDocs.filter(m => m.status === 'SUBMITTED').length + additionalDocs.filter(d => d.status === 'SUBMITTED').length;
   const scheduledRacs = racReviews.filter(r => r.status === 'SCHEDULED').length;
 
   const preSubmissionBadge = (() => {
@@ -1025,8 +1062,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     { key: 'synopsis', label: 'Synopsis', icon: '📝', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'SYNOPSIS') },
     { key: 'drc', label: 'DRC', icon: '🏛️', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'rac', label: 'RAC', icon: '📋', badge: scheduledRacs || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'reports', label: 'Reports', icon: '📑', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'chapters', label: 'Chapters', icon: '📖', show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'reports', label: 'Reports', icon: '📑', badge: pendingReportsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'chapters', label: 'Chapters', icon: '📖', badge: pendingChaptersCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'publications', label: 'Research Outputs', icon: '🏆', badge: pendingOutputsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'preSubmission', label: 'Pre-Submission', icon: '🚀', badge: preSubmissionBadge || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'PRE_SUBMISSION') },
     { key: 'finalSubmission', label: 'Final Submission and Defense', icon: '📁', show: ['PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'FINAL_SUBMISSION') },
@@ -2407,7 +2444,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         <div style={{ width: 1, background: '#E2E8F0' }} />
         <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: verifiedConferences >= 2 ? '#059669' : '#EF4444' }}>{verifiedConferences}/2</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Conferences {verifiedConferences >= 2 ? '✅' : '⚠️'}</div></div>
         <div style={{ width: 1, background: '#E2E8F0' }} />
-        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2563EB' }}>{publications.filter(p => p.type === 'PATENT' || p.type === 'IPR').length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>IPRs (Optional)</div></div>
+        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2563EB' }}>{publications.filter(p => (p.type === 'PATENT' || p.type === 'IPR') && p.status === 'VERIFIED').length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>IPRs (Optional)</div></div>
         <div style={{ width: 1, background: '#E2E8F0' }} />
         <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3B82F6' }}>{publications.length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Total Logged</div></div>
       </div>
@@ -2422,7 +2459,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         <div key={p._id} className="usm-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <span style={{ fontSize: '0.88rem', fontWeight: 700 }}>{p.title}</span>
-            <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: p.status === 'VERIFIED' ? '#D1FAE5' : p.status === 'REJECTED' ? '#FEE2E2' : '#FEF3C7', color: p.status === 'VERIFIED' ? '#065F46' : p.status === 'REJECTED' ? '#991B1B' : '#92400E' }}>{p.status}</span>
+            {(() => {
+              const sd = getStatusDisplay(p.status);
+              return (
+                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: sd.bg, color: sd.color, border: `1px solid ${sd.border}`, whiteSpace: 'nowrap' }}>
+                  {sd.text}
+                </span>
+              );
+            })()}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', fontSize: '0.78rem', color: '#64748B', margin: '6px 0' }}>
             <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Office/Org:' : p.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {p.journalName}</div>
@@ -2461,8 +2505,12 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               {p.type === 'PATENT' || p.type === 'IPR' ? '📄 View IPR Proof' : '📄 View Proof'}
             </a>
           )}
-          {p.remarks && <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', color: '#92400E', margin: '8px 0' }}><strong>Remarks:</strong> {p.remarks}</div>}
-          {p.status === 'PENDING' && !isReadOnly && (
+          {p.remarks && (
+            <div style={{ background: '#FFF9E6', borderLeft: '3px solid #F59E0B', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', color: '#92400E', margin: '8px 0' }}>
+              <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> {p.remarks}
+            </div>
+          )}
+          {((p.status === 'PENDING' && !isHodUser) || (p.status === 'UNDER_REVIEW_HOD' && isHodUser)) && !isReadOnly && (
             <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => setSelectedEvalDoc({ ...p, docType: 'PUBLICATION', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
             </div>
