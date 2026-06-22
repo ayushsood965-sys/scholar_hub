@@ -90,17 +90,17 @@ const getStatusDisplay = (status) => {
     case 'DRAFT':
       return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
     case 'PENDING':
-      return { text: 'Submitted — Under Review at Supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+      return { text: 'submitted and pending review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
     case 'UNDER_REVIEW_HOD':
-      return { text: 'Forwarded to HOD — Pending Final Approval', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+      return { text: 'pending approval at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
     case 'VERIFIED':
-      return { text: 'Approved ✓', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+      return { text: 'approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
     case 'REJECTED_BY_SUPERVISOR':
-      return { text: 'Rejected by Supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+      return { text: 'rejected by supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     case 'REJECTED_BY_HOD':
-      return { text: 'Rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+      return { text: 'rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     case 'REJECTED':
-      return { text: 'Rejected', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+      return { text: 'rejected', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     default:
       return { text: status || 'Unknown', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
   }
@@ -353,7 +353,7 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
               {(() => {
                 const isHodUser = user?.role === 'HOD' || user?.subRole === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
                 const showEvaluate = doc.docType === 'PUBLICATION'
-                  ? (doc.status === 'PENDING' || (doc.status === 'UNDER_REVIEW_HOD' && isHodUser))
+                  ? (isHodUser ? doc.status === 'UNDER_REVIEW_HOD' : doc.status === 'PENDING')
                   : (doc.status === 'SUBMITTED' || doc.status === 'PENDING');
 
                 if (showEvaluate) {
@@ -581,8 +581,13 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const corePendingMilestonesDocs = corePendingMilestones.filter(m => m.type !== 'PRE_SUBMISSION');
   const verifiedJournals = publications.filter(p => p.type === 'JOURNAL' && p.status === 'VERIFIED').length;
   const verifiedConferences = publications.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
+  const isSupervisor = thesis.supervisorId && (thesis.supervisorId._id === user?._id || thesis.supervisorId === user?._id);
   const isHodUser = subRole === 'HOD' || user?.role === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  const pendingOutputsCount = publications.filter(p => isHodUser ? p.status === 'UNDER_REVIEW_HOD' : p.status === 'PENDING').length;
+  const pendingOutputsCount = publications.filter(p => {
+    const matchSupervisor = isSupervisor && p.status === 'PENDING';
+    const matchHod = isHodUser && p.status === 'UNDER_REVIEW_HOD';
+    return matchSupervisor || matchHod;
+  }).length;
   const pendingReportsCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
   const pendingChaptersCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === 'CHAPTER_DRAFT').length;
   const pendingDocCount = corePendingMilestonesDocs.filter(m => m.status === 'SUBMITTED').length + additionalDocs.filter(d => d.status === 'SUBMITTED').length;
@@ -2435,27 +2440,38 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     );
   };
 
-  const renderPublications = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div className="usm-section-title">🏆 Research Outputs Vault</div>
-      {/* Publication prerequisite banner */}
-      <div className="usm-card" style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 20px', textAlign: 'center' }}>
-        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: verifiedJournals >= 2 ? '#059669' : '#EF4444' }}>{verifiedJournals}/2</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Journals {verifiedJournals >= 2 ? '✅' : '⚠️'}</div></div>
-        <div style={{ width: 1, background: '#E2E8F0' }} />
-        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: verifiedConferences >= 2 ? '#059669' : '#EF4444' }}>{verifiedConferences}/2</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Conferences {verifiedConferences >= 2 ? '✅' : '⚠️'}</div></div>
-        <div style={{ width: 1, background: '#E2E8F0' }} />
-        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2563EB' }}>{publications.filter(p => (p.type === 'PATENT' || p.type === 'IPR') && p.status === 'VERIFIED').length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>IPRs (Optional)</div></div>
-        <div style={{ width: 1, background: '#E2E8F0' }} />
-        <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3B82F6' }}>{publications.length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Total Logged</div></div>
-      </div>
-      {pubsLoading ? (
-        <div className="premium-preloader-container" style={{ padding: '30px 20px' }}>
-          <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
-          <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading research outputs...</div>
+  const renderPublications = () => {
+    const filteredPubs = publications.filter(p => {
+      if (isSupervisor) {
+        return p.status !== 'DRAFT';
+      } else if (isHodUser) {
+        return ['UNDER_REVIEW_HOD', 'VERIFIED', 'REJECTED_BY_HOD'].includes(p.status);
+      } else {
+        return p.status !== 'DRAFT';
+      }
+    });
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="usm-section-title">🏆 Research Outputs Vault</div>
+        {/* Publication prerequisite banner */}
+        <div className="usm-card" style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 20px', textAlign: 'center' }}>
+          <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: verifiedJournals >= 2 ? '#059669' : '#EF4444' }}>{verifiedJournals}/2</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Journals {verifiedJournals >= 2 ? '✅' : '⚠️'}</div></div>
+          <div style={{ width: 1, background: '#E2E8F0' }} />
+          <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: verifiedConferences >= 2 ? '#059669' : '#EF4444' }}>{verifiedConferences}/2</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Conferences {verifiedConferences >= 2 ? '✅' : '⚠️'}</div></div>
+          <div style={{ width: 1, background: '#E2E8F0' }} />
+          <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2563EB' }}>{filteredPubs.filter(p => (p.type === 'PATENT' || p.type === 'IPR') && p.status === 'VERIFIED').length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>IPRs (Optional)</div></div>
+          <div style={{ width: 1, background: '#E2E8F0' }} />
+          <div><div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3B82F6' }}>{filteredPubs.length}</div><div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>Total Logged</div></div>
         </div>
-      ) :
-       publications.length === 0 ? <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic' }}>No research outputs logged.</div> :
-       publications.map(p => (
+        {pubsLoading ? (
+          <div className="premium-preloader-container" style={{ padding: '30px 20px' }}>
+            <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
+            <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading research outputs...</div>
+          </div>
+        ) :
+         filteredPubs.length === 0 ? <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic' }}>No research outputs logged.</div> :
+         filteredPubs.map(p => (
         <div key={p._id} className="usm-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <span style={{ fontSize: '0.88rem', fontWeight: 700 }}>{p.title}</span>
@@ -2510,7 +2526,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> {p.remarks}
             </div>
           )}
-          {((p.status === 'PENDING' && !isHodUser) || (p.status === 'UNDER_REVIEW_HOD' && isHodUser)) && !isReadOnly && (
+          {((p.status === 'PENDING' && isSupervisor) || (p.status === 'UNDER_REVIEW_HOD' && isHodUser)) && !isReadOnly && (
             <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => setSelectedEvalDoc({ ...p, docType: 'PUBLICATION', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
             </div>
@@ -2519,6 +2535,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       ))}
     </div>
   );
+};
 
   const renderDocuments = () => {
     return (

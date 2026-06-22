@@ -2354,11 +2354,11 @@ const getStatusDisplay = (status) => {
     case 'DRAFT':
       return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
     case 'PENDING':
-      return { text: 'submitted and under review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+      return { text: 'submitted and pending review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
     case 'UNDER_REVIEW_HOD':
-      return { text: 'under review at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+      return { text: 'pending approval at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
     case 'VERIFIED':
-      return { text: 'Approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+      return { text: 'approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
     case 'REJECTED_BY_SUPERVISOR':
       return { text: 'rejected by supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     case 'REJECTED_BY_HOD':
@@ -2556,7 +2556,7 @@ const HODDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
             </div>
 
             <div style={{ display: 'flex', gap: 12, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: 16 }}>
-              {doc.status === 'SUBMITTED' || doc.status === 'PENDING' || doc.status === 'UNDER_REVIEW_HOD' ? (
+              {doc.docType === 'PUBLICATION' ? doc.status === 'UNDER_REVIEW_HOD' : (doc.status === 'SUBMITTED' || doc.status === 'PENDING') ? (
                 <>
                   <button 
                     type="button" 
@@ -2922,7 +2922,7 @@ const HODDocumentManager = ({ theses }) => {
 
           {/* Publications Tab */}
           {activeTab === 'publications' && (() => {
-            const filteredPublications = publications.filter(p => p.status !== 'DRAFT');
+            const filteredPublications = publications.filter(p => ['UNDER_REVIEW_HOD', 'VERIFIED', 'REJECTED_BY_HOD'].includes(p.status));
             if (filteredPublications.length === 0) {
               return (
                 <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>

@@ -3314,11 +3314,11 @@ const getStatusDisplay = (status) => {
     case 'DRAFT':
       return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
     case 'PENDING':
-      return { text: 'submitted and under review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+      return { text: 'submitted and pending review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
     case 'UNDER_REVIEW_HOD':
-      return { text: 'under review at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+      return { text: 'pending approval at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
     case 'VERIFIED':
-      return { text: 'Approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+      return { text: 'approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
     case 'REJECTED_BY_SUPERVISOR':
       return { text: 'rejected by supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     case 'REJECTED_BY_HOD':
@@ -3468,9 +3468,9 @@ const ResearchOutputsTab = ({ thesis }) => {
       issn: p.issn || '',
       publicationDate: p.publicationDate ? p.publicationDate.split('T')[0] : '',
       paperLink: p.paperLink || '',
-      type: p.type || 'JOURNAL',
+      type: (p.type === 'PATENT' || p.type === 'IPR') ? 'IPR' : (p.type || 'JOURNAL'),
       doiUrl: p.doiUrl || '',
-      iprType: p.iprType || '',
+      iprType: p.iprType || (p.type === 'PATENT' ? 'Patent' : ''),
       itemStatus: p.itemStatus || '',
       indexing: p.indexing || '',
       volume: p.volume || '',
@@ -3499,9 +3499,9 @@ const ResearchOutputsTab = ({ thesis }) => {
   const verifiedConferences = pubs.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
   const loggedPatents = pubs.filter(p => (p.type === 'PATENT' || p.type === 'IPR') && p.status === 'VERIFIED').length;
 
-  const activePubs = pubs.filter(p => p.status === 'DRAFT' || p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD');
-  const reviewedPubs = pubs.filter(p => p.status === 'VERIFIED' || p.status === 'REJECTED_BY_SUPERVISOR' || p.status === 'REJECTED_BY_HOD');
-  const hasDrafts = activePubs.some(p => p.status === 'DRAFT');
+  const activePubs = pubs.filter(p => p.status === 'DRAFT' || p.status === 'REJECTED_BY_SUPERVISOR' || p.status === 'REJECTED_BY_HOD');
+  const reviewedPubs = pubs.filter(p => p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD' || p.status === 'VERIFIED');
+  const hasDrafts = pubs.some(p => p.status === 'DRAFT');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -3898,10 +3898,10 @@ const ResearchOutputsTab = ({ thesis }) => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             
-            {/* Section 1: Active & Draft Research Outputs */}
+            {/* Section 1: Saved & Rejected Research Outputs */}
             <div>
               <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E293B', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>📁</span> Active & Draft Research Outputs
+                <span>📁</span> Saved & Rejected Research Outputs
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', background: '#E2E8F0', color: '#475569', borderRadius: 12 }}>
                   {activePubs.length}
                 </span>
@@ -4034,6 +4034,11 @@ const ResearchOutputsTab = ({ thesis }) => {
                         
                         {p.doiUrl && <div style={{ gridColumn: 'span 2' }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR ID/Ref:' : p.type === 'CONFERENCE' ? 'Proceedings Link:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
                       </div>
+                      {p.remarks && (
+                        <div style={{ background: '#FEF2F2', borderLeft: '3px solid #EF4444', padding: '8px 12px', borderRadius: 6, fontSize: '0.8rem', color: '#991B1B', marginTop: 4, marginBottom: 8 }}>
+                          <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> "{p.remarks}"
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -4066,10 +4071,10 @@ const ResearchOutputsTab = ({ thesis }) => {
               </div>
             </div>
 
-            {/* Section 2: Reviewed Research Outputs */}
+            {/* Section 2: Submitted & Approved Research Outputs Log */}
             <div>
               <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E293B', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>📋</span> Reviewed Research Outputs
+                <span>📋</span> Submitted & Approved Research Outputs Log
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', background: '#E2E8F0', color: '#475569', borderRadius: 12 }}>
                   {reviewedPubs.length}
                 </span>
@@ -4128,28 +4133,12 @@ const ResearchOutputsTab = ({ thesis }) => {
                         <div style={{ flex: 1.5, display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
                           {p.status === 'VERIFIED' ? (
                             <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span>✅</span> Reviewed & Approved
+                              <span>✅</span> approved
                             </span>
                           ) : (
-                            <button
-                              onClick={() => handleEditClick(p)}
-                              style={{
-                                padding: '5px 12px',
-                                borderRadius: '6px',
-                                fontSize: '0.8rem',
-                                fontWeight: 600,
-                                background: '#3B82F6',
-                                color: '#FFFFFF',
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                transition: 'background-color 0.2s'
-                              }}
-                            >
-                              <Edit size={14} /> Edit
-                            </button>
+                            <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span>🔒</span> Under Review
+                            </span>
                           )}
                         </div>
                       </div>

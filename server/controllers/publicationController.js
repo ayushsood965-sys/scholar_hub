@@ -85,11 +85,25 @@ const verifyPublication = async (req, res) => {
     const pub = await Publication.findById(id);
     if (!pub) return res.status(404).json({ message: 'Publication not found' });
 
-    // Status-based transitions (not role-based):
-    // PENDING → approve → UNDER_REVIEW_HOD (supervisor step)
-    // UNDER_REVIEW_HOD → approve → VERIFIED (HOD final step)
-    // PENDING → reject → REJECTED_BY_SUPERVISOR
-    // UNDER_REVIEW_HOD → reject → REJECTED_BY_HOD
+    const thesis = await Thesis.findById(pub.thesisId);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // Role checks
+    const isSupervisor = thesis.supervisorId && thesis.supervisorId.toString() === req.user._id.toString();
+    const isHodUser = req.user.role === 'HOD' || req.user.subRole === 'HOD' || req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+
+    if (pub.status === 'PENDING') {
+      if (!isSupervisor && req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ message: 'Only the supervisor can review this publication at this stage.' });
+      }
+    } else if (pub.status === 'UNDER_REVIEW_HOD') {
+      if (!isHodUser) {
+        return res.status(403).json({ message: 'Only the HOD can review this publication at this stage.' });
+      }
+    } else {
+      return res.status(400).json({ message: `Publication is currently ${pub.status} and cannot be evaluated.` });
+    }
+
     let targetStatus = status;
 
     if (pub.status === 'PENDING') {
@@ -110,15 +124,11 @@ const verifyPublication = async (req, res) => {
         targetStatus = 'REJECTED_BY_HOD';
         if (remarks !== undefined) pub.remarks = remarks;
       }
-    } else {
-      // Fallback for any other status
-      if (remarks !== undefined) pub.remarks = remarks;
     }
 
     pub.status = targetStatus;
     await pub.save();
 
-    const thesis = await Thesis.findById(pub.thesisId);
     if (thesis) {
       thesis.auditLog.push({
         action: targetStatus === 'VERIFIED' ? 'PUBLICATION_VERIFIED' : targetStatus === 'UNDER_REVIEW_HOD' ? 'PUBLICATION_FORWARDED' : 'PUBLICATION_REJECTED',

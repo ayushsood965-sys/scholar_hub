@@ -351,11 +351,11 @@ const getStatusDisplay = (status) => {
     case 'DRAFT':
       return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
     case 'PENDING':
-      return { text: 'submitted and under review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
+      return { text: 'submitted and pending review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
     case 'UNDER_REVIEW_HOD':
-      return { text: 'under review at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
+      return { text: 'pending approval at HOD', color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' };
     case 'VERIFIED':
-      return { text: 'Approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
+      return { text: 'approved', color: '#065F46', bg: '#D1FAE5', border: '#A7F3D0' };
     case 'REJECTED_BY_SUPERVISOR':
       return { text: 'rejected by supervisor', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     case 'REJECTED_BY_HOD':
@@ -369,7 +369,9 @@ const getStatusDisplay = (status) => {
 const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
   const { user } = useContext(AuthContext);
   const isHod = user?.role === 'HOD' || user?.subRole === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  const showEvaluate = doc.status === 'SUBMITTED' || doc.status === 'PENDING' || (doc.status === 'UNDER_REVIEW_HOD' && isHod);
+  const showEvaluate = doc.docType === 'PUBLICATION'
+    ? (isHod ? doc.status === 'UNDER_REVIEW_HOD' : doc.status === 'PENDING')
+    : (doc.status === 'SUBMITTED' || doc.status === 'PENDING');
   const toast = useToast();
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1956,7 +1958,16 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                     <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading publications...</div>
                   </div>
                                 ) : (() => {
-                  const filteredPublications = publications.filter(p => p.status !== 'DRAFT');
+                  const isSupervisor = thesis.supervisorId && (thesis.supervisorId === user?._id || thesis.supervisorId?._id === user?._id);
+                  const filteredPublications = publications.filter(p => {
+                    if (isSupervisor) {
+                      return p.status !== 'DRAFT';
+                    } else if (subRole === 'HOD') {
+                      return ['UNDER_REVIEW_HOD', 'VERIFIED', 'REJECTED_BY_HOD'].includes(p.status);
+                    } else {
+                      return p.status !== 'DRAFT';
+                    }
+                  });
                   if (filteredPublications.length === 0) {
                     return <div style={{ textAlign: 'center', padding: 20, color: 'var(--color-text-muted, #64748B)', fontSize: '0.85rem' }}>No scientific publications logged in vault.</div>;
                   }
@@ -2021,7 +2032,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                         </div>
                       )}
 
-                      {((p.status === 'PENDING' && subRole !== 'HOD') || (p.status === 'UNDER_REVIEW_HOD' && (subRole === 'HOD' || user?.role === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'))) && (
+                      {((p.status === 'PENDING' && isSupervisor) || (p.status === 'UNDER_REVIEW_HOD' && (subRole === 'HOD' || user?.role === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'))) && (
                         <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
                           <button 
                             type="button" 
@@ -2936,10 +2947,10 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
   const awaitingReg = theses.filter(t => t.status === 'REGISTRATION_PENDING').length;
   const activeResearch = theses.filter(t => t.status === 'ACTIVE_RESEARCH').length;
   const pendingReviews = theses.filter(t => {
-    if (t.status === 'SYNOPSIS_PENDING') {
-      return t.synopsisStatus === 'PENDING_HOD';
-    }
-    return t.status === 'PRE_SUBMISSION';
+    const hasPendingSynopsis = t.status === 'SYNOPSIS_PENDING' && t.synopsisStatus === 'PENDING_HOD';
+    const hasPendingPreSub = t.status === 'PRE_SUBMISSION' && t.preSubMilestoneStatus === 'PENDING_HOD';
+    const hasPendingPubs = t.publications && t.publications.some(p => p.status === 'UNDER_REVIEW_HOD');
+    return hasPendingSynopsis || hasPendingPreSub || hasPendingPubs;
   }).length;
   const awaitingDRC = theses.filter(t => t.status === 'SYNOPSIS_PENDING' && t.synopsisStatus === 'APPROVED').length;
 
@@ -2947,10 +2958,10 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
   const myScholars = theses;
   const activeSupervision = myScholars.filter(t => t.status === 'ACTIVE_RESEARCH').length;
   const myPendingApprovals = myScholars.filter(t => {
-    if (t.status === 'SYNOPSIS_PENDING') {
-      return t.synopsisStatus === 'SUBMITTED';
-    }
-    return t.status === 'PRE_SUBMISSION';
+    const hasPendingSynopsis = t.status === 'SYNOPSIS_PENDING' && t.synopsisStatus === 'SUBMITTED';
+    const hasPendingPreSub = t.status === 'PRE_SUBMISSION' && t.preSubMilestoneStatus === 'SUBMITTED';
+    const hasPendingPubs = t.publications && t.publications.some(p => p.status === 'PENDING');
+    return hasPendingSynopsis || hasPendingPreSub || hasPendingPubs;
   }).length;
 
   return (
@@ -3745,7 +3756,13 @@ const PendingReviewsQueue = ({ theses, user }) => {
 
         // Fetch publications
         const pRes = await axios.get(`${API_URL}/publications/thesis/${t._id}`, getAuthHeader());
-        const pendingPubs = pRes.data.filter(p => p.status === 'PENDING');
+        const isSupervisor = t.supervisorId && (t.supervisorId === user?._id || t.supervisorId?._id === user?._id);
+        const isHodUser = user?.role === 'HOD' || user?.subRole === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+        const pendingPubs = pRes.data.filter(p => {
+          const matchSupervisor = isSupervisor && p.status === 'PENDING';
+          const matchHod = isHodUser && p.status === 'UNDER_REVIEW_HOD';
+          return matchSupervisor || matchHod;
+        });
         pendingPubs.forEach(p => {
           allPendingDocs.push({
             _id: p._id,

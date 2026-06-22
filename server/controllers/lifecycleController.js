@@ -255,18 +255,58 @@ const submitPublication = async (req, res) => {
 const verifyPublication = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // 'VERIFIED' or 'REJECTED'
+    const { status, remarks } = req.body; // 'VERIFIED' or 'REJECTED', and optional remarks
     const pub = await Publication.findById(id);
     if (!pub) return res.status(404).json({ message: 'Publication not found' });
 
-    pub.status = status;
+    const thesis = await Thesis.findById(pub.thesisId);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // Role checks
+    const isSupervisor = thesis.supervisorId && thesis.supervisorId.toString() === req.user._id.toString();
+    const isHodUser = req.user.role === 'HOD' || req.user.subRole === 'HOD' || req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+
+    if (pub.status === 'PENDING') {
+      if (!isSupervisor && req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ message: 'Only the supervisor can review this publication at this stage.' });
+      }
+    } else if (pub.status === 'UNDER_REVIEW_HOD') {
+      if (!isHodUser) {
+        return res.status(403).json({ message: 'Only the HOD can review this publication at this stage.' });
+      }
+    } else {
+      return res.status(400).json({ message: `Publication is currently ${pub.status} and cannot be evaluated.` });
+    }
+
+    let targetStatus = status;
+
+    if (pub.status === 'PENDING') {
+      // Step 1: Supervisor-level review
+      if (status === 'VERIFIED') {
+        targetStatus = 'UNDER_REVIEW_HOD';
+        pub.remarks = '';
+      } else if (status === 'REJECTED') {
+        targetStatus = 'REJECTED_BY_SUPERVISOR';
+        if (remarks !== undefined) pub.remarks = remarks;
+      }
+    } else if (pub.status === 'UNDER_REVIEW_HOD') {
+      // Step 2: HOD-level final review
+      if (status === 'VERIFIED') {
+        targetStatus = 'VERIFIED';
+        pub.remarks = '';
+      } else if (status === 'REJECTED') {
+        targetStatus = 'REJECTED_BY_HOD';
+        if (remarks !== undefined) pub.remarks = remarks;
+      }
+    }
+
+    pub.status = targetStatus;
     await pub.save();
 
-    const thesis = await Thesis.findById(pub.thesisId);
     if (thesis) {
       thesis.auditLog.push({
-        action: 'PUBLICATION_VERIFIED',
-        note: `Publication "${pub.title}" marked ${status}`
+        action: targetStatus === 'VERIFIED' ? 'PUBLICATION_VERIFIED' : targetStatus === 'UNDER_REVIEW_HOD' ? 'PUBLICATION_FORWARDED' : 'PUBLICATION_REJECTED',
+        note: `Publication "${pub.title}" marked ${targetStatus}.${remarks ? ' Remarks: ' + remarks : ''}`
       });
       await thesis.save();
     }

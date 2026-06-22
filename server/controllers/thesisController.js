@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { createNotification } = require('./notificationController');
 
 const augmentThesesWithMilestones = async (theses) => {
+  const Publication = require('../models/Publication');
   const augmented = [];
   for (let thesis of theses) {
     const thesisObj = thesis.toObject();
@@ -12,6 +13,12 @@ const augmentThesesWithMilestones = async (theses) => {
 
     const finalSub = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
     thesisObj.finalSubStatus = finalSub ? finalSub.status : null;
+
+    const preSub = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
+    thesisObj.preSubMilestoneStatus = preSub ? preSub.status : null;
+
+    const publications = await Publication.find({ thesisId: thesis._id });
+    thesisObj.publications = publications;
 
     augmented.push(thesisObj);
   }
