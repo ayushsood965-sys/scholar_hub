@@ -107,7 +107,19 @@ const reviewDocument = async (req, res) => {
 const getDocumentsByThesis = async (req, res) => {
   try {
     const { thesisId } = req.params;
-    const docs = await AdditionalDocument.find({ thesisId })
+    const thesis = await Thesis.findById(thesisId);
+    if (!thesis) return res.status(404).json({ message: 'Thesis context not found.' });
+
+    const query = { thesisId };
+
+    const isScholar = thesis.scholarId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+
+    if (!isScholar && !isAdmin && req.user.role !== 'STUDENT') {
+      query.forwardedTo = req.user._id;
+    }
+
+    const docs = await AdditionalDocument.find(query)
       .populate('scholarId', 'name email username profile')
       .populate('forwardedTo', 'name email role subRole')
       .sort({ createdAt: -1 });

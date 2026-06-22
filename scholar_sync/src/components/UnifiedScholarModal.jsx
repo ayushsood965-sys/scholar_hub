@@ -589,8 +589,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     return matchSupervisor || matchHod;
   }).length;
   const pendingReportsCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
-  const pendingChaptersCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === 'CHAPTER_DRAFT').length;
-  const pendingDocCount = corePendingMilestonesDocs.filter(m => m.status === 'SUBMITTED').length + additionalDocs.filter(d => d.status === 'SUBMITTED').length;
+  const pendingChaptersCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === 'CHAPTER_DRAFT' && m.forwardedTo && (m.forwardedTo._id === user?._id || m.forwardedTo === user?._id)).length;
+  const pendingDocCount = corePendingMilestonesDocs.filter(m => m.status === 'SUBMITTED').length + additionalDocs.filter(d => d.status === 'SUBMITTED' && d.forwardedTo && (d.forwardedTo._id === user?._id || d.forwardedTo === user?._id)).length;
   const scheduledRacs = racReviews.filter(r => r.status === 'SCHEDULED').length;
 
   const preSubmissionBadge = (() => {

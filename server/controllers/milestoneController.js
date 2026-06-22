@@ -87,8 +87,25 @@ const generateMilestonesIfNeeded = async (thesisId) => {
 const getMilestones = async (req, res) => {
   try {
     await generateMilestonesIfNeeded(req.params.thesisId);
-    const milestones = await Milestone.find({ thesisId: req.params.thesisId })
+    let milestones = await Milestone.find({ thesisId: req.params.thesisId })
+      .populate('forwardedTo', 'name email role subRole')
       .sort('sequence createdAt');
+
+    // Filter out chapter drafts if the requester is not the scholar and not an admin
+    const thesis = await Thesis.findById(req.params.thesisId);
+    const isScholar = thesis && thesis.scholarId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+
+    if (!isScholar && !isAdmin && req.user.role !== 'STUDENT') {
+      milestones = milestones.filter(m => {
+        if (m.type === 'CHAPTER_DRAFT') {
+          const fwdId = m.forwardedTo?._id ? m.forwardedTo._id.toString() : m.forwardedTo?.toString();
+          return fwdId && fwdId === req.user._id.toString();
+        }
+        return true;
+      });
+    }
+
     res.json(milestones);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -142,11 +159,17 @@ const submitDocument = async (req, res) => {
       await thesis.save();
     }
 
-    if (thesis.supervisorId) {
+    const recipient = (milestone.type === 'CHAPTER_DRAFT' && milestone.forwardedTo) 
+      ? milestone.forwardedTo 
+      : thesis.supervisorId;
+
+    if (recipient) {
       await createNotification({
-        recipient: thesis.supervisorId,
-        title: milestone.type === 'FINAL_SUBMISSION' ? '⏳ Final Thesis Awaiting Sign-off' : '⏳ Milestone Review Pending',
-        message: milestone.type === 'FINAL_SUBMISSION'
+        recipient,
+        title: milestone.type === 'CHAPTER_DRAFT' ? '⏳ Chapter Draft Submitted' : (milestone.type === 'FINAL_SUBMISSION' ? '⏳ Final Thesis Awaiting Sign-off' : '⏳ Milestone Review Pending'),
+        message: milestone.type === 'CHAPTER_DRAFT'
+          ? `Scholar "${req.user.name}" has submitted chapter draft "${milestone.title}" to you for review.`
+          : milestone.type === 'FINAL_SUBMISSION'
           ? `Scholar "${req.user.name}" has uploaded their absolute Final Bound Thesis. Please review and provide sign-off.`
           : `Scholar "${req.user.name}" has uploaded a document for milestone "${milestone.title}". Action needed: Please review and record your grade.`,
         type: 'PENDING_ACTION',
@@ -166,6 +189,12 @@ const reviewMilestone = async (req, res) => {
     const { action, comment } = req.body; // action: 'APPROVE' | 'REVISION'
     const milestone = await Milestone.findById(req.params.id);
     if (!milestone) return res.status(404).json({ message: 'Milestone not found' });
+
+    if (milestone.type === 'CHAPTER_DRAFT' && milestone.forwardedTo) {
+      if (milestone.forwardedTo.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized. This chapter draft was not forwarded to you.' });
+      }
+    }
 
     let isSynopsis = milestone.type === 'SYNOPSIS';
     let isPreSubmission = milestone.type === 'PRE_SUBMISSION';
@@ -261,8 +290,8 @@ const reviewMilestone = async (req, res) => {
 // POST /api/milestones/create — Faculty/Admin can create a new progress report milestone
 const createMilestone = async (req, res) => {
   try {
-    const { thesisId, type, title, sequence, dueDate } = req.body;
-    const milestone = await Milestone.create({ thesisId, type, title, sequence, dueDate });
+    const { thesisId, type, title, sequence, dueDate, forwardedTo, forwardedRole } = req.body;
+    const milestone = await Milestone.create({ thesisId, type, title, sequence, dueDate, forwardedTo, forwardedRole });
 
     const thesis = await Thesis.findById(thesisId);
     if (thesis) {

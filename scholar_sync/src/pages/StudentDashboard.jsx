@@ -5538,10 +5538,38 @@ const ChapterDraftsTab = ({ thesis, milestones = [], onSubmit }) => {
   const [newTitle, setNewTitle] = useState('');
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [faculty, setFaculty] = useState([]);
+  const [forwardedTo, setForwardedTo] = useState('');
+  const [forwardedRole, setForwardedRole] = useState('');
+
+  useEffect(() => {
+    axios.get(`${API}/auth/faculty`, getAuthHeader())
+      .then(res => {
+        const deptFaculty = res.data.filter(f => f.department === thesis.department && f.isActive);
+        setFaculty(deptFaculty);
+      })
+      .catch(() => {});
+  }, []);
+
+  const hodUser = faculty.find(f => f.role === 'HOD');
+  const supervisorUser = thesis.supervisorId;
+
+  const handleRecipientChange = (e) => {
+    const val = e.target.value;
+    if (!val) {
+      setForwardedTo('');
+      setForwardedRole('');
+      return;
+    }
+    const [id, role] = val.split(':');
+    setForwardedTo(id);
+    setForwardedRole(role);
+  };
 
   const handleCreateAndUpload = async (e) => {
     e.preventDefault();
     if (!newTitle.trim()) return toast.warning('Please enter the chapter title.');
+    if (!forwardedTo) return toast.warning('Please select a recipient to forward the chapter draft.');
     if (!file) return toast.warning('Please select a PDF document.');
     setLoading(true);
     try {
@@ -5549,14 +5577,18 @@ const ChapterDraftsTab = ({ thesis, milestones = [], onSubmit }) => {
         thesisId: thesis._id,
         type: 'CHAPTER_DRAFT',
         title: newTitle.trim(),
-        sequence: drafts.length + 1
+        sequence: drafts.length + 1,
+        forwardedTo,
+        forwardedRole
       }, getAuthHeader());
 
       await onSubmit(res.data._id, file);
 
-      toast.success('Chapter Draft uploaded successfully!');
+      toast.success('Chapter Draft uploaded and forwarded successfully!');
       setNewTitle('');
       setFile(null);
+      setForwardedTo('');
+      setForwardedRole('');
       setShowAddForm(false);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to upload chapter draft.');
@@ -5588,12 +5620,33 @@ const ChapterDraftsTab = ({ thesis, milestones = [], onSubmit }) => {
               <input type="text" className="form-input" required value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="e.g. Chapter 1: Literature Review" />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Chapter Document Proof (PDF)</label>
-              <input type="file" accept=".pdf" required onChange={e => setFile(e.target.files[0])} style={{ fontSize: '0.85rem', marginTop: '6px' }} />
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Forward To Recipient *</label>
+              <select
+                className="form-input"
+                required
+                value={forwardedTo ? `${forwardedTo}:${forwardedRole}` : ''}
+                onChange={handleRecipientChange}
+              >
+                <option value="">-- Select Recipient --</option>
+                {supervisorUser && (
+                  <option value={`${supervisorUser._id}:SUPERVISOR`}>
+                    Supervisor (Prof. {supervisorUser.name})
+                  </option>
+                )}
+                {hodUser && (
+                  <option value={`${hodUser._id}:HOD`}>
+                    Head of Department (Prof. {hodUser.name})
+                  </option>
+                )}
+              </select>
             </div>
           </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Chapter Document Proof (PDF)</label>
+            <input type="file" accept=".pdf" required onChange={e => setFile(e.target.files[0])} style={{ fontSize: '0.85rem', marginTop: '6px' }} />
+          </div>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button type="button" onClick={() => setShowAddForm(false)} className="btn-outline" style={{ padding: '8px 16px' }}>Cancel</button>
+            <button type="button" onClick={() => { setShowAddForm(false); setForwardedTo(''); setForwardedRole(''); }} className="btn-outline" style={{ padding: '8px 16px' }}>Cancel</button>
             <button type="submit" className="btn-primary" disabled={loading} style={{ background: '#133A26', padding: '8px 16px' }}>
               {loading ? 'Submitting...' : 'Upload & Submit Draft'}
             </button>
@@ -5624,6 +5677,12 @@ const ChapterDraftsTab = ({ thesis, milestones = [], onSubmit }) => {
                   {d.status}
                 </span>
               </div>
+
+              {d.forwardedTo && (
+                <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#475569' }}>
+                  📤 Forwarded To: <strong>{d.forwardedTo?.name || 'N/A'}</strong> ({d.forwardedRole})
+                </div>
+              )}
 
               {d.documentUrl && (
                 <div style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>

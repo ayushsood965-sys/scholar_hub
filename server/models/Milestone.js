@@ -28,6 +28,8 @@ const milestoneSchema = new mongoose.Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    forwardedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    forwardedRole: { type: String, enum: ['SUPERVISOR', 'HOD'], default: null },
   },
   { timestamps: true }
 );

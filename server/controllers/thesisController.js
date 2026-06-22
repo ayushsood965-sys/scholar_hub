@@ -75,7 +75,9 @@ const getMyThesis = async (req, res) => {
       .populate('supervisorId', 'name username department subRole');
     if (!thesis) return res.status(404).json({ message: 'No thesis found' });
 
-    const milestones = await Milestone.find({ thesisId: thesis._id }).sort('sequence createdAt');
+    const milestones = await Milestone.find({ thesisId: thesis._id })
+      .populate('forwardedTo', 'name email role subRole')
+      .sort('sequence createdAt');
     res.json({ thesis, milestones });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -119,7 +121,24 @@ const getThesisById = async (req, res) => {
     //   return res.status(403).json({ message: 'Not authorized to view theses outside your department' });
     // }
 
-    const milestones = await Milestone.find({ thesisId: thesis._id }).sort('sequence createdAt');
+    let milestones = await Milestone.find({ thesisId: thesis._id })
+      .populate('forwardedTo', 'name email role subRole')
+      .sort('sequence createdAt');
+
+    const scholarIdStr = thesis.scholarId?._id ? thesis.scholarId._id.toString() : thesis.scholarId?.toString();
+    const isScholar = scholarIdStr === req.user._id.toString();
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+
+    if (!isScholar && !isAdmin && req.user.role !== 'STUDENT') {
+      milestones = milestones.filter(m => {
+        if (m.type === 'CHAPTER_DRAFT') {
+          const fwdId = m.forwardedTo?._id ? m.forwardedTo._id.toString() : m.forwardedTo?.toString();
+          return fwdId && fwdId === req.user._id.toString();
+        }
+        return true;
+      });
+    }
+
     res.json({ thesis, milestones });
   } catch (err) {
     res.status(500).json({ message: err.message });
