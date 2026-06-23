@@ -2184,3 +2184,109 @@ img {
   color: var(--status-absent);
 }
 
+/* Custom Searchable Dropdown */
+.searchable-dropdown-container {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-dropdown-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.searchable-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(19, 58, 38, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  margin-top: 6px;
+  padding: 8px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-theme='dark'] .searchable-dropdown-menu {
+  background: rgba(30, 30, 32, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+.searchable-dropdown-search-wrapper {
+  position: relative;
+}
+
+.searchable-dropdown-search {
+  padding: 10px 14px !important;
+  font-size: 0.9rem !important;
+  border-radius: 8px !important;
+}
+
+.searchable-dropdown-list {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Custom Scrollbar for Searchable Dropdown Menu */
+.searchable-dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+.searchable-dropdown-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.searchable-dropdown-list::-webkit-scrollbar-thumb {
+  background: rgba(19, 58, 38, 0.15);
+  border-radius: 3px;
+}
+[data-theme='dark'] .searchable-dropdown-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+.searchable-dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(19, 58, 38, 0.3);
+}
+[data-theme='dark'] .searchable-dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.searchable-dropdown-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #1F2937;
+  transition: all 0.2s ease;
+}
+.searchable-dropdown-item:hover {
+  background-color: #F3F4F6;
+}
+.searchable-dropdown-item.active {
+  background-color: #E8F5E9;
+  font-weight: 600;
+  color: #133A26;
+}
+
+[data-theme='dark'] .searchable-dropdown-item {
+  color: #ffffff;
+}
+[data-theme='dark'] .searchable-dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme='dark'] .searchable-dropdown-item.active {
+  background-color: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+}
+

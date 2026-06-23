@@ -1,8 +1,10 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BarChart3, Eye, EyeOff } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const Login = () => {
   const { login } = useContext(AuthContext);
@@ -39,7 +41,7 @@ const Login = () => {
   };
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {loading && (
         <div className="login-preloader-overlay">
           <div className="login-preloader-container">
@@ -51,7 +53,9 @@ const Login = () => {
         </div>
       )}
 
-      <div className="auth-page">
+      <Navbar />
+
+      <div className="auth-page" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="liquid-bg-wrapper">
           <div className="liquid-blob blob-1" />
           <div className="liquid-blob blob-2" />
@@ -63,6 +67,7 @@ const Login = () => {
           initial={{ opacity: 0, y: 30, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={{ margin: '40px auto' }}
         >
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <div style={{
@@ -94,11 +99,11 @@ const Login = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Username</label>
+              <label className="form-label">Username (Email ID)</label>
               <input
                 className="form-input"
                 type="text"
-                placeholder="Enter your username"
+                placeholder="Enter your email id"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 autoComplete="username"
@@ -111,7 +116,7 @@ const Login = () => {
                 <input
                   className="form-input"
                   type={showPwd ? 'text' : 'password'}
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"
@@ -152,7 +157,9 @@ const Login = () => {
           </p>
         </motion.div>
       </div>
-    </>
+
+      <Footer />
+    </div>
   );
 };
 
