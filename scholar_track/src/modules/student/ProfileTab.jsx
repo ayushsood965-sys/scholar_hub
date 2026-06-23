@@ -28,7 +28,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [degreeTypeId, setDegreeTypeId] = useState('');
   const [degreeNameId, setDegreeNameId] = useState('');
   const [semesterId, setSemesterId] = useState('');
-  const [isPhD, setIsPhD] = useState(true);
+  const [isPhD, setIsPhD] = useState(false);
 
   // Masters lists for non-PhD
   const [semesters, setSemesters] = useState([]);
@@ -54,7 +54,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [thesisSummary, setThesisSummary] = useState('');
   const [thesisKeywords, setThesisKeywords] = useState('');
   const [academicSession, setAcademicSession] = useState('');
-  const [degreeType, setDegreeType] = useState('Ph.D.');
+  const [degreeType, setDegreeType] = useState('');
   const [sessions, setSessions] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [preferredGuideId, setPreferredGuideId] = useState('');
@@ -119,7 +119,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       const u = res.data;
       setProfile(u);
 
-      const isPhDVal = u.profile?.isPhD !== undefined ? u.profile.isPhD : true;
+      const isPhDVal = u.profile?.isPhD !== undefined ? u.profile.isPhD : false;
       setIsPhD(isPhDVal);
 
       // Initialize fields for everyone
@@ -719,40 +719,63 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   };
 
   const handleProfileRegistrationSubmit = async () => {
-    if (
-      !dob || !gender || !category || !fatherName || !motherName || !nationality || 
-      !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
-      !phoneNumber || !address || !areaOfInterest ||
-      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession ||
-      !degreeTypeId || !semesterId
-    ) {
-      toast.error('Please fill in all the general and Ph.D. details before submitting.');
-      return;
-    }
-
-    // 2. Qualifications Validation
-    const q = profile?.profile?.qualifications || {};
-    if (
-      !class10Roll || !q.class10?.certificateUrl ||
-      !class12Roll || !q.class12?.certificateUrl ||
-      !gradRoll || !q.graduation?.certificateUrl ||
-      !pgRoll || !q.postGraduation?.certificateUrl
-    ) {
-      toast.error('Please fill in all qualifications and upload their certificates (PDF) first.');
-      return;
-    }
-
-    if (netJrfQualified === 'YES') {
-      if (!netJrfCertNumber || !q.netJrf?.certificateUrl) {
-        toast.error('Please upload your NET JRF award letter certificate.');
+    if (isPhD) {
+      if (
+        !dob || !gender || !category || !fatherName || !motherName || !nationality || 
+        !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
+        !phoneNumber || !address || !areaOfInterest ||
+        !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession ||
+        !degreeTypeId || !semesterId
+      ) {
+        toast.error('Please fill in all the general and Ph.D. details before submitting.');
         return;
       }
-    }
 
-    // 3. Preferred Supervisor Validation
-    if (!preferredGuideId) {
-      toast.error('Please select your preferred Ph.D. supervisor/guide preference.');
-      return;
+      // 2. Qualifications Validation
+      const q = profile?.profile?.qualifications || {};
+      if (
+        !class10Roll || !q.class10?.certificateUrl ||
+        !class12Roll || !q.class12?.certificateUrl ||
+        !gradRoll || !q.graduation?.certificateUrl ||
+        !q.postGraduation?.certificateUrl || !pgRoll
+      ) {
+        toast.error('Please fill in all qualifications and upload their certificates (PDF) first.');
+        return;
+      }
+
+      if (netJrfQualified === 'YES') {
+        if (!netJrfCertNumber || !q.netJrf?.certificateUrl) {
+          toast.error('Please upload your NET JRF award letter certificate.');
+          return;
+        }
+      }
+
+      // 3. Preferred Supervisor Validation
+      if (!preferredGuideId) {
+        toast.error('Please select your preferred Ph.D. supervisor/guide preference.');
+        return;
+      }
+    } else {
+      // Non-PhD student validation
+      if (
+        !dob || !gender || !category || !fatherName || !motherName || 
+        !phoneNumber || !address || !academicSession ||
+        !degreeTypeId || !semesterId
+      ) {
+        toast.error('Please fill in all general details before submitting.');
+        return;
+      }
+
+      // Qualifications Validation
+      const q = profile?.profile?.qualifications || {};
+      if (
+        !class10Roll || !q.class10?.certificateUrl ||
+        !class12Roll || !q.class12?.certificateUrl ||
+        !gradRoll || !q.graduation?.certificateUrl
+      ) {
+        toast.error('Please fill in 10th, 12th, and Graduation qualifications and upload their certificates (PDF) first.');
+        return;
+      }
     }
 
     const confirmSubmit = window.confirm(
@@ -765,13 +788,19 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
     try {
       setRegistering(true);
-      // Create thesis dossier with status: REGISTRATION_PENDING
-      await api.post('/thesis', {});
-      toast.success('PhD profile registration submitted to HOD successfully!');
+      if (isPhD) {
+        // Create thesis dossier with status: REGISTRATION_PENDING
+        await api.post('/thesis', {});
+        toast.success('PhD profile registration submitted to HOD successfully!');
+      } else {
+        // Non-PhD: call updateProfile with profileCompleted: true
+        await updateProfile({ profileCompleted: true });
+        toast.success('Profile submitted to HOD for verification successfully!');
+      }
       if (onRefreshThesis) await onRefreshThesis();
       fetchProfile();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error submitting PhD profile');
+      toast.error(err.response?.data?.message || 'Error submitting profile');
     } finally {
       setRegistering(false);
     }
@@ -794,7 +823,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   };
 
   const getUploadButton = (docType, certUrl) => {
-    if (!!thesis) return null;
+    if (isSubmitted) return null;
     const isUploading = uploadingDoc === docType;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -815,9 +844,12 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
   if (loading) return <SkeletonLoader count={1} height={400} />;
 
-  const filteredDegreeTypes = isPhD 
+  const isSubmitted = !!thesis || !!profile?.profileCompleted;
+  const isVerifiedPhD = thesis && thesis.enrollmentVerified === true;
+
+  const filteredDegreeTypes = isVerifiedPhD 
     ? degreeTypes.filter(t => t.code === 'PHD' || t.name?.toLowerCase().includes('phd'))
-    : degreeTypes.filter(t => t.code !== 'PHD' && !t.name?.toLowerCase().includes('phd'));
+    : degreeTypes;
 
   const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === degreeTypeId || d.degreeTypeId === degreeTypeId);
 
@@ -881,79 +913,152 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
   return (
     <div className="glass-panel p-xl">
-      {/* PhD Status Alert Banner */}
-      {isPhD && (
-        <div style={{ marginBottom: '24px' }}>
-          {!thesis && (
-            <div style={{
-              background: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              borderLeft: '4px solid var(--status-late)',
-              padding: '16px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <ShieldAlert style={{ color: 'var(--status-late)', flexShrink: 0 }} />
-              <div>
-                <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                  PhD Registration Required
-                </strong>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                  Please complete the 3 sections below (General, Qualifications, Supervisor Preference) and click <strong>Submit PhD Profile for HOD Approval</strong> to register.
-                </p>
+      {/* Registration/Verification Status Banner */}
+      <div style={{ marginBottom: '24px' }}>
+        {isPhD ? (
+          <>
+            {!thesis && (
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderLeft: '4px solid var(--status-late)',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <ShieldAlert style={{ color: 'var(--status-late)', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    PhD Registration Required
+                  </strong>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Please complete the 3 sections below (General, Qualifications, Supervisor Preference) and click <strong>Submit PhD Profile for HOD Approval</strong> to register.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {thesis && thesis.status === 'REGISTRATION_PENDING' && (
-            <div style={{
-              background: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              borderLeft: '4px solid var(--status-late)',
-              padding: '16px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <RefreshCw className="spin-animation" style={{ color: 'var(--status-late)', flexShrink: 0 }} />
-              <div>
-                <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                  Awaiting HOD Verification & Approval
-                </strong>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                  Your profile dossier has been successfully submitted. Once your department HOD assigns your supervisor and approves, your portal will unlock.
-                </p>
+            {thesis && thesis.status === 'REGISTRATION_PENDING' && (
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderLeft: '4px solid var(--status-late)',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <RefreshCw className="spin-animation" style={{ color: 'var(--status-late)', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Awaiting HOD Verification & Approval
+                  </strong>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Your profile dossier has been successfully submitted. Once your department HOD assigns your supervisor and approves, your portal will unlock.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {thesis && thesis.status !== 'REGISTRATION_PENDING' && (
-            <div style={{
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              borderLeft: '4px solid var(--status-present)',
-              padding: '16px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <ShieldCheck style={{ color: 'var(--status-present)', flexShrink: 0 }} />
-              <div>
-                <strong style={{ color: 'var(--status-present)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                  Dossier Approved & Verified
-                </strong>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                  Institutional PhD Registration verified. Assigned Supervisor: <strong>{thesis.supervisorId?.name || 'Assigned'}</strong>.
-                </p>
+            {thesis && thesis.status !== 'REGISTRATION_PENDING' && (
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                borderLeft: '4px solid var(--status-present)',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <ShieldCheck style={{ color: 'var(--status-present)', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: 'var(--status-present)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Dossier Approved & Verified
+                  </strong>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Institutional PhD Registration verified. Assigned Supervisor: <strong>{thesis.supervisorId?.name || 'Assigned'}</strong>.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </>
+        ) : (
+          <>
+            {!profile?.profileCompleted && (
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderLeft: '4px solid var(--status-late)',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <ShieldAlert style={{ color: 'var(--status-late)', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Profile Completion Required
+                  </strong>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Please complete the General and Academic details sections below and click <strong>Submit Profile for HOD Verification</strong>.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {profile?.profileCompleted && !profile?.isVerified && (
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderLeft: '4px solid var(--status-late)',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <RefreshCw className="spin-animation" style={{ color: 'var(--status-late)', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Awaiting HOD Verification
+                  </strong>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Your profile has been submitted for HOD verification. Once verified, your portal will unlock.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {profile?.profileCompleted && profile?.isVerified && (
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                borderLeft: '4px solid var(--status-present)',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <ShieldCheck style={{ color: 'var(--status-present)', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: 'var(--status-present)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Profile Verified by HOD
+                  </strong>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Your profile has been successfully verified by the HOD.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Header and edit/save control for Non-PhD OR PhD toggles */}
       <div className="flex justify-between items-center mb-lg">
@@ -962,30 +1067,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Manage your registration fields and credentials.</p>
         </div>
         
-        {/* Toggle between PhD and Non-PhD during onboarding only if not registered yet */}
-        {!thesis && !profile?.profileCompleted && (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <label className="form-label" style={{ marginBottom: 0 }}>Is PhD Student?</label>
-            <select 
-              className="form-input" 
-              style={{ width: '80px', padding: '6px 12px' }}
-              value={isPhD ? 'true' : 'false'}
-              onChange={async (e) => {
-                const val = e.target.value === 'true';
-                setIsPhD(val);
-                if (!val && subTab === 'guide') {
-                  setSubTab('general');
-                }
-                // Instantly update on user record
-                await api.put('/auth/profile', { profile: { ...profile?.profile, isPhD: val } });
-                fetchProfile();
-              }}
-            >
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </div>
-        )}
       </div>
 
       <div>
@@ -1043,7 +1124,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h3 style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>PhD Admission & Personal Fields</h3>
-                  {!thesis && !editModes.general && (
+                  {!isSubmitted && !editModes.general && (
                     <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
                       ✏️ Edit General Info
                     </button>
@@ -1070,7 +1151,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <label className="form-label">Enrollment Number</label>
                     <input 
                       className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
+                      disabled={!editModes.general || isSubmitted} 
                       value={enrollmentNumber} 
                       onChange={e => setEnrollmentNumber(e.target.value)} 
                       placeholder="Enrollment Number"
@@ -1078,7 +1159,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Academic Session</label>
-                    {editModes.general && !thesis ? (
+                    {editModes.general && !isSubmitted ? (
                       <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)}>
                         <option value="">Select Session...</option>
                         {sessions.map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
@@ -1089,7 +1170,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Current Semester</label>
-                    {editModes.general && !thesis ? (
+                    {editModes.general && !isSubmitted ? (
                       <select className="form-input" value={semesterId} onChange={e => setSemesterId(e.target.value)}>
                         <option value="">Select Semester...</option>
                         {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
@@ -1103,15 +1184,22 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Degree Type</label>
-                    {editModes.general && !thesis ? (
+                    {editModes.general && !isSubmitted ? (
                       <select 
                         className="form-input" 
                         value={degreeTypeId} 
                         onChange={e => {
-                          setDegreeTypeId(e.target.value);
+                          const selectedId = e.target.value;
+                          setDegreeTypeId(selectedId);
                           setDegreeNameId('');
+                          const selectedType = degreeTypes.find(t => t._id === selectedId);
+                          const isSelectedPhD = selectedType ? (selectedType.code === 'PHD' || selectedType.name?.toLowerCase().includes('phd')) : false;
+                          setIsPhD(isSelectedPhD);
+                          if (!isSelectedPhD && subTab === 'guide') {
+                            setSubTab('general');
+                          }
                         }}
-                        disabled={isPhD}
+                        disabled={isVerifiedPhD}
                       >
                         <option value="">Select Type...</option>
                         {filteredDegreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
@@ -1122,7 +1210,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Degree Name</label>
-                    {editModes.general && !thesis ? (
+                    {editModes.general && !isSubmitted ? (
                       <select 
                         className="form-input" 
                         value={degreeNameId} 
@@ -1145,7 +1233,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   {isPhD ? (
                     <div className="form-group">
                       <label className="form-label">Ph.D. Mode</label>
-                      {editModes.general && !thesis ? (
+                      {editModes.general && !isSubmitted ? (
                         <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)}>
                           <option value="">Select Mode...</option>
                           <option value="Full Time">Full Time</option>
@@ -1169,14 +1257,14 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <input 
                       type="date" 
                       className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
+                      disabled={!editModes.general || isSubmitted} 
                       value={dob} 
                       onChange={e => setDob(e.target.value)} 
                     />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Gender</label>
-                    {editModes.general && !thesis ? (
+                    {editModes.general && !isSubmitted ? (
                       <select className="form-input" value={gender} onChange={e => setGender(e.target.value)}>
                         <option value="">Select...</option>
                         <option value="Male">Male</option>
@@ -1189,7 +1277,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Category</label>
-                    {editModes.general && !thesis ? (
+                    {editModes.general && !isSubmitted ? (
                       <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
                         <option value="">Select Category...</option>
                         <option value="General">General</option>
@@ -1209,7 +1297,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <label className="form-label">Father's Name</label>
                     <input 
                       className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
+                      disabled={!editModes.general || isSubmitted} 
                       value={fatherName} 
                       onChange={e => setFatherName(e.target.value)} 
                     />
@@ -1218,7 +1306,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <label className="form-label">Mother's Name</label>
                     <input 
                       className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
+                      disabled={!editModes.general || isSubmitted} 
                       value={motherName} 
                       onChange={e => setMotherName(e.target.value)} 
                     />
@@ -1227,7 +1315,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <label className="form-label">Phone Number</label>
                     <input 
                       className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
+                      disabled={!editModes.general || isSubmitted} 
                       value={phoneNumber} 
                       onChange={e => setPhoneNumber(e.target.value)} 
                     />
@@ -1240,7 +1328,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <label className="form-label">Specialization</label>
                       <input 
                         className="form-input" 
-                        disabled={!editModes.general || !!thesis} 
+                        disabled={!editModes.general || isSubmitted} 
                         value={specialization} 
                         onChange={e => setSpecialization(e.target.value)} 
                         placeholder="e.g. Image Processing, Machine Learning"
@@ -1251,7 +1339,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <label className="form-label">Contact Address</label>
                     <textarea 
                       className="form-input" 
-                      disabled={!editModes.general || !!thesis} 
+                      disabled={!editModes.general || isSubmitted} 
                       value={address} 
                       onChange={e => setAddress(e.target.value)} 
                       rows={3}
@@ -1267,7 +1355,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <label className="form-label">Thesis Title / Broad Area of Interest</label>
                       <input 
                         className="form-input" 
-                        disabled={!editModes.general || !!thesis} 
+                        disabled={!editModes.general || isSubmitted} 
                         value={thesisTitle} 
                         onChange={e => setThesisTitle(e.target.value)} 
                         placeholder="Enter research proposal title"
@@ -1278,7 +1366,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         <label className="form-label">Short Abstract / Focus Area</label>
                         <textarea 
                           className="form-input" 
-                          disabled={!editModes.general || !!thesis} 
+                          disabled={!editModes.general || isSubmitted} 
                           value={thesisSummary} 
                           onChange={e => setThesisSummary(e.target.value)} 
                           rows="3"
@@ -1289,7 +1377,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         <label className="form-label">Keywords (Comma separated)</label>
                         <textarea 
                           className="form-input" 
-                          disabled={!editModes.general || !!thesis} 
+                          disabled={!editModes.general || isSubmitted} 
                           value={thesisKeywords} 
                           onChange={e => setThesisKeywords(e.target.value)} 
                           rows="3"
@@ -1314,7 +1402,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   {!editModes.class10 ? (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                       <div>Roll: <strong>{class10Roll}</strong> | Board: <strong>{class10Board}</strong> | School: <strong>{class10School}</strong> | Marks: <strong>{class10Marks}/{class10Total}</strong> ({class10Percentage}%)</div>
-                      {!thesis && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class10: true})}>Edit</button>}
+                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class10: true})}>Edit</button>}
                     </div>
                   ) : (
                     <div>
@@ -1346,7 +1434,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   {!editModes.class12 ? (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                       <div>Roll: <strong>{class12Roll}</strong> | Board: <strong>{class12Board}</strong> | School: <strong>{class12School}</strong> | Marks: <strong>{class12Marks}/{class12Total}</strong> ({class12Percentage}%)</div>
-                      {!thesis && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class12: true})}>Edit</button>}
+                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class12: true})}>Edit</button>}
                     </div>
                   ) : (
                     <div>
@@ -1378,7 +1466,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   {!editModes.graduation ? (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                       <div>Roll: <strong>{gradRoll}</strong> | Degree: <strong>{gradDegree}</strong> | College: <strong>{gradCollege} ({gradUniversity})</strong> | Marks: <strong>{gradMarks}/{gradTotal}</strong> ({gradPercentage}%)</div>
-                      {!thesis && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, graduation: true})}>Edit</button>}
+                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, graduation: true})}>Edit</button>}
                     </div>
                   ) : (
                     <div>
@@ -1413,7 +1501,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   {!editModes.postGraduation ? (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                       <div>Roll: <strong>{pgRoll}</strong> | Degree: <strong>{pgDegree}</strong> | College: <strong>{pgCollege} ({pgUniversity})</strong> | Marks: <strong>{pgMarks}/{pgTotal}</strong> ({pgPercentage}%)</div>
-                      {!thesis && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, postGraduation: true})}>Edit</button>}
+                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, postGraduation: true})}>Edit</button>}
                     </div>
                   ) : (
                     <div>
@@ -1484,8 +1572,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         <button
                           className="btn btn-sm btn-outline"
                           type="button"
-                          disabled={!!thesis}
-                          onClick={() => !thesis && setEditModes(prev => ({ ...prev, otherQuals: true }))}
+                          disabled={isSubmitted}
+                          onClick={() => !isSubmitted && setEditModes(prev => ({ ...prev, otherQuals: true }))}
                         >
                           ✏️ Edit / Add Other Qualifications
                         </button>
@@ -1592,7 +1680,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     {!editModes.netJrf ? (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                         <div>Qualified: <strong>{netJrfQualified}</strong> {netJrfQualified === 'YES' && `| Cert No: ${netJrfCertNumber} | Roll: ${netJrfRoll} | AIR: ${netJrfRank} | Date: ${netJrfIssueDate}`}</div>
-                        {!thesis && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, netJrf: true})}>Edit</button>}
+                        {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, netJrf: true})}>Edit</button>}
                       </div>
                     ) : (
                       <div>
@@ -1676,7 +1764,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     className="form-input"
                     value={preferredGuideId}
                     onChange={e => setPreferredGuideId(e.target.value)}
-                    disabled={!!thesis}
+                    disabled={isSubmitted}
                   >
                     <option value="">Select Preferred Guide...</option>
                     {faculties.map(fac => (
@@ -1706,21 +1794,21 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
             {/* Save Buttons & Dossier Submit */}
             <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-border-solid)' }}>
               {/* Individual tab save button (if editing and not submitted yet) */}
-              {!thesis && !(subTab === 'general' && !editModes.general) && subTab !== 'academic' && (
+              {!isSubmitted && !(subTab === 'general' && !editModes.general) && subTab !== 'academic' && (
                 <button type="submit" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} disabled={loading}>
                   <Save size={16} /> Save Section Details
                 </button>
               )}
 
               {/* Guide save button */}
-              {!thesis && subTab === 'guide' && preferredGuideId && (
+              {!isSubmitted && subTab === 'guide' && preferredGuideId && (
                 <button type="button" className="btn btn-secondary" onClick={() => saveSection('general')} disabled={loading}>
                   <Save size={16} /> Save Guide Preference
                 </button>
               )}
 
               {/* Dossier Submit Button */}
-              {!thesis && (
+              {!isSubmitted && (
                 <button 
                   type="button" 
                   className="btn btn-primary"
@@ -1733,7 +1821,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   onClick={handleProfileRegistrationSubmit}
                   disabled={registering}
                 >
-                  🚀 Submit PhD Profile for HOD Approval
+                  {isPhD ? '🚀 Submit PhD Profile for HOD Approval' : '🚀 Submit Profile for HOD Verification'}
                 </button>
               )}
             </div>

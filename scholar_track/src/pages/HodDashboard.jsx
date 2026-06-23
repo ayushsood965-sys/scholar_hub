@@ -11,6 +11,7 @@ import ApprovalsTab from '../modules/hod/ApprovalsTab';
 import DefaultersTab from '../modules/hod/DefaultersTab';
 import AuditTab from '../modules/hod/AuditTab';
 import StaffProfileTab from '../modules/profile/StaffProfileTab';
+import MyStudentsTab from '../modules/hod/MyStudentsTab';
 
 const HodDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -28,6 +29,7 @@ const HodDashboard = () => {
     cloneTimetable: 'Clone Timetable',
     approvals: 'Leave & Correction Approvals',
     defaulters: 'Defaulters & Warnings',
+    students: 'My Students',
     audit: 'Audit Trail',
     profile: 'Profile',
   };
@@ -43,6 +45,7 @@ const HodDashboard = () => {
       {activeTab === 'cloneTimetable' && <CloneTimetableTab />}
       {activeTab === 'approvals' && <ApprovalsTab />}
       {activeTab === 'defaulters' && <DefaultersTab />}
+      {activeTab === 'students' && <MyStudentsTab />}
       {activeTab === 'audit' && <AuditTab />}
       {activeTab === 'profile' && <StaffProfileTab />}
     </DashboardShell>

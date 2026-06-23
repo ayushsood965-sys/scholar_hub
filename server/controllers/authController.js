@@ -407,7 +407,7 @@ const getStudentsFiltered = async (req, res) => {
       query['profile.subject'] = { $regex: new RegExp(subject, 'i') };
     }
 
-    const students = await User.find(query).select('name username department profile');
+    const students = await User.find(query).select('name username department profile isVerified profileCompleted');
     res.json(students);
   } catch (error) {
     res.status(500).json({ message: error.message });

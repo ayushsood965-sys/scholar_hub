@@ -12,7 +12,7 @@ import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import SkeletonLoader from '../components/ui/SkeletonLoader';
 
 const StudentDashboard = () => {
-  const { user } = useContext(AuthContext);
+  const { user, fetchMe } = useContext(AuthContext);
   const navigate = useNavigate();
   const api = useApi();
   
@@ -32,6 +32,12 @@ const StudentDashboard = () => {
       setLoadingThesis(false);
     }
   };
+
+  useEffect(() => {
+    if (fetchMe) {
+      fetchMe();
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -60,10 +66,8 @@ const StudentDashboard = () => {
   };
 
   // Lock condition:
-  // 1. If profile is not completed
-  // 2. If student is a PhD student (isPhD is true by default unless explicitly false) AND (no thesis OR thesis status is REGISTRATION_PENDING)
-  const isPhD = user.profile?.isPhD !== false;
-  const isLocked = !user.profileCompleted || (isPhD && (!thesis || thesis.status === 'REGISTRATION_PENDING'));
+  // Locked to Profile page if student is not verified yet
+  const isLocked = !user.isVerified;
 
   if (loadingThesis) {
     return (

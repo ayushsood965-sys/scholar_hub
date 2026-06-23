@@ -33,6 +33,7 @@ const roleNavConfig = {
     { key: 'cloneTimetable', icon: CalendarRange, label: 'Clone Timetable' },
     { key: 'approvals', icon: Gavel, label: 'Approvals' },
     { key: 'defaulters', icon: AlertTriangle, label: 'Defaulters' },
+    { key: 'students', icon: Users, label: 'My Students' },
     { key: 'audit', icon: BookOpen, label: 'Audit Trail' },
     { key: 'profile', icon: User, label: 'Profile' },
   ],
