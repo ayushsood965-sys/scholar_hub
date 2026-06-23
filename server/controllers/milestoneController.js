@@ -45,7 +45,7 @@ const generateMilestonesIfNeeded = async (thesisId) => {
           sequence: i,
           title: meta.title,
           dueDate: meta.dueDate,
-          status: 'PENDING'
+          status: 'DRAFT'
         });
       }
     }
@@ -59,7 +59,7 @@ const generateMilestonesIfNeeded = async (thesisId) => {
     // 2. All 6-month progress reports are approved (at least 3 for M.Phil holders, 6 for others)
     const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
     const requiredReportsCount = hasMphil ? 3 : 6;
-    const approvedReportsCount = reports.filter(r => r.status === 'APPROVED').length;
+    const approvedReportsCount = reports.filter(r => r.status === 'VERIFIED').length;
     const allReportsApproved = approvedReportsCount >= requiredReportsCount;
 
     // 3. Required publications are approved (at least 2 verified journals and 2 verified conferences)
@@ -94,6 +94,8 @@ const getMilestones = async (req, res) => {
     // Filter out chapter drafts if the requester is not the scholar and not an admin
     const thesis = await Thesis.findById(req.params.thesisId);
     const isScholar = thesis && thesis.scholarId.toString() === req.user._id.toString();
+    const isSupervisor = thesis && thesis.supervisorId && thesis.supervisorId.toString() === req.user._id.toString();
+    const isHodUser = req.user.role === 'HOD' || req.user.subRole === 'HOD' || req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
     const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
 
     if (!isScholar && !isAdmin && req.user.role !== 'STUDENT') {
@@ -105,6 +107,18 @@ const getMilestones = async (req, res) => {
         return true;
       });
     }
+
+    // Hide uploaded report files from HOD/Admin until verified by Supervisor
+    milestones = milestones.map(m => {
+      const obj = m.toObject ? m.toObject() : m;
+      if (obj.type === '6_MONTH_REPORT' && isHodUser && !isSupervisor && !isAdmin) {
+        if (!['UNDER_REVIEW_HOD', 'VERIFIED', 'REJECTED_BY_HOD'].includes(obj.status)) {
+          obj.documentUrl = null;
+          obj.plagiarismReportUrl = null;
+        }
+      }
+      return obj;
+    });
 
     res.json(milestones);
   } catch (err) {
@@ -150,7 +164,11 @@ const submitDocument = async (req, res) => {
     if (req.body.documentUrl) milestone.documentUrl = req.body.documentUrl;
     if (req.body.plagiarismReportUrl) milestone.plagiarismReportUrl = req.body.plagiarismReportUrl;
 
-    milestone.status = 'SUBMITTED';
+    if (milestone.type === '6_MONTH_REPORT') {
+      milestone.status = 'PENDING';
+    } else {
+      milestone.status = 'SUBMITTED';
+    }
     milestone.submittedAt = new Date();
     await milestone.save();
 
@@ -196,6 +214,111 @@ const reviewMilestone = async (req, res) => {
       }
     }
 
+    const thesis = await Thesis.findById(milestone.thesisId);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    const isSupervisor = thesis.supervisorId && thesis.supervisorId.toString() === req.user._id.toString();
+    const isHodUser = req.user.role === 'HOD' || req.user.subRole === 'HOD' || req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+
+    if (milestone.type === '6_MONTH_REPORT') {
+      if (isSupervisor) {
+        if (action === 'APPROVE') {
+          milestone.status = 'UNDER_REVIEW_HOD';
+        } else {
+          milestone.status = 'REJECTED_BY_SUPERVISOR';
+        }
+      } else if (isHodUser) {
+        if (milestone.status !== 'UNDER_REVIEW_HOD') {
+          return res.status(400).json({ message: 'This report must first be verified by the supervisor.' });
+        }
+        if (action === 'APPROVE') {
+          milestone.status = 'VERIFIED';
+        } else {
+          milestone.status = 'REJECTED_BY_HOD';
+        }
+      } else {
+        return res.status(403).json({ message: 'Not authorized to review this report.' });
+      }
+
+      milestone.reviewedAt = new Date();
+      if (comment) {
+        milestone.comments.push({
+          authorId: req.user._id,
+          authorName: req.user.name,
+          text: comment,
+        });
+      }
+      await milestone.save();
+
+      // Notifications
+      if (milestone.status === 'UNDER_REVIEW_HOD') {
+        await createNotification({
+          roleScope: 'HOD',
+          department: thesis.department,
+          title: '📑 Progress Report Supervisor Approved',
+          message: `The 6-month progress report "${milestone.title}" of scholar "${thesis.title || 'Scholar'}" has been verified by supervisor ${req.user.name} and awaits HOD approval.`,
+          type: 'PENDING_ACTION',
+          link: 'overview'
+        });
+        await createNotification({
+          recipient: thesis.scholarId,
+          title: '📑 Progress Report Verified by Supervisor',
+          message: `Your 6-month progress report "${milestone.title}" has been verified by your supervisor and forwarded to HOD for final approval.`,
+          type: 'INFO',
+          link: 'overview'
+        });
+      } else if (milestone.status === 'REJECTED_BY_SUPERVISOR') {
+        await createNotification({
+          recipient: thesis.scholarId,
+          title: '❌ Progress Report Rejected by Supervisor',
+          message: `Your 6-month progress report "${milestone.title}" has been rejected by supervisor ${req.user.name}. Feedback: "${comment || 'Please check comments.'}"`,
+          type: 'PENDING_ACTION',
+          link: 'overview'
+        });
+      } else if (milestone.status === 'VERIFIED') {
+        await createNotification({
+          recipient: thesis.scholarId,
+          title: '🎉 Progress Report Approved by HOD',
+          message: `Your 6-month progress report "${milestone.title}" has been officially APPROVED and VERIFIED by the HOD.`,
+          type: 'SUCCESSFUL_ACTION',
+          link: 'overview'
+        });
+        if (thesis.supervisorId) {
+          await createNotification({
+            recipient: thesis.supervisorId,
+            title: '✅ Progress Report Verified by HOD',
+            message: `The 6-month progress report "${milestone.title}" for scholar "${thesis.title || 'Scholar'}" has been approved by HOD.`,
+            type: 'INFO',
+            link: 'overview'
+          });
+        }
+      } else if (milestone.status === 'REJECTED_BY_HOD') {
+        await createNotification({
+          recipient: thesis.scholarId,
+          title: '❌ Progress Report Rejected by HOD',
+          message: `Your 6-month progress report "${milestone.title}" has been rejected by the HOD. Feedback: "${comment || 'Please check comments.'}"`,
+          type: 'PENDING_ACTION',
+          link: 'overview'
+        });
+      }
+
+      // Log the supervisor/HOD feedback into the RACReview collection
+      const racReview = new RACReview({
+        scholarId: thesis.scholarId,
+        thesisId: thesis._id,
+        milestoneId: milestone._id,
+        reviewerId: req.user._id,
+        comments: comment || (action === 'APPROVE' ? 'Approved' : 'Revision Required'),
+        status: action === 'APPROVE' ? 'SATISFACTORY' : 'UNSATISFACTORY',
+        remarks: comment || '',
+        racNumber: milestone.sequence || 1,
+        scheduledDate: new Date()
+      });
+      await racReview.save();
+
+      return res.json(milestone);
+    }
+
     let isSynopsis = milestone.type === 'SYNOPSIS';
     let isPreSubmission = milestone.type === 'PRE_SUBMISSION';
     let isTwoStep = isSynopsis || isPreSubmission;
@@ -225,8 +348,6 @@ const reviewMilestone = async (req, res) => {
 
     await milestone.save();
 
-    // If FINAL_SUBMISSION approved → supervisor triggers final approve on thesis (handled via thesis route)
-    const thesis = await Thesis.findById(milestone.thesisId);
     if (thesis) {
       if (milestone.status === 'PENDING_HOD') {
         // Notify HOD
@@ -291,7 +412,16 @@ const reviewMilestone = async (req, res) => {
 const createMilestone = async (req, res) => {
   try {
     const { thesisId, type, title, sequence, dueDate, forwardedTo, forwardedRole } = req.body;
-    const milestone = await Milestone.create({ thesisId, type, title, sequence, dueDate, forwardedTo, forwardedRole });
+    const milestone = await Milestone.create({
+      thesisId,
+      type,
+      title,
+      sequence,
+      dueDate,
+      forwardedTo,
+      forwardedRole,
+      status: type === '6_MONTH_REPORT' ? 'DRAFT' : 'PENDING'
+    });
 
     const thesis = await Thesis.findById(thesisId);
     if (thesis) {

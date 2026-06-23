@@ -352,9 +352,19 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
             <div style={{ display: 'flex', gap: 12, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: 16 }}>
               {(() => {
                 const isHodUser = user?.role === 'HOD' || user?.subRole === 'HOD' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-                const showEvaluate = doc.docType === 'PUBLICATION'
-                  ? (isHodUser ? doc.status === 'UNDER_REVIEW_HOD' : doc.status === 'PENDING')
-                  : (doc.status === 'SUBMITTED' || doc.status === 'PENDING');
+                let showEvaluate = false;
+
+                if (doc.docType === 'PUBLICATION') {
+                  showEvaluate = isHodUser ? doc.status === 'UNDER_REVIEW_HOD' : doc.status === 'PENDING';
+                } else if (doc.type === '6_MONTH_REPORT') {
+                  if (doc.isSupervisor) {
+                    showEvaluate = doc.status === 'PENDING';
+                  } else if (isHodUser) {
+                    showEvaluate = doc.status === 'UNDER_REVIEW_HOD';
+                  }
+                } else {
+                  showEvaluate = doc.status === 'SUBMITTED' || doc.status === 'PENDING' || (doc.status === 'PENDING_HOD' && isHodUser);
+                }
 
                 if (showEvaluate) {
                   return (
@@ -364,9 +374,10 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
                     </>
                   );
                 } else {
+                  const display = doc.type === '6_MONTH_REPORT' || doc.docType === 'PUBLICATION' ? getStatusDisplay(doc.status) : { text: doc.status };
                   return (
                     <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
-                      Status: <span style={{ color: doc.status === 'VERIFIED' ? '#059669' : doc.status === 'UNDER_REVIEW_HOD' ? '#1D4ED8' : '#DC2626' }}>{doc.status}</span>
+                      Status: <span style={{ color: doc.status === 'VERIFIED' || doc.status === 'APPROVED' ? '#059669' : doc.status === 'UNDER_REVIEW_HOD' || doc.status === 'PENDING_HOD' ? '#1D4ED8' : '#DC2626' }}>{display.text}</span>
                     </div>
                   );
                 }
@@ -588,7 +599,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     const matchHod = isHodUser && p.status === 'UNDER_REVIEW_HOD';
     return matchSupervisor || matchHod;
   }).length;
-  const pendingReportsCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === '6_MONTH_REPORT').length;
+  const pendingReportsCount = milestones.filter(m => m.type === '6_MONTH_REPORT' && ((isSupervisor && m.status === 'PENDING') || (isHodUser && m.status === 'UNDER_REVIEW_HOD'))).length;
   const pendingChaptersCount = milestones.filter(m => m.status === 'SUBMITTED' && m.type === 'CHAPTER_DRAFT' && m.forwardedTo && (m.forwardedTo._id === user?._id || m.forwardedTo === user?._id)).length;
   const pendingDocCount = corePendingMilestonesDocs.filter(m => m.status === 'SUBMITTED').length + additionalDocs.filter(d => d.status === 'SUBMITTED' && d.forwardedTo && (d.forwardedTo._id === user?._id || d.forwardedTo === user?._id)).length;
   const scheduledRacs = racReviews.filter(r => r.status === 'SCHEDULED').length;
@@ -2422,18 +2433,40 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           <div key={item._id} className="usm-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <span style={{ fontSize: '0.88rem', fontWeight: 700 }}>{item.title}</span>
-              <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: item.status === 'APPROVED' ? '#D1FAE5' : item.status === 'REVISION_REQUIRED' ? '#FEE2E2' : item.status === 'SUBMITTED' ? '#DBEAFE' : '#FEF3C7', color: item.status === 'APPROVED' ? '#065F46' : item.status === 'REVISION_REQUIRED' ? '#991B1B' : item.status === 'SUBMITTED' ? '#1D4ED8' : '#D97706' }}>{item.status}</span>
+              {(() => {
+                const display = item.type === '6_MONTH_REPORT' ? getStatusDisplay(item.status) : { text: item.status, color: item.status === 'APPROVED' ? '#065F46' : item.status === 'REVISION_REQUIRED' ? '#991B1B' : item.status === 'SUBMITTED' ? '#1D4ED8' : '#D97706', bg: item.status === 'APPROVED' ? '#D1FAE5' : item.status === 'REVISION_REQUIRED' ? '#FEE2E2' : item.status === 'SUBMITTED' ? '#DBEAFE' : '#FEF3C7' };
+                return (
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: display.bg, color: display.color, border: display.border ? `1px solid ${display.border}` : 'none' }}>
+                    {display.text}
+                  </span>
+                );
+              })()}
             </div>
             {item.dueDate && <div style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: 8 }}>Due: {new Date(item.dueDate).toLocaleDateString()}</div>}
             {item.documentUrl && <a href={`${API_BASE_URL}${item.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: '#3B82F6', fontWeight: 600, display: 'inline-block', marginBottom: 8 }}>📄 View Document</a>}
             {item.comments?.length > 0 && (
               <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', color: '#92400E', margin: '8px 0' }}><strong>Feedback:</strong> {item.comments[item.comments.length - 1].text}</div>
             )}
-            {item.status === 'SUBMITTED' && !isReadOnly && (
-              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={() => setSelectedEvalDoc({ ...item, docType: 'MILESTONE', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
-              </div>
-            )}
+            {(() => {
+              let canEval = false;
+              if (item.type === '6_MONTH_REPORT') {
+                if (isSupervisor && item.status === 'PENDING') {
+                  canEval = true;
+                } else if (isHodUser && item.status === 'UNDER_REVIEW_HOD') {
+                  canEval = true;
+                }
+              } else {
+                if (item.status === 'SUBMITTED' || (item.status === 'PENDING_HOD' && isHodUser)) {
+                  canEval = true;
+                }
+              }
+              if (!canEval || isReadOnly) return null;
+              return (
+                <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setSelectedEvalDoc({ ...item, docType: 'MILESTONE', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title, isSupervisor })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>

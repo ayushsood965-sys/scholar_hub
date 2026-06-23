@@ -207,7 +207,7 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
 
     if (currentStatus === 'ACTIVE_RESEARCH') {
       const reports = milestones?.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT') || [];
-      const approvedCount = reports.filter(r => r.status === 'APPROVED').length;
+      const approvedCount = reports.filter(r => r.status === 'VERIFIED').length;
       
       const subSteps = [
         {
@@ -1675,9 +1675,9 @@ const MilestoneCard = ({ milestone, onSubmit, isLocked }) => {
 // ── Active Research Phase ──
 const ActiveResearch = ({ thesis, milestones, onSubmit, setActiveTab }) => {
   const reports = milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT');
-  const approvedCount = reports.filter(r => r.status === 'APPROVED').length;
-  const submittedCount = reports.filter(r => r.status === 'SUBMITTED').length;
-  const pendingCount = reports.filter(r => r.status === 'PENDING' || r.status === 'REVISION_REQUIRED').length;
+  const approvedCount = reports.filter(r => r.status === 'VERIFIED').length;
+  const submittedCount = reports.filter(r => ['SUBMITTED', 'PENDING', 'UNDER_REVIEW_HOD'].includes(r.status)).length;
+  const pendingCount = reports.filter(r => ['DRAFT', 'REJECTED_BY_SUPERVISOR', 'REJECTED_BY_HOD'].includes(r.status) || !r.status).length;
 
   return (
     <div>
@@ -1882,7 +1882,7 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
   const timeCleared = diffMonths >= requiredMonths;
 
   const reports = milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT') || [];
-  const approvedReports = reports.filter(r => r.status === 'APPROVED').length;
+  const approvedReports = reports.filter(r => r.status === 'VERIFIED').length;
   const requiredReportsCount = hasMphil ? 3 : 6;
   const reportsCleared = approvedReports >= requiredReportsCount;
 
@@ -2924,7 +2924,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
             {/* Prerequisite 2: Reports */}
             {(() => {
               const reports = milestones.filter(m => m.type === '6_MONTH_REPORT');
-              const approvedReports = reports.filter(r => r.status === 'APPROVED').length;
+              const approvedReports = reports.filter(r => r.status === 'VERIFIED').length;
               const hasMphil = user?.profile?.qualifications?.mphil?.done === true;
               const requiredReportsCount = hasMphil ? 3 : 6;
               const isReportsMet = approvedReports >= requiredReportsCount;
@@ -5427,16 +5427,56 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
       ) : (
         <div style={{ position: 'relative', paddingLeft: '24px', borderLeft: '3px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '30px' }}>
           {reports.map((report, idx) => {
-            const isSubmitted = ['SUBMITTED', 'APPROVED', 'REVISION_REQUIRED'].includes(report.status);
-            const isApproved = report.status === 'APPROVED';
-            const isRevision = report.status === 'REVISION_REQUIRED';
+            const isVerified = report.status === 'VERIFIED';
+            const isUnderReviewHod = report.status === 'UNDER_REVIEW_HOD';
             const isPending = report.status === 'PENDING';
+            const isRejectedBySupervisor = report.status === 'REJECTED_BY_SUPERVISOR';
+            const isRejectedByHod = report.status === 'REJECTED_BY_HOD';
+            const isDraft = report.status === 'DRAFT' || !report.status;
 
             let dotBg = '#CBD5E1';
             let titleColor = '#475569';
-            if (isApproved) { dotBg = '#10B981'; titleColor = '#065F46'; }
-            else if (isRevision) { dotBg = '#EF4444'; titleColor = '#B91C1C'; }
-            else if (isSubmitted) { dotBg = '#3B82F6'; titleColor = '#1D4ED8'; }
+            let badgeBg = '#F1F5F9';
+            let badgeColor = '#475569';
+            let statusText = report.status || 'DRAFT';
+
+            if (isVerified) {
+              dotBg = '#10B981';
+              titleColor = '#065F46';
+              badgeBg = '#D1FAE5';
+              badgeColor = '#065F46';
+              statusText = 'VERIFIED';
+            } else if (isUnderReviewHod) {
+              dotBg = '#3B82F6';
+              titleColor = '#1D4ED8';
+              badgeBg = '#DBEAFE';
+              badgeColor = '#1D4ED8';
+              statusText = 'UNDER REVIEW (HOD)';
+            } else if (isPending) {
+              dotBg = '#F59E0B';
+              titleColor = '#B45309';
+              badgeBg = '#FEF3C7';
+              badgeColor = '#D97706';
+              statusText = 'PENDING (SUPERVISOR)';
+            } else if (isRejectedBySupervisor) {
+              dotBg = '#EF4444';
+              titleColor = '#B91C1C';
+              badgeBg = '#FEE2E2';
+              badgeColor = '#991B1B';
+              statusText = 'REJECTED BY SUPERVISOR';
+            } else if (isRejectedByHod) {
+              dotBg = '#EF4444';
+              titleColor = '#B91C1C';
+              badgeBg = '#FEE2E2';
+              badgeColor = '#991B1B';
+              statusText = 'REJECTED BY HOD';
+            } else {
+              dotBg = '#94A3B8';
+              titleColor = '#475569';
+              badgeBg = '#F1F5F9';
+              badgeColor = '#475569';
+              statusText = 'DRAFT';
+            }
 
             return (
               <div key={report._id} style={{ position: 'relative' }}>
@@ -5469,10 +5509,10 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
                       borderRadius: '12px',
                       fontSize: '0.75rem',
                       fontWeight: 700,
-                      background: isApproved ? '#D1FAE5' : isRevision ? '#FEE2E2' : isSubmitted ? '#DBEAFE' : '#FEF3C7',
-                      color: isApproved ? '#065F46' : isRevision ? '#991B1B' : isSubmitted ? '#1D4ED8' : '#D97706'
+                      background: badgeBg,
+                      color: badgeColor
                     }}>
-                      {report.status}
+                      {statusText}
                     </span>
                   </div>
 
@@ -5499,7 +5539,7 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
                   )}
 
                   {/* Submission Form */}
-                  {(isPending || isRevision) && (
+                  {(isDraft || isRejectedBySupervisor || isRejectedByHod) && (
                     <div style={{ marginTop: '16px', borderTop: '1px dashed #CBD5E1', paddingTop: '16px' }}>
                       {uploadingId === report._id ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -9274,9 +9314,12 @@ const StudentDashboard = () => {
     fetchMyThesis(); 
   }, []);
 
+  const hasRedirected = React.useRef(false);
+
   useEffect(() => {
-    if (thesis && thesis.status !== 'REGISTRATION_PENDING') {
+    if (thesis && thesis.status !== 'REGISTRATION_PENDING' && !hasRedirected.current) {
       setActiveTab('overview');
+      hasRedirected.current = true;
     }
   }, [thesis]);
 

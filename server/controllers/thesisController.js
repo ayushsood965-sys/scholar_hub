@@ -315,7 +315,7 @@ const awardDegree = async (req, res) => {
     const hasMphil = scholar?.profile?.qualifications?.mphil?.done === true && scholar?.isVerified === true;
     const requiredReportsCount = hasMphil ? 3 : 6;
     const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
-    const approvedReportsCount = reports.filter(r => r.status === 'APPROVED').length;
+    const approvedReportsCount = reports.filter(r => r.status === 'VERIFIED').length;
     const verifiedJournals = await Publication.countDocuments({ thesisId: thesis._id, type: 'JOURNAL', status: 'VERIFIED' });
     const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
     const synopsisMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'SYNOPSIS' });
@@ -426,7 +426,7 @@ const getEligibilityDetails = async (req, res) => {
     const hasMphil = scholar?.profile?.qualifications?.mphil?.done === true && scholar?.isVerified === true;
     const requiredReportsCount = hasMphil ? 3 : 6;
     const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
-    const approvedReportsCount = reports.filter(r => r.status === 'APPROVED').length;
+    const approvedReportsCount = reports.filter(r => r.status === 'VERIFIED').length;
     const reportsCleared = approvedReportsCount >= requiredReportsCount;
 
     // Active research period check
