@@ -157,7 +157,7 @@ const DashboardShell = ({
             📊
           </div>
           <h2>
-            Scholar<span>Track</span>
+            Scholar<span>Hub</span>
           </h2>
         </div>
 
