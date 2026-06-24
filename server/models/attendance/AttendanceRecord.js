@@ -77,6 +77,10 @@ const attendanceRecordSchema = new mongoose.Schema(
       ref: 'LeaveRequest',
       default: null
     },
+    leaveType: {
+      type: String,
+      default: ''
+    },
     markedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

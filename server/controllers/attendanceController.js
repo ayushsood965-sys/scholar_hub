@@ -332,6 +332,14 @@ exports.getAttendanceMatrix = async (req, res) => {
       sessionId
     });
 
+    // Fetch leave requests overlapping the target date for these students
+    const leaves = await LeaveRequest.find({
+      studentId: { $in: students.map(s => s._id) },
+      startDate: { $lte: targetDate },
+      endDate: { $gte: targetDate },
+      status: { $in: ['APPROVED', 'PENDING_SUPERVISOR', 'PENDING_HOD'] }
+    });
+
     // Calculate lock status based on policy
     let policy = await AttendancePolicyMaster.findOne({ departmentId, programType: dt?.code || 'PG' });
     if (!policy) {
@@ -350,9 +358,11 @@ exports.getAttendanceMatrix = async (req, res) => {
     
     const matrix = students.map(st => {
       const existing = records.find(r => r.studentId.toString() === st._id.toString());
+      const leave = leaves.find(l => l.studentId.toString() === st._id.toString());
       return {
         student: st,
-        record: existing || null
+        record: existing || null,
+        leave: leave || null
       };
     });
 
@@ -427,6 +437,8 @@ exports.markAttendanceBulk = async (req, res) => {
               departmentId,
               date: new Date(date),
               status: rec.status,
+              leaveType: rec.leaveType || '',
+              leaveRequestId: rec.leaveRequestId || null,
               classes: rec.classes || [],
               markedBy: facultyId,
               markedAt: new Date()
@@ -748,3 +760,68 @@ exports.getMyAbsences = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getMarkedAttendance = async (req, res) => {
+  try {
+    const { sessionId, timetableSlotId, date } = req.query;
+    const departmentId = req.user.departmentId;
+    const targetDate = new Date(date);
+
+    const records = await AttendanceRecord.find({
+      departmentId,
+      date: targetDate,
+      sessionId,
+      classes: {
+        $elemMatch: {
+          timetableSlotId,
+          selected: true
+        }
+      }
+    }).populate('studentId', 'name username profile');
+
+    res.status(200).json(records);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.deleteAttendanceEntry = async (req, res) => {
+  try {
+    const { studentId, date, timetableSlotId } = req.body;
+    const departmentId = req.user.departmentId;
+    const targetDate = new Date(date);
+
+    const record = await AttendanceRecord.findOne({
+      studentId,
+      date: targetDate,
+      departmentId
+    });
+
+    if (!record) {
+      return res.status(404).json({ message: 'Attendance record not found.' });
+    }
+
+    // Update the specific class selection to false
+    record.classes = record.classes.map(c => {
+      if (c.timetableSlotId.toString() === timetableSlotId.toString()) {
+        c.selected = false;
+      }
+      return c;
+    });
+
+    // Check if any class is still selected
+    const hasSelectedClasses = record.classes.some(c => c.selected);
+
+    if (!hasSelectedClasses) {
+      // Delete the entire record if no classes are active
+      await AttendanceRecord.deleteOne({ _id: record._id });
+      return res.status(200).json({ message: 'Record deleted completely.', deleted: true });
+    } else {
+      await record.save();
+      return res.status(200).json({ message: 'Class attendance deleted.', deleted: false });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

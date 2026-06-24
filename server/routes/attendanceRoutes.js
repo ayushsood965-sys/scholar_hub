@@ -90,6 +90,8 @@ router.put('/corrections/:id/action', protect, authorize('FACULTY', 'HOD'), atte
 // ==========================================
 router.get('/faculty/matrix', protect, authorize('FACULTY', 'HOD'), requireDepartment, attendanceController.getAttendanceMatrix);
 router.post('/faculty/mark-bulk', protect, authorize('FACULTY', 'HOD'), requireDepartment, attendanceController.markAttendanceBulk);
+router.get('/faculty/marked', protect, authorize('FACULTY', 'HOD'), requireDepartment, attendanceController.getMarkedAttendance);
+router.delete('/faculty/entry', protect, authorize('FACULTY', 'HOD'), requireDepartment, attendanceController.deleteAttendanceEntry);
 
 // ==========================================
 // 9. LEAVE REQUEST WORKFLOWS
