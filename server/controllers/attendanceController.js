@@ -699,22 +699,45 @@ exports.getHodDashboardStats = async (req, res) => {
 
 exports.getSuperAdminDashboardStats = async (req, res) => {
   try {
-    const departmentsCount = await Department.countDocuments();
-    const activeSessionsCount = await AcademicSessionMaster.countDocuments({ isCurrent: true });
-    const totalStudents = await User.countDocuments({ role: 'STUDENT', isActive: true });
-    const totalPolicies = await AttendancePolicyMaster.countDocuments({ isActive: true });
-    
-    const totalFacultyCount = await User.countDocuments({ role: 'FACULTY', subRole: { $ne: 'HOD' } });
-    const totalHodCount = await User.countDocuments({ $or: [{ role: 'HOD' }, { role: 'FACULTY', subRole: 'HOD' }] });
-    const totalScholarsCount = await User.countDocuments({ role: 'STUDENT' });
+    const [
+      departmentsCount,
+      activeSessionsCount,
+      totalStudents,
+      totalPolicies,
+      totalFacultyCount,
+      totalHodCount,
+      totalScholarsCount,
+      departments,
+      deptCounts
+    ] = await Promise.all([
+      Department.countDocuments(),
+      AcademicSessionMaster.countDocuments({ isCurrent: true }),
+      User.countDocuments({ role: 'STUDENT', isActive: true }),
+      AttendancePolicyMaster.countDocuments({ isActive: true }),
+      User.countDocuments({ role: 'FACULTY', subRole: { $ne: 'HOD' } }),
+      User.countDocuments({ $or: [{ role: 'HOD' }, { role: 'FACULTY', subRole: 'HOD' }] }),
+      User.countDocuments({ role: 'STUDENT' }),
+      Department.find(),
+      User.aggregate([
+        { $match: { role: 'STUDENT' } },
+        { $group: { _id: '$department', count: { $sum: 1 } } }
+      ])
+    ]);
 
-    // We can also aggregate per-department stats if needed
-    const departments = await Department.find();
-    const deptStats = [];
-    for (const d of departments) {
-      const studentCount = await User.countDocuments({ department: d.name, role: 'STUDENT' });
-      deptStats.push({ name: d.name, studentCount, averagePercentage: 100, defaulterCount: 0, activeSession: '2025-26' }); // Mocked aggregate for now
+    const countsMap = {};
+    for (const item of deptCounts) {
+      if (item._id) {
+        countsMap[item._id] = item.count;
+      }
     }
+
+    const deptStats = departments.map(d => ({
+      name: d.name,
+      studentCount: countsMap[d.name] || 0,
+      averagePercentage: 100,
+      defaulterCount: 0,
+      activeSession: '2025-26'
+    }));
 
     res.status(200).json({ 
       departmentsCount, 
