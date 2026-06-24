@@ -10,12 +10,17 @@ const getTrackUrl = () => {
   if (import.meta.env.VITE_TRACK_URL) {
     return import.meta.env.VITE_TRACK_URL;
   }
-  // In local development, if ScholarSync is running on 5174, ScholarTrack is likely on 5173.
-  // If ScholarSync is on 5173, ScholarTrack is likely on 5174.
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return window.location.port === '5174' ? 'http://localhost:5173' : 'http://localhost:5174';
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // In local development, if ScholarSync is running on 5174, ScholarTrack is likely on 5173.
+      // If ScholarSync is on 5173, ScholarTrack is likely on 5174.
+      return window.location.port === '5174' ? 'http://localhost:5173' : 'http://localhost:5174';
+    } else {
+      // In production (Vercel or custom domain), use the production ScholarTrack URL
+      return 'https://scholar-hub-4pjy.vercel.app';
+    }
   }
-  return 'http://localhost:5174'; // fallback
+  return 'https://scholar-hub-4pjy.vercel.app'; // fallback for SSR/build time
 };
 
 export const SCHOLAR_TRACK_URL = getTrackUrl();
