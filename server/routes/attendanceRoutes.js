@@ -36,9 +36,9 @@ router.get('/masters/degree-dept-mappings', protect, attendanceController.getDeg
 router.post('/masters/degree-dept-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeDeptMapping);
 router.delete('/masters/degree-dept-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeDeptMapping);
 
-router.get('/masters/degree-type-mappings', protect, attendanceController.getDegreeTypeMappings);
-router.post('/masters/degree-type-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeTypeMapping);
-router.delete('/masters/degree-type-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeTypeMapping);
+router.get('/masters/semester-degree-mappings', protect, attendanceController.getSemesterDegreeMappings);
+router.post('/masters/semester-degree-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createSemesterDegreeMapping);
+router.delete('/masters/semester-degree-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSemesterDegreeMapping);
 
 // ==========================================
 // 2. SESSION ROUTES

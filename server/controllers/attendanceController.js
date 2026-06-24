@@ -16,7 +16,7 @@ const DegreeTypeMaster = require('../models/attendance/DegreeTypeMaster');
 const DegreeNameMaster = require('../models/attendance/DegreeNameMaster');
 const SemesterMaster = require('../models/attendance/SemesterMaster');
 const DegreeDepartmentMapping = require('../models/attendance/DegreeDepartmentMapping');
-const DegreeTypeMapping = require('../models/attendance/DegreeTypeMapping');
+const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 
 const { calculateStudentStats } = require('../utils/attendanceCalculator');
 
@@ -111,23 +111,34 @@ exports.deleteDegreeDeptMapping = async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-exports.getDegreeTypeMappings = async (req, res) => {
+exports.getSemesterDegreeMappings = async (req, res) => {
   try {
-    const data = await DegreeTypeMapping.find({ isActive: true })
+    const data = await SemesterDegreeMapping.find({ isActive: true })
       .populate('degreeNameId')
-      .populate('degreeTypeId');
+      .populate('semesterId');
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
-exports.createDegreeTypeMapping = async (req, res) => {
+exports.createSemesterDegreeMapping = async (req, res) => {
   try {
-    const data = await DegreeTypeMapping.create(req.body);
+    const { degreeNameId, semesterId } = req.body;
+    const existing = await SemesterDegreeMapping.findOne({ degreeNameId, semesterId, isActive: true });
+    if (existing) {
+      return res.status(400).json({ message: 'This semester is already mapped to the selected degree.' });
+    }
+    const inactiveExisting = await SemesterDegreeMapping.findOne({ degreeNameId, semesterId, isActive: false });
+    if (inactiveExisting) {
+      inactiveExisting.isActive = true;
+      await inactiveExisting.save();
+      return res.status(201).json(inactiveExisting);
+    }
+    const data = await SemesterDegreeMapping.create(req.body);
     res.status(201).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
-exports.deleteDegreeTypeMapping = async (req, res) => {
+exports.deleteSemesterDegreeMapping = async (req, res) => {
   try {
-    const data = await DegreeTypeMapping.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const data = await SemesterDegreeMapping.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };

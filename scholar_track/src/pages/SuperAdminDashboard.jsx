@@ -10,7 +10,7 @@ import SAProfileTab from "../modules/admin/SAProfileTab";
 import SessionMasterTab from "../modules/admin/SessionMasterTab";
 import DegreeTypeMasterTab from "../modules/admin/DegreeTypeMasterTab";
 import DegreeNameMasterTab from "../modules/admin/DegreeNameMasterTab";
-import DegreeTypeMappingTab from "../modules/admin/DegreeTypeMappingTab";
+import SemesterDegreeMappingTab from "../modules/admin/SemesterDegreeMappingTab";
 import SemesterMasterTab from "../modules/admin/SemesterMasterTab";
 import DegreeDeptMappingTab from "../modules/admin/DegreeDeptMappingTab";
 import HolidayCalendarTab from "../modules/admin/HolidayCalendarTab";
@@ -32,7 +32,7 @@ const SuperAdminDashboard = () => {
     sessions: "Academic Sessions",
     degreeTypes: "Degree Types",
     degreeNames: "Degree Names",
-    degreeTypeMap: "Degree Type Mapping",
+    semesterDegreeMap: "Semester-Degree Mapping",
     semesters: "Semesters",
     degreeDeptMap: "Degree-Department Mapping",
     holidays: "Holiday Calendar",
@@ -57,7 +57,7 @@ const SuperAdminDashboard = () => {
       {activeTab === "sessions" && <SessionMasterTab />}
       {activeTab === "degreeTypes" && <DegreeTypeMasterTab />}
       {activeTab === "degreeNames" && <DegreeNameMasterTab />}
-      {activeTab === "degreeTypeMap" && <DegreeTypeMappingTab />}
+      {activeTab === "semesterDegreeMap" && <SemesterDegreeMappingTab />}
       {activeTab === "semesters" && <SemesterMasterTab />}
       {activeTab === "degreeDeptMap" && <DegreeDeptMappingTab />}
       {activeTab === "holidays" && <HolidayCalendarTab />}

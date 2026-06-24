@@ -6,28 +6,28 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Trash2, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const DegreeTypeMappingTab = () => {
+const SemesterDegreeMappingTab = () => {
   const [data, setData] = useState([]);
   const [degreeNames, setDegreeNames] = useState([]);
-  const [degreeTypes, setDegreeTypes] = useState([]);
+  const [semesters, setSemesters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [formData, setFormData] = useState({ degreeNameId: '', degreeTypeId: '' });
+  const [formData, setFormData] = useState({ degreeNameId: '', semesterId: '' });
   const api = useApi();
   const toast = useToast();
 
   const fetchData = async () => {
     try {
-      const [resMap, resDeg, resTypes] = await Promise.all([
-        api.get('/attendance/masters/degree-type-mappings'),
+      const [resMap, resDeg, resSems] = await Promise.all([
+        api.get('/attendance/masters/semester-degree-mappings'),
         api.get('/attendance/masters/degree-names'),
-        api.get('/attendance/masters/degree-types')
+        api.get('/attendance/masters/semesters')
       ]);
       setData(resMap.data);
       setDegreeNames(resDeg.data);
-      setDegreeTypes(resTypes.data);
-      if (resDeg.data.length > 0 && resTypes.data.length > 0) {
-        setFormData({ degreeNameId: resDeg.data[0]._id, degreeTypeId: resTypes.data[0]._id });
+      setSemesters(resSems.data);
+      if (resDeg.data.length > 0 && resSems.data.length > 0) {
+        setFormData({ degreeNameId: resDeg.data[0]._id, semesterId: resSems.data[0]._id });
       }
     } catch (err) {
       toast.error('Failed to load mappings');
@@ -41,7 +41,7 @@ const DegreeTypeMappingTab = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/attendance/masters/degree-type-mappings', formData);
+      await api.post('/attendance/masters/semester-degree-mappings', formData);
       toast.success('Mapping created successfully');
       setFormOpen(false);
       fetchData();
@@ -53,7 +53,7 @@ const DegreeTypeMappingTab = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure?')) return;
     try {
-      await api.delete(`/attendance/masters/degree-type-mappings/${id}`);
+      await api.delete(`/attendance/masters/semester-degree-mappings/${id}`);
       toast.success('Deleted successfully');
       fetchData();
     } catch (err) {
@@ -63,7 +63,7 @@ const DegreeTypeMappingTab = () => {
 
   const columns = [
     { header: 'Degree Name', accessor: (row) => row.degreeNameId?.name || 'N/A' },
-    { header: 'Degree Type', accessor: (row) => row.degreeTypeId?.name ? `${row.degreeTypeId.name} (${row.degreeTypeId.code})` : 'N/A' },
+    { header: 'Semester', accessor: (row) => row.semesterId?.name || 'N/A' },
     {
       header: 'Actions',
       accessor: (row) => (
@@ -80,8 +80,8 @@ const DegreeTypeMappingTab = () => {
     <div className="glass-panel p-xl">
       <div className="flex justify-between items-center mb-lg">
         <div>
-          <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Degree Type Mappings</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Map degree names to their respective degree types.</p>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Semester-Degree Mappings</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Assign semesters to their respective degree courses.</p>
         </div>
         {!formOpen && (
           <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
@@ -102,7 +102,7 @@ const DegreeTypeMappingTab = () => {
             <div className="inline-form-card">
               <div className="inline-form-header">
                 <span className="inline-form-title">
-                  <Plus size={18} /> Add Degree Type Mapping
+                  <Plus size={18} /> Add Semester-Degree Mapping
                 </span>
                 <button className="inline-form-close" onClick={() => setFormOpen(false)}>
                   <X size={18} />
@@ -118,10 +118,10 @@ const DegreeTypeMappingTab = () => {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Degree Type</label>
-                    <select className="form-input" required value={formData.degreeTypeId} onChange={e => setFormData({...formData, degreeTypeId: e.target.value})}>
-                      <option value="">Select Type...</option>
-                      {degreeTypes.map(t => <option key={t._id} value={t._id}>{t.name} ({t.code})</option>)}
+                    <label className="form-label">Semester</label>
+                    <select className="form-input" required value={formData.semesterId} onChange={e => setFormData({...formData, semesterId: e.target.value})}>
+                      <option value="">Select Semester...</option>
+                      {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                     </select>
                   </div>
                 </div>
@@ -140,4 +140,4 @@ const DegreeTypeMappingTab = () => {
   );
 };
 
-export default DegreeTypeMappingTab;
+export default SemesterDegreeMappingTab;
