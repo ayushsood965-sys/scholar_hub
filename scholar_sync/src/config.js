@@ -6,5 +6,17 @@ export const API_BASE_URL =
 export const API_URL = `${API_BASE_URL}/api`;
 
 // ScholarTrack portal URL - super admin redirects here
-export const SCHOLAR_TRACK_URL =
-  import.meta.env.VITE_TRACK_URL || "http://localhost:5174";
+const getTrackUrl = () => {
+  if (import.meta.env.VITE_TRACK_URL) {
+    return import.meta.env.VITE_TRACK_URL;
+  }
+  // In local development, if ScholarSync is running on 5174, ScholarTrack is likely on 5173.
+  // If ScholarSync is on 5173, ScholarTrack is likely on 5174.
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return window.location.port === '5174' ? 'http://localhost:5173' : 'http://localhost:5174';
+  }
+  return 'http://localhost:5174'; // fallback
+};
+
+export const SCHOLAR_TRACK_URL = getTrackUrl();
+

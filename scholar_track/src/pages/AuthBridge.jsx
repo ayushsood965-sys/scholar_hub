@@ -1,22 +1,28 @@
-import React, { useEffect } from "react";
-import { SCHOLAR_TRACK_URL } from "../config";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
-const SuperAdminDashboard = () => {
+const AuthBridge = () => {
+  const [params] = useSearchParams();
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const user = localStorage.getItem("user");
-    const params = new URLSearchParams();
-    if (token) params.set("token", token);
-    if (user) {
+    const token = params.get("token");
+    const userEncoded = params.get("user");
+
+    if (token) {
+      localStorage.setItem("token", token);
+    }
+
+    if (userEncoded) {
       try {
-        params.set("user", btoa(unescape(encodeURIComponent(user))));
-      } catch (err) {
-        console.error("Failed to encode user data:", err);
+        const userStr = decodeURIComponent(escape(atob(userEncoded)));
+        localStorage.setItem("user", userStr);
+      } catch (e) {
+        // fallback if base64 fails
       }
     }
-    window.location.replace(
-      `${SCHOLAR_TRACK_URL}/auth-bridge?${params.toString()}`,
-    );
+
+    // Full page redirect so AuthContext re-initializes from localStorage
+    window.location.href = "/super-dashboard";
   }, []);
 
   return (
@@ -49,16 +55,11 @@ const SuperAdminDashboard = () => {
           fontSize: "1.2rem",
         }}
       >
-        Redirecting to Unified Dashboard
+        Syncing session...
       </h2>
-      <p
-        style={{ color: "var(--text-secondary, #6B7280)", fontSize: "0.85rem" }}
-      >
-        Super Admin portal is now consolidated in ScholarTrack.
-      </p>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
 
-export default SuperAdminDashboard;
+export default AuthBridge;

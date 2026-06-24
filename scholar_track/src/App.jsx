@@ -1,13 +1,14 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Landing from './Landing';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import StudentDashboard from './pages/StudentDashboard';
-import FacultyDashboard from './pages/FacultyDashboard';
-import HodDashboard from './pages/HodDashboard';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-import ProtectedRoute from './components/ProtectedRoute';
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Landing from "./Landing";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import AuthBridge from "./pages/AuthBridge";
+import StudentDashboard from "./pages/StudentDashboard";
+import FacultyDashboard from "./pages/FacultyDashboard";
+import HodDashboard from "./pages/HodDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   return (
@@ -17,12 +18,13 @@ const App = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/auth-bridge" element={<AuthBridge />} />
 
         {/* Protected Dashboard Routes */}
         <Route
           path="/student-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
+            <ProtectedRoute allowedRoles={["STUDENT"]}>
               <StudentDashboard />
             </ProtectedRoute>
           }
@@ -30,7 +32,7 @@ const App = () => {
         <Route
           path="/faculty-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['FACULTY']}>
+            <ProtectedRoute allowedRoles={["FACULTY"]}>
               <FacultyDashboard />
             </ProtectedRoute>
           }
@@ -38,7 +40,7 @@ const App = () => {
         <Route
           path="/hod-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['HOD', 'ADMIN']}>
+            <ProtectedRoute allowedRoles={["HOD", "ADMIN"]}>
               <HodDashboard />
             </ProtectedRoute>
           }
@@ -46,7 +48,7 @@ const App = () => {
         <Route
           path="/super-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+            <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
               <SuperAdminDashboard />
             </ProtectedRoute>
           }
