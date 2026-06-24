@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config';
 import { AuthContext } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ShieldCheck, ShieldAlert, Mail, Phone, Building, User, Key, RefreshCw, Camera } from 'lucide-react';
@@ -138,7 +139,7 @@ const StaffProfileTab = () => {
           <div style={{ position: 'relative', width: '120px', height: '120px', marginBottom: '16px' }}>
             {user?.avatarUrl ? (
               <img 
-                src={`http://localhost:5000${user.avatarUrl}`} 
+                src={`${API_BASE_URL}${user.avatarUrl}`} 
                 alt="Avatar" 
                 style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-primary)' }} 
               />

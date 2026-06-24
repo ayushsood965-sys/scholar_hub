@@ -19,8 +19,8 @@ import {
 } from 'lucide-react';
 
 // Portal URLs — deployed Vercel links
-const SCHOLAR_SYNC_URL = import.meta.env.VITE_SCHOLAR_SYNC_URL || 'https://scholar-sync-ochre.vercel.app';
-const SCHOLAR_TRACK_URL = import.meta.env.VITE_SCHOLAR_TRACK_URL || 'https://scholar-hub-4pjy.vercel.app';
+const SCHOLAR_SYNC_URL = import.meta.env.VITE_SCHOLAR_SYNC_URL || 'https://scholar-sync-ayush.vercel.app';
+const SCHOLAR_TRACK_URL = import.meta.env.VITE_SCHOLAR_TRACK_URL || 'https://scholar-track-ayush.vercel.app';
 
 const Landing = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');

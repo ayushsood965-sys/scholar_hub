@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { API_BASE_URL } from '../../config';
 import { motion } from 'framer-motion';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
@@ -812,7 +813,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }
     return (
       <a 
-        href={`http://localhost:5000${certUrl}`} 
+        href={`${API_BASE_URL}${certUrl}`} 
         target="_blank" 
         rel="noopener noreferrer" 
         style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#10B981', fontSize: '0.75rem', fontWeight: 600 }}

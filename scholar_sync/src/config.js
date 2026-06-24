@@ -17,10 +17,10 @@ const getTrackUrl = () => {
       return window.location.port === '5174' ? 'http://localhost:5173' : 'http://localhost:5174';
     } else {
       // In production (Vercel or custom domain), use the production ScholarTrack URL
-      return 'https://scholar-hub-4pjy.vercel.app';
+      return 'https://scholar-track-ayush.vercel.app';
     }
   }
-  return 'https://scholar-hub-4pjy.vercel.app'; // fallback for SSR/build time
+  return 'https://scholar-track-ayush.vercel.app'; // fallback for SSR/build time
 };
 
 export const SCHOLAR_TRACK_URL = getTrackUrl();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { API_BASE_URL } from '../../config';
 import useApi from '../../hooks/useApi';
 import { AuthContext } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -148,7 +149,7 @@ const ApprovalsTab = () => {
       if (!certUrl) return <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No Certificate Uploaded</span>;
       return (
         <a 
-          href={`http://localhost:5000${certUrl}`} 
+          href={`${API_BASE_URL}${certUrl}`} 
           target="_blank" 
           rel="noopener noreferrer" 
           style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#3B82F6', fontWeight: 600, fontSize: '0.82rem' }}

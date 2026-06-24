@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, FileText, ShieldCheck } from 'lucide-react';
 import useApi from '../hooks/useApi';
@@ -38,7 +39,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
     if (!certUrl) return <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>⚠️ Missing</span>;
     return (
       <a 
-        href={`http://localhost:5000${certUrl}`} 
+        href={`${API_BASE_URL}${certUrl}`} 
         target="_blank" 
         rel="noopener noreferrer" 
         className="btn btn-sm btn-outline"
