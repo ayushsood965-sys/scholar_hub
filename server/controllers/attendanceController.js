@@ -704,6 +704,10 @@ exports.getSuperAdminDashboardStats = async (req, res) => {
     const totalStudents = await User.countDocuments({ role: 'STUDENT', isActive: true });
     const totalPolicies = await AttendancePolicyMaster.countDocuments({ isActive: true });
     
+    const totalFacultyCount = await User.countDocuments({ role: 'FACULTY', subRole: { $ne: 'HOD' } });
+    const totalHodCount = await User.countDocuments({ $or: [{ role: 'HOD' }, { role: 'FACULTY', subRole: 'HOD' }] });
+    const totalScholarsCount = await User.countDocuments({ role: 'STUDENT' });
+
     // We can also aggregate per-department stats if needed
     const departments = await Department.find();
     const deptStats = [];
@@ -712,7 +716,18 @@ exports.getSuperAdminDashboardStats = async (req, res) => {
       deptStats.push({ name: d.name, studentCount, averagePercentage: 100, defaulterCount: 0, activeSession: '2025-26' }); // Mocked aggregate for now
     }
 
-    res.status(200).json({ departmentsCount, activeSessionsCount, totalStudents, totalPolicies, departments: deptStats });
+    res.status(200).json({ 
+      departmentsCount, 
+      activeSessionsCount, 
+      totalStudents, 
+      totalPolicies, 
+      departments: deptStats,
+      syncStats: {
+        faculty: totalFacultyCount,
+        hods: totalHodCount,
+        scholars: totalScholarsCount
+      }
+    });
   } catch (error) { 
     console.error("Error in getSuperAdminDashboardStats:", error);
     res.status(500).json({ message: error.message }); 
