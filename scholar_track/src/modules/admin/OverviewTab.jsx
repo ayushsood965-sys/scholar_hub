@@ -272,83 +272,42 @@ const OverviewTab = () => {
         </>
       )}
 
-      <div className="grid-2 gap-lg mb-lg">
-        {/* Left: Department Distribution Chart */}
-        <div className="glass-panel p-xl" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: "20px", color: "var(--text-primary)", fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Building size={20} color="var(--color-primary)" /> Department Enrollment Distribution
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            {stats.departments?.map((dept, idx) => {
-              const percentage = Math.min(100, Math.max(10, (dept.studentCount / (stats.totalStudents || 1)) * 100));
-              return (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600 }}>
-                    <span style={{ color: 'var(--text-primary)' }}>{dept.name}</span>
-                    <span style={{ color: 'var(--color-primary)' }}>{dept.studentCount} Students</span>
-                  </div>
-                  <div style={{ width: '100%', height: '10px', background: 'rgba(0,0,0,0.04)', borderRadius: '5px', overflow: 'hidden', position: 'relative' }}>
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      style={{ 
-                        height: '100%', 
-                        background: 'linear-gradient(90deg, #A5D6A7, #2E9E5B)',
-                        borderRadius: '5px',
-                        boxShadow: '0 0 8px rgba(46, 158, 91, 0.4)'
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-            {(!stats.departments || stats.departments.length === 0) && (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '24px' }}>
-                No department data found.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Quick System Health & Actions */}
-        <div className="glass-panel p-xl" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: "20px", color: "var(--text-primary)", fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Shield size={20} color="#3B82F6" /> Live System Telemetry
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', animation: 'pulse 1.5s infinite' }} />
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>ScholarTrack Gateway</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Status: Active & Listening</div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', animation: 'pulse 1.5s infinite' }} />
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>ScholarSync Gateway</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Status: Active & Consolidated</div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', animation: 'pulse 1.5s infinite' }} />
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>HPU Shared Datastore</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Connection: ReplicaSet Secondary Online</div>
-              </div>
+      <div className="glass-panel p-xl mb-lg">
+        <h3 style={{ marginBottom: "20px", color: "var(--text-primary)", fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Shield size={20} color="#3B82F6" /> Live System Telemetry
+        </h3>
+        <div className="grid-3 gap-md">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', animation: 'pulse 1.5s infinite' }} />
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>ScholarTrack Gateway</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Status: Active & Listening</div>
             </div>
           </div>
-          <style>{`
-            @keyframes pulse {
-              0% { opacity: 0.4; }
-              50% { opacity: 1; }
-              100% { opacity: 0.4; }
-            }
-          `}</style>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', animation: 'pulse 1.5s infinite' }} />
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>ScholarSync Gateway</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Status: Active & Consolidated</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', animation: 'pulse 1.5s infinite' }} />
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>HPU Shared Datastore</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Connection: ReplicaSet Secondary Online</div>
+            </div>
+          </div>
         </div>
+        <style>{`
+          @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+          }
+        `}</style>
       </div>
     </div>
   );

@@ -706,9 +706,7 @@ exports.getSuperAdminDashboardStats = async (req, res) => {
       totalPolicies,
       totalFacultyCount,
       totalHodCount,
-      totalScholarsCount,
-      departments,
-      deptCounts
+      totalScholarsCount
     ] = await Promise.all([
       Department.countDocuments(),
       AcademicSessionMaster.countDocuments({ isCurrent: true }),
@@ -716,35 +714,14 @@ exports.getSuperAdminDashboardStats = async (req, res) => {
       AttendancePolicyMaster.countDocuments({ isActive: true }),
       User.countDocuments({ role: 'FACULTY', subRole: { $ne: 'HOD' } }),
       User.countDocuments({ $or: [{ role: 'HOD' }, { role: 'FACULTY', subRole: 'HOD' }] }),
-      User.countDocuments({ role: 'STUDENT' }),
-      Department.find(),
-      User.aggregate([
-        { $match: { role: 'STUDENT' } },
-        { $group: { _id: '$department', count: { $sum: 1 } } }
-      ])
+      User.countDocuments({ role: 'STUDENT' })
     ]);
-
-    const countsMap = {};
-    for (const item of deptCounts) {
-      if (item._id) {
-        countsMap[item._id] = item.count;
-      }
-    }
-
-    const deptStats = departments.map(d => ({
-      name: d.name,
-      studentCount: countsMap[d.name] || 0,
-      averagePercentage: 100,
-      defaulterCount: 0,
-      activeSession: '2025-26'
-    }));
 
     res.status(200).json({ 
       departmentsCount, 
       activeSessionsCount, 
       totalStudents, 
       totalPolicies, 
-      departments: deptStats,
       syncStats: {
         faculty: totalFacultyCount,
         hods: totalHodCount,
