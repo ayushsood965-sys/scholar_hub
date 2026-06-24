@@ -1,65 +1,105 @@
-import React, { useContext, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useContext, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Home, Clock, CalendarRange, Shield, Settings, Users, FileCheck,
-  AlertTriangle, BookOpen, BarChart3, LogOut, Bell, Menu, X,
-  ClipboardCheck, Gavel, Calendar, User, Building
-} from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
-import { NotificationContext } from '../context/NotificationContext';
-import ThemeToggle from './ThemeToggle';
+  Home,
+  Clock,
+  CalendarRange,
+  Shield,
+  Settings,
+  Users,
+  FileCheck,
+  AlertTriangle,
+  BookOpen,
+  BarChart3,
+  LogOut,
+  Bell,
+  Menu,
+  X,
+  ClipboardCheck,
+  Gavel,
+  Calendar,
+  User,
+  Building,
+  FolderPlus,
+  Layers,
+  GraduationCap,
+  ClipboardList,
+  UserCog,
+} from "lucide-react";
+import { AuthContext } from "../context/AuthContext";
+import { NotificationContext } from "../context/NotificationContext";
+import ThemeToggle from "./ThemeToggle";
 
 const roleNavConfig = {
   STUDENT: [
-    { key: 'overview', icon: Home, label: 'Overview' },
-    { key: 'attendance', icon: Clock, label: 'My Attendance' },
-    { key: 'leave', icon: CalendarRange, label: 'Leave Management' },
-    { key: 'corrections', icon: FileCheck, label: 'Corrections' },
-    { key: 'profile', icon: User, label: 'Profile' },
+    { key: "overview", icon: Home, label: "Overview" },
+    { key: "attendance", icon: Clock, label: "My Attendance" },
+    { key: "leave", icon: CalendarRange, label: "Leave Management" },
+    { key: "corrections", icon: FileCheck, label: "Corrections" },
+    { key: "profile", icon: User, label: "Profile" },
   ],
   FACULTY: [
-    { key: 'overview', icon: Home, label: 'Overview' },
-    { key: 'mark', icon: ClipboardCheck, label: 'Mark Attendance' },
-    { key: 'leaves', icon: CalendarRange, label: 'Leave Approvals' },
-    { key: 'corrections', icon: FileCheck, label: 'Corrections Queue' },
-    { key: 'profile', icon: User, label: 'Profile' },
+    { key: "overview", icon: Home, label: "Overview" },
+    { key: "mark", icon: ClipboardCheck, label: "Mark Attendance" },
+    { key: "leaves", icon: CalendarRange, label: "Leave Approvals" },
+    { key: "corrections", icon: FileCheck, label: "Corrections Queue" },
+    { key: "profile", icon: User, label: "Profile" },
   ],
   HOD: [
-    { key: 'overview', icon: Home, label: 'Department Overview' },
-    { key: 'policies', icon: Shield, label: 'Policy Config' },
-    { key: 'leaveRules', icon: Settings, label: 'Leave Rules' },
-    { key: 'timetable', icon: Calendar, label: 'Timetable Builder' },
-    { key: 'cloneTimetable', icon: CalendarRange, label: 'Clone Timetable' },
-    { key: 'approvals', icon: Gavel, label: 'Approvals' },
-    { key: 'defaulters', icon: AlertTriangle, label: 'Defaulters' },
-    { key: 'students', icon: Users, label: 'My Students' },
-    { key: 'audit', icon: BookOpen, label: 'Audit Trail' },
-    { key: 'profile', icon: User, label: 'Profile' },
+    { key: "overview", icon: Home, label: "Department Overview" },
+    { key: "policies", icon: Shield, label: "Policy Config" },
+    { key: "leaveRules", icon: Settings, label: "Leave Rules" },
+    { key: "timetable", icon: Calendar, label: "Timetable Builder" },
+    { key: "cloneTimetable", icon: CalendarRange, label: "Clone Timetable" },
+    { key: "approvals", icon: Gavel, label: "Approvals" },
+    { key: "defaulters", icon: AlertTriangle, label: "Defaulters" },
+    { key: "students", icon: Users, label: "My Students" },
+    { key: "audit", icon: BookOpen, label: "Audit Trail" },
+    { key: "profile", icon: User, label: "Profile" },
   ],
   SUPER_ADMIN: [
-    { key: 'overview', icon: Home, label: 'System Overview' },
-    { key: 'users', icon: Users, label: 'User Verification' },
-    { key: 'sessions', icon: CalendarRange, label: 'Academic Sessions' },
-    { key: 'degreeTypes', icon: Settings, label: 'Degree Types' },
-    { key: 'degreeNames', icon: Settings, label: 'Degree Names' },
-    { key: 'degreeTypeMap', icon: Shield, label: 'Degree-Type Map' },
-    { key: 'semesters', icon: Settings, label: 'Semesters' },
-    { key: 'degreeDeptMap', icon: Building, label: 'Degree-Dept Map' },
-    { key: 'holidays', icon: Calendar, label: 'Holiday Calendar' },
-    { key: 'departments', icon: Building, label: 'Departments' },
+    { kind: "section", label: "📊 SYSTEM OVERVIEW" },
+    { key: "overview", icon: Home, label: "System Overview" },
+
+    { kind: "section", label: "📋 MASTERS & MAPPING" },
+    { key: "departments", icon: Building, label: "Department Master" },
+    { key: "sessions", icon: CalendarRange, label: "Academic Sessions" },
+    { key: "degreeTypes", icon: Settings, label: "Degree Types" },
+    { key: "degreeNames", icon: Settings, label: "Degree Names" },
+    { key: "degreeTypeMap", icon: Shield, label: "Degree-Type Map" },
+    { key: "semesters", icon: Settings, label: "Semesters" },
+    { key: "degreeDeptMap", icon: Building, label: "Degree-Dept Map" },
+    { key: "holidays", icon: Calendar, label: "Holiday Calendar" },
+
+    { kind: "section", label: "🎓 SCHOLAR SYNC" },
+    { key: "faculty", icon: Users, label: "Faculty Master" },
+    { key: "hod", icon: Shield, label: "HOD Master" },
+
+    { kind: "section", label: "📋 SCHOLAR TRACK" },
+    { key: "users", icon: ClipboardList, label: "User Verification" },
+
+    { kind: "section", label: "👤 ACCOUNT" },
+    { key: "profile", icon: UserCog, label: "My Credentials" },
   ],
 };
 
-const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = false, children }) => {
+const DashboardShell = ({
+  role,
+  activeTab,
+  onTabChange,
+  headerTitle,
+  isLocked = false,
+  children,
+}) => {
   const { user, logout } = useContext(AuthContext);
   const { unreadCount } = useContext(NotificationContext);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   React.useEffect(() => {
-    if (isLocked && activeTab !== 'profile') {
-      onTabChange('profile');
+    if (isLocked && activeTab !== "profile") {
+      onTabChange("profile");
     }
   }, [isLocked, activeTab, onTabChange]);
 
@@ -67,14 +107,14 @@ const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = 
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
   const roleDashMap = {
-    STUDENT: '/student-dashboard',
-    FACULTY: '/faculty-dashboard',
-    HOD: '/hod-dashboard',
-    SUPER_ADMIN: '/super-dashboard',
+    STUDENT: "/student-dashboard",
+    FACULTY: "/faculty-dashboard",
+    HOD: "/hod-dashboard",
+    SUPER_ADMIN: "/super-dashboard",
   };
 
   return (
@@ -87,8 +127,11 @@ const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-              zIndex: 99, display: 'none'
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
+              zIndex: 99,
+              display: "none",
             }}
             className="sidebar-mobile-overlay"
             onClick={() => setSidebarOpen(false)}
@@ -97,37 +140,57 @@ const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = 
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-logo">
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #A5D6A7, #2E9E5B)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.1rem'
-          }}>
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, #A5D6A7, #2E9E5B)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.1rem",
+            }}
+          >
             📊
           </div>
-          <h2>Scholar<span>Track</span></h2>
+          <h2>
+            Scholar<span>Track</span>
+          </h2>
         </div>
 
         <nav className="sidebar-nav">
-          <div className="sidebar-section-label">Navigation</div>
-          {navItems.map(item => {
-            const isDisabled = isLocked && item.key !== 'profile';
+          {navItems.map((item) => {
+            if (item.kind === "section") {
+              return (
+                <div key={item.label} className="sidebar-section-label">
+                  {item.label}
+                </div>
+              );
+            }
+            const isDisabled = isLocked && item.key !== "profile";
             return (
               <button
                 key={item.key}
-                className={`nav-item ${activeTab === item.key ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                className={`nav-item ${activeTab === item.key ? "active" : ""} ${isDisabled ? "disabled" : ""}`}
                 onClick={() => {
                   if (isDisabled) return;
                   onTabChange(item.key);
                   setSidebarOpen(false);
                 }}
-                style={isDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                style={
+                  isDisabled ? { opacity: 0.4, cursor: "not-allowed" } : {}
+                }
               >
                 <item.icon className="nav-icon" />
                 {item.label}
-                {isDisabled && <span style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>🔒</span>}
+                {isDisabled && (
+                  <span style={{ marginLeft: "auto", fontSize: "0.85rem" }}>
+                    🔒
+                  </span>
+                )}
               </button>
             );
           })}
@@ -136,19 +199,19 @@ const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = 
         <div className="sidebar-bottom">
           <div className="sidebar-user-info">
             <div className="sidebar-avatar">
-              {user?.name?.[0]?.toUpperCase() ?? 'U'}
+              {user?.name?.[0]?.toUpperCase() ?? "U"}
             </div>
             <div>
-              <div className="sidebar-user-name">{user?.name ?? 'User'}</div>
-              <div className="sidebar-user-role">{role?.replace('_', ' ')}</div>
+              <div className="sidebar-user-name">{user?.name ?? "User"}</div>
+              <div className="sidebar-user-role">{role?.replace("_", " ")}</div>
             </div>
           </div>
           <button
             className="nav-item"
             onClick={handleLogout}
-            style={{ color: '#EF4444' }}
+            style={{ color: "#EF4444" }}
           >
-            <LogOut className="nav-icon" style={{ color: '#EF4444' }} />
+            <LogOut className="nav-icon" style={{ color: "#EF4444" }} />
             Log Out
           </button>
         </div>
@@ -162,30 +225,35 @@ const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = 
             <button
               className="header-icon-btn"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              style={{ display: 'none' }}
+              style={{ display: "none" }}
               id="mobile-menu-btn"
             >
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <h1 className="header-title">{headerTitle ?? 'Dashboard'}</h1>
+            <h1 className="header-title">{headerTitle ?? "Dashboard"}</h1>
           </div>
 
           <div className="header-right">
             <ThemeToggle />
 
-            <button className="header-icon-btn" style={{ position: 'relative' }}>
+            <button
+              className="header-icon-btn"
+              style={{ position: "relative" }}
+            >
               <Bell size={18} />
-              {(unreadCount ?? 0) > 0 && <span className="notification-badge" />}
+              {(unreadCount ?? 0) > 0 && (
+                <span className="notification-badge" />
+              )}
             </button>
 
             <div className="header-avatar">
-              {user?.name?.[0]?.toUpperCase() ?? 'U'}
+              {user?.name?.[0]?.toUpperCase() ?? "U"}
             </div>
           </div>
         </header>
 
         {/* Content Area */}
-        <div className="dashboard-area" style={{ position: 'relative' }}>
+        <div className="dashboard-area" style={{ position: "relative" }}>
           {/* Animated Blobs */}
           <div className="liquid-bg-wrapper" style={{ zIndex: 1 }}>
             <div className="liquid-blob blob-1" />
@@ -200,8 +268,8 @@ const DashboardShell = ({ role, activeTab, onTabChange, headerTitle, isLocked = 
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              style={{ position: 'relative', zIndex: 10 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              style={{ position: "relative", zIndex: 10 }}
             >
               {children}
             </motion.div>
