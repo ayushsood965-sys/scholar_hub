@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Department = require('../models/Department');
 const { createNotification } = require('./notificationController');
 
 const generateToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -30,9 +31,17 @@ const login = async (req, res) => {
         link: welcomeData.link
       });
 
+      // Resolve departmentId for client-side filtering
+      let userDepartmentId = null;
+      if (user.department) {
+        const dept = await Department.findOne({ $or: [{ name: user.department }, { code: user.department }] });
+        if (dept) userDepartmentId = dept._id;
+      }
+
       res.json({
         _id: user._id, name: user.name, username: user.username,
         role: user.role, subRole: user.subRole, department: user.department,
+        departmentId: userDepartmentId,
         isActive: user.isActive, isVerified: user.isVerified, profileCompleted: user.profileCompleted,
         avatarUrl: user.avatarUrl, profile: user.profile,
         token: generateToken(user._id, user.role),
@@ -103,9 +112,17 @@ const register = async (req, res) => {
       link: welcomeData.link
     });
 
+    // Resolve departmentId for client-side filtering
+    let newUserDepartmentId = null;
+    if (user.department) {
+      const dept = await Department.findOne({ $or: [{ name: user.department }, { code: user.department }] });
+      if (dept) newUserDepartmentId = dept._id;
+    }
+
     res.status(201).json({
       _id: user._id, name: user.name, username: user.username,
       role: user.role, subRole: user.subRole, department: user.department,
+      departmentId: newUserDepartmentId,
       isActive: user.isActive, isVerified: user.isVerified, profileCompleted: user.profileCompleted,
       avatarUrl: user.avatarUrl, profile: user.profile,
       token: generateToken(user._id, user.role),
@@ -158,9 +175,16 @@ const updateProfile = async (req, res) => {
     user.markModified('profile.qualifications');
     await user.save();
 
+    // Resolve departmentId for client-side filtering
+    let userDepartmentId = null;
+    if (user.department) {
+      const dept = await Department.findOne({ $or: [{ name: user.department }, { code: user.department }] });
+      if (dept) userDepartmentId = dept._id;
+    }
+
     res.json({
       _id: user._id, name: user.name, username: user.username,
-      role: user.role, subRole: user.subRole, department: user.department,
+      role: user.role, subRole: user.subRole, department: user.department, departmentId: userDepartmentId,
       isActive: user.isActive, isVerified: user.isVerified, profileCompleted: user.profileCompleted,
       avatarUrl: user.avatarUrl, profile: user.profile,
     });
@@ -293,9 +317,17 @@ const uploadAvatar = async (req, res) => {
     user.avatarUrl = `/uploads/${req.file.filename}`;
     await user.save();
 
+    // Resolve departmentId for client-side filtering
+    let avatarUserDepartmentId = null;
+    if (user.department) {
+      const dept = await Department.findOne({ $or: [{ name: user.department }, { code: user.department }] });
+      if (dept) avatarUserDepartmentId = dept._id;
+    }
+
     res.json({
       _id: user._id, name: user.name, username: user.username,
       role: user.role, subRole: user.subRole, department: user.department,
+      departmentId: avatarUserDepartmentId,
       isActive: user.isActive, isVerified: user.isVerified, profileCompleted: user.profileCompleted,
       avatarUrl: user.avatarUrl, profile: user.profile,
     });
@@ -309,9 +341,16 @@ const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    // Resolve departmentId for client-side filtering
+    let meUserDepartmentId = null;
+    if (user.department) {
+      const dept = await Department.findOne({ $or: [{ name: user.department }, { code: user.department }] });
+      if (dept) meUserDepartmentId = dept._id;
+    }
     res.json({
       _id: user._id, name: user.name, username: user.username,
       role: user.role, subRole: user.subRole, department: user.department,
+      departmentId: meUserDepartmentId,
       isActive: user.isActive, isVerified: user.isVerified, profileCompleted: user.profileCompleted,
       avatarUrl: user.avatarUrl, profile: user.profile,
     });

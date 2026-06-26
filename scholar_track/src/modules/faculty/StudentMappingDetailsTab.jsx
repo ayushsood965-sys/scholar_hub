@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Search, History, BookOpen, Users, Trash2, AlertTriangle } from 'lucide-react';
+import { AuthContext } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 
 const StudentMappingDetailsTab = () => {
@@ -28,6 +29,7 @@ const StudentMappingDetailsTab = () => {
 
   const api = useApi();
   const toast = useToast();
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -111,7 +113,17 @@ const StudentMappingDetailsTab = () => {
 
   if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
 
-  const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === filters.degreeTypeId);
+  const availableDegreeNames = degreeNames.filter(d => {
+    const matchType = d.degreeTypeId?._id === filters.degreeTypeId;
+    const matchDept = !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
+    return matchType && matchDept;
+  });
+
+  // Derive available degree types from department-filtered degree names
+  const departmentDegreeNames = degreeNames.filter(d => {
+    return !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
+  });
+  const availableDegreeTypes = [...new Map(departmentDegreeNames.filter(d => d.degreeTypeId).map(d => [d.degreeTypeId._id, d.degreeTypeId])).values()];
 
   return (
     <div className="mark-attendance-tab">
@@ -141,7 +153,7 @@ const StudentMappingDetailsTab = () => {
               <label className="form-label">Degree Type</label>
               <select className="form-input" required value={filters.degreeTypeId} onChange={e => setFilters({ ...filters, degreeTypeId: e.target.value, degreeNameId: '', semesterId: '' })}>
                 <option value="">Select Degree Type...</option>
-                {degreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                {availableDegreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
               </select>
             </div>
             <div className="form-group">

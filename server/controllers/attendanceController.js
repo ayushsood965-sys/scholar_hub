@@ -70,6 +70,12 @@ exports.getDegreeNames = async (req, res) => {
   try {
     const query = { isActive: true };
     if (req.query.degreeTypeId) query.degreeTypeId = req.query.degreeTypeId;
+    // Filter by faculty/HOD's own department (unless super admin or admin with explicit departmentId override)
+    if (req.user.role === 'FACULTY' || req.user.role === 'HOD') {
+      if (req.user.departmentId) {
+        query.departmentId = req.user.departmentId;
+      }
+    }
     const data = await DegreeNameMaster.find(query).populate('degreeTypeId').populate('departmentId');
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }

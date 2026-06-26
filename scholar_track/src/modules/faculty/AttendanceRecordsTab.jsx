@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import { AuthContext } from '../../context/AuthContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Search, History, Save, ChevronDown, X, Edit3 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -31,6 +32,7 @@ const AttendanceRecordsTab = () => {
 
   const api = useApi();
   const toast = useToast();
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchMasters = async () => {
@@ -76,7 +78,7 @@ const AttendanceRecordsTab = () => {
         setFilteredSubjects([]);
         return;
       }
-      const historyDegreeType = degreeTypes.find(d => d._id === historyFilters.degreeTypeId);
+      const historyDegreeType = availableDegreeTypes.find(d => d._id === historyFilters.degreeTypeId);
       const isHistoryPhD = historyDegreeType?.code?.toUpperCase() === 'PHD';
       if (!isHistoryPhD && !historyFilters.semesterId) {
         setFilteredSubjects([]);
@@ -173,6 +175,18 @@ const AttendanceRecordsTab = () => {
   };
 
   if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
+  // Derive available degree types from department-filtered degree names
+  const departmentDegreeNames = useMemo(() => {
+    return degreeNames.filter(d => {
+      return !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
+    });
+  }, [degreeNames, user?.departmentId]);
+
+  const availableDegreeTypes = useMemo(() => {
+    return [...new Map(departmentDegreeNames.filter(d => d.degreeTypeId).map(d => [d.degreeTypeId._id, d.degreeTypeId])).values()];
+  }, [departmentDegreeNames]);
+
+
 
   return (
     <div className="attendance-records-tab">
@@ -199,7 +213,7 @@ const AttendanceRecordsTab = () => {
             <label className="form-label">Degree Type</label>
             <select className="form-input" value={historyFilters.degreeTypeId} onChange={e => setHistoryFilters({ ...historyFilters, degreeTypeId: e.target.value, degreeNameId: '', semesterId: '', timetableSlotId: '' })}>
               <option value="">Select Degree Type...</option>
-              {degreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+              {availableDegreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
             </select>
           </div>
 
@@ -207,7 +221,11 @@ const AttendanceRecordsTab = () => {
             <label className="form-label">Degree Name</label>
             <select className="form-input" value={historyFilters.degreeNameId} onChange={e => setHistoryFilters({ ...historyFilters, degreeNameId: e.target.value, timetableSlotId: '' })} disabled={!historyFilters.degreeTypeId}>
               <option value="">Select Degree...</option>
-              {degreeNames.filter(d => d.degreeTypeId?._id === historyFilters.degreeTypeId).map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+              {degreeNames.filter(d => {
+                const matchType = d.degreeTypeId?._id === historyFilters.degreeTypeId;
+                const matchDept = !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
+                return matchType && matchDept;
+              }).map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
             </select>
           </div>
         </div>

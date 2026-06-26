@@ -15,7 +15,12 @@ exports.getFilterData = async (req, res) => {
   try {
     const sessions = await AcademicSessionMaster.find({}).sort({ startDate: -1 });
     const degreeTypes = await DegreeTypeMaster.find({ isActive: true });
-    const degreeNames = await DegreeNameMaster.find({ isActive: true }).populate('degreeTypeId');
+    const degreeNameQuery = { isActive: true };
+    // Filter degree names by faculty/HOD's own department
+    if ((req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {
+      degreeNameQuery.departmentId = req.user.departmentId;
+    }
+    const degreeNames = await DegreeNameMaster.find(degreeNameQuery).populate('degreeTypeId').populate('departmentId');
     const semesters = await SemesterMaster.find({ isActive: true }).sort({ number: 1 });
     res.status(200).json({ sessions, degreeTypes, degreeNames, semesters });
   } catch (error) {

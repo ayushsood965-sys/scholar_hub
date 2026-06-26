@@ -9,7 +9,7 @@ const requireDepartment = require('../middleware/requireDepartment');
 // ==========================================
 
 // Filter data (sessions, degree types, degree names, semesters)
-router.get('/filters', protect, studentMappingController.getFilterData);
+router.get('/filters', protect, requireDepartment, studentMappingController.getFilterData);
 
 // Preview: get faculty's subjects + eligible students for mapping
 router.get('/preview', protect, authorize('FACULTY', 'HOD'), requireDepartment, studentMappingController.getPreview);

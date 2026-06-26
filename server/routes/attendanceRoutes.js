@@ -24,7 +24,7 @@ router.get('/masters/degree-types', protect, attendanceController.getDegreeTypes
 router.post('/masters/degree-types', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeType);
 router.delete('/masters/degree-types/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeType);
 
-router.get('/masters/degree-names', protect, attendanceController.getDegreeNames);
+router.get('/masters/degree-names', protect, requireDepartment, attendanceController.getDegreeNames);
 router.post('/masters/degree-names', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeName);
 router.put('/masters/degree-names/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateDegreeName);
 router.delete('/masters/degree-names/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeName);
