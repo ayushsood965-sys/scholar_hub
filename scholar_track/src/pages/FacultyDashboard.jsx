@@ -6,6 +6,7 @@ import OverviewTab from '../modules/faculty/OverviewTab';
 import MarkAttendanceTab from '../modules/faculty/MarkAttendanceTab';
 import AttendanceRecordsTab from '../modules/faculty/AttendanceRecordsTab';
 import LeaveApprovalsTab from '../modules/faculty/LeaveApprovalsTab';
+import LeaveLogsTab from '../modules/faculty/LeaveLogsTab';
 import CorrectionsTab from '../modules/faculty/CorrectionsTab';
 import StaffProfileTab from '../modules/profile/StaffProfileTab';
 import StudentSubjectMappingTab from '../modules/faculty/StudentSubjectMappingTab';
@@ -24,6 +25,7 @@ const FacultyDashboard = () => {
     mark: 'Mark Attendance',
     records: 'Attendance Records',
     leaves: 'Leave Approvals',
+    leaveLogs: 'Leave Logs',
     corrections: 'Corrections Queue',
     mapping: 'Student-Semester-Subject Mapping',
     mappingDetails: 'Mapping Details',
@@ -38,6 +40,7 @@ const FacultyDashboard = () => {
       {activeTab === 'mark' && <MarkAttendanceTab />}
       {activeTab === 'records' && <AttendanceRecordsTab />}
       {activeTab === 'leaves' && <LeaveApprovalsTab />}
+      {activeTab === 'leaveLogs' && <LeaveLogsTab />}
       {activeTab === 'corrections' && <CorrectionsTab />}
       {activeTab === 'mapping' && <StudentSubjectMappingTab />}
       {activeTab === 'mappingDetails' && <StudentMappingDetailsTab />}

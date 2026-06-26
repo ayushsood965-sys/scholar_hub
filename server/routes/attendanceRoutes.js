@@ -100,6 +100,7 @@ router.delete('/faculty/entry', protect, authorize('FACULTY', 'HOD'), requireDep
 router.post('/leave/apply', protect, authorize('STUDENT'), attendanceController.applyLeave);
 router.get('/leave/me', protect, authorize('STUDENT'), attendanceController.getMyLeaves);
 router.get('/leave/pending', protect, authorize('FACULTY', 'HOD', 'ADMIN', 'SUPER_ADMIN'), attendanceController.getPendingLeaves);
+router.get('/leave/logs', protect, authorize('FACULTY', 'HOD'), attendanceController.getLeaveLogs);
 router.put('/leave/:id/action', protect, authorize('FACULTY', 'HOD', 'ADMIN', 'SUPER_ADMIN'), attendanceController.actionLeave);
 
 // ==========================================

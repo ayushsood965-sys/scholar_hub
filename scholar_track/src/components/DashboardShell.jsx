@@ -44,6 +44,7 @@ const roleNavConfig = {
     { key: "mark", icon: ClipboardCheck, label: "Mark Attendance" },
     { key: "records", icon: Clock, label: "Attendance Records" },
     { key: "leaves", icon: CalendarRange, label: "Leave Approvals" },
+    { key: "leaveLogs", icon: ClipboardList, label: "Leave Logs" },
     { key: "corrections", icon: FileCheck, label: "Corrections Queue" },
     { key: "mapping", icon: Layers, label: "Student Mapping" },
     { key: "mappingDetails", icon: ClipboardList, label: "Mapping Details" },

@@ -633,9 +633,144 @@ exports.getMyLeaves = async (req, res) => {
 
 exports.getPendingLeaves = async (req, res) => {
   try {
-    const leaves = await LeaveRequest.find({ currentAssigneeId: req.user._id }).populate('studentId', 'name profile');
+    let query;
+    const user = req.user;
+
+    if (user.role === 'FACULTY' && user.subRole !== 'HOD') {
+      // Faculty sees only leaves assigned to them, pending supervisor review
+      query = { currentAssigneeId: user._id, status: 'PENDING_SUPERVISOR' };
+    } else if (user.role === 'HOD' || user.subRole === 'HOD') {
+      // HOD sees leaves forwarded by faculty, pending HOD approval — only in their department
+      query = { status: 'PENDING_HOD', department: user.department };
+    } else {
+      // Admin/Super Admin sees all pending
+      query = { status: { $in: ['PENDING_SUPERVISOR', 'PENDING_HOD'] } };
+    }
+
+    const leaves = await LeaveRequest.find(query)
+      .populate('studentId', 'name username profile')
+      .populate('currentAssigneeId', 'name')
+      .sort({ createdAt: -1 });
+
     res.status(200).json(leaves);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    console.error('Error in getPendingLeaves:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Returns ALL leaves (any status) that have been ROUTED THROUGH the current faculty.
+ * This includes:
+ *   1. Leaves where currentAssigneeId = this faculty (assigned as supervisor/reviewer)
+ *   2. Leaves of students mapped to this faculty via StudentSemesterMapping
+ *   3. Leaves where this faculty appears in the auditLog (recommended, approved, rejected, etc.)
+ * Filters by date range (mandatory) and subject (optional).
+ * Query params: fromDate (YYYY-MM-DD), toDate (YYYY-MM-DD), subject (string, optional)
+ */
+exports.getLeaveLogs = async (req, res) => {
+  try {
+    const { fromDate, toDate, subject } = req.query;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: 'Both fromDate and toDate are required (YYYY-MM-DD).' });
+    }
+
+    const from = new Date(fromDate + 'T00:00:00');
+    const to = new Date(toDate + 'T23:59:59');
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format. Use YYYY-MM-DD.' });
+    }
+
+    // Step 1: Find all students mapped to this faculty
+    const mappings = await StudentSemesterMapping.find({ facultyId: req.user._id });
+    const mappedStudentIds = [...new Set(mappings.map(m => m.studentId.toString()))];
+
+    // Step 2: Build the date overlap filter
+    const dateFilter = {
+      $or: [
+        { startDate: { $gte: from, $lte: to } },
+        { endDate: { $gte: from, $lte: to } },
+        { startDate: { $lte: from }, endDate: { $gte: to } }
+      ]
+    };
+
+    // Step 3: Build the "routed through this faculty" condition
+    // A leave is "routed through" the faculty if:
+    //   (a) the faculty is the current assignee, OR
+    //   (b) the student is mapped to this faculty, OR
+    //   (c) the faculty appears in the auditLog (recommended/approved/rejected)
+    const routedConditions = [
+      { currentAssigneeId: req.user._id },
+      { auditLog: { $elemMatch: { actorId: req.user._id } } }
+    ];
+    if (mappedStudentIds.length > 0) {
+      routedConditions.push({ studentId: { $in: mappedStudentIds } });
+    }
+    const routedFilter = { $or: routedConditions };
+
+    // Step 4: Build subject filter (optional)
+    let subjectStudentIds = null;
+    if (subject && subject.trim()) {
+      const subjectMappings = mappings.filter(m =>
+        m.mappedSubjects?.some(s =>
+          s.subjectName?.toLowerCase().includes(subject.trim().toLowerCase()) ||
+          s.subjectCode?.toLowerCase().includes(subject.trim().toLowerCase())
+        )
+      );
+      if (subjectMappings.length > 0) {
+        subjectStudentIds = subjectMappings.map(m => m.studentId);
+      }
+    }
+
+    // Step 5: Combine everything
+    let finalQuery;
+    if (subject && subject.trim() && subjectStudentIds !== null) {
+      // Subject filter active: show leaves for subject-mapped students, or leaves where faculty is assignee or in auditLog
+      finalQuery = {
+        ...dateFilter,
+        $or: [
+          { studentId: { $in: subjectStudentIds } },
+          { currentAssigneeId: req.user._id },
+          { auditLog: { $elemMatch: { actorId: req.user._id } } }
+        ]
+      };
+    } else {
+      // No subject filter: show all leaves routed through this faculty
+      finalQuery = {
+        ...dateFilter,
+        ...routedFilter
+      };
+    }
+
+    const logs = await LeaveRequest.find(finalQuery)
+      .populate('studentId', 'name username profile')
+      .populate('currentAssigneeId', 'name')
+      .sort({ createdAt: -1 });
+
+    // Step 6: Enrich with subject info for each log entry
+    const enrichedLogs = logs.map(log => {
+      const studentIdStr = log.studentId?._id?.toString() || log.studentId?.toString();
+      const studentMappings = mappings.filter(m => m.studentId.toString() === studentIdStr);
+      const subjects = studentMappings.flatMap(m =>
+        (m.mappedSubjects || []).map(s => ({
+          subjectName: s.subjectName || 'N/A',
+          subjectCode: s.subjectCode || ''
+        }))
+      );
+      const uniqueSubjects = [...new Map(subjects.map(s => [s.subjectName, s])).values()];
+      return {
+        ...log.toObject(),
+        subjects: uniqueSubjects
+      };
+    });
+
+    res.status(200).json(enrichedLogs);
+  } catch (error) {
+    console.error('Error in getLeaveLogs:', error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.actionLeave = async (req, res) => {
@@ -643,18 +778,62 @@ exports.actionLeave = async (req, res) => {
     const { id } = req.params;
     const { action, remarks } = req.body;
     const actor = req.user;
+    const isHOD = actor.role === 'HOD' || actor.subRole === 'HOD';
+
     const leave = await LeaveRequest.findById(id).populate('studentId');
+    if (!leave) {
+      return res.status(404).json({ message: 'Leave request not found.' });
+    }
+
+    if (!remarks || remarks.trim().length < 5) {
+      return res.status(400).json({ message: 'Please provide remarks (at least 5 characters).' });
+    }
 
     if (action === 'RECOMMEND') {
-      const hod = await User.findOne({ department: leave.department, role: 'HOD' });
+      if (isHOD) {
+        return res.status(400).json({ message: 'HOD cannot recommend. Use Approve or Reject.' });
+      }
+      if (leave.status !== 'PENDING_SUPERVISOR') {
+        return res.status(400).json({ message: 'This leave has already been processed.' });
+      }
+      if (leave.currentAssigneeId?.toString() !== actor._id.toString()) {
+        return res.status(403).json({ message: 'This leave is not assigned to you.' });
+      }
+
+      const hod = await User.findOne({
+        $or: [
+          { role: 'HOD' },
+          { role: 'FACULTY', subRole: 'HOD' }
+        ],
+        department: leave.studentId?.department || leave.department,
+        isActive: true
+      });
+
       leave.status = 'PENDING_HOD';
-      leave.currentAssigneeId = hod?._id;
-      leave.auditLog.push({ action: 'RECOMMENDED', actorId: actor._id, actorName: actor.name, remarks });
+      leave.currentAssigneeId = hod?._id || null;
+      leave.auditLog.push({
+        action: 'RECOMMENDED',
+        actorId: actor._id,
+        actorName: actor.name,
+        remarks
+      });
     } else if (action === 'APPROVE') {
+      if (!isHOD) {
+        return res.status(400).json({ message: 'Only HOD can approve leaves. Use Recommend to forward.' });
+      }
+      if (leave.status !== 'PENDING_HOD') {
+        return res.status(400).json({ message: 'This leave is not pending HOD approval.' });
+      }
       leave.status = 'APPROVED';
       leave.currentAssigneeId = null;
-      leave.auditLog.push({ action: 'APPROVED', actorId: actor._id, actorName: actor.name, remarks });
+      leave.auditLog.push({
+        action: 'APPROVED',
+        actorId: actor._id,
+        actorName: actor.name,
+        remarks
+      });
 
+      // Create/upsert attendance records for approved leave period
       const currentSession = await AcademicSessionMaster.findOne({
         $or: [{ departmentId: leave.departmentId }, { departmentId: null }],
         isCurrent: true
@@ -691,13 +870,55 @@ exports.actionLeave = async (req, res) => {
       }
       if (operations.length > 0) await AttendanceRecord.bulkWrite(operations);
     } else if (action === 'REJECT') {
+      if (leave.status === 'PENDING_SUPERVISOR' && leave.currentAssigneeId?.toString() !== actor._id.toString()) {
+        return res.status(403).json({ message: 'This leave is not assigned to you.' });
+      }
+      if (leave.status !== 'PENDING_SUPERVISOR' && leave.status !== 'PENDING_HOD') {
+        return res.status(400).json({ message: 'This leave cannot be rejected in its current state.' });
+      }
       leave.status = 'REJECTED';
       leave.currentAssigneeId = null;
-      leave.auditLog.push({ action: 'REJECTED', actorId: actor._id, actorName: actor.name, remarks });
+      leave.auditLog.push({
+        action: 'REJECTED',
+        actorId: actor._id,
+        actorName: actor.name,
+        remarks
+      });
+
+      // Retroactively mark attendance records as ABSENT for the rejected leave period
+      const start = new Date(leave.startDate);
+      const end = new Date(leave.endDate);
+      const rejectOperations = [];
+      for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+        rejectOperations.push({
+          updateOne: {
+            filter: { studentId: leave.studentId._id, date: new Date(dt), leaveRequestId: leave._id },
+            update: {
+              $set: {
+                status: 'ABSENT',
+                isLeaveOverride: false,
+                leaveRequestId: null,
+                leaveType: '',
+                lockReason: '',
+                isLocked: false,
+                lastEditedBy: actor._id,
+                lastEditedAt: new Date()
+              }
+            }
+          }
+        });
+      }
+      if (rejectOperations.length > 0) await AttendanceRecord.bulkWrite(rejectOperations);
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use RECOMMEND, APPROVE, or REJECT.' });
     }
+
     await leave.save();
-    res.status(200).json(leave);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+    res.status(200).json({ message: `Leave ${action.toLowerCase()}ed successfully.`, leave });
+  } catch (error) {
+    console.error('Error in actionLeave:', error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // ==========================================
@@ -1117,6 +1338,10 @@ exports.actionCorrection = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+
+
 
 // ==========================================
 // 8. HOLIDAYS & STATS

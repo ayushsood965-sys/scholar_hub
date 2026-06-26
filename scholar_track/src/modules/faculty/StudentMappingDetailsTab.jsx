@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Search, History, X, BookOpen, Users, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, History, BookOpen, Users, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const StudentMappingDetailsTab = () => {
@@ -24,6 +24,7 @@ const StudentMappingDetailsTab = () => {
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // holds { id, type: 'all'|'subject', subjectId? }
+  const [sortBySubject, setSortBySubject] = useState('');
 
   const api = useApi();
   const toast = useToast();
@@ -175,12 +176,21 @@ const StudentMappingDetailsTab = () => {
       {deleteConfirm && (
         <div
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+            position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)',
             zIndex: 200000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
           }}
           onClick={() => setDeleteConfirm(null)}
         >
-          <div className="glass-card" style={{ maxWidth: 440, width: '100%', padding: 28 }} onClick={e => e.stopPropagation()}>
+          <div
+            style={{
+              maxWidth: 440, width: '100%', padding: 28,
+              background: 'var(--color-surface, #ffffff)',
+              borderRadius: 'var(--radius-xl, 20px)',
+              border: '1px solid var(--color-border-solid, #e5e7eb)',
+              boxShadow: '0 20px 50px rgba(19, 58, 38, 0.12)'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-lg)', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <AlertTriangle size={22} color="#DC2626" />
@@ -219,7 +229,7 @@ const StudentMappingDetailsTab = () => {
       ) : records.length > 0 ? (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}>
           
-          {/* ── Summary Card ── */}
+          {/* ── Summary + Sort Card ── */}
           <div className="glass-panel p-lg mb-lg">
             <div className="flex justify-between items-center flex-wrap gap-md">
               <div className="flex items-center gap-sm" style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
@@ -229,6 +239,20 @@ const StudentMappingDetailsTab = () => {
               <div className="flex items-center gap-sm" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                 <BookOpen size={16} />
                 Total Subjects: {subjects.length}
+              </div>
+              <div className="flex items-center gap-sm">
+                <label style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Sort by Subject:</label>
+                <select
+                  className="form-input"
+                  value={sortBySubject}
+                  onChange={e => setSortBySubject(e.target.value)}
+                  style={{ width: 'auto', minWidth: '180px', padding: '6px 12px', fontSize: '0.82rem' }}
+                >
+                  <option value="">All Subjects (Default)</option>
+                  {subjects.map(s => (
+                    <option key={s._id} value={s._id}>{s.subjectName} ({s.subjectCode})</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -247,7 +271,27 @@ const StudentMappingDetailsTab = () => {
                 </tr>
               </thead>
               <tbody>
-                {records.map((rec, idx) => (
+                {records
+                  .filter(rec => {
+                    if (!sortBySubject) return true;
+                    return (rec.mappedSubjects || []).some(
+                      sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
+                    );
+                  })
+                  .sort((a, b) => {
+                    if (!sortBySubject) return 0;
+                    // Sort: students with the selected subject first
+                    const aHas = (a.mappedSubjects || []).some(
+                      sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
+                    );
+                    const bHas = (b.mappedSubjects || []).some(
+                      sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
+                    );
+                    if (aHas && !bHas) return -1;
+                    if (!aHas && bHas) return 1;
+                    return 0;
+                  })
+                  .map((rec, idx) => (
                   <motion.tr
                     key={rec._id}
                     initial={{ opacity: 0, y: 4 }}
@@ -279,18 +323,6 @@ const StudentMappingDetailsTab = () => {
                             }}
                           >
                             {sub.subjectName || sub.subjectCode || 'Unknown'}
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); handleDeleteSubject(rec._id, sub.timetableSlotId); }}
-                              style={{
-                                background: 'none', border: 'none', cursor: 'pointer',
-                                padding: 0, display: 'inline-flex', color: '#EF4444',
-                                opacity: 0.7, fontSize: '0.8rem'
-                              }}
-                              title="Remove this subject"
-                            >
-                              <X size={12} />
-                            </button>
                           </span>
                         ))}
                       </div>

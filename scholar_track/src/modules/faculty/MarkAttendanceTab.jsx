@@ -114,21 +114,26 @@ const MarkAttendanceTab = () => {
         let initialStatus = '';
         let initialLeaveType = '';
         let initialLeaveRequestId = null;
+        let initialLeaveStatus = '';
         if (existingRecord) {
-          const isApprovedLeave = (leaveInfo && leaveInfo.status === 'APPROVED') || existingRecord.status === 'ON_LEAVE';
-          if (isApprovedLeave) {
+          const hasAnyLeave = (leaveInfo && ['APPROVED', 'PENDING_HOD', 'PENDING_SUPERVISOR'].includes(leaveInfo.status)) || existingRecord.status === 'ON_LEAVE';
+          if (hasAnyLeave) {
             initialStatus = 'ON_LEAVE';
             initialLeaveType = existingRecord.leaveType || leaveInfo?.leaveType || '';
             initialLeaveRequestId = existingRecord.leaveRequestId || leaveInfo?._id || null;
+            initialLeaveStatus = leaveInfo?.status || 'APPROVED';
           } else {
             initialStatus = '';
           }
         } else if (leaveInfo) {
-          initialStatus = 'ON_LEAVE';
-          initialLeaveType = leaveInfo.leaveType;
-          initialLeaveRequestId = leaveInfo._id;
+          if (['APPROVED', 'PENDING_HOD', 'PENDING_SUPERVISOR'].includes(leaveInfo.status)) {
+            initialStatus = 'ON_LEAVE';
+            initialLeaveType = leaveInfo.leaveType;
+            initialLeaveRequestId = leaveInfo._id;
+            initialLeaveStatus = leaveInfo.status;
+          }
         }
-        initialData[st.student._id] = { status: initialStatus, leaveType: initialLeaveType, leaveRequestId: initialLeaveRequestId };
+        initialData[st.student._id] = { status: initialStatus, leaveType: initialLeaveType, leaveRequestId: initialLeaveRequestId, leaveStatus: initialLeaveStatus };
       });
       setAttendanceData(initialData);
     } catch (err) {
@@ -225,9 +230,10 @@ const MarkAttendanceTab = () => {
         const studentId = st.student._id;
         const originalStatus = st.record?.status;
         const studentLeave = st.leave;
-        const isApprovedLeave = studentLeave?.status === 'APPROVED' || originalStatus === 'ON_LEAVE';
-        if (!isApprovedLeave && updated[studentId]?.status !== 'ON_LEAVE') {
-          updated[studentId] = { ...updated[studentId], status, leaveType: '', leaveRequestId: null };
+        const hasAnyLeave = studentLeave && ['APPROVED', 'PENDING_HOD', 'PENDING_SUPERVISOR'].includes(studentLeave.status);
+        const isLeaveOverride = hasAnyLeave || originalStatus === 'ON_LEAVE';
+        if (!isLeaveOverride && updated[studentId]?.status !== 'ON_LEAVE') {
+          updated[studentId] = { ...updated[studentId], status, leaveType: '', leaveRequestId: null, leaveStatus: '' };
         }
       });
       return updated;
@@ -250,8 +256,8 @@ const MarkAttendanceTab = () => {
     unmarkedStudents.forEach(st => {
       const studentId = st.student._id;
       const currentData = attendanceData[studentId];
-      const isApprovedLeave = st.leave && st.leave.status === 'APPROVED';
-      if (!isApprovedLeave && (!currentData || currentData.status === '')) {
+      const hasAnyLeave = st.leave && ['APPROVED', 'PENDING_HOD', 'PENDING_SUPERVISOR'].includes(st.leave.status);
+      if (!hasAnyLeave && (!currentData || currentData.status === '')) {
         unmarkedNames.push(st.student.name);
       }
     });
@@ -546,10 +552,13 @@ const MarkAttendanceTab = () => {
                 <tbody>
                   {unmarkedStudents.map((st, sIdx) => {
                     const studentId = st.student._id;
-                    const currentData = attendanceData[studentId] || { status: '', leaveType: '', leaveRequestId: null };
+                    const currentData = attendanceData[studentId] || { status: '', leaveType: '', leaveRequestId: null, leaveStatus: '' };
                     const isLeave = currentData.status === 'ON_LEAVE';
+                    const isPendingLeave = st.leave && ['PENDING_HOD', 'PENDING_SUPERVISOR'].includes(st.leave.status);
+                    const isApprovedLeave = st.leave && st.leave.status === 'APPROVED';
+                    const hasAnyLeave = st.leave && ['APPROVED', 'PENDING_HOD', 'PENDING_SUPERVISOR'].includes(st.leave.status);
                     return (
-                      <motion.tr key={studentId} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(sIdx * 0.03, 0.5) }}>
+                      <motion.tr key={studentId} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(sIdx * 0.03, 0.5) }} style={isPendingLeave ? { background: 'rgba(255, 193, 7, 0.08)' } : {}}>
                         <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', textAlign: 'center' }}>{sIdx + 1}</td>
                         <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{st.student.profile?.shNo || 'N/A'}</td>
                         <td>
@@ -559,7 +568,7 @@ const MarkAttendanceTab = () => {
                             {isLeave && (
                               <span className="badge badge-leave" style={{ fontSize: '0.62rem', marginTop: '4px', display: 'inline-flex' }}>
                                 <AlertTriangle size={10} />
-                                {st.leave?.status === 'APPROVED' ? 'Approved Leave' : 'Manual Leave'}
+                                {isApprovedLeave ? 'Approved Leave' : 'Manual Leave'}
                               </span>
                             )}
                           </div>
@@ -567,14 +576,16 @@ const MarkAttendanceTab = () => {
                         <td style={{ color: 'var(--color-text-secondary)' }}>{st.student.profile?.fatherName || '—'}</td>
                         <td>
                           <div className="flex gap-xs flex-wrap">
-                            <button type="button" disabled={matrix.isLocked || (st.leave && st.leave.status === 'APPROVED')} onClick={() => handleStatusChange(studentId, 'PRESENT', { leaveType: '', leaveRequestId: null })} className={`status-toggle-btn ${currentData.status === 'PRESENT' ? 'selected-present' : ''}`}>Present</button>
-                            <button type="button" disabled={matrix.isLocked || (st.leave && st.leave.status === 'APPROVED')} onClick={() => handleStatusChange(studentId, 'ABSENT', { leaveType: '', leaveRequestId: null })} className={`status-toggle-btn ${currentData.status === 'ABSENT' ? 'selected-absent' : ''}`}>Absent</button>
-                            <button type="button" disabled={matrix.isLocked || (st.leave && st.leave.status === 'APPROVED')} onClick={() => handleStatusChange(studentId, 'NOT_APPLICABLE', { leaveType: '', leaveRequestId: null })} className={`status-toggle-btn ${currentData.status === 'NOT_APPLICABLE' ? 'selected-na' : ''}`} style={{ background: currentData.status === 'NOT_APPLICABLE' ? 'var(--color-text-muted)' : 'transparent', color: currentData.status === 'NOT_APPLICABLE' ? '#fff' : 'inherit' }}>N/A</button>
+                            <button type="button" disabled={matrix.isLocked || hasAnyLeave} onClick={() => handleStatusChange(studentId, 'PRESENT', { leaveType: '', leaveRequestId: null })} className={`status-toggle-btn ${currentData.status === 'PRESENT' ? 'selected-present' : ''}`}>Present</button>
+                            <button type="button" disabled={matrix.isLocked || hasAnyLeave} onClick={() => handleStatusChange(studentId, 'ABSENT', { leaveType: '', leaveRequestId: null })} className={`status-toggle-btn ${currentData.status === 'ABSENT' ? 'selected-absent' : ''}`}>Absent</button>
+                            <button type="button" disabled={matrix.isLocked || hasAnyLeave} onClick={() => handleStatusChange(studentId, 'NOT_APPLICABLE', { leaveType: '', leaveRequestId: null })} className={`status-toggle-btn ${currentData.status === 'NOT_APPLICABLE' ? 'selected-na' : ''}`} style={{ background: currentData.status === 'NOT_APPLICABLE' ? 'var(--color-text-muted)' : 'transparent', color: currentData.status === 'NOT_APPLICABLE' ? '#fff' : 'inherit' }}>N/A</button>
                             {st.leave ? (
-                              st.leave.status === 'APPROVED' ? (
+                              isApprovedLeave ? (
                                 <span className="badge badge-leave">Leave - {st.leave.leaveType}</span>
                               ) : (
-                                <span className="badge badge-pending"><AlertTriangle size={12} /> Leave - {st.leave.leaveType}</span>
+                                <span className="badge" style={{ fontSize: '0.7rem', padding: '4px 10px', borderRadius: '12px', background: 'rgba(255, 193, 7, 0.15)', color: '#b7791f', border: '1px solid rgba(255, 193, 7, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <AlertTriangle size={12} /> Leave Applied
+                                </span>
                               )
                             ) : (
                               currentData.status === 'ON_LEAVE' ? (

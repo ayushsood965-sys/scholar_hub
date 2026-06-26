@@ -323,7 +323,7 @@ exports.getMappedRecords = async (req, res) => {
 exports.deleteMappedRecord = async (req, res) => {
   try {
     const { id } = req.params;
-    const { timetableSlotId } = req.body; // optional: delete specific subject mapping
+    const { timetableSlotId } = req.body || {}; // optional: delete specific subject mapping
 
     const mapping = await StudentSemesterMapping.findById(id);
     if (!mapping) {
