@@ -34,6 +34,14 @@ const timeToMinutes = (timeStr) => {
   return (hours || 0) * 60 + (minutes || 0);
 };
 
+// Format a Date as YYYY-MM-DD in local timezone (avoids UTC offset from toISOString)
+const toLocalDateString = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // ==========================================
 // 1. MASTER CRUD (SUPER ADMIN)
 // ==========================================
@@ -747,7 +755,8 @@ exports.getFacultyDashboardStats = async (req, res) => {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const dayName = dayNames[d.getDay()];
-      const dateStr = d.toISOString().split('T')[0];
+      if (dayName === 'Sunday') continue; // Skip Sunday — no academic classes
+      const dateStr = toLocalDateString(d);
       const dayCourses = courses.filter(c => c.dayOfWeek === dayName);
       for (const c of dayCourses) {
         nextWeekClasses.push({
@@ -781,7 +790,7 @@ exports.getFacultyDashboardStats = async (req, res) => {
 
     // 6. Today's classes
     const todayDayName = dayNames[today.getDay()];
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = toLocalDateString(today);
     const todayClasses = courses
       .filter(c => c.dayOfWeek === todayDayName)
       .map(c => ({
