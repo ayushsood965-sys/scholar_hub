@@ -11,6 +11,7 @@ const TimetableMaster = require('../models/attendance/TimetableMaster');
 const HolidayCalendar = require('../models/attendance/HolidayCalendar');
 const AttendanceCorrection = require('../models/attendance/AttendanceCorrection');
 const AttendanceRecord = require('../models/attendance/AttendanceRecord');
+const StudentSemesterMapping = require('../models/attendance/StudentSemesterMapping');
 
 const DegreeTypeMaster = require('../models/attendance/DegreeTypeMaster');
 const DegreeNameMaster = require('../models/attendance/DegreeNameMaster');
@@ -380,17 +381,6 @@ exports.getAttendanceMatrix = async (req, res) => {
     const dt = degreeTypeId ? await DegreeTypeMaster.findById(degreeTypeId) : null;
     const isPhD = dt && dt.code === 'PHD';
 
-    // Get students matching criteria
-    const studentQuery = { role: 'STUDENT', department: req.user.department, isActive: true };
-    if (!isPhD) {
-      if (degreeTypeId) studentQuery['profile.degreeTypeId'] = degreeTypeId;
-      if (degreeNameId) studentQuery['profile.degreeNameId'] = degreeNameId;
-      if (semesterId) studentQuery['profile.semesterId'] = semesterId;
-    } else {
-      if (degreeTypeId) studentQuery['profile.degreeTypeId'] = degreeTypeId;
-    }
-    const students = await User.find(studentQuery).select('name username profile');
-
     let classes = [];
     if (!isPhD) {
       classes = await TimetableMaster.find({
@@ -399,6 +389,67 @@ exports.getAttendanceMatrix = async (req, res) => {
         departmentId, dayOfWeek, isActive: true
       }).populate('facultyId', 'name');
     }
+
+    // ── Fetch StudentSemesterMapping to determine which students are mapped to which subjects ──
+    const mappings = await StudentSemesterMapping.find({
+      sessionId, degreeTypeId, degreeNameId, semesterId, departmentId
+    });
+
+    // Build map: subjectId (timetableSlotId) → Set of studentIds explicitly mapped to it
+    const subjectStudentMap = {};
+    if (!isPhD) {
+      classes.forEach(c => { subjectStudentMap[c._id.toString()] = new Set(); });
+      mappings.forEach(m => {
+        const stId = m.studentId.toString();
+        m.mappedSubjects.forEach(sub => {
+          const slotId = sub.timetableSlotId.toString();
+          if (subjectStudentMap[slotId]) {
+            subjectStudentMap[slotId].add(stId);
+          }
+        });
+      });
+    }
+
+    // Collect all unique studentIds that are mapped to ANY subject in this timetable
+    const allMappedStudentIds = new Set();
+    Object.values(subjectStudentMap).forEach(set => {
+      set.forEach(id => allMappedStudentIds.add(id));
+    });
+
+    // Query students: only those who are mapped via StudentSemesterMapping
+    let students = [];
+    if (isPhD || allMappedStudentIds.size > 0) {
+      const studentQuery = { role: 'STUDENT', department: req.user.department, isActive: true };
+      if (!isPhD) {
+        studentQuery._id = { $in: [...allMappedStudentIds] };
+        if (degreeTypeId) studentQuery['profile.degreeTypeId'] = degreeTypeId;
+        if (degreeNameId) studentQuery['profile.degreeNameId'] = degreeNameId;
+      } else {
+        if (degreeTypeId) studentQuery['profile.degreeTypeId'] = degreeTypeId;
+      }
+      students = await User.find(studentQuery).select('name username profile');
+    }
+
+    // Augment classes with mapping info for the frontend
+    const classesWithMapping = classes.map(c => {
+      const slotId = c._id.toString();
+      const mappedIds = subjectStudentMap[slotId] || new Set();
+      const mappedIdsArray = [...mappedIds];
+      // Compute the "student set identity" — a string that uniquely identifies this set
+      const sortedIds = [...mappedIdsArray].sort().join(',');
+      return {
+        _id: c._id,
+        subjectCode: c.subjectCode,
+        subjectName: c.subjectName,
+        startTime: c.startTime,
+        endTime: c.endTime,
+        dayOfWeek: c.dayOfWeek,
+        facultyId: c.facultyId,
+        mappedStudentIds: mappedIdsArray,
+        mappedStudentCount: mappedIdsArray.length,
+        studentSetKey: sortedIds  // used to group subjects with identical mapped student sets
+      };
+    });
 
     // Get existing records for this date to pre-fill matrix
     const records = await AttendanceRecord.find({
@@ -441,7 +492,18 @@ exports.getAttendanceMatrix = async (req, res) => {
       };
     });
 
-    res.status(200).json({ students: matrix, classes, isPhD, isLocked });
+    // Determine partial mapping info: check if all subjects share the same mapped student set
+    const uniqueSetKeys = new Set(classesWithMapping.map(c => c.studentSetKey));
+    const hasPartialMapping = uniqueSetKeys.size > 1;
+
+    res.status(200).json({ 
+      students: matrix, 
+      classes: classesWithMapping, 
+      isPhD, 
+      isLocked,
+      hasPartialMapping,
+      totalMappedStudents: allMappedStudentIds.size
+    });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 

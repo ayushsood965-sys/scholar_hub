@@ -12,6 +12,8 @@ import DefaultersTab from '../modules/hod/DefaultersTab';
 import AuditTab from '../modules/hod/AuditTab';
 import StaffProfileTab from '../modules/profile/StaffProfileTab';
 import MyStudentsTab from '../modules/hod/MyStudentsTab';
+import StudentSubjectMappingTab from '../modules/faculty/StudentSubjectMappingTab';
+import StudentMappingDetailsTab from '../modules/faculty/StudentMappingDetailsTab';
 
 const HodDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -30,6 +32,8 @@ const HodDashboard = () => {
     approvals: 'Leave & Correction Approvals',
     defaulters: 'Defaulters & Warnings',
     students: 'My Students',
+    mapping: 'Student-Semester-Subject Mapping',
+    mappingDetails: 'Mapping Details',
     audit: 'Audit Trail',
     profile: 'Profile',
   };
@@ -47,6 +51,8 @@ const HodDashboard = () => {
       {activeTab === 'defaulters' && <DefaultersTab />}
       {activeTab === 'students' && <MyStudentsTab />}
       {activeTab === 'audit' && <AuditTab />}
+      {activeTab === 'mapping' && <StudentSubjectMappingTab />}
+      {activeTab === 'mappingDetails' && <StudentMappingDetailsTab />}
       {activeTab === 'profile' && <StaffProfileTab />}
     </DashboardShell>
   );

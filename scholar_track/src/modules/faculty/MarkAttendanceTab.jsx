@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -25,6 +25,7 @@ const MarkAttendanceTab = () => {
   const [selectedSubjects, setSelectedSubjects] = useState({});
   const [savedClasses, setSavedClasses] = useState({});
   const [openLeaveDropdownStudentId, setOpenLeaveDropdownStudentId] = useState(null);
+  const [hasPartialMapping, setHasPartialMapping] = useState(false);
   
   const [loadingFilters, setLoadingFilters] = useState(true);
   const [loadingMatrix, setLoadingMatrix] = useState(false);
@@ -76,6 +77,7 @@ const MarkAttendanceTab = () => {
       });
       const res = await api.get(`/attendance/faculty/matrix?${queryParams.toString()}`);
       setMatrix(res.data);
+      setHasPartialMapping(res.data.hasPartialMapping);
       const initialSelectedSubjects = {};
       const initialSavedClasses = {};
       const firstStudentRec = res.data.students[0]?.record;
@@ -93,7 +95,13 @@ const MarkAttendanceTab = () => {
             const classRec = firstStudentRec.classes.find(cc => cc.timetableSlotId === c._id);
             initialSelectedSubjects[c._id] = classRec ? classRec.selected : false;
           } else {
-            initialSelectedSubjects[c._id] = true;
+            // Only auto-select subjects that have no partial mapping conflict
+            if (res.data.hasPartialMapping) {
+              // If partial mapping exists, leave all unselected initially 
+              initialSelectedSubjects[c._id] = false;
+            } else {
+              initialSelectedSubjects[c._id] = true;
+            }
           }
         }
       });
@@ -131,6 +139,78 @@ const MarkAttendanceTab = () => {
     }
   };
 
+  // ── Compute displayed students based on selected subjects ──
+  // Only students mapped to all selected subjects via StudentSemesterMapping are shown
+  const displayedStudents = useMemo(() => {
+    if (!matrix || isPhD) return matrix?.students || [];
+
+    const selectedSubIds = Object.entries(selectedSubjects)
+      .filter(([, val]) => val)
+      .map(([id]) => id);
+
+    if (selectedSubIds.length === 0) return [];
+
+    // Get the set of students mapped to ALL selected subjects (intersection)
+    const mappedSets = selectedSubIds.map(subId => {
+      const cls = matrix.classes.find(c => c._id === subId);
+      return new Set(cls?.mappedStudentIds || []);
+    });
+
+    // Compute intersection of all mapped sets
+    const commonIds = new Set();
+    if (mappedSets.length > 0) {
+      mappedSets[0].forEach(id => {
+        const inAll = mappedSets.every(set => set.has(id));
+        if (inAll) commonIds.add(id);
+      });
+    }
+
+    return (matrix.students || []).filter(st => commonIds.has(st.student._id));
+  }, [selectedSubjects, matrix, isPhD]);
+
+  // ── Check if selected subjects include a partially-mapped one ──
+  const hasSelectedPartial = useMemo(() => {
+    if (!matrix || !hasPartialMapping) return false;
+    const selectedSubIds = Object.entries(selectedSubjects)
+      .filter(([, val]) => val)
+      .map(([id]) => id);
+    if (selectedSubIds.length === 0) return false;
+
+    // Check if all selected subjects have the same studentSetKey
+    const selectedClasses = matrix.classes.filter(c => selectedSubIds.includes(c._id));
+    const uniqueKeys = new Set(selectedClasses.map(c => c.studentSetKey));
+    return uniqueKeys.size > 1;
+  }, [selectedSubjects, matrix, hasPartialMapping]);
+
+  // ── Subject toggle: enforce single-select for partial mapping ──
+  const handleSubjectToggle = (subjectId) => {
+    if (!matrix || matrix.isLocked) return;
+    const isSaved = isClassSaved(subjectId);
+    if (isSaved) return;
+
+    if (hasPartialMapping) {
+      // Single-subject selection mode: deselect all, select only this one
+      const updated = {};
+      matrix.classes.forEach(c => { updated[c._id] = false; });
+      updated[subjectId] = !selectedSubjects[subjectId];
+      setSelectedSubjects(updated);
+      return;
+    }
+
+    setSelectedSubjects(prev => ({ ...prev, [subjectId]: !prev[subjectId] }));
+  };
+
+  const handleSelectAllSubjects = () => {
+    if (!matrix || hasPartialMapping) return;
+    const nonSavedSubjects = matrix.classes.filter(c => !isClassSaved(c._id));
+    const allSelected = nonSavedSubjects.every(c => selectedSubjects[c._id]);
+    const updated = {};
+    matrix.classes.forEach(c => {
+      updated[c._id] = isClassSaved(c._id) ? false : !allSelected;
+    });
+    setSelectedSubjects(updated);
+  };
+
   const handleStatusChange = (studentId, newStatus, extraData = {}) => {
     setAttendanceData(prev => ({
       ...prev,
@@ -141,12 +221,13 @@ const MarkAttendanceTab = () => {
   const applyStatusToAll = (status) => {
     setAttendanceData(prev => {
       const updated = { ...prev };
-      Object.keys(updated).forEach(studentId => {
-        const originalStatus = matrix?.students.find(st => st.student._id === studentId)?.record?.status;
-        const studentLeave = matrix?.students.find(st => st.student._id === studentId)?.leave;
+      displayedStudents.forEach(st => {
+        const studentId = st.student._id;
+        const originalStatus = st.record?.status;
+        const studentLeave = st.leave;
         const isApprovedLeave = studentLeave?.status === 'APPROVED' || originalStatus === 'ON_LEAVE';
-        if (!isApprovedLeave && updated[studentId].status !== 'ON_LEAVE') {
-          updated[studentId].status = status;
+        if (!isApprovedLeave && updated[studentId]?.status !== 'ON_LEAVE') {
+          updated[studentId] = { ...updated[studentId], status, leaveType: '', leaveRequestId: null };
         }
       });
       return updated;
@@ -218,7 +299,8 @@ const MarkAttendanceTab = () => {
     }
   };
 
-  const unmarkedStudents = (matrix?.students || []).filter(st => {
+  // ── unmarkedStudents: only includes displayedStudents who haven't been marked yet ──
+  const unmarkedStudents = displayedStudents.filter(st => {
     if (isPhD) return !st.record;
     if (!st.record) return true;
     const activeClassIds = matrix.classes.filter(c => !isClassSaved(c._id) && selectedSubjects[c._id]).map(c => c._id);
@@ -317,6 +399,21 @@ const MarkAttendanceTab = () => {
             )}
           </AnimatePresence>
 
+          {/* ── Partial Mapping Warning Banner ── */}
+          {hasPartialMapping && (
+            <div className="glass-panel p-lg mb-lg" style={{ borderLeft: '4px solid var(--status-warning)' }}>
+              <div className="flex items-center gap-md">
+                <AlertTriangle size={20} style={{ color: '#D97706', flexShrink: 0 }} />
+                <div>
+                  <span className="font-semibold" style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>Partial Student Mapping Detected</span>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                    The selected subjects have <strong>different sets of students</strong> mapped to them. Please select subjects individually. Multiple subjects can only be selected together when they share the same mapped students.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!isPhD && matrix.classes.length > 0 && (
             <div className="glass-panel p-xl mb-lg">
               <div className="flex justify-between items-center mb-lg">
@@ -325,14 +422,7 @@ const MarkAttendanceTab = () => {
                   Select Scheduled Courses for Register
                 </h3>
                 <div className="flex gap-sm">
-                  <button type="button" className="btn btn-sm btn-outline" onClick={() => {
-                    const updated = {};
-                    matrix.classes.forEach(c => {
-                      const isSaved = isClassSaved(c._id);
-                      updated[c._id] = !isSaved;
-                    });
-                    setSelectedSubjects(updated);
-                  }}>Select All</button>
+                  <button type="button" className="btn btn-sm btn-outline" onClick={handleSelectAllSubjects}>Select All</button>
                   <button type="button" className="btn btn-sm btn-outline" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }} onClick={() => {
                     const updated = {};
                     matrix.classes.forEach(c => { updated[c._id] = false; });
@@ -346,7 +436,7 @@ const MarkAttendanceTab = () => {
                   const isChecked = !isSaved && !!selectedSubjects[c._id];
                   return (
                     <motion.div key={c._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.4) }}
-                      onClick={() => { if (matrix.isLocked || isSaved) return; setSelectedSubjects(prev => ({ ...prev, [c._id]: !isChecked })); }}
+                      onClick={() => handleSubjectToggle(c._id)}
                       className="glass-card" style={{ padding: '14px 16px', cursor: (matrix.isLocked || isSaved) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '12px', opacity: isSaved ? 0.6 : 1, border: isChecked ? '2px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.2)' }}>
                       <div style={{ width: '22px', height: '22px', borderRadius: '6px', border: isChecked ? 'none' : '2px solid var(--color-border-solid)', background: isChecked ? 'var(--color-primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {isChecked && <Check size={14} color="#fff" strokeWidth={3} />}

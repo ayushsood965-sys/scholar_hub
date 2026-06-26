@@ -8,6 +8,8 @@ import AttendanceRecordsTab from '../modules/faculty/AttendanceRecordsTab';
 import LeaveApprovalsTab from '../modules/faculty/LeaveApprovalsTab';
 import CorrectionsTab from '../modules/faculty/CorrectionsTab';
 import StaffProfileTab from '../modules/profile/StaffProfileTab';
+import StudentSubjectMappingTab from '../modules/faculty/StudentSubjectMappingTab';
+import StudentMappingDetailsTab from '../modules/faculty/StudentMappingDetailsTab';
 
 const FacultyDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -23,6 +25,8 @@ const FacultyDashboard = () => {
     records: 'Attendance Records',
     leaves: 'Leave Approvals',
     corrections: 'Corrections Queue',
+    mapping: 'Student-Semester-Subject Mapping',
+    mappingDetails: 'Mapping Details',
     profile: 'Profile',
   };
 
@@ -35,6 +39,8 @@ const FacultyDashboard = () => {
       {activeTab === 'records' && <AttendanceRecordsTab />}
       {activeTab === 'leaves' && <LeaveApprovalsTab />}
       {activeTab === 'corrections' && <CorrectionsTab />}
+      {activeTab === 'mapping' && <StudentSubjectMappingTab />}
+      {activeTab === 'mappingDetails' && <StudentMappingDetailsTab />}
       {activeTab === 'profile' && <StaffProfileTab />}
     </DashboardShell>
   );

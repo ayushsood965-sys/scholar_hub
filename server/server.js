@@ -16,6 +16,7 @@ const publicRoutes = require('./routes/publicRoutes');
 const adminConfigRoutes = require('./routes/adminConfigRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const seedRoutes = require('./routes/seedRoutes');
+const studentMappingRoutes = require('./routes/studentMappingRoutes');
 const fs = require('fs');
 const { seedUserData } = require('./seedUsersHelper');
 
@@ -314,6 +315,7 @@ app.use('/api/additional-documents', additionalDocumentRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/config', adminConfigRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/student-mapping', studentMappingRoutes);
 app.use('/api/seed', seedRoutes);
 
 // Health check endpoint for UptimeRobot

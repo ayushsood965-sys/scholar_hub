@@ -45,6 +45,8 @@ const roleNavConfig = {
     { key: "records", icon: Clock, label: "Attendance Records" },
     { key: "leaves", icon: CalendarRange, label: "Leave Approvals" },
     { key: "corrections", icon: FileCheck, label: "Corrections Queue" },
+    { key: "mapping", icon: Layers, label: "Student Mapping" },
+    { key: "mappingDetails", icon: ClipboardList, label: "Mapping Details" },
     { key: "profile", icon: User, label: "Profile" },
   ],
   HOD: [
@@ -56,6 +58,8 @@ const roleNavConfig = {
     { key: "approvals", icon: Gavel, label: "Approvals" },
     { key: "defaulters", icon: AlertTriangle, label: "Defaulters" },
     { key: "students", icon: Users, label: "My Students" },
+    { key: "mapping", icon: Layers, label: "Student Mapping" },
+    { key: "mappingDetails", icon: ClipboardList, label: "Mapping Details" },
     { key: "audit", icon: BookOpen, label: "Audit Trail" },
     { key: "profile", icon: User, label: "Profile" },
   ],
