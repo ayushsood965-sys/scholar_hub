@@ -23,6 +23,7 @@ const MarkAttendanceTab = () => {
   const [matrix, setMatrix] = useState(null);
   const [attendanceData, setAttendanceData] = useState({});
   const [selectedSubjects, setSelectedSubjects] = useState({});
+  const [savedClasses, setSavedClasses] = useState({});
   const [openLeaveDropdownStudentId, setOpenLeaveDropdownStudentId] = useState(null);
   
   const [loadingFilters, setLoadingFilters] = useState(true);
@@ -76,13 +77,15 @@ const MarkAttendanceTab = () => {
       const res = await api.get(`/attendance/faculty/matrix?${queryParams.toString()}`);
       setMatrix(res.data);
       const initialSelectedSubjects = {};
+      const initialSavedClasses = {};
       const firstStudentRec = res.data.students[0]?.record;
       res.data.classes.forEach(c => {
-        const isSaved = res.data.students.some(st => 
-          st.record && (st.record.classes || []).some(cc => 
+        const isSaved = res.data.students.some(st =>
+          st.record && (st.record.classes || []).some(cc =>
             cc.timetableSlotId === c._id && cc.selected
           )
         );
+        initialSavedClasses[c._id] = isSaved;
         if (isSaved) {
           initialSelectedSubjects[c._id] = false;
         } else {
@@ -95,6 +98,7 @@ const MarkAttendanceTab = () => {
         }
       });
       setSelectedSubjects(initialSelectedSubjects);
+      setSavedClasses(initialSavedClasses);
       const initialData = {};
       res.data.students.forEach(st => {
         const existingRecord = st.record;
@@ -150,11 +154,7 @@ const MarkAttendanceTab = () => {
   };
 
   const isClassSaved = (classId) => {
-    return (matrix?.students || []).some(st => 
-      st.record && (st.record.classes || []).some(cc => 
-        cc.timetableSlotId === classId && cc.selected
-      )
-    );
+    return !!savedClasses[classId];
   };
 
   const handleSave = async () => {
@@ -221,11 +221,17 @@ const MarkAttendanceTab = () => {
   const unmarkedStudents = (matrix?.students || []).filter(st => {
     if (isPhD) return !st.record;
     if (!st.record) return true;
-    const hasAnySelectedCheckedClass = (st.record.classes || []).some(c => 
-      selectedSubjects[c.timetableSlotId] && c.selected
-    );
-    return !hasAnySelectedCheckedClass;
+    const activeClassIds = matrix.classes.filter(c => !isClassSaved(c._id) && selectedSubjects[c._id]).map(c => c._id);
+    if (activeClassIds.length === 0) return false;
+    const hasMarkedForActiveClass = activeClassIds.some(cid => {
+      const classRec = (st.record.classes || []).find(cc => cc.timetableSlotId === cid);
+      return classRec && classRec.selected;
+    });
+    return !hasMarkedForActiveClass;
   });
+
+  const allClassesSaved = !isPhD && matrix?.classes.length > 0 && matrix.classes.every(c => isClassSaved(c._id));
+  const hasUnsavedClasses = !isPhD && matrix?.classes.length > 0 && matrix.classes.some(c => !isClassSaved(c._id));
 
   if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
 
@@ -351,6 +357,11 @@ const MarkAttendanceTab = () => {
                         <div className="flex items-center gap-xs" style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                           <Clock size={12} /> {c.startTime} - {c.endTime}
                         </div>
+                        {c.facultyId?.name && (
+                          <div className="flex items-center gap-xs" style={{ fontSize: '0.7rem', color: '#818CF8', marginTop: '4px', fontWeight: 500 }}>
+                            👤 {c.facultyId.name}
+                          </div>
+                        )}
                       </div>
                       {isSaved && <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>Marked</span>}
                     </motion.div>
@@ -360,46 +371,90 @@ const MarkAttendanceTab = () => {
             </div>
           )}
 
-          <div className="glass-panel p-lg mb-lg">
-            <div className="flex justify-between items-center flex-wrap gap-md">
-              <div className="flex items-center gap-sm" style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                <Users size={18} style={{ color: 'var(--color-primary)' }} />
-                Unmarked Candidates: <strong style={{ color: 'var(--color-text-primary)' }}>{unmarkedStudents.length}</strong>
+          {!isPhD && matrix.classes.length === 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-xl mb-lg" style={{ textAlign: 'center', borderLeft: '4px solid var(--status-warning)' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <Clock size={40} style={{ margin: '0 auto', color: 'var(--status-warning)', opacity: 0.7 }} />
               </div>
-              {!matrix.isLocked && unmarkedStudents.length > 0 && (
-                <div className="flex items-center gap-sm flex-wrap">
-                  <span className="text-sm text-muted">Apply Status to All:</span>
-                  <button type="button" className="btn btn-sm" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--status-present)', border: '1px solid rgba(16, 185, 129, 0.2)' }} onClick={() => applyStatusToAll('PRESENT')}>Present</button>
-                  <button type="button" className="btn btn-sm" style={{ background: 'rgba(239, 68, 68, 0.08)', color: 'var(--status-absent)', border: '1px solid rgba(239, 68, 68, 0.15)' }} onClick={() => applyStatusToAll('ABSENT')}>Absent</button>
-                  <button type="button" className="btn btn-sm" style={{ background: 'rgba(107, 114, 128, 0.08)', color: 'var(--color-text-muted)', border: '1px solid rgba(107, 114, 128, 0.12)' }} onClick={() => applyStatusToAll('NOT_APPLICABLE')}>N/A</button>
-                </div>
-              )}
-            </div>
-          </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
+                No Classes Scheduled
+              </h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+                No classes are scheduled on <strong style={{ color: 'var(--color-text-primary)' }}>{new Date(filters.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> ({new Date(filters.date).toLocaleDateString('en-IN', { weekday: 'long' })}).
+              </p>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '8px' }}>
+                Please select a different date to mark attendance.
+              </p>
+            </motion.div>
+          )}
 
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '50px' }}>#</th>
-                  <th style={{ width: '110px' }}>Sh. No.</th>
-                  <th>Student Name</th>
-                  <th>Father's Name</th>
-                  <th style={{ width: '360px' }}>Attendance Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {unmarkedStudents.length === 0 ? (
+          {isPhD && matrix.students.length > 0 && unmarkedStudents.length === 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-xl mb-lg" style={{ textAlign: 'center', borderLeft: '4px solid var(--status-present)' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <Check size={40} style={{ margin: '0 auto', color: 'var(--status-present)', opacity: 0.7 }} />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
+                Attendance Already Marked
+              </h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+                Attendance has already been marked for <strong style={{ color: 'var(--color-text-primary)' }}>{new Date(filters.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> ({new Date(filters.date).toLocaleDateString('en-IN', { weekday: 'long' })}).
+              </p>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '8px' }}>
+                All students have been marked for this date.
+              </p>
+            </motion.div>
+          )}
+
+          {!isPhD && allClassesSaved && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-xl mb-lg" style={{ textAlign: 'center', borderLeft: '4px solid var(--status-present)' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <Check size={40} style={{ margin: '0 auto', color: 'var(--status-present)', opacity: 0.7 }} />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
+                Attendance Already Marked
+              </h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+                Attendance for all the classes scheduled on <strong style={{ color: 'var(--color-text-primary)' }}>{new Date(filters.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> ({new Date(filters.date).toLocaleDateString('en-IN', { weekday: 'long' })}) has already been marked.
+              </p>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '8px' }}>
+                All students have been marked for the scheduled course(s) on this date.
+              </p>
+            </motion.div>
+          )}
+
+          {((!isPhD && hasUnsavedClasses) || (isPhD && matrix.students.length > 0)) && unmarkedStudents.length > 0 && (
+            <div className="glass-panel p-lg mb-lg">
+              <div className="flex justify-between items-center flex-wrap gap-md">
+                <div className="flex items-center gap-sm" style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                  <Users size={18} style={{ color: 'var(--color-primary)' }} />
+                  Unmarked Candidates: <strong style={{ color: 'var(--color-text-primary)' }}>{unmarkedStudents.length}</strong>
+                </div>
+                {!matrix.isLocked && unmarkedStudents.length > 0 && (
+                  <div className="flex items-center gap-sm flex-wrap">
+                    <span className="text-sm text-muted">Apply Status to All:</span>
+                    <button type="button" className="btn btn-sm" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--status-present)', border: '1px solid rgba(16, 185, 129, 0.2)' }} onClick={() => applyStatusToAll('PRESENT')}>Present</button>
+                    <button type="button" className="btn btn-sm" style={{ background: 'rgba(239, 68, 68, 0.08)', color: 'var(--status-absent)', border: '1px solid rgba(239, 68, 68, 0.15)' }} onClick={() => applyStatusToAll('ABSENT')}>Absent</button>
+                    <button type="button" className="btn btn-sm" style={{ background: 'rgba(107, 114, 128, 0.08)', color: 'var(--color-text-muted)', border: '1px solid rgba(107, 114, 128, 0.12)' }} onClick={() => applyStatusToAll('NOT_APPLICABLE')}>N/A</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {((!isPhD && hasUnsavedClasses) || (isPhD && matrix.students.length > 0)) && unmarkedStudents.length > 0 && (
+            <div className="data-table-wrapper">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
-                      <div style={{ color: 'var(--color-text-muted)' }}>
-                        <Check size={32} style={{ margin: '0 auto 8px', opacity: 0.3 }} />
-                        No unmarked students found matching this criteria.
-                      </div>
-                    </td>
+                    <th style={{ width: '50px' }}>#</th>
+                    <th style={{ width: '110px' }}>Sh. No.</th>
+                    <th>Student Name</th>
+                    <th>Father's Name</th>
+                    <th style={{ width: '360px' }}>Attendance Status</th>
                   </tr>
-                ) : (
-                  unmarkedStudents.map((st, sIdx) => {
+                </thead>
+                <tbody>
+                  {unmarkedStudents.map((st, sIdx) => {
                     const studentId = st.student._id;
                     const currentData = attendanceData[studentId] || { status: '', leaveType: '', leaveRequestId: null };
                     const isLeave = currentData.status === 'ON_LEAVE';
@@ -454,17 +509,45 @@ const MarkAttendanceTab = () => {
                         </td>
                       </motion.tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-          <div className="flex justify-end mt-lg">
-            <button type="button" className="btn btn-primary btn-lg" onClick={handleSave} disabled={saving || matrix.isLocked || unmarkedStudents.length === 0}>
-              <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
-            </button>
-          </div>
+          {matrix.classes.length > 0 && unmarkedStudents.length === 0 && (
+            <div className="data-table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '50px' }}>#</th>
+                    <th style={{ width: '110px' }}>Sh. No.</th>
+                    <th>Student Name</th>
+                    <th>Father's Name</th>
+                    <th style={{ width: '360px' }}>Attendance Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
+                      <div style={{ color: 'var(--color-text-muted)' }}>
+                        <Check size={32} style={{ margin: '0 auto 8px', opacity: 0.3 }} />
+                        No unmarked students found matching this criteria.
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {unmarkedStudents.length > 0 && (isPhD || hasUnsavedClasses) && (
+            <div className="flex justify-end mt-lg">
+              <button type="button" className="btn btn-primary btn-lg" onClick={handleSave} disabled={saving || matrix.isLocked}>
+                <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
+              </button>
+            </div>
+          )}
         </motion.div>
       ) : (
         <div className="glass-panel p-xl" style={{ textAlign: 'center' }}>

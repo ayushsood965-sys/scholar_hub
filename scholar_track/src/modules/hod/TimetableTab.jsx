@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Trash2, Plus, X } from 'lucide-react';
+import { Trash2, Plus, X, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TimetableTab = () => {
@@ -18,6 +18,7 @@ const TimetableTab = () => {
   const [initLoading, setInitLoading] = useState(true);
   
   const [formOpen, setFormOpen] = useState(false);
+  const [editingSlot, setEditingSlot] = useState(null);
   const [formData, setFormData] = useState({ dayOfWeek: 'Monday', startTime: '09:00', endTime: '10:00', subjectCode: '', subjectName: '', facultyId: '' });
 
   const api = useApi();
@@ -66,19 +67,42 @@ const TimetableTab = () => {
 
   useEffect(() => { fetchTimetable(); }, [filters]);
 
+  const resetForm = () => {
+    setFormData({ dayOfWeek: 'Monday', startTime: '09:00', endTime: '10:00', subjectCode: '', subjectName: '', facultyId: '' });
+    setEditingSlot(null);
+    setFormOpen(false);
+  };
+
+  const handleEdit = (slot) => {
+    setEditingSlot(slot);
+    setFormData({
+      dayOfWeek: slot.dayOfWeek,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      subjectCode: slot.subjectCode,
+      subjectName: slot.subjectName,
+      facultyId: slot.facultyId?._id || slot.facultyId || ''
+    });
+    setFormOpen(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || (!isPhD && !filters.semesterId)) {
       return toast.error('Please select all filters first');
     }
     try {
-      await api.post('/attendance/timetables', { ...formData, ...filters });
-      toast.success('Slot added');
-      setFormOpen(false);
-      setFormData({ ...formData, subjectCode: '', subjectName: '' });
+      if (editingSlot) {
+        await api.put(`/attendance/timetables/${editingSlot._id}`, { ...formData, ...filters });
+        toast.success('Slot updated');
+      } else {
+        await api.post('/attendance/timetables', { ...formData, ...filters });
+        toast.success('Slot added');
+      }
+      resetForm();
       fetchTimetable();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error adding slot');
+      toast.error(err.response?.data?.message || 'Error saving slot');
     }
   };
 
@@ -172,9 +196,9 @@ const TimetableTab = () => {
                 <div className="inline-form-card">
                   <div className="inline-form-header">
                     <span className="inline-form-title">
-                      <Plus size={18} /> Add Timetable Slot
+                      {editingSlot ? <><Pencil size={18} /> Edit Timetable Slot</> : <><Plus size={18} /> Add Timetable Slot</>}
                     </span>
-                    <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                    <button className="inline-form-close" onClick={resetForm}>
                       <X size={18} />
                     </button>
                   </div>
@@ -203,16 +227,16 @@ const TimetableTab = () => {
                         <input className="form-input" required value={formData.subjectName} onChange={e => setFormData({...formData, subjectName: e.target.value})} />
                       </div>
                       <div className="form-group">
-                        <label className="form-label">Faculty</label>
+                        <label className="form-label">Faculty Member</label>
                         <select className="form-input" required value={formData.facultyId} onChange={e => setFormData({...formData, facultyId: e.target.value})}>
                           <option value="">Select Faculty...</option>
-                          {faculties.map(f => <option key={f._id} value={f._id}>{f.name} ({f.department})</option>)}
+                          {faculties.map(f => <option key={f._id} value={f._id}>{f.name}{f.username ? ` (${f.username})` : ''}</option>)}
                         </select>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
-                      <button type="submit" className="btn btn-primary">Save Slot</button>
+                      <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
+                      <button type="submit" className="btn btn-primary">{editingSlot ? 'Update Slot' : 'Save Slot'}</button>
                     </div>
                   </form>
                 </div>
@@ -230,17 +254,40 @@ const TimetableTab = () => {
                     <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No classes</div>
                   ) : (
                     daySlots.map(slot => (
-                      <div key={slot._id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '12px', marginBottom: '12px', position: 'relative' }}>
-                        <div style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 'bold' }}>{slot.startTime} - {slot.endTime}</div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>{slot.subjectName}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{slot.facultyId?.name || 'Unknown Faculty'}</div>
-                        <button 
-                          onClick={() => handleDelete(slot._id)}
-                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      <motion.div 
+                        key={slot._id} 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px', marginBottom: '12px', position: 'relative', border: '1px solid rgba(255,255,255,0.08)' }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '6px' }}>{slot.startTime} - {slot.endTime}</div>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              onClick={() => handleEdit(slot)}
+                              style={{ background: 'rgba(99,102,241,0.1)', border: 'none', color: '#818CF8', cursor: 'pointer', borderRadius: '6px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              title="Edit slot"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(slot._id)}
+                              style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#EF4444', cursor: 'pointer', borderRadius: '6px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              title="Delete slot"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', marginTop: '8px' }}>{slot.subjectName}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{slot.subjectCode}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 'bold', flexShrink: 0 }}>
+                            {slot.facultyId?.name?.charAt(0) || '?'}
+                          </div>
+                          <span style={{ fontSize: '0.75rem', color: '#818CF8', fontWeight: '500' }}>{slot.facultyId?.name || 'Unknown Faculty'}</span>
+                        </div>
+                      </motion.div>
                     ))
                   )}
                 </div>

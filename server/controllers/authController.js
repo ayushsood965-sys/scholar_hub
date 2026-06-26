@@ -108,7 +108,12 @@ const register = async (req, res) => {
 // GET /api/auth/faculty — list all faculty (for admin supervisor dropdown)
 const getFacultyList = async (req, res) => {
   try {
-    const faculty = await User.find({ role: { $in: ['FACULTY', 'HOD'] } }).select('name username role subRole department isActive isVerified');
+    const query = { role: { $in: ['FACULTY', 'HOD'] }, isActive: true };
+    // HOD and FACULTY should only see users from their own department
+    if (req.user.role === 'HOD' || req.user.role === 'FACULTY') {
+      query.department = req.user.department;
+    }
+    const faculty = await User.find(query).select('name username role subRole department isActive isVerified');
     res.json(faculty);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -28,6 +28,12 @@ const createSystemNotification = async (recipientId, title, message, type = 'INF
   }
 };
 
+const timeToMinutes = (timeStr) => {
+  if (!timeStr || typeof timeStr !== 'string') return 0;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return (hours || 0) * 60 + (minutes || 0);
+};
+
 // ==========================================
 // 1. MASTER CRUD (SUPER ADMIN)
 // ==========================================
@@ -254,6 +260,30 @@ exports.getFacultyTimetables = async (req, res) => {
 };
 exports.createTimetableSlot = async (req, res) => {
   try {
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime } = req.body;
+    
+    // Validate time overlap
+    const newStart = timeToMinutes(startTime);
+    const newEnd = timeToMinutes(endTime);
+    if (newStart >= newEnd) {
+      return res.status(400).json({ message: 'End time must be after start time.' });
+    }
+    
+    const overlapQuery = {
+      sessionId, degreeTypeId, degreeNameId, semesterId,
+      departmentId: req.user.departmentId, dayOfWeek, isActive: true
+    };
+    const existingSlots = await TimetableMaster.find(overlapQuery);
+    for (const slot of existingSlots) {
+      const exStart = timeToMinutes(slot.startTime);
+      const exEnd = timeToMinutes(slot.endTime);
+      if (newStart < exEnd && newEnd > exStart) {
+        return res.status(409).json({ 
+          message: `Time slot conflicts with existing entry: ${slot.startTime} - ${slot.endTime} (${slot.subjectName}). Please choose a different time.` 
+        });
+      }
+    }
+    
     const slot = await TimetableMaster.create({
       ...req.body,
       departmentId: req.user.departmentId
@@ -264,6 +294,42 @@ exports.createTimetableSlot = async (req, res) => {
 exports.deleteTimetableSlot = async (req, res) => {
   try {
     const slot = await TimetableMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    res.status(200).json(slot);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.updateTimetableSlot = async (req, res) => {
+  try {
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime } = req.body;
+    
+    // Validate time overlap (exclude current slot from check)
+    const newStart = timeToMinutes(startTime);
+    const newEnd = timeToMinutes(endTime);
+    if (newStart >= newEnd) {
+      return res.status(400).json({ message: 'End time must be after start time.' });
+    }
+    
+    const overlapQuery = {
+      sessionId, degreeTypeId, degreeNameId, semesterId,
+      departmentId: req.user.departmentId, dayOfWeek, isActive: true,
+      _id: { $ne: req.params.id }
+    };
+    const existingSlots = await TimetableMaster.find(overlapQuery);
+    for (const slot of existingSlots) {
+      const exStart = timeToMinutes(slot.startTime);
+      const exEnd = timeToMinutes(slot.endTime);
+      if (newStart < exEnd && newEnd > exStart) {
+        return res.status(409).json({ 
+          message: `Time slot conflicts with existing entry: ${slot.startTime} - ${slot.endTime} (${slot.subjectName}). Please choose a different time.` 
+        });
+      }
+    }
+    
+    const slot = await TimetableMaster.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, departmentId: req.user.departmentId },
+      { new: true, runValidators: true }
+    );
+    if (!slot) return res.status(404).json({ message: 'Slot not found' });
     res.status(200).json(slot);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -321,8 +387,9 @@ exports.getAttendanceMatrix = async (req, res) => {
     if (!isPhD) {
       classes = await TimetableMaster.find({
         sessionId, degreeTypeId, degreeNameId, semesterId,
+        facultyId: req.user._id,
         departmentId, dayOfWeek, isActive: true
-      });
+      }).populate('facultyId', 'name');
     }
 
     // Get existing records for this date to pre-fill matrix

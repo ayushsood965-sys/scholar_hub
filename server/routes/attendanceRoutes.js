@@ -67,6 +67,7 @@ router.delete('/leave-types/:id', protect, authorize('HOD', 'SUPER_ADMIN'), atte
 router.get('/timetables', protect, requireDepartment, attendanceController.getTimetables);
 router.get('/timetables/faculty', protect, authorize('FACULTY', 'HOD'), requireDepartment, attendanceController.getFacultyTimetables);
 router.post('/timetables', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.createTimetableSlot);
+router.put('/timetables/:id', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.updateTimetableSlot);
 router.delete('/timetables/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.deleteTimetableSlot);
 router.post('/timetables/clone', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.cloneTimetable);
 
