@@ -703,63 +703,419 @@ exports.actionLeave = async (req, res) => {
 // ==========================================
 // 7. CORRECTION WORKFLOWS
 // ==========================================
+
+// Get student's absences with correction eligibility info
+exports.getMyAbsences = async (req, res) => {
+  try {
+    const records = await AttendanceRecord.find({
+      studentId: req.user._id,
+      status: 'ABSENT'
+    })
+    .populate('classes.timetableSlotId')
+    .sort({ date: -1 });
+
+    // Get all existing corrections by this student
+    const corrections = await AttendanceCorrection.find({
+      studentId: req.user._id
+    });
+
+    // Build a map: date + timetableSlotId → correction info
+    // key = `${dateStr}_${slotId}`
+    const correctionMap = {};
+    corrections.forEach(c => {
+      const dateStr = c.createdAt ? 'override' : '';
+      (c.timetableSlotIds || []).forEach(slotId => {
+        // We need the date from the record, not correction
+      });
+    });
+
+    // Instead, let's build this from the corrections referencing recordIds
+    const recordCorrectionMap = {};
+    corrections.forEach(c => {
+      const rid = c.recordId?.toString() || '';
+      (c.timetableSlotIds || []).forEach(slotId => {
+        const key = `${rid}_${slotId.toString()}`;
+        if (!recordCorrectionMap[key]) {
+          recordCorrectionMap[key] = { attempts: 0, latestStatus: null };
+        }
+        recordCorrectionMap[key].attempts = Math.max(
+          recordCorrectionMap[key].attempts,
+          c.correctionAttempt || 1
+        );
+        // Track the latest status for this subject
+        if (c.status === 'APPROVED' || c.status === 'REJECTED' || 
+            c.status === 'PENDING_FACULTY' || c.status === 'PENDING_HOD') {
+          recordCorrectionMap[key].latestStatus = c.status;
+        }
+      });
+    });
+
+    // Group absent subjects by date
+    const dateMap = {};
+    records.forEach(record => {
+      const dateStr = new Date(record.date).toISOString().split('T')[0];
+      if (!dateMap[dateStr]) {
+        dateMap[dateStr] = {
+          date: record.date,
+          recordId: record._id,
+          absentSubjects: [],
+          hasAvailableSubjects: false
+        };
+      }
+
+      // Find classes where student was absent (selected: false or no class record with selected)
+      const absentClasses = (record.classes || []).filter(c => {
+        // Class is "selected" means it was marked (attendance was taken for it)
+        // Student is absent for this subject if selected is false
+        // Actually in the attendance system, classes array stores which subjects were selected
+        // If a subject's class has selected: true, it was part of the attendance marking
+        // Absent means the status was marked ABSENT for this subject
+        
+        // Simplifying: if the record status is ABSENT and this class entry exists
+        // with selected: true, then student was marked absent for this subject
+        return c.selected === true;
+      }).map(c => ({
+        timetableSlotId: c.timetableSlotId?._id || c.timetableSlotId,
+        subjectName: c.subjectName || c.timetableSlotId?.subjectName || 'Unknown',
+        subjectCode: c.timetableSlotId?.subjectCode || ''
+      }));
+
+      // Also include any subjects where the class entry has timetableSlotId populated
+      // but selection state was false (meaning it was an unmarked subject)
+      // Actually let me re-read: In AttendanceRecord, classes array stores:
+      // [{timetableSlotId, subjectName, selected}] where selected=true means faculty decided
+      // to take attendance for this subject
+      
+      // The logic: If a student was marked ABSENT for a record, but we need to know
+      // which SPECIFIC subjects they were absent for. The classes array tells us which
+      // subjects were taught and their selection state.
+
+      // Actually the simplest approach: if the record.status is 'ABSENT' and a class entry
+      // has selected:true, that means the student was marked for that subject with ABSENT status
+
+      dateMap[dateStr].absentSubjects.push(...absentClasses);
+    });
+
+    // Now filter each date: remove subjects that have been corrected (APPROVED)
+    // or have maxed out on attempts
+    Object.values(dateMap).forEach(dateEntry => {
+      const recordId = dateEntry.recordId.toString();
+      
+      dateEntry.absentSubjects = dateEntry.absentSubjects.filter(sub => {
+        const slotId = sub.timetableSlotId?.toString() || '';
+        const key = `${recordId}_${slotId}`;
+        const info = recordCorrectionMap[key];
+        
+        if (!info) {
+          // No correction ever made for this subject
+          sub.eligible = true;
+          sub.correctionAttempts = 0;
+          sub.latestStatus = null;
+          return true;
+        }
+        
+        sub.correctionAttempts = info.attempts;
+        sub.latestStatus = info.latestStatus;
+
+        // Don't show if APPROVED (already corrected)
+        if (info.latestStatus === 'APPROVED') {
+          sub.eligible = false;
+          return false; // Remove from available list
+        }
+        
+        // Show if PENDING or REJECTED (can be corrected again if under max)
+        if (info.attempts >= 2) {
+          // Max 2 attempts reached - still show but mark as locked
+          sub.eligible = false;
+          sub.locked = true;
+          return true; // Show but with lock icon
+        }
+        
+        // Still eligible
+        sub.eligible = true;
+        return true;
+      });
+
+      dateEntry.hasAvailableSubjects = dateEntry.absentSubjects.some(s => s.eligible);
+    });
+
+    // Only return dates that have at least one subject to show
+    const result = Object.values(dateMap).filter(d => d.absentSubjects.length > 0);
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Student applies for a correction
 exports.applyCorrection = async (req, res) => {
   try {
-    const { recordId, requestedStatus, reason, documentUrl } = req.body;
-    const record = await AttendanceRecord.findById(recordId);
-    if (!record || record.studentId.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Unauthorized' });
+    const { recordId, timetableSlotIds = [], correctionType, leaveType, reason, documentUrl } = req.body;
     
-    const correction = await AttendanceCorrection.create({
-      studentId: req.user._id, recordId, requestedStatus, reason, documentUrl,
-      status: 'PENDING_FACULTY', facultyId: record.facultyId,
-      auditLog: [{ action: 'SUBMITTED', actorId: req.user._id, actorName: req.user.name, remarks: 'Submitted' }]
+    if (!recordId) {
+      return res.status(400).json({ message: 'Record reference is required.' });
+    }
+    if (!timetableSlotIds || timetableSlotIds.length === 0) {
+      return res.status(400).json({ message: 'Please select at least one subject to correct.' });
+    }
+    if (!correctionType || !['PRESENT', 'ON_LEAVE'].includes(correctionType)) {
+      return res.status(400).json({ message: 'Please select a valid correction type (Present or On Leave).' });
+    }
+    if (correctionType === 'ON_LEAVE' && !leaveType) {
+      return res.status(400).json({ message: 'Please specify the leave type for your correction request.' });
+    }
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({ message: 'Please provide a reason (at least 10 characters).' });
+    }
+
+    const record = await AttendanceRecord.findById(recordId);
+    if (!record || record.studentId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized: You cannot request correction for this record.' });
+    }
+
+    // Check existing corrections for these subjects
+    const existingCorrections = await AttendanceCorrection.find({
+      studentId: req.user._id,
+      recordId,
+      timetableSlotIds: { $in: timetableSlotIds }
+    }).sort({ createdAt: -1 });
+
+    // Group existing corrections by timetableSlotId to check per-subject limits
+    const maxAttemptsReached = [];
+    const justRejectedSubjects = [];
+    
+    timetableSlotIds.forEach(slotId => {
+      const subjectCorrections = existingCorrections.filter(c => 
+        (c.timetableSlotIds || []).some(s => s.toString() === slotId)
+      );
+      
+      // Check if any correction is already APPROVED for this subject
+      const approvedCorrection = subjectCorrections.find(c => c.status === 'APPROVED');
+      if (approvedCorrection) {
+        maxAttemptsReached.push(slotId);
+        return;
+      }
+
+      // Count total attempts (approved + rejected)
+      const totalAttempts = subjectCorrections.length;
+      if (totalAttempts >= 2) {
+        maxAttemptsReached.push(slotId);
+        return;
+      }
+
+      // Check if the last correction for this subject was REJECTED
+      const lastCorrection = subjectCorrections[subjectCorrections.length - 1];
+      if (lastCorrection && lastCorrection.status === 'REJECTED') {
+        justRejectedSubjects.push({
+          slotId,
+          attemptsSoFar: totalAttempts,
+          isLastAttempt: totalAttempts + 1 >= 2
+        });
+      }
     });
-    record.correctionRequestId = correction._id;
-    await record.save();
-    res.status(201).json(correction);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+
+    // If any subject has reached max attempts, block the entire request
+    if (maxAttemptsReached.length > 0) {
+      return res.status(400).json({
+        message: 'One or more selected subjects have already reached the maximum correction attempts (2). These subjects cannot be corrected again.',
+        blockedSubjects: maxAttemptsReached
+      });
+    }
+
+    // Calculate the attempt number for this new correction
+    const maxAttempt = existingCorrections.reduce((max, c) => Math.max(max, c.correctionAttempt || 0), 0);
+    const thisAttempt = maxAttempt + 1;
+    const isLastChance = thisAttempt >= 2;
+
+    const correction = await AttendanceCorrection.create({
+      studentId: req.user._id,
+      recordId,
+      timetableSlotIds,
+      correctionType,
+      leaveType: correctionType === 'ON_LEAVE' ? leaveType : '',
+      reason,
+      documentUrl: documentUrl || '',
+      status: 'PENDING_FACULTY',
+      facultyId: record.facultyId,
+      correctionAttempt: thisAttempt,
+      auditLog: [{
+        action: 'SUBMITTED',
+        actorId: req.user._id,
+        actorName: req.user.name,
+        remarks: `Correction request submitted for ${timetableSlotIds.length} subject(s). Attempt #${thisAttempt}`
+      }]
+    });
+
+    // If this is the last chance, return a warning message
+    const responseMsg = isLastChance
+      ? 'Correction request submitted. This is your final attempt for these subjects. You will not be able to request correction again for the selected subjects and date after this.'
+      : 'Correction request submitted successfully. It will be reviewed by the faculty.';
+
+    res.status(201).json({
+      correction,
+      message: responseMsg,
+      isLastChance
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
+// Get student's own correction requests
 exports.getMyCorrections = async (req, res) => {
   try {
-    const corrections = await AttendanceCorrection.find({ studentId: req.user._id }).populate('recordId').populate('facultyId', 'name').sort({ createdAt: -1 });
+    const corrections = await AttendanceCorrection.find({ studentId: req.user._id })
+      .populate('recordId')
+      .populate('facultyId', 'name')
+      .sort({ createdAt: -1 });
     res.status(200).json(corrections);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
+// Get pending corrections for faculty/HOD
 exports.getPendingCorrections = async (req, res) => {
   try {
-    const query = req.user.role === 'FACULTY' ? { facultyId: req.user._id, status: 'PENDING_FACULTY' } : { status: 'PENDING_HOD' };
-    const corrections = await AttendanceCorrection.find(query).populate('studentId', 'name profile').populate('recordId');
+    let query;
+    if (req.user.role === 'FACULTY' || req.user.subRole === 'FACULTY') {
+      // Faculty sees corrections pending their review
+      query = { facultyId: req.user._id, status: 'PENDING_FACULTY' };
+    } else {
+      // HOD sees corrections forwarded by faculty
+      query = { status: 'PENDING_HOD' };
+    }
+    
+    const corrections = await AttendanceCorrection.find(query)
+      .populate('studentId', 'name username profile')
+      .populate('recordId')
+      .populate('facultyId', 'name')
+      .sort({ createdAt: -1 });
+    
     res.status(200).json(corrections);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
+// Faculty/HOD action on a correction
 exports.actionCorrection = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, remarks } = req.body;
     const actor = req.user;
+    const isHOD = actor.role === 'HOD' || actor.subRole === 'HOD';
+
     const correction = await AttendanceCorrection.findById(id).populate('recordId');
+    if (!correction) {
+      return res.status(404).json({ message: 'Correction request not found.' });
+    }
 
     if (action === 'RECOMMEND') {
+      // Faculty recommends sending to HOD
+      if (isHOD) {
+        return res.status(400).json({ message: 'HOD cannot recommend. Use Approve or Reject.' });
+      }
+      if (correction.status !== 'PENDING_FACULTY') {
+        return res.status(400).json({ message: 'This correction has already been processed.' });
+      }
+      if (!remarks || remarks.trim().length < 5) {
+        return res.status(400).json({ message: 'Please provide remarks (at least 5 characters) before recommending to HOD.' });
+      }
       correction.status = 'PENDING_HOD';
-      correction.auditLog.push({ action: 'RECOMMENDED', actorId: actor._id, actorName: actor.name, remarks });
+      correction.facultyRemarks = remarks;
+      correction.auditLog.push({
+        action: 'RECOMMENDED',
+        actorId: actor._id,
+        actorName: actor.name,
+        remarks
+      });
     } else if (action === 'APPROVE') {
-      correction.status = 'APPROVED';
-      correction.auditLog.push({ action: 'APPROVED', actorId: actor._id, actorName: actor.name, remarks });
+      // Only HOD can finally approve
+      if (!isHOD) {
+        return res.status(400).json({ message: 'Faculty cannot approve corrections directly. Use Recommend to send to HOD.' });
+      }
+      if (correction.status !== 'PENDING_HOD') {
+        return res.status(400).json({ message: 'This correction is not pending HOD approval.' });
+      }
+      if (!remarks || remarks.trim().length < 5) {
+        return res.status(400).json({ message: 'Please provide remarks (at least 5 characters) for approval.' });
+      }
+
+      // Update the attendance record's classes for the corrected subjects
       const record = await AttendanceRecord.findById(correction.recordId);
-      record.status = correction.requestedStatus;
-      record.isLocked = true;
-      record.lockReason = 'Correction Approved';
-      await record.save();
+      if (record) {
+        const correctedSlotIds = (correction.timetableSlotIds || []).map(id => id.toString());
+        
+        // Update the specific subjects in the classes array
+        record.classes = record.classes.map(cls => {
+          const slotId = cls.timetableSlotId?.toString() || '';
+          if (correctedSlotIds.includes(slotId)) {
+            return {
+              ...cls.toObject(),
+              selected: correction.correctionType === 'PRESENT' ? true : false,
+              correctionStatus: correction.correctionType === 'PRESENT' ? 'PRESENT' : 'ON_LEAVE',
+              correctionApproved: true,
+              leaveType: correction.correctionType === 'ON_LEAVE' ? correction.leaveType : ''
+            };
+          }
+          return cls;
+        });
+
+        // If ALL subjects in the record are now corrected, update the overall status
+        const allClassesCorrected = record.classes.every(cls => cls.correctionApproved);
+        if (allClassesCorrected) {
+          record.status = correction.correctionType;
+          if (correction.correctionType === 'ON_LEAVE') {
+            record.leaveType = correction.leaveType;
+          }
+        }
+        
+        record.isLocked = true;
+        record.lockReason = 'Correction Approved';
+        record.correctionRequestId = correction._id;
+        await record.save();
+      }
+
+      correction.hodRemarks = remarks;
+      correction.status = 'APPROVED';
+      correction.auditLog.push({
+        action: 'APPROVED',
+        actorId: actor._id,
+        actorName: actor.name,
+        remarks
+      });
     } else if (action === 'REJECT') {
-      correction.status = 'REJECTED';
-      correction.auditLog.push({ action: 'REJECTED', actorId: actor._id, actorName: actor.name, remarks });
+      if (!remarks || remarks.trim().length < 5) {
+        return res.status(400).json({ message: 'Please provide remarks (at least 5 characters) explaining the rejection.' });
+      }
+      
+      if (correction.status === 'PENDING_FACULTY' || correction.status === 'PENDING_HOD') {
+        correction.status = 'REJECTED';
+        if (isHOD) {
+          correction.hodRemarks = remarks;
+        } else {
+          correction.facultyRemarks = remarks;
+        }
+        correction.auditLog.push({
+          action: 'REJECTED',
+          actorId: actor._id,
+          actorName: actor.name,
+          remarks
+        });
+      } else {
+        return res.status(400).json({ message: 'This correction cannot be rejected in its current state.' });
+      }
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use RECOMMEND, APPROVE, or REJECT.' });
     }
+
     await correction.save();
     res.status(200).json(correction);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // ==========================================

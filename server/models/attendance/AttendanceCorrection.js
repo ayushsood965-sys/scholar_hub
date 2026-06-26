@@ -12,9 +12,21 @@ const attendanceCorrectionSchema = new mongoose.Schema(
       ref: 'AttendanceRecord',
       required: true
     },
-    requestedStatus: {
+    // Which specific subjects (timetable slots) this correction is for
+    timetableSlotIds: [{
+      type: mongoose.Schema.Types.ObjectId,
+      default: []
+    }],
+    // The status the student is requesting: PRESENT or ON_LEAVE
+    correctionType: {
       type: String,
-      required: true
+      enum: ['PRESENT', 'ON_LEAVE'],
+      default: 'PRESENT'
+    },
+    // If correctionType is ON_LEAVE, which leave type
+    leaveType: {
+      type: String,
+      default: ''
     },
     reason: {
       type: String,
@@ -29,6 +41,7 @@ const attendanceCorrectionSchema = new mongoose.Schema(
       enum: ['PENDING_FACULTY', 'PENDING_HOD', 'APPROVED', 'REJECTED'],
       default: 'PENDING_FACULTY'
     },
+    // The faculty who marked the original attendance
     facultyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -41,6 +54,11 @@ const attendanceCorrectionSchema = new mongoose.Schema(
     hodRemarks: {
       type: String,
       default: ''
+    },
+    // Track correction attempts per subject per date
+    correctionAttempt: {
+      type: Number,
+      default: 1
     },
     auditLog: [
       {
