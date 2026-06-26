@@ -436,6 +436,15 @@ const verifyUser = async (req, res) => {
     targetUser.isVerified = true;
     await targetUser.save();
 
+    // Notify the student that their account has been verified
+    await createNotification({
+      recipient: targetUser._id,
+      title: '✅ Account Verified',
+      message: 'Your account has been verified by the HOD. You can now access all features of the ScholarTrack portal.',
+      type: 'ACCOUNT_VERIFIED',
+      link: 'profile'
+    });
+
     res.json({ message: `User account has been verified.`, user: targetUser });
   } catch (error) {
     res.status(500).json({ message: error.message });

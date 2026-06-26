@@ -256,6 +256,20 @@ exports.saveMapping = async (req, res) => {
 
     await StudentSemesterMapping.bulkWrite(operations);
 
+    // Notify mapped students
+    const { createNotification } = require('./notificationController');
+    const subjectNames = selectedSubjectData.map(s => s.subjectName).join(', ');
+    for (const studentId of eligibleStudentIds) {
+      await createNotification({
+        recipient: studentId,
+        title: '📚 Subject Mapping Update',
+        message: `You have been mapped to the following subject(s): ${subjectNames}.`,
+        type: 'MAPPING_UPDATE',
+        link: 'profile',
+        source: 'SCHOLAR_TRACK'
+      });
+    }
+
     const skippedCount = studentIds.length - eligibleStudentIds.length;
     let message = `Successfully mapped ${eligibleStudentIds.length} student(s) to ${selectedSubjectData.length} subject(s).`;
     if (skippedCount > 0) {

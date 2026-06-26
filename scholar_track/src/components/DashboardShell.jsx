@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,6 +30,7 @@ import {
 import { AuthContext } from "../context/AuthContext";
 import { NotificationContext } from "../context/NotificationContext";
 import ThemeToggle from "./ThemeToggle";
+import NotificationDropdown from "./NotificationDropdown";
 
 const roleNavConfig = {
   STUDENT: [
@@ -102,6 +103,8 @@ const DashboardShell = ({
   const { unreadCount } = useContext(NotificationContext);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const bellRef = useRef(null);
 
   React.useEffect(() => {
     if (isLocked && activeTab !== "profile") {
@@ -242,15 +245,21 @@ const DashboardShell = ({
           <div className="header-right">
             <ThemeToggle />
 
-            <button
-              className="header-icon-btn"
-              style={{ position: "relative" }}
-            >
-              <Bell size={18} />
-              {(unreadCount ?? 0) > 0 && (
-                <span className="notification-badge" />
+            <div style={{ position: "relative" }} ref={bellRef}>
+              <button
+                className="header-icon-btn"
+                style={{ position: "relative" }}
+                onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+              >
+                <Bell size={18} />
+                {(unreadCount ?? 0) > 0 && (
+                  <span className="notification-badge" />
+                )}
+              </button>
+              {notificationDropdownOpen && (
+                <NotificationDropdown onClose={() => setNotificationDropdownOpen(false)} />
               )}
-            </button>
+            </div>
 
             <div className="header-avatar">
               {user?.name?.[0]?.toUpperCase() ?? "U"}

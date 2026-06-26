@@ -20,6 +20,7 @@ const DegreeDepartmentMapping = require('../models/attendance/DegreeDepartmentMa
 const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 
 const { calculateStudentStats } = require('../utils/attendanceCalculator');
+const { createNotification } = require('./notificationController');
 
 const createSystemNotification = async (recipientId, title, message, type = 'INFO', link = '') => {
   try {
@@ -620,6 +621,19 @@ exports.applyLeave = async (req, res) => {
       currentAssigneeId: supervisorId,
       auditLog: [{ action: 'SUBMITTED', actorId: student._id, actorName: student.name, remarks: 'Applied' }]
     });
+
+    // Notify the supervisor (faculty/HOD) of the new leave application
+    if (supervisorId) {
+      await createNotification({
+        recipient: supervisorId,
+        title: '📋 New Leave Application',
+        message: `${student.name} has applied for ${leaveType} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${totalDays} day(s)).`,
+        type: 'LEAVE_APPLIED',
+        link: 'leaves',
+        source: 'SCHOLAR_TRACK'
+      });
+    }
+
     res.status(201).json(leave);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -817,6 +831,29 @@ exports.actionLeave = async (req, res) => {
         actorName: actor.name,
         remarks
       });
+
+      // Notify HOD that leave has been forwarded
+      if (hod) {
+        await createNotification({
+          recipient: hod._id,
+          title: '📋 Leave Forwarded by Faculty',
+          message: `Prof. ${actor.name} has recommended ${leave.studentId?.name || 'a student'}'s ${leave.leaveType} leave for HOD approval.`,
+          type: 'LEAVE_APPLIED',
+          link: 'approvals',
+          source: 'SCHOLAR_TRACK'
+        });
+      }
+
+      // Notify student that leave is forwarded to HOD
+      await createNotification({
+        recipient: leave.studentId._id,
+        title: '📋 Leave Forwarded',
+        message: `Your ${leave.leaveType} leave application has been forwarded to the HOD for final approval.`,
+        type: 'LEAVE_STATUS',
+        link: 'leave',
+        source: 'SCHOLAR_TRACK'
+      });
+
     } else if (action === 'APPROVE') {
       if (!isHOD) {
         return res.status(400).json({ message: 'Only HOD can approve leaves. Use Recommend to forward.' });
@@ -831,6 +868,16 @@ exports.actionLeave = async (req, res) => {
         actorId: actor._id,
         actorName: actor.name,
         remarks
+      });
+
+      // Notify student that leave is approved
+      await createNotification({
+        recipient: leave.studentId._id,
+        title: '✅ Leave Approved',
+        message: `Your ${leave.leaveType} leave from ${new Date(leave.startDate).toLocaleDateString()} to ${new Date(leave.endDate).toLocaleDateString()} has been approved.`,
+        type: 'LEAVE_STATUS',
+        link: 'leave',
+        source: 'SCHOLAR_TRACK'
       });
 
       // Create/upsert attendance records for approved leave period
@@ -883,6 +930,16 @@ exports.actionLeave = async (req, res) => {
         actorId: actor._id,
         actorName: actor.name,
         remarks
+      });
+
+      // Notify student that leave is rejected
+      await createNotification({
+        recipient: leave.studentId._id,
+        title: '❌ Leave Rejected',
+        message: `Your ${leave.leaveType} leave application has been rejected. Remarks: ${remarks}`,
+        type: 'LEAVE_STATUS',
+        link: 'leave',
+        source: 'SCHOLAR_TRACK'
       });
 
       // Retroactively mark attendance records as ABSENT for the rejected leave period
@@ -1168,6 +1225,18 @@ exports.applyCorrection = async (req, res) => {
       }]
     });
 
+    // Notify the faculty of the new correction request
+    if (record?.facultyId) {
+      await createNotification({
+        recipient: record.facultyId,
+        title: '📋 New Attendance Correction Request',
+        message: `${req.user.name} has requested correction for ${timetableSlotIds.length} subject(s) on ${new Date(record.date).toLocaleDateString()}. Attempt #${thisAttempt}.`,
+        type: 'CORRECTION_APPLIED',
+        link: 'corrections',
+        source: 'SCHOLAR_TRACK'
+      });
+    }
+
     // If this is the last chance, return a warning message
     const responseMsg = isLastChance
       ? 'Correction request submitted. This is your final attempt for these subjects. You will not be able to request correction again for the selected subjects and date after this.'
@@ -1252,6 +1321,34 @@ exports.actionCorrection = async (req, res) => {
         actorName: actor.name,
         remarks
       });
+
+      // Notify HOD that correction has been forwarded
+      const hod = await User.findOne({
+        $or: [{ role: 'HOD' }, { role: 'FACULTY', subRole: 'HOD' }],
+        department: correction.studentId?.department || req.user.department,
+        isActive: true
+      });
+      if (hod) {
+        await createNotification({
+          recipient: hod._id,
+          title: '📋 Correction Forwarded by Faculty',
+          message: `Prof. ${actor.name} has recommended ${correction.studentId?.name || 'a student'}'s attendance correction for HOD approval.`,
+          type: 'CORRECTION_APPLIED',
+          link: 'approvals',
+          source: 'SCHOLAR_TRACK'
+        });
+      }
+
+      // Notify student that correction is forwarded to HOD
+      await createNotification({
+        recipient: correction.studentId,
+        title: '📋 Correction Forwarded',
+        message: `Your attendance correction request has been forwarded to the HOD for final approval.`,
+        type: 'CORRECTION_STATUS',
+        link: 'corrections',
+        source: 'SCHOLAR_TRACK'
+      });
+
     } else if (action === 'APPROVE') {
       // Only HOD can finally approve
       if (!isHOD) {
@@ -1307,6 +1404,17 @@ exports.actionCorrection = async (req, res) => {
         actorName: actor.name,
         remarks
       });
+
+      // Notify student that correction is approved
+      await createNotification({
+        recipient: correction.studentId,
+        title: '✅ Correction Approved',
+        message: `Your attendance correction request for ${correction.correctionType} has been approved.`,
+        type: 'CORRECTION_STATUS',
+        link: 'corrections',
+        source: 'SCHOLAR_TRACK'
+      });
+
     } else if (action === 'REJECT') {
       if (!remarks || remarks.trim().length < 5) {
         return res.status(400).json({ message: 'Please provide remarks (at least 5 characters) explaining the rejection.' });
@@ -1328,6 +1436,16 @@ exports.actionCorrection = async (req, res) => {
       } else {
         return res.status(400).json({ message: 'This correction cannot be rejected in its current state.' });
       }
+
+      // Notify student that correction is rejected
+      await createNotification({
+        recipient: correction.studentId,
+        title: '❌ Correction Rejected',
+        message: `Your attendance correction request has been rejected. Remarks: ${remarks}`,
+        type: 'CORRECTION_STATUS',
+        link: 'corrections',
+        source: 'SCHOLAR_TRACK'
+      });
     } else {
       return res.status(400).json({ message: 'Invalid action. Use RECOMMEND, APPROVE, or REJECT.' });
     }

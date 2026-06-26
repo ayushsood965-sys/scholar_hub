@@ -21,7 +21,7 @@ export const NotificationProvider = ({ children }) => {
     }
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/notifications`, header);
+      const res = await axios.get(`${API}/notifications?source=SCHOLAR_TRACK`, header);
       setNotifications(res.data);
     } catch (err) {
       console.error('Failed to fetch notifications from database:', err);
@@ -85,7 +85,7 @@ export const NotificationProvider = ({ children }) => {
     const interval = setInterval(() => {
       const header = getAuthHeader();
       if (header) {
-        axios.get(`${API}/notifications`, header)
+        axios.get(`${API}/notifications?source=SCHOLAR_TRACK`, header)
           .then(res => setNotifications(res.data))
           .catch(err => console.error('Error in background notification polling:', err));
       }

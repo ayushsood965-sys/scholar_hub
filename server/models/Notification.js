@@ -26,7 +26,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['WELCOME', 'PROFILE_INCOMPLETE', 'PENDING_ACTION', 'SUCCESSFUL_ACTION', 'INFO'],
+      enum: ['WELCOME', 'PROFILE_INCOMPLETE', 'PENDING_ACTION', 'SUCCESSFUL_ACTION', 'INFO', 'LEAVE_APPLIED', 'LEAVE_STATUS', 'CORRECTION_APPLIED', 'CORRECTION_STATUS', 'ACCOUNT_VERIFIED', 'MAPPING_UPDATE'],
       default: 'INFO'
     },
     isRead: {
@@ -42,6 +42,11 @@ const notificationSchema = new mongoose.Schema(
     link: {
       type: String,
       default: '' // optional dashboard navigation tab link
+    },
+    source: {
+      type: String,
+      enum: ['SCHOLAR_SYNC', 'SCHOLAR_TRACK'],
+      default: 'SCHOLAR_SYNC'
     }
   },
   {

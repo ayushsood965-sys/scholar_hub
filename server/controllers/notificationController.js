@@ -54,7 +54,7 @@ exports.getNotifications = async (req, res) => {
     }
 
     // Fetch personal notifications OR role-scoped notifications (optional dept-specific)
-    const notifications = await Notification.find({
+    const baseFilter = {
       $or: [
         { recipient: userId },
         {
@@ -62,7 +62,27 @@ exports.getNotifications = async (req, res) => {
           $or: [{ department: null }, { department: userDept }]
         }
       ]
-    }).sort({ createdAt: -1 });
+    };
+
+    // Filter by source if provided (e.g., SCHOLAR_TRACK portals only show their own notifications)
+    // Source filter applies to ALL notifications — both personal and role-scoped
+    let filter;
+    if (req.query.source) {
+      filter = {
+        $or: [
+          { recipient: userId, source: req.query.source },
+          {
+            roleScope: userRole,
+            $or: [{ department: null }, { department: userDept }],
+            source: req.query.source
+          }
+        ]
+      };
+    } else {
+      filter = baseFilter;
+    }
+
+    const notifications = await Notification.find(filter).sort({ createdAt: -1 });
 
     // Format output: add 'read' virtual boolean for client convenience
     const formatted = notifications.map(n => {
@@ -161,7 +181,7 @@ exports.markAllAsRead = async (req, res) => {
 };
 
 // @desc    Internal helper to create notifications on system actions
-exports.createNotification = async ({ recipient, roleScope, department, title, message, type, link }) => {
+exports.createNotification = async ({ recipient, roleScope, department, title, message, type, link, source }) => {
   try {
     // Avoid duplicate welcome notifications for the same recipient
     if (type === 'WELCOME' && recipient) {
@@ -184,7 +204,8 @@ exports.createNotification = async ({ recipient, roleScope, department, title, m
       title,
       message,
       type: type || 'INFO',
-      link: link || ''
+      link: link || '',
+      source: source || 'SCHOLAR_SYNC'
     });
 
     return newNotification;
