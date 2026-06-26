@@ -26,6 +26,7 @@ router.delete('/masters/degree-types/:id', protect, authorize('SUPER_ADMIN'), at
 
 router.get('/masters/degree-names', protect, attendanceController.getDegreeNames);
 router.post('/masters/degree-names', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeName);
+router.put('/masters/degree-names/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateDegreeName);
 router.delete('/masters/degree-names/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeName);
 
 router.get('/masters/semesters', protect, attendanceController.getSemesters);
@@ -39,6 +40,13 @@ router.delete('/masters/degree-dept-mappings/:id', protect, authorize('SUPER_ADM
 router.get('/masters/semester-degree-mappings', protect, attendanceController.getSemesterDegreeMappings);
 router.post('/masters/semester-degree-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createSemesterDegreeMapping);
 router.delete('/masters/semester-degree-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSemesterDegreeMapping);
+
+// ==========================================
+// 0. PUBLIC ROUTES (for signup page - no auth required)
+// ==========================================
+router.get('/public/sessions', attendanceController.getSessions);
+router.get('/public/masters/degree-types', attendanceController.getDegreeTypes);
+router.get('/public/masters/degree-names', attendanceController.getDegreeNames);
 
 // ==========================================
 // 2. SESSION ROUTES

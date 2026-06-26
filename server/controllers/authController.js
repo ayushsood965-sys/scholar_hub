@@ -47,11 +47,11 @@ const login = async (req, res) => {
 
 // POST /api/auth/register
 const register = async (req, res) => {
-  const { name, username, password, role, department, phoneNumber } = req.body;
+  const { name, username, password, role, department, phoneNumber, academicSession, degreeType, degreeName } = req.body;
   try {
     if (await User.findOne({ username })) {
       return res.status(400).json({ 
-        message: 'You are already registered on the ScholarSync or ScholarTrack portal. Please use your existing credentials to log in.' 
+        message: 'You are already registered on the ScholarSync or ScholarTrack portal. Please use your existing credentials to log in.'
       });
     }
 
@@ -73,14 +73,24 @@ const register = async (req, res) => {
       const activeHod = await User.findOne({ role: 'HOD', department, isActive: true });
       if (activeHod) {
         return res.status(400).json({ 
-          message: 'HOD already exists for this department. Please disable the existing HOD\'s ID before creating a new one.' 
+          message: 'HOD already exists for this department. Please disable the existing HOD\'s ID before creating a new one.'
         });
       }
     }
 
+    const profileData = { phoneNumber: formattedPhone };
+    if (role === 'STUDENT') {
+      if (academicSession) profileData.academicSession = academicSession;
+      if (degreeType) profileData.degreeType = degreeType;
+      if (degreeName) profileData.degreeName = degreeName;
+    }
+
+    // For students, name may not be provided — derive from email prefix
+    const finalName = name || (username ? username.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '');
+
     const user = await User.create({ 
-      name, username, password, role: role || 'STUDENT', department,
-      profile: { phoneNumber: formattedPhone }
+      name: finalName, username, password, role: role || 'STUDENT', department,
+      profile: profileData
     });
 
     const { getWelcomeNotificationData } = require('./notificationController');

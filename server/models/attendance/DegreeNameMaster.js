@@ -17,6 +17,10 @@ const DegreeNameMasterSchema = new mongoose.Schema({
     uppercase: true,
     trim: true
   },
+  departmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department'
+  },
   isActive: {
     type: Boolean,
     default: true

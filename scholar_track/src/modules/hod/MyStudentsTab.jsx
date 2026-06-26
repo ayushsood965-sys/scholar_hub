@@ -17,6 +17,7 @@ const MyStudentsTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [degreeTypeFilter, setDegreeTypeFilter] = useState('');
   const [verificationFilter, setVerificationFilter] = useState(''); // 'verified' | 'pending' | ''
+  const [degreeTypes, setDegreeTypes] = useState([]);
 
   // Modal states
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -37,6 +38,10 @@ const MyStudentsTab = () => {
   useEffect(() => {
     if (user) {
       fetchStudents();
+      // Fetch degree types from masters
+      api.get('/attendance/masters/degree-types')
+        .then(res => setDegreeTypes(res.data))
+        .catch(() => toast.error('Failed to load degree types'));
     }
   }, [user]);
 
@@ -123,11 +128,9 @@ const MyStudentsTab = () => {
             onChange={e => setDegreeTypeFilter(e.target.value)}
           >
             <option value="">All Degree Types</option>
-            <option value="PHD">Ph.D. Research</option>
-            <option value="MTECH">M.Tech (Post Graduation)</option>
-            <option value="BTECH">B.Tech (Graduation)</option>
-            <option value="MCA">MCA (Post Graduation)</option>
-            <option value="MSC">M.Sc (Post Graduation)</option>
+            {degreeTypes.map(dt => (
+              <option key={dt._id} value={dt.code}>{dt.name} ({dt.code})</option>
+            ))}
           </select>
         </div>
 

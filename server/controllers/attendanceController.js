@@ -70,14 +70,39 @@ exports.getDegreeNames = async (req, res) => {
   try {
     const query = { isActive: true };
     if (req.query.degreeTypeId) query.degreeTypeId = req.query.degreeTypeId;
-    const data = await DegreeNameMaster.find(query).populate('degreeTypeId');
+    const data = await DegreeNameMaster.find(query).populate('degreeTypeId').populate('departmentId');
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 exports.createDegreeName = async (req, res) => {
   try {
+    const { name, code, degreeTypeId, departmentId } = req.body;
+    // Duplicate validation: check for existing active degree name with same name+code+degreeTypeId+departmentId
+    const duplicateQuery = { isActive: true, name: name.trim(), code: code.trim().toUpperCase() };
+    if (degreeTypeId) duplicateQuery.degreeTypeId = degreeTypeId;
+    if (departmentId) duplicateQuery.departmentId = departmentId;
+    const existing = await DegreeNameMaster.findOne(duplicateQuery);
+    if (existing) {
+      return res.status(409).json({ message: 'A degree name with this name, code, degree type, and department combination already exists.' });
+    }
     const data = await DegreeNameMaster.create(req.body);
     res.status(201).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.updateDegreeName = async (req, res) => {
+  try {
+    const { name, code, degreeTypeId, departmentId } = req.body;
+    // Duplicate validation: exclude current record
+    const duplicateQuery = { isActive: true, _id: { $ne: req.params.id }, name: name.trim(), code: code.trim().toUpperCase() };
+    if (degreeTypeId) duplicateQuery.degreeTypeId = degreeTypeId;
+    if (departmentId) duplicateQuery.departmentId = departmentId;
+    const existing = await DegreeNameMaster.findOne(duplicateQuery);
+    if (existing) {
+      return res.status(409).json({ message: 'A degree name with this name, code, degree type, and department combination already exists.' });
+    }
+    const data = await DegreeNameMaster.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!data) return res.status(404).json({ message: 'Degree name not found' });
+    res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 exports.deleteDegreeName = async (req, res) => {
