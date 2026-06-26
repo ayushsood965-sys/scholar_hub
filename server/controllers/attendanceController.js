@@ -730,10 +730,175 @@ exports.getStudentDashboardStats = async (req, res) => {
 exports.getFacultyDashboardStats = async (req, res) => {
   try {
     const session = await AcademicSessionMaster.findOne({ isCurrent: true });
-    const courses = await TimetableMaster.find({ facultyId: req.user._id, isActive: true });
-    const scholarsCount = await User.countDocuments({ department: req.user.department, role: 'STUDENT' });
-    const recentLogs = await AttendanceRecord.find({ facultyId: req.user._id }).populate('studentId', 'name').sort({ date: -1 }).limit(20);
-    res.status(200).json({ sessionName: session?.sessionName || 'No Active Session', coursesScheduled: courses.length, managedScholars: scholarsCount, recentLogs, courses });
+    const facultyId = req.user._id;
+    const deptId = req.user.department;
+
+    // 1. All timetable courses for this faculty
+    const courses = await TimetableMaster.find({ facultyId, isActive: true })
+      .populate('degreeNameId', 'name')
+      .populate('semesterId', 'name');
+
+    // 2. Next week's classes — compute dates for next 7 days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const nextWeekClasses = [];
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dayName = dayNames[d.getDay()];
+      const dateStr = d.toISOString().split('T')[0];
+      const dayCourses = courses.filter(c => c.dayOfWeek === dayName);
+      for (const c of dayCourses) {
+        nextWeekClasses.push({
+          _id: c._id,
+          date: dateStr,
+          dayOfWeek: dayName,
+          subjectName: c.subjectName,
+          subjectCode: c.subjectCode,
+          startTime: c.startTime,
+          endTime: c.endTime,
+          degreeNameId: c.degreeNameId,
+          semesterId: c.semesterId,
+        });
+      }
+    }
+    // Sort by date then start time
+    nextWeekClasses.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.startTime.localeCompare(b.startTime);
+    });
+
+    // 3. Pending leaves count (assigned to this faculty)
+    const pendingLeavesCount = await LeaveRequest.countDocuments({ currentAssigneeId: facultyId, status: { $in: ['PENDING_FACULTY', 'PENDING'] } });
+
+    // 4. Pending corrections count (assigned to this faculty)
+    const pendingCorrectionsCount = await AttendanceCorrection.countDocuments({ facultyId, status: 'PENDING_FACULTY' });
+
+    // 5. Low-attendance students — NOT computed here (lazy-loaded on "View List" click)
+    // This avoids N+1 queries on every dashboard load
+    const lowAttendanceCount = 0;
+
+    // 6. Today's classes
+    const todayDayName = dayNames[today.getDay()];
+    const todayStr = today.toISOString().split('T')[0];
+    const todayClasses = courses
+      .filter(c => c.dayOfWeek === todayDayName)
+      .map(c => ({
+        _id: c._id,
+        subjectName: c.subjectName,
+        subjectCode: c.subjectCode,
+        startTime: c.startTime,
+        endTime: c.endTime,
+        degreeNameId: c.degreeNameId,
+        semesterId: c.semesterId,
+      }));
+
+    // Get today's marked attendance for this faculty
+    const markedToday = await AttendanceRecord.find({
+      facultyId,
+      date: todayStr,
+    }).select('timetableSlotId');
+
+    const scholarsCount = await User.countDocuments({ department: deptId, role: 'STUDENT', isActive: true });
+
+    res.status(200).json({
+      sessionName: session?.sessionName || 'No Active Session',
+      coursesScheduled: courses.length,
+      managedScholars: scholarsCount,
+      todayClasses,
+      markedToday: markedToday.map(m => ({ timetableSlotId: m.timetableSlotId })),
+      nextWeekClasses,
+      pendingLeavesCount,
+      pendingCorrectionsCount,
+      lowAttendanceCount,
+    });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+// Lazy-load endpoint: detailed list of low-attendance students for this faculty's department
+exports.getFacultyLowAttendanceStudents = async (req, res) => {
+  try {
+    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
+    const deptId = req.user.department;
+
+    if (!session) {
+      return res.status(200).json([]);
+    }
+
+    // Fetch all department students
+    const students = await User.find({ department: deptId, role: 'STUDENT', isActive: true })
+      .select('name profile email username department');
+
+    if (students.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const studentIds = students.map(s => s._id);
+
+    // Batch fetch: all attendance records for all students in this session
+    const allRecords = await AttendanceRecord.find({
+      studentId: { $in: studentIds },
+      date: { $gte: session.startDate, $lte: session.endDate }
+    }).select('studentId date status classes isLeaveOverride timetableSlotId');
+
+    // Group records by studentId
+    const recordsByStudent = {};
+    for (const rec of allRecords) {
+      const sid = rec.studentId.toString();
+      if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+      recordsByStudent[sid].push(rec);
+    }
+
+    // Batch fetch: all degree types
+    const degreeTypeIds = [...new Set(students.map(s => s.profile?.degreeTypeId).filter(Boolean))];
+    const degreeTypes = degreeTypeIds.length > 0
+      ? await DegreeTypeMaster.find({ _id: { $in: degreeTypeIds } }).select('code')
+      : [];
+    const degreeTypeMap = {};
+    for (const dt of degreeTypes) degreeTypeMap[dt._id.toString()] = dt.code;
+
+    // Batch fetch: all active timetables
+    const allTimetables = await TimetableMaster.find({ isActive: true })
+      .select('sessionId semesterId dayOfWeek');
+
+    // Batch fetch: holidays
+    const holidays = await HolidayCalendar.find({ isActive: true });
+
+    const studentSemesterMap = {};
+    for (const s of students) {
+      studentSemesterMap[s._id.toString()] = s.profile?.semesterId?.toString() || null;
+    }
+
+    const studentStatsList = [];
+
+    for (const student of students) {
+      const sid = student._id.toString();
+      const records = recordsByStudent[sid] || [];
+      const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
+      const isPhD = degreeCode === 'PHD';
+
+      // Get timetables for this student's semester
+      const timetables = !isPhD ? allTimetables.filter(t =>
+        t.sessionId?.toString() === session._id.toString() &&
+        (!t.semesterId || t.semesterId.toString() === studentSemesterMap[sid])
+      ) : [];
+
+      const stats = await calculateStudentStats(student, session, records, holidays, timetables);
+
+      if (stats.isDefaulter) {
+        studentStatsList.push({
+          studentId: student._id,
+          name: student.name,
+          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
+          email: student.profile?.email || student.username,
+          percentage: stats.percentage,
+          minRequiredPercentage: stats.minRequiredPercentage,
+        });
+      }
+    }
+
+    res.status(200).json(studentStatsList);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
