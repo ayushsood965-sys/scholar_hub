@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import DashboardShell from '../components/DashboardShell';
 import OverviewTab from '../modules/faculty/OverviewTab';
 import MarkAttendanceTab from '../modules/faculty/MarkAttendanceTab';
+import AttendanceRecordsTab from '../modules/faculty/AttendanceRecordsTab';
 import LeaveApprovalsTab from '../modules/faculty/LeaveApprovalsTab';
 import CorrectionsTab from '../modules/faculty/CorrectionsTab';
 import StaffProfileTab from '../modules/profile/StaffProfileTab';
@@ -19,6 +20,7 @@ const FacultyDashboard = () => {
   const titles = {
     overview: 'Faculty Overview',
     mark: 'Mark Attendance',
+    records: 'Attendance Records',
     leaves: 'Leave Approvals',
     corrections: 'Corrections Queue',
     profile: 'Profile',
@@ -30,6 +32,7 @@ const FacultyDashboard = () => {
     <DashboardShell role="FACULTY" activeTab={activeTab} onTabChange={setActiveTab} headerTitle={titles[activeTab]} isLocked={isLocked}>
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'mark' && <MarkAttendanceTab />}
+      {activeTab === 'records' && <AttendanceRecordsTab />}
       {activeTab === 'leaves' && <LeaveApprovalsTab />}
       {activeTab === 'corrections' && <CorrectionsTab />}
       {activeTab === 'profile' && <StaffProfileTab />}

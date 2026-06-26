@@ -42,6 +42,7 @@ const roleNavConfig = {
   FACULTY: [
     { key: "overview", icon: Home, label: "Overview" },
     { key: "mark", icon: ClipboardCheck, label: "Mark Attendance" },
+    { key: "records", icon: Clock, label: "Attendance Records" },
     { key: "leaves", icon: CalendarRange, label: "Leave Approvals" },
     { key: "corrections", icon: FileCheck, label: "Corrections Queue" },
     { key: "profile", icon: User, label: "Profile" },
