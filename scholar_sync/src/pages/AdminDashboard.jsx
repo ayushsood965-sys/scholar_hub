@@ -8,6 +8,7 @@ import { ThesisContext } from '../context/ThesisContext';
 import { useToast } from '../context/ToastContext';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
+import { useTabPersistence } from '../hooks/useTabPersistence';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
 import ThemeToggle from '../components/ThemeToggle';
@@ -4714,7 +4715,7 @@ const MeetingsTab = ({ user }) => {
 // ── Main ──
 const AdminDashboard = () => {
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useTabPersistence('sync_admin_tab', 'overview');
   const [selectedThesisId, setSelectedThesisId] = useState(null);
   const [selectedThesisData, setSelectedThesisData] = useState(null);
   const { allTheses, fetchAllTheses, verifyEnrollment, assignSupervisor, clearCoursework, awardDegree, updateAuditLog, drcApprove, seminarClear, fetchThesisById, reviewMilestone, finalApprove } = useContext(ThesisContext);

@@ -13,6 +13,7 @@ import { ThesisContext } from '../context/ThesisContext';
 import { useToast } from '../context/ToastContext';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
+import { useTabPersistence } from '../hooks/useTabPersistence';
 import ThemeToggle from '../components/ThemeToggle';
 import UnifiedScholarModal from '../components/UnifiedScholarModal';
 import PublicConfigTab from '../components/PublicConfigTab';
@@ -4319,7 +4320,7 @@ const MeetingsTab = ({ user }) => {
 // ── Main Dashboard ──
 const FacultyDashboard = () => {
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useTabPersistence('sync_faculty_tab', 'overview');
   const { user, fetchMe } = useContext(AuthContext);
   const { allTheses, loading, fetchAssignedTheses, fetchDeptTheses, fetchThesisById, reviewMilestone, drcApprove, scheduleSeminar, seminarClear, finalApprove, clearCoursework, verifyEnrollment, assignSupervisor, forcePreSubmission } = useContext(ThesisContext);
   const [selectedThesisId, setSelectedThesisId] = useState(null);

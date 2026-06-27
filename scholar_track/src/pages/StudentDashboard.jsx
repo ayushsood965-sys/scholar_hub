@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import useApi from '../hooks/useApi';
 import DashboardShell from '../components/DashboardShell';
+import { useTabPersistence } from '../hooks/useTabPersistence';
 import OverviewTab from '../modules/student/OverviewTab';
 import AttendanceTab from '../modules/student/AttendanceTab';
 import LeaveTab from '../modules/student/LeaveTab';
@@ -16,7 +17,7 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const api = useApi();
   
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useTabPersistence('track_student_tab', 'overview');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [thesis, setThesis] = useState(null);
   const [loadingThesis, setLoadingThesis] = useState(true);

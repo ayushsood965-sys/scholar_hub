@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import DashboardShell from '../components/DashboardShell';
+import { useTabPersistence } from '../hooks/useTabPersistence';
 import OverviewTab from '../modules/faculty/OverviewTab';
 import MarkAttendanceTab from '../modules/faculty/MarkAttendanceTab';
 import AttendanceRecordsTab from '../modules/faculty/AttendanceRecordsTab';
@@ -15,7 +16,7 @@ import StudentMappingDetailsTab from '../modules/faculty/StudentMappingDetailsTa
 const FacultyDashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useTabPersistence('track_faculty_tab', 'overview');
 
   useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
   if (!user) return null;

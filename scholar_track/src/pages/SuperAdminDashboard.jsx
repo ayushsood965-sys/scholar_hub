@@ -1,8 +1,9 @@
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import DashboardShell from "../components/DashboardShell";
-import OverviewTab from "../modules/admin/OverviewTab";
+import DashboardShell from '../components/DashboardShell';
+import { useTabPersistence } from '../hooks/useTabPersistence';
+import OverviewTab from '../modules/admin/OverviewTab';
 import UserVerificationTab from "../modules/admin/UserVerificationTab";
 import FacultyMasterTab from "../modules/admin/FacultyMasterTab";
 import HODMasterTab from "../modules/admin/HODMasterTab";
@@ -19,7 +20,7 @@ import DepartmentsTab from "../modules/admin/DepartmentsTab";
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useTabPersistence('track_superadmin_tab', 'overview');
 
   useEffect(() => {
     if (!user) navigate("/login");

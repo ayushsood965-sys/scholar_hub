@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import DashboardShell from '../components/DashboardShell';
+import { useTabPersistence } from '../hooks/useTabPersistence';
 import OverviewTab from '../modules/hod/OverviewTab';
 import PolicyConfigTab from '../modules/hod/PolicyConfigTab';
 import LeaveRulesTab from '../modules/hod/LeaveRulesTab';
@@ -18,7 +19,7 @@ import StudentMappingDetailsTab from '../modules/faculty/StudentMappingDetailsTa
 const HodDashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useTabPersistence('track_hod_tab', 'overview');
 
   useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
   if (!user) return null;

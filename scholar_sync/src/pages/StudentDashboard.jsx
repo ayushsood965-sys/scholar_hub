@@ -10,6 +10,7 @@ import NotificationPanel from '../components/NotificationPanel';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 import ThemeToggle from '../components/ThemeToggle';
+import { useTabPersistence } from '../hooks/useTabPersistence';
 
 const API = API_URL;
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
@@ -9304,7 +9305,7 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
 
 // ── Main Dashboard ──
 const StudentDashboard = () => {
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useTabPersistence('sync_student_tab', 'profile');
   const [milestonesSubTab, setMilestonesSubTab] = useState('active');
   const { user } = useContext(AuthContext);
   const { thesis, milestones, loading, fetchMyThesis, submitMilestone } = useContext(ThesisContext);
