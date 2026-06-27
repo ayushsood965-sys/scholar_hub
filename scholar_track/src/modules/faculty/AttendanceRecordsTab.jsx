@@ -174,7 +174,6 @@ const AttendanceRecordsTab = () => {
     }
   };
 
-  if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
   // Derive available degree types from department-filtered degree names
   const departmentDegreeNames = useMemo(() => {
     return degreeNames.filter(d => {
@@ -186,7 +185,7 @@ const AttendanceRecordsTab = () => {
     return [...new Map(departmentDegreeNames.filter(d => d.degreeTypeId).map(d => [d.degreeTypeId._id, d.degreeTypeId])).values()];
   }, [departmentDegreeNames]);
 
-
+  if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
 
   return (
     <div className="attendance-records-tab">
