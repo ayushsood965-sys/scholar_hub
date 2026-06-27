@@ -741,3 +741,113 @@
   font-size: 0.75rem;
   color: var(--color-text-muted);
 }
+
+/* ─── Mobile Responsive ─── */
+@media (max-width: 768px) {
+  .overview-hero {
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .stat-card-value {
+    font-size: 1.5rem;
+  }
+
+  .stat-card-hint {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+  }
+
+  .overview-section-header {
+    padding: 16px 20px;
+  }
+
+  .overview-section-body {
+    padding: 16px 20px 20px;
+  }
+
+  .upcoming-class-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .upcoming-class-time {
+    min-width: auto;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .upcoming-class-time-start {
+    font-size: 0.88rem;
+  }
+
+  .upcoming-class-divider {
+    display: none;
+  }
+
+  .upcoming-class-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .upcoming-class-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .upcoming-class-badge {
+    margin-left: auto;
+  }
+
+  .low-attendance-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .low-attendance-count {
+    font-size: 1.8rem;
+  }
+
+  .low-attendance-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .low-attendance-cell-percent {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .overview-hero {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .hero-title {
+    font-size: 1.3rem;
+  }
+
+  .stat-card-value {
+    font-size: 1.3rem;
+  }
+
+  .upcoming-class-time-start {
+    font-size: 0.82rem;
+  }
+
+  .low-attendance-count {
+    font-size: 1.5rem;
+  }
+}
