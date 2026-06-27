@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BarChart3, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { jwtDecode } from 'jwt-decode';
 import { API_URL } from '../config';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -11,7 +13,27 @@ import Footer from '../components/Footer';
 
 const Signup = () => {
   const { register } = useContext(AuthContext);
+  const toast = useToast();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        if (decoded.exp * 1000 > Date.now()) {
+          const storedUser = JSON.parse(localStorage.getItem('user'));
+          if (storedUser) {
+            toast.warning('You are already logged in. Please sign out to sign up or log in again.');
+            const dashMap = { SUPER_ADMIN: '/super-dashboard', HOD: '/hod-dashboard', ADMIN: '/hod-dashboard', FACULTY: '/faculty-dashboard', STUDENT: '/student-dashboard' };
+            navigate(dashMap[storedUser.role] ?? '/student-dashboard');
+            return;
+          }
+        }
+      } catch { /* token invalid, let them stay */ }
+    }
+  }, [navigate, toast]);
 
   const [role, setRole] = useState('');
   const [name, setName] = useState('');

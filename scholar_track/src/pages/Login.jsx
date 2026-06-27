@@ -1,19 +1,41 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BarChart3, Eye, EyeOff } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { jwtDecode } from 'jwt-decode';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const Login = () => {
   const { login } = useContext(AuthContext);
+  const toast = useToast();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        if (decoded.exp * 1000 > Date.now()) {
+          const storedUser = JSON.parse(localStorage.getItem('user'));
+          if (storedUser) {
+            toast.warning('You are already logged in. Please sign out to log in again or sign up.');
+            const dashMap = { SUPER_ADMIN: '/super-dashboard', HOD: '/hod-dashboard', ADMIN: '/hod-dashboard', FACULTY: '/faculty-dashboard', STUDENT: '/student-dashboard' };
+            navigate(dashMap[storedUser.role] ?? '/student-dashboard');
+            return;
+          }
+        }
+      } catch { /* token invalid, let them stay */ }
+    }
+  }, [navigate, toast]);
 
   const dashMap = {
     SUPER_ADMIN: '/super-dashboard',
