@@ -19,6 +19,11 @@ const login = async (req, res) => {
       return res.status(403).json({ message: 'Your account has been disabled. Please contact your department HOD.' });
     }
 
+    // Students (PhD candidates) must be verified by HOD before they can log in to ScholarTrack
+    if (user.role === 'STUDENT' && user.isVerified === false) {
+      return res.status(403).json({ message: 'Your ScholarSync ID has not been verified by the HOD yet. Please complete your profile on ScholarSync and wait for HOD approval before logging in to ScholarTrack.' });
+    }
+
     if (await user.matchPassword(password)) {
       // Proactively ensure seeded users have a welcome notification
       const { getWelcomeNotificationData } = require('./notificationController');
