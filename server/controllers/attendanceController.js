@@ -70,8 +70,8 @@ exports.getDegreeNames = async (req, res) => {
   try {
     const query = { isActive: true };
     if (req.query.degreeTypeId) query.degreeTypeId = req.query.degreeTypeId;
-    // Filter by faculty/HOD's own department (unless super admin or admin with explicit departmentId override)
-    if (req.user.role === 'FACULTY' || req.user.role === 'HOD') {
+    // Filter by faculty/HOD's own department (only when authenticated)
+    if (req.user && (req.user.role === 'FACULTY' || req.user.role === 'HOD')) {
       if (req.user.departmentId) {
         query.departmentId = req.user.departmentId;
       }

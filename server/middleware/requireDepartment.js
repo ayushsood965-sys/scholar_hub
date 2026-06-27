@@ -8,7 +8,7 @@ const requireDepartment = async (req, res, next) => {
 
     // Admins and Super Admins can operate globally or pass departmentId in query/body
     if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN') {
-      const targetDeptId = req.query.departmentId || req.body.departmentId;
+      const targetDeptId = req.query.departmentId || (req.body && req.body.departmentId);
       if (targetDeptId) {
         req.user.departmentId = targetDeptId;
       }
