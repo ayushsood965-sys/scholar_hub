@@ -56,7 +56,7 @@ const login = async (req, res) => {
 
 // POST /api/auth/register
 const register = async (req, res) => {
-  const { name, username, password, role, department, phoneNumber, academicSession, degreeType, degreeName } = req.body;
+  const { name, username, password, role, department, phoneNumber, academicSession, degreeType, degreeName, degreeTypeId, degreeTypeName, degreeNameId, degreeNameLabel } = req.body;
   try {
     if (await User.findOne({ username })) {
       return res.status(400).json({ 
@@ -92,6 +92,10 @@ const register = async (req, res) => {
       if (academicSession) profileData.academicSession = academicSession;
       if (degreeType) profileData.degreeType = degreeType;
       if (degreeName) profileData.degreeName = degreeName;
+      if (degreeTypeId) profileData.degreeTypeId = degreeTypeId;
+      if (degreeTypeName) profileData.degreeTypeName = degreeTypeName;
+      if (degreeNameId) profileData.degreeNameId = degreeNameId;
+      if (degreeNameLabel) profileData.degreeNameLabel = degreeNameLabel;
     }
 
     // For students, name may not be provided — derive from email prefix
