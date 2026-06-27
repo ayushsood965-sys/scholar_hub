@@ -272,6 +272,22 @@
   color: #3b82f6;
 }
 
+[data-theme="dark"] .stat-card-hint.hint-success {
+  background: var(--status-success-bg);
+}
+
+[data-theme="dark"] .stat-card-hint.hint-warning {
+  background: var(--status-warning-bg);
+}
+
+[data-theme="dark"] .stat-card-hint.hint-danger {
+  background: var(--status-danger-bg);
+}
+
+[data-theme="dark"] .stat-card-hint.hint-info {
+  background: var(--status-info-bg);
+}
+
 /* ─── Section Cards ─── */
 .overview-section {
   background: var(--color-surface);

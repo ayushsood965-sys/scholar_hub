@@ -261,7 +261,7 @@ const TimetableTab = () => {
                         style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '14px', marginBottom: '12px', position: 'relative', border: '1px solid rgba(255,255,255,0.08)' }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '6px' }}>{slot.startTime} - {slot.endTime}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--status-present)', fontWeight: 'bold', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '6px' }}>{slot.startTime} - {slot.endTime}</div>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button 
                               onClick={() => handleEdit(slot)}
@@ -285,7 +285,7 @@ const TimetableTab = () => {
                           <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 'bold', flexShrink: 0 }}>
                             {slot.facultyId?.name?.charAt(0) || '?'}
                           </div>
-                          <span style={{ fontSize: '0.75rem', color: '#818CF8', fontWeight: '500' }}>{slot.facultyId?.name || 'Unknown Faculty'}</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--status-info)', fontWeight: '500' }}>{slot.facultyId?.name || 'Unknown Faculty'}</span>
                         </div>
                       </motion.div>
                     ))

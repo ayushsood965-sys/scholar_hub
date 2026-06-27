@@ -16,6 +16,9 @@
   --color-text-primary: #1f2937;
   --color-text-secondary: #4b5563;
   --color-text-muted: #6b7280;
+  /* Legacy aliases */
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
   --color-primary: #1a5a3b;
   --color-primary-rgb: 26, 90, 59;
   --color-success: #2e9e5b;
@@ -30,6 +33,7 @@
   --status-leave: #3b82f6;
   --status-warning: #f97316;
   --status-defaulter: #dc2626;
+  --status-info: #60a5fa;
 
   /* Shadows */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -80,12 +84,18 @@
   --color-text-primary: #ffffff;
   --color-text-secondary: #cbcccd;
   --color-text-muted: #88898b;
+  /* Legacy aliases */
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
   --color-primary: #34d399;
   --color-primary-rgb: 52, 211, 153;
   --color-success: #34d399;
   --color-success-light: #059669;
   --color-border: rgba(255, 255, 255, 0.06);
   --color-border-solid: #2d2d30;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-info: #60a5fa;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -105,6 +115,12 @@
   --clay-shadow-inner:
     inset 3px 3px 6px rgba(255, 255, 255, 0.04),
     inset -3px -3px 6px rgba(0, 0, 0, 0.4);
+
+  /* Status badge backgrounds for dark mode */
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-danger-bg: rgba(239, 68, 68, 0.15);
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-info-bg: rgba(59, 130, 246, 0.15);
 }
 
 /* ─── Global Reset ─── */
@@ -782,19 +798,52 @@ img {
 }
 
 [data-theme="dark"] .badge-success {
-  background: rgba(16, 185, 129, 0.15);
+  background: var(--status-success-bg);
 }
 
 [data-theme="dark"] .badge-danger {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--status-danger-bg);
 }
 
 [data-theme="dark"] .badge-warning {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--status-warning-bg);
 }
 
 [data-theme="dark"] .badge-info {
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--status-info-bg);
+}
+
+/* ─── Common Inline Style Patterns ─── */
+.dropdown-placeholder {
+  color: #9CA3AF;
+}
+
+[data-theme="dark"] .dropdown-placeholder {
+  color: var(--color-text-muted);
+}
+
+.dropdown-caret {
+  color: #6B7280;
+}
+
+[data-theme="dark"] .dropdown-caret {
+  color: var(--color-text-muted);
+}
+
+.empty-state-text {
+  color: #6B7280;
+}
+
+[data-theme="dark"] .empty-state-text {
+  color: var(--color-text-muted);
+}
+
+.empty-state-text-alt {
+  color: #4B5563;
+}
+
+[data-theme="dark"] .empty-state-text-alt {
+  color: var(--color-text-secondary);
 }
 
 /* ─── Form Elements ─── */
