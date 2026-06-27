@@ -62,12 +62,39 @@ const backfillSHNos = async () => {
 const backfillPhdStatus = async () => {
   try {
     const User = require('../models/User');
-    const result = await User.updateMany(
-      { role: 'STUDENT', $or: [{ 'profile.isPhD': { $exists: false } }, { 'profile.isPhD': false }] },
-      { $set: { 'profile.isPhD': true } }
+    const DegreeTypeMaster = require('../models/attendance/DegreeTypeMaster');
+
+    // Find the PhD degree type
+    const phdType = await DegreeTypeMaster.findOne({ code: 'PHD', isActive: true });
+
+    if (phdType) {
+      // Set isPhD = true only for students with PhD degree type
+      const phdResult = await User.updateMany(
+        {
+          role: 'STUDENT',
+          $or: [
+            { 'profile.degreeTypeId': phdType._id },
+            { 'profile.degreeType': { $regex: /phd/i } }
+          ]
+        },
+        { $set: { 'profile.isPhD': true } }
+      );
+      if (phdResult.modifiedCount > 0) {
+        console.log(`[Migration] Set isPhD = true for ${phdResult.modifiedCount} PhD students.`);
+      }
+    }
+
+    // Set isPhD = false for all students who don't have isPhD explicitly set to true
+    // This catches: isPhD missing, isPhD: false, or isPhD incorrectly set
+    const nonPhdResult = await User.updateMany(
+      {
+        role: 'STUDENT',
+        'profile.isPhD': { $ne: true }
+      },
+      { $set: { 'profile.isPhD': false } }
     );
-    if (result.modifiedCount > 0) {
-      console.log(`[Migration] Backfilled isPhD = true for ${result.modifiedCount} students.`);
+    if (nonPhdResult.modifiedCount > 0) {
+      console.log(`[Migration] Set isPhD = false for ${nonPhdResult.modifiedCount} non-PhD students.`);
     }
   } catch (err) {
     console.error('Error backfilling isPhD status:', err);

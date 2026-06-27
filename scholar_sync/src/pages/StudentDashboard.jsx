@@ -6020,6 +6020,17 @@ const ProfileTab = () => {
     }
   }, [user, thesis]);
 
+  // Fetch category and gender masters
+  useEffect(() => {
+    axios.get(`${API_URL}/attendance/masters/category-gender`)
+      .then(res => {
+        const data = res.data;
+        setCategories(data.filter(d => d.type === 'CATEGORY'));
+        setGenders(data.filter(d => d.type === 'GENDER'));
+      })
+      .catch(err => console.error('Error fetching category/gender masters:', err));
+  }, []);
+
   useEffect(() => {
     axios.get(`${API_URL}/auth/faculty`, getAuthHeader())
       .then(res => {
@@ -7447,9 +7458,7 @@ const ProfileTab = () => {
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Gender <span style={{ color: '#EF4444' }}>*</span></label>
                     <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required>
                       <option value="">Select...</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      {genders.map(g => <option key={g._id} value={g.value}>{g.label}</option>)}
                     </select>
                   </div>
                 </div>
@@ -7459,11 +7468,7 @@ const ProfileTab = () => {
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Social Category <span style={{ color: '#EF4444' }}>*</span></label>
                     <select className="form-input" value={category} onChange={e => setCategory(e.target.value)} required>
                       <option value="">Select Category...</option>
-                      <option value="General">General / Unreserved</option>
-                      <option value="OBC">OBC (Other Backward Classes)</option>
-                      <option value="SC">SC (Scheduled Caste)</option>
-                      <option value="ST">ST (Scheduled Tribe)</option>
-                      <option value="EWS">EWS (Economically Weaker Section)</option>
+                      {categories.map(c => <option key={c._id} value={c.value}>{c.label}</option>)}
                     </select>
                   </div>
                   <div>

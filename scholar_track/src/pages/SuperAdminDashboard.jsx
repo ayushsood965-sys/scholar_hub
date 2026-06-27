@@ -13,9 +13,9 @@ import DegreeTypeMasterTab from "../modules/admin/DegreeTypeMasterTab";
 import DegreeNameMasterTab from "../modules/admin/DegreeNameMasterTab";
 import SemesterDegreeMappingTab from "../modules/admin/SemesterDegreeMappingTab";
 import SemesterMasterTab from "../modules/admin/SemesterMasterTab";
-import DegreeDeptMappingTab from "../modules/admin/DegreeDeptMappingTab";
 import HolidayCalendarTab from "../modules/admin/HolidayCalendarTab";
 import DepartmentsTab from "../modules/admin/DepartmentsTab";
+import CategoryGenderMasterTab from "../modules/admin/CategoryGenderMasterTab";
 
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -35,9 +35,9 @@ const SuperAdminDashboard = () => {
     degreeNames: "Degree Names",
     semesterDegreeMap: "Semester-Degree Mapping",
     semesters: "Semesters",
-    degreeDeptMap: "Degree-Department Mapping",
     holidays: "Holiday Calendar",
     departments: "Department Master",
+    categoryGender: "Category & Gender Master",
     faculty: "Faculty Master",
     hod: "HOD Master",
     profile: "My Credentials",
@@ -60,9 +60,9 @@ const SuperAdminDashboard = () => {
       {activeTab === "degreeNames" && <DegreeNameMasterTab />}
       {activeTab === "semesterDegreeMap" && <SemesterDegreeMappingTab />}
       {activeTab === "semesters" && <SemesterMasterTab />}
-      {activeTab === "degreeDeptMap" && <DegreeDeptMappingTab />}
       {activeTab === "holidays" && <HolidayCalendarTab />}
       {activeTab === "departments" && <DepartmentsTab />}
+      {activeTab === "categoryGender" && <CategoryGenderMasterTab />}
     </DashboardShell>
   );
 };

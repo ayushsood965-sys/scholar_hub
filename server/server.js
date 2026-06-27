@@ -283,7 +283,27 @@ connectDB().then(async () => {
         }
       ];
       await CollaborationCall.insertMany(callsToSeed);
-      console.log('📢 Auto-seeded default collaboration calls.');
+      console.log(' Auto-seeded default collaboration calls.');
+    }
+
+    // Auto-seed category and gender masters
+    const CategoryGenderMaster = require('./models/CategoryGenderMaster');
+    const cgCount = await CategoryGenderMaster.countDocuments();
+    if (cgCount === 0) {
+      const categoryGenderToSeed = [
+        { type: 'GENDER', label: 'Male', value: 'Male', sortOrder: 1 },
+        { type: 'GENDER', label: 'Female', value: 'Female', sortOrder: 2 },
+        { type: 'GENDER', label: 'Other', value: 'Other', sortOrder: 3 },
+        { type: 'CATEGORY', label: 'General / Unreserved', value: 'General', sortOrder: 1 },
+        { type: 'CATEGORY', label: 'OBC (Other Backward Classes)', value: 'OBC', sortOrder: 2 },
+        { type: 'CATEGORY', label: 'SC (Scheduled Caste)', value: 'SC', sortOrder: 3 },
+        { type: 'CATEGORY', label: 'ST (Scheduled Tribe)', value: 'ST', sortOrder: 4 },
+        { type: 'CATEGORY', label: 'EWS (Economically Weaker Section)', value: 'EWS', sortOrder: 5 },
+      ];
+      await CategoryGenderMaster.insertMany(categoryGenderToSeed);
+      console.log('️ Auto-seeded default category and gender masters.');
+    } else {
+      console.log('️ Category and gender masters already populated.');
     }
   } catch (err) {
     console.error('❌ Error during auto-seeding:', err);

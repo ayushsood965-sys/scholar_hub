@@ -3,13 +3,14 @@ import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { X, Plus } from 'lucide-react';
+import { Trash2, Edit3, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SessionMasterTab = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ sessionName: '', startDate: '', endDate: '' });
   const api = useApi();
   const toast = useToast();
@@ -27,16 +28,47 @@ const SessionMasterTab = () => {
 
   useEffect(() => { fetchSessions(); }, []);
 
+  const resetForm = () => {
+    setFormData({ sessionName: '', startDate: '', endDate: '' });
+    setEditId(null);
+    setFormOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/attendance/sessions', formData);
-      toast.success('Session created successfully');
-      setFormOpen(false);
-      setFormData({ sessionName: '', startDate: '', endDate: '' });
+      if (editId) {
+        await api.put(`/attendance/sessions/${editId}`, formData);
+        toast.success('Session updated successfully');
+      } else {
+        await api.post('/attendance/sessions', formData);
+        toast.success('Session created successfully');
+      }
+      resetForm();
       fetchSessions();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error creating session');
+      toast.error(err.response?.data?.message || 'Error saving session');
+    }
+  };
+
+  const handleEdit = (session) => {
+    setEditId(session._id);
+    setFormData({
+      sessionName: session.sessionName || '',
+      startDate: session.startDate ? session.startDate.split('T')[0] : '',
+      endDate: session.endDate ? session.endDate.split('T')[0] : ''
+    });
+    setFormOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this session?')) return;
+    try {
+      await api.delete(`/attendance/sessions/${id}`);
+      toast.success('Session deleted successfully');
+      fetchSessions();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete session');
     }
   };
 
@@ -52,22 +84,38 @@ const SessionMasterTab = () => {
 
   const columns = [
     { header: 'Session Name', accessor: 'sessionName' },
-    { header: 'Start Date', accessor: (row) => new Date(row.startDate).toLocaleDateString() },
-    { header: 'End Date', accessor: (row) => new Date(row.endDate).toLocaleDateString() },
-    { 
-      header: 'Status', 
-      accessor: (row) => row.isCurrent ? <span className="badge badge-success">Current</span> : <span className="badge badge-neutral">Inactive</span>
+    { header: 'Start Date', accessor: (row) => row.startDate ? new Date(row.startDate).toLocaleDateString() : '—' },
+    { header: 'End Date', accessor: (row) => row.endDate ? new Date(row.endDate).toLocaleDateString() : '—' },
+    {
+      header: 'Status',
+      accessor: (row) => row.isCurrent
+        ? <span style={{ fontSize: '0.75rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Current</span>
+        : <span style={{ fontSize: '0.75rem', background: '#F1F5F9', color: '#64748B', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Inactive</span>
     },
     {
       header: 'Actions',
       accessor: (row) => (
-        <button 
-          className="btn btn-sm btn-outline" 
-          onClick={() => handleSetCurrent(row._id)}
-          disabled={row.isCurrent}
-        >
-          Set Current
-        </button>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button className="btn btn-sm btn-outline" onClick={() => handleEdit(row)} title="Edit">
+            <Edit3 size={14} />
+          </button>
+          <button
+            className="btn btn-sm btn-outline"
+            style={{ color: '#EF4444', borderColor: '#EF4444' }}
+            onClick={() => handleDelete(row._id)}
+            title="Delete"
+          >
+            <Trash2 size={14} />
+          </button>
+          <button
+            className="btn btn-sm btn-outline"
+            onClick={() => handleSetCurrent(row._id)}
+            disabled={row.isCurrent}
+            title="Set as Current"
+          >
+            Set Current
+          </button>
+        </div>
       )
     }
   ];
@@ -100,9 +148,9 @@ const SessionMasterTab = () => {
             <div className="inline-form-card">
               <div className="inline-form-header">
                 <span className="inline-form-title">
-                  <Plus size={18} /> Create New Session
+                  <Plus size={18} /> {editId ? 'Edit Session' : 'Create New Session'}
                 </span>
-                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                <button className="inline-form-close" onClick={resetForm}>
                   <X size={18} />
                 </button>
               </div>
@@ -122,8 +170,8 @@ const SessionMasterTab = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Session</button>
+                  <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">{editId ? 'Update' : 'Save'} Session</button>
                 </div>
               </form>
             </div>

@@ -3,13 +3,14 @@ import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Trash2, X, Plus } from 'lucide-react';
+import { Trash2, Edit3, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SemesterMasterTab = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ name: '', number: '' });
   const api = useApi();
   const toast = useToast();
@@ -27,17 +28,33 @@ const SemesterMasterTab = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const resetForm = () => {
+    setFormData({ name: '', number: '' });
+    setEditId(null);
+    setFormOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/attendance/masters/semesters', formData);
-      toast.success('Semester created');
-      setFormOpen(false);
-      setFormData({ name: '', number: '' });
+      if (editId) {
+        await api.put(`/attendance/masters/semesters/${editId}`, formData);
+        toast.success('Semester updated');
+      } else {
+        await api.post('/attendance/masters/semesters', formData);
+        toast.success('Semester created');
+      }
+      resetForm();
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error creating semester');
+      toast.error(err.response?.data?.message || 'Error saving semester');
     }
+  };
+
+  const handleEdit = (row) => {
+    setEditId(row._id);
+    setFormData({ name: row.name || '', number: row.number || '' });
+    setFormOpen(true);
   };
 
   const handleDelete = async (id) => {
@@ -57,9 +74,14 @@ const SemesterMasterTab = () => {
     {
       header: 'Actions',
       accessor: (row) => (
-        <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleDelete(row._id)}>
-          <Trash2 size={16} />
-        </button>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button className="btn btn-sm btn-outline" onClick={() => handleEdit(row)} title="Edit">
+            <Edit3 size={16} />
+          </button>
+          <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleDelete(row._id)} title="Delete">
+            <Trash2 size={16} />
+          </button>
+        </div>
       )
     }
   ];
@@ -92,9 +114,9 @@ const SemesterMasterTab = () => {
             <div className="inline-form-card">
               <div className="inline-form-header">
                 <span className="inline-form-title">
-                  <Plus size={18} /> Add Semester
+                  <Plus size={18} /> {editId ? 'Edit Semester' : 'Add Semester'}
                 </span>
-                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                <button className="inline-form-close" onClick={resetForm}>
                   <X size={18} />
                 </button>
               </div>
@@ -110,8 +132,8 @@ const SemesterMasterTab = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Semester</button>
+                  <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">{editId ? 'Update' : 'Save'} Semester</button>
                 </div>
               </form>
             </div>

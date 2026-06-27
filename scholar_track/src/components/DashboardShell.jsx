@@ -76,8 +76,8 @@ const roleNavConfig = {
     { key: "degreeNames", icon: Settings, label: "Degree Names" },
     { key: "semesterDegreeMap", icon: Shield, label: "Semester-Degree Map" },
     { key: "semesters", icon: Settings, label: "Semesters" },
-    { key: "degreeDeptMap", icon: Building, label: "Degree-Dept Map" },
     { key: "holidays", icon: Calendar, label: "Holiday Calendar" },
+    { key: "categoryGender", icon: Layers, label: "Category & Gender Master" },
 
     { kind: "section", label: "🎓 SCHOLAR SYNC" },
     { key: "faculty", icon: Users, label: "Faculty Master" },

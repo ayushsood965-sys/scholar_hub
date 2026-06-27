@@ -7,7 +7,7 @@ const generateToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRE
 
 // POST /api/auth/login
 const login = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, portal } = req.body;
   try {
     const user = await User.findOne({ username });
     if (!user) {
@@ -19,9 +19,28 @@ const login = async (req, res) => {
       return res.status(403).json({ message: 'Your account has been disabled. Please contact your department HOD.' });
     }
 
-    // Students (PhD candidates) must be verified by HOD before they can log in to ScholarTrack
-    if (user.role === 'STUDENT' && user.isVerified === false) {
-      return res.status(403).json({ message: 'Your ScholarSync ID has not been verified by the HOD yet. Please complete your profile on ScholarSync and wait for HOD approval before logging in to ScholarTrack.' });
+    // Determine if user is a PhD candidate
+    const isPhD = user.profile?.isPhD === true;
+
+    // Portal-specific student verification logic
+    if (user.role === 'STUDENT') {
+      if (portal === 'sync') {
+        // ScholarSync portal: only PhD candidates can log in
+        if (!isPhD) {
+          return res.status(403).json({
+            message: 'This portal is exclusively for Ph.D. candidates. Non-PhD students must use the ScholarTrack portal for attendance and leave management.'
+          });
+        }
+        // PhD candidates can always access ScholarSync (they need to complete profile here first)
+      } else if (portal === 'track') {
+        // ScholarTrack portal: PhD candidates must be verified by HOD on ScholarSync first
+        if (isPhD && user.isVerified === false) {
+          return res.status(403).json({
+            message: 'Your ScholarSync ID has not been verified by the HOD yet. Please complete your profile on ScholarSync and wait for HOD approval before logging in to ScholarTrack.'
+          });
+        }
+        // Non-PhD students can always access ScholarTrack
+      }
     }
 
     if (await user.matchPassword(password)) {
@@ -92,16 +111,20 @@ const register = async (req, res) => {
       }
     }
 
-    const profileData = { phoneNumber: formattedPhone };
-    if (role === 'STUDENT') {
-      if (academicSession) profileData.academicSession = academicSession;
-      if (degreeType) profileData.degreeType = degreeType;
-      if (degreeName) profileData.degreeName = degreeName;
-      if (degreeTypeId) profileData.degreeTypeId = degreeTypeId;
-      if (degreeTypeName) profileData.degreeTypeName = degreeTypeName;
-      if (degreeNameId) profileData.degreeNameId = degreeNameId;
-      if (degreeNameLabel) profileData.degreeNameLabel = degreeNameLabel;
-    }
+     const profileData = { phoneNumber: formattedPhone };
+     if (role === 'STUDENT') {
+       if (academicSession) profileData.academicSession = academicSession;
+       if (degreeType) profileData.degreeType = degreeType;
+       if (degreeName) profileData.degreeName = degreeName;
+       if (degreeTypeId) profileData.degreeTypeId = degreeTypeId;
+       if (degreeTypeName) profileData.degreeTypeName = degreeTypeName;
+       if (degreeNameId) profileData.degreeNameId = degreeNameId;
+       if (degreeNameLabel) profileData.degreeNameLabel = degreeNameLabel;
+
+       // Set isPhD based on degree type
+       const degreeTypeStr = (degreeTypeName || degreeType || '').toUpperCase();
+       profileData.isPhD = degreeTypeStr.includes('PHD');
+     }
 
     // For students, name may not be provided — derive from email prefix
     const finalName = name || (username ? username.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '');
@@ -179,6 +202,13 @@ const updateProfile = async (req, res) => {
     Object.keys(profileData).forEach(key => {
       user.profile[key] = profileData[key];
     });
+
+    // Recalculate isPhD if degree type was updated
+    if (profileData.degreeType || profileData.degreeTypeName) {
+      const degreeTypeStr = (profileData.degreeTypeName || profileData.degreeType || user.profile.degreeType || user.profile.degreeTypeName || '').toUpperCase();
+      user.profile.isPhD = degreeTypeStr.includes('PHD');
+    }
+
     user.profileCompleted = true;
     user.markModified('profile');
     user.markModified('profile.qualifications');

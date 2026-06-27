@@ -28,13 +28,14 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
   const [degreeTypeId, setDegreeTypeId] = useState('');
   const [degreeNameId, setDegreeNameId] = useState('');
-  const [semesterId, setSemesterId] = useState('');
   const [isPhD, setIsPhD] = useState(false);
 
   // Masters lists for non-PhD
-  const [semesters, setSemesters] = useState([]);
   const [degreeNames, setDegreeNames] = useState([]);
   const [degreeTypes, setDegreeTypes] = useState([]);
+
+  // HPU ERP Admission No.
+  const [erpAdmissionNo, setErpAdmissionNo] = useState('');
 
   // PhD Fields
   const [dob, setDob] = useState('');
@@ -57,6 +58,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [academicSession, setAcademicSession] = useState('');
   const [degreeType, setDegreeType] = useState('');
   const [sessions, setSessions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [genders, setGenders] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [preferredGuideId, setPreferredGuideId] = useState('');
 
@@ -146,7 +149,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       setDegreeType(u.profile?.degreeType || (isPhDVal ? 'Ph.D.' : ''));
       setDegreeTypeId(u.profile?.degreeTypeId?._id || u.profile?.degreeTypeId || '');
       setDegreeNameId(u.profile?.degreeNameId?._id || u.profile?.degreeNameId || '');
-      setSemesterId(u.profile?.semesterId?._id || u.profile?.semesterId || '');
+      setErpAdmissionNo(u.profile?.erpAdmissionNo || '');
 
       const q = u.profile?.qualifications || {};
       setClass10Roll(q.class10?.rollNo || '');
@@ -238,17 +241,18 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   useEffect(() => {
     const fetchMastersData = async () => {
       try {
-        const [semRes, nameRes, typeRes, sessRes, facRes] = await Promise.all([
-          api.get('/attendance/masters/semesters').catch(() => ({ data: [] })),
+        const [nameRes, typeRes, sessRes, facRes, cgRes] = await Promise.all([
           api.get('/attendance/masters/degree-names').catch(() => ({ data: [] })),
           api.get('/attendance/masters/degree-types').catch(() => ({ data: [] })),
           api.get('/attendance/sessions').catch(() => ({ data: [] })),
-          api.get('/auth/faculty').catch(() => ({ data: [] }))
+          api.get('/auth/faculty').catch(() => ({ data: [] })),
+          api.get('/attendance/masters/category-gender').catch(() => ({ data: [] }))
         ]);
-        setSemesters(semRes.data);
         setDegreeNames(nameRes.data);
         setDegreeTypes(typeRes.data);
         setSessions(sessRes.data);
+        setCategories(cgRes.data.filter(d => d.type === 'CATEGORY'));
+        setGenders(cgRes.data.filter(d => d.type === 'GENDER'));
 
         // Filter supervisors in the student's department
         if (user?.department) {
@@ -461,7 +465,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         admissionDate, enrollmentNumber, phdMode, specialization,
         phoneNumber, address, areaOfInterest, academicBackground,
         thesisTitle, thesisSummary, thesisKeywords, academicSession,
-        degreeTypeId, degreeNameId, semesterId, isPhD,
+        degreeTypeId, degreeNameId, isPhD, erpAdmissionNo,
         degreeType: isPhD ? 'Ph.D.' : (degreeTypes.find(t => t._id === degreeTypeId)?.name || ''),
         degreeName: degreeNames.find(n => n._id === degreeNameId)?.name || '',
       };
@@ -723,10 +727,10 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     if (isPhD) {
       if (
         !dob || !gender || !category || !fatherName || !motherName || !nationality || 
-        !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
+        !admissionDate || !phdMode || !specialization || 
         !phoneNumber || !address || !areaOfInterest ||
         !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession ||
-        !degreeTypeId || !semesterId
+        !degreeTypeId
       ) {
         toast.error('Please fill in all the general and Ph.D. details before submitting.');
         return;
@@ -761,7 +765,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       if (
         !dob || !gender || !category || !fatherName || !motherName || 
         !phoneNumber || !address || !academicSession ||
-        !degreeTypeId || !semesterId
+        !degreeTypeId
       ) {
         toast.error('Please fill in all general details before submitting.');
         return;
@@ -862,14 +866,14 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
   const isGeneralInfoComplete = () => {
     if (!isPhD) {
-      return !!(academicSession && degreeTypeId && semesterId && phoneNumber && address);
+      return !!(academicSession && degreeTypeId && phoneNumber && address);
     }
     return !!(
       dob && gender && category && fatherName && motherName && nationality &&
-      admissionDate && enrollmentNumber && phdMode && specialization &&
+      admissionDate && phdMode && specialization &&
       phoneNumber && address && areaOfInterest &&
       thesisTitle && thesisSummary && thesisKeywords && academicSession &&
-      degreeTypeId && semesterId
+      degreeTypeId
     );
   };
 
@@ -1155,12 +1159,22 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       disabled={!editModes.general || isSubmitted} 
                       value={enrollmentNumber} 
                       onChange={e => setEnrollmentNumber(e.target.value)} 
-                      placeholder="Enrollment Number"
+                      placeholder="Enrollment Number (optional)"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">HPU ERP Admission No.</label>
+                    <input 
+                      className="form-input" 
+                      disabled={!editModes.general || isSubmitted} 
+                      value={erpAdmissionNo} 
+                      onChange={e => setErpAdmissionNo(e.target.value)} 
+                      placeholder="H248808080"
                     />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Academic Session</label>
-                    {editModes.general && !isSubmitted ? (
+                    {editModes.general && !isSubmitted && !academicSession ? (
                       <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)}>
                         <option value="">Select Session...</option>
                         {sessions.map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
@@ -1169,23 +1183,12 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <input className="form-input" disabled value={academicSession || 'N/A'} />
                     )}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Current Semester</label>
-                    {editModes.general && !isSubmitted ? (
-                      <select className="form-input" value={semesterId} onChange={e => setSemesterId(e.target.value)}>
-                        <option value="">Select Semester...</option>
-                        {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                      </select>
-                    ) : (
-                      <input className="form-input" disabled value={semesters.find(s => s._id === semesterId)?.name || 'N/A'} />
-                    )}
-                  </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Degree Type</label>
-                    {editModes.general && !isSubmitted ? (
+                    {editModes.general && !isSubmitted && !degreeTypeId ? (
                       <select 
                         className="form-input" 
                         value={degreeTypeId} 
@@ -1211,7 +1214,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Degree Name</label>
-                    {editModes.general && !isSubmitted ? (
+                    {editModes.general && !isSubmitted && !degreeNameId ? (
                       <select 
                         className="form-input" 
                         value={degreeNameId} 
@@ -1231,7 +1234,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <input className="form-input" disabled value={degreeNames.find(n => n._id === degreeNameId)?.name || (isPhD ? 'Ph.D. Research' : 'N/A')} />
                     )}
                   </div>
-                  {isPhD ? (
+                  {isPhD && (
                     <div className="form-group">
                       <label className="form-label">Ph.D. Mode</label>
                       {editModes.general && !isSubmitted ? (
@@ -1243,11 +1246,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       ) : (
                         <input className="form-input" disabled value={phdMode || 'N/A'} />
                       )}
-                    </div>
-                  ) : (
-                    <div className="form-group">
-                      <label className="form-label">Ph.D. Mode</label>
-                      <input className="form-input" disabled value="N/A" />
                     </div>
                   )}
                 </div>
@@ -1268,9 +1266,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     {editModes.general && !isSubmitted ? (
                       <select className="form-input" value={gender} onChange={e => setGender(e.target.value)}>
                         <option value="">Select...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
+                        {genders.map(g => <option key={g._id} value={g.value}>{g.label}</option>)}
                       </select>
                     ) : (
                       <input className="form-input" disabled value={gender || 'N/A'} />
@@ -1281,11 +1277,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     {editModes.general && !isSubmitted ? (
                       <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
                         <option value="">Select Category...</option>
-                        <option value="General">General</option>
-                        <option value="OBC">OBC</option>
-                        <option value="SC">SC</option>
-                        <option value="ST">ST</option>
-                        <option value="EWS">EWS</option>
+                        {categories.map(c => <option key={c._id} value={c.value}>{c.label}</option>)}
                       </select>
                     ) : (
                       <input className="form-input" disabled value={category || 'N/A'} />

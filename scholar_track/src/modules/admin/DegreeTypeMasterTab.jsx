@@ -3,13 +3,14 @@ import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Trash2, X, Plus } from 'lucide-react';
+import { Trash2, Edit3, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DegreeTypeMasterTab = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ name: '', code: '' });
   const api = useApi();
   const toast = useToast();
@@ -27,17 +28,33 @@ const DegreeTypeMasterTab = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const resetForm = () => {
+    setFormData({ name: '', code: '' });
+    setEditId(null);
+    setFormOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/attendance/masters/degree-types', formData);
-      toast.success('Degree Type created');
-      setFormOpen(false);
-      setFormData({ name: '', code: '' });
+      if (editId) {
+        await api.put(`/attendance/masters/degree-types/${editId}`, formData);
+        toast.success('Degree Type updated successfully');
+      } else {
+        await api.post('/attendance/masters/degree-types', formData);
+        toast.success('Degree Type created successfully');
+      }
+      resetForm();
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error creating degree type');
+      toast.error(err.response?.data?.message || 'Error saving degree type');
     }
+  };
+
+  const handleEdit = (row) => {
+    setEditId(row._id);
+    setFormData({ name: row.name || '', code: row.code || '' });
+    setFormOpen(true);
   };
 
   const handleDelete = async (id) => {
@@ -57,9 +74,14 @@ const DegreeTypeMasterTab = () => {
     {
       header: 'Actions',
       accessor: (row) => (
-        <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleDelete(row._id)}>
-          <Trash2 size={16} />
-        </button>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button className="btn btn-sm btn-outline" onClick={() => handleEdit(row)} title="Edit">
+            <Edit3 size={16} />
+          </button>
+          <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleDelete(row._id)} title="Delete">
+            <Trash2 size={16} />
+          </button>
+        </div>
       )
     }
   ];
@@ -92,9 +114,9 @@ const DegreeTypeMasterTab = () => {
             <div className="inline-form-card">
               <div className="inline-form-header">
                 <span className="inline-form-title">
-                  <Plus size={18} /> Add Degree Type
+                  <Plus size={18} /> {editId ? 'Edit Degree Type' : 'Add Degree Type'}
                 </span>
-                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                <button className="inline-form-close" onClick={resetForm}>
                   <X size={18} />
                 </button>
               </div>
@@ -110,8 +132,8 @@ const DegreeTypeMasterTab = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Degree Type</button>
+                  <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">{editId ? 'Update' : 'Save'} Degree Type</button>
                 </div>
               </form>
             </div>

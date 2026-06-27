@@ -67,6 +67,7 @@ const userSchema = new mongoose.Schema(
       nationality: { type: String, default: '' },
       admissionDate: { type: String, default: '' },
       enrollmentNumber: { type: String, default: '' },
+      erpAdmissionNo: { type: String, default: '' },
       phdMode: { type: String, default: '' },
       preferredGuideId: { type: String, default: '' },
       thesisTitle: { type: String, default: '' },

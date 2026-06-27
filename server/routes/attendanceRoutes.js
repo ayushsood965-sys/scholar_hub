@@ -22,6 +22,7 @@ const upload = multer({ storage });
 // ==========================================
 router.get('/masters/degree-types', protect, attendanceController.getDegreeTypes);
 router.post('/masters/degree-types', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeType);
+router.put('/masters/degree-types/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateDegreeType);
 router.delete('/masters/degree-types/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeType);
 
 router.get('/masters/degree-names', protect, requireDepartment, attendanceController.getDegreeNames);
@@ -31,15 +32,29 @@ router.delete('/masters/degree-names/:id', protect, authorize('SUPER_ADMIN'), at
 
 router.get('/masters/semesters', protect, attendanceController.getSemesters);
 router.post('/masters/semesters', protect, authorize('SUPER_ADMIN'), attendanceController.createSemester);
+router.put('/masters/semesters/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateSemester);
 router.delete('/masters/semesters/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSemester);
 
-router.get('/masters/degree-dept-mappings', protect, attendanceController.getDegreeDeptMappings);
-router.post('/masters/degree-dept-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeDeptMapping);
-router.delete('/masters/degree-dept-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeDeptMapping);
+// Sessions (Super Admin)
+router.get('/sessions', protect, attendanceController.getSessions);
+router.post('/sessions', protect, authorize('SUPER_ADMIN'), attendanceController.createSession);
+router.put('/sessions/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateSession);
+router.delete('/sessions/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSession);
+router.put('/sessions/:id/current', protect, authorize('SUPER_ADMIN'), attendanceController.setCurrentSession);
 
 router.get('/masters/semester-degree-mappings', protect, attendanceController.getSemesterDegreeMappings);
 router.post('/masters/semester-degree-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createSemesterDegreeMapping);
+router.put('/masters/semester-degree-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateSemesterDegreeMapping);
 router.delete('/masters/semester-degree-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSemesterDegreeMapping);
+
+// Category & Gender Master (Super Admin)
+router.get('/masters/category-gender', protect, attendanceController.getCategoryGenderMasters);
+router.post('/masters/category-gender', protect, authorize('SUPER_ADMIN'), attendanceController.createCategoryGenderMaster);
+router.put('/masters/category-gender/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateCategoryGenderMaster);
+router.delete('/masters/category-gender/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteCategoryGenderMaster);
+
+// Public route for signup/profile dropdowns
+router.get('/public/masters/category-gender', attendanceController.getCategoryGenderMasters);
 
 // ==========================================
 // 0. PUBLIC ROUTES (for signup page - no auth required)
@@ -49,14 +64,7 @@ router.get('/public/masters/degree-types', attendanceController.getDegreeTypes);
 router.get('/public/masters/degree-names', attendanceController.getDegreeNames);
 
 // ==========================================
-// 2. SESSION ROUTES
-// ==========================================
-router.get('/sessions', protect, attendanceController.getSessions);
-router.post('/sessions', protect, authorize('SUPER_ADMIN'), attendanceController.createSession);
-router.put('/sessions/:id/current', protect, authorize('SUPER_ADMIN'), attendanceController.setCurrentSession);
-
-// ==========================================
-// 3. POLICY CONFIGURATIONS
+// 2. POLICY CONFIGURATIONS
 // ==========================================
 router.get('/policies', protect, requireDepartment, attendanceController.getPolicies);
 router.post('/policies', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.createOrUpdatePolicy);
@@ -84,6 +92,7 @@ router.post('/timetables/clone', protect, authorize('HOD', 'SUPER_ADMIN'), requi
 // ==========================================
 router.get('/holidays', protect, requireDepartment, attendanceController.getHolidays);
 router.post('/holidays', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.createHoliday);
+router.put('/holidays/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.updateHoliday);
 router.delete('/holidays/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.deleteHoliday);
 
 // ==========================================

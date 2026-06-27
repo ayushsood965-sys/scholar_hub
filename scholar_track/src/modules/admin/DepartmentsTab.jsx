@@ -3,13 +3,14 @@ import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Trash2, X, Plus } from 'lucide-react';
+import { Trash2, Edit2, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DepartmentsTab = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', code: '' });
   const api = useApi();
   const toast = useToast();
@@ -27,16 +28,43 @@ const DepartmentsTab = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({ name: '', code: '' });
+  };
+
+  const handleEdit = (row) => {
+    setEditingId(row._id);
+    setFormData({ name: row.name, code: row.code });
+    setFormOpen(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/departments', formData);
-      toast.success('Department created');
+      if (editingId) {
+        await api.put(`/departments/${editingId}`, formData);
+        toast.success('Department updated');
+      } else {
+        await api.post('/departments', formData);
+        toast.success('Department created');
+      }
       setFormOpen(false);
-      setFormData({ name: '', code: '' });
+      resetForm();
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error creating department');
+      toast.error(err.response?.data?.message || 'Error saving department');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this department?')) return;
+    try {
+      await api.delete(`/departments/${id}`);
+      toast.success('Department deleted');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete department');
     }
   };
 
@@ -46,11 +74,14 @@ const DepartmentsTab = () => {
     {
       header: 'Actions',
       accessor: (row) => (
-        <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => {
-          toast.info('Delete feature restricted for existing departments.');
-        }}>
-          <Trash2 size={16} />
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-sm btn-outline" style={{ color: '#3B82F6', borderColor: '#3B82F6' }} onClick={() => handleEdit(row)}>
+            <Edit2 size={16} />
+          </button>
+          <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleDelete(row._id)}>
+            <Trash2 size={16} />
+          </button>
+        </div>
       )
     }
   ];
@@ -65,7 +96,7 @@ const DepartmentsTab = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>University-wide departments.</p>
         </div>
         {!formOpen && (
-          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+          <button className="btn btn-primary" onClick={() => { resetForm(); setFormOpen(true); }}>
             <Plus size={16} /> Add Department
           </button>
         )}
@@ -83,9 +114,10 @@ const DepartmentsTab = () => {
             <div className="inline-form-card">
               <div className="inline-form-header">
                 <span className="inline-form-title">
-                  <Plus size={18} /> Add Department
+                  {editingId ? <Edit2 size={18} /> : <Plus size={18} />}
+                  {editingId ? 'Edit Department' : 'Add Department'}
                 </span>
-                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                <button className="inline-form-close" onClick={() => { setFormOpen(false); resetForm(); }}>
                   <X size={18} />
                 </button>
               </div>
@@ -101,8 +133,8 @@ const DepartmentsTab = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Department</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => { setFormOpen(false); resetForm(); }}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">{editingId ? 'Update Department' : 'Save Department'}</button>
                 </div>
               </form>
             </div>

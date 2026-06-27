@@ -16,8 +16,8 @@ const StudentSemesterMapping = require('../models/attendance/StudentSemesterMapp
 const DegreeTypeMaster = require('../models/attendance/DegreeTypeMaster');
 const DegreeNameMaster = require('../models/attendance/DegreeNameMaster');
 const SemesterMaster = require('../models/attendance/SemesterMaster');
-const DegreeDepartmentMapping = require('../models/attendance/DegreeDepartmentMapping');
 const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
+const CategoryGenderMaster = require('../models/CategoryGenderMaster');
 
 const { calculateStudentStats } = require('../utils/attendanceCalculator');
 const { createNotification } = require('./notificationController');
@@ -64,6 +64,23 @@ exports.deleteDegreeType = async (req, res) => {
     const data = await DegreeTypeMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.updateDegreeType = async (req, res) => {
+  try {
+    const { name, code, isActive } = req.body;
+    const data = await DegreeTypeMaster.findById(req.params.id);
+    if (!data) return res.status(404).json({ message: 'Degree Type not found' });
+    if (name) data.name = name;
+    if (code) data.code = code.toUpperCase();
+    if (isActive !== undefined) data.isActive = isActive;
+    await data.save();
+    res.status(200).json(data);
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'A degree type with this name or code already exists' });
+    }
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.getDegreeNames = async (req, res) => {
@@ -136,24 +153,15 @@ exports.deleteSemester = async (req, res) => {
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
-
-exports.getDegreeDeptMappings = async (req, res) => {
+exports.updateSemester = async (req, res) => {
   try {
-    const data = await DegreeDepartmentMapping.find({ isActive: true })
-      .populate({ path: 'degreeNameId', populate: { path: 'degreeTypeId' } })
-      .populate('departmentId');
-    res.status(200).json(data);
-  } catch (error) { res.status(500).json({ message: error.message }); }
-};
-exports.createDegreeDeptMapping = async (req, res) => {
-  try {
-    const data = await DegreeDepartmentMapping.create(req.body);
-    res.status(201).json(data);
-  } catch (error) { res.status(500).json({ message: error.message }); }
-};
-exports.deleteDegreeDeptMapping = async (req, res) => {
-  try {
-    const data = await DegreeDepartmentMapping.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const { name, number, isActive } = req.body;
+    const data = await SemesterMaster.findById(req.params.id);
+    if (!data) return res.status(404).json({ message: 'Semester not found' });
+    if (name) data.name = name;
+    if (number !== undefined) data.number = number;
+    if (isActive !== undefined) data.isActive = isActive;
+    await data.save();
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -189,6 +197,19 @@ exports.deleteSemesterDegreeMapping = async (req, res) => {
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
+exports.updateSemesterDegreeMapping = async (req, res) => {
+  try {
+    const { degreeNameId, semesterId } = req.body;
+    const existing = await SemesterDegreeMapping.findOne({ degreeNameId, semesterId, isActive: true, _id: { $ne: req.params.id } });
+    if (existing) {
+      return res.status(400).json({ message: 'This semester is already mapped to the selected degree.' });
+    }
+    const data = await SemesterDegreeMapping.findByIdAndUpdate(req.params.id, { degreeNameId, semesterId }, { new: true })
+      .populate('degreeNameId')
+      .populate('semesterId');
+    res.status(200).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
 
 // ==========================================
 // 2. SESSION CRUD
@@ -210,6 +231,30 @@ exports.setCurrentSession = async (req, res) => {
     await AcademicSessionMaster.updateMany({}, { isCurrent: false });
     const session = await AcademicSessionMaster.findByIdAndUpdate(req.params.id, { isCurrent: true }, { new: true });
     res.status(200).json(session);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.updateSession = async (req, res) => {
+  try {
+    const { sessionName, startDate, endDate, isActive } = req.body;
+    const session = await AcademicSessionMaster.findById(req.params.id);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    if (sessionName) session.sessionName = sessionName;
+    if (startDate) session.startDate = startDate;
+    if (endDate) session.endDate = endDate;
+    if (isActive !== undefined) session.isActive = isActive;
+    await session.save();
+    res.status(200).json(session);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.deleteSession = async (req, res) => {
+  try {
+    const session = await AcademicSessionMaster.findById(req.params.id);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    if (session.isCurrent) {
+      return res.status(400).json({ message: 'Cannot delete the active/current session. Please set another session as current first.' });
+    }
+    await AcademicSessionMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    res.status(200).json({ message: 'Session deleted successfully' });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
@@ -1513,6 +1558,20 @@ exports.deleteHoliday = async (req, res) => {
     res.status(200).json(holiday);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
+exports.updateHoliday = async (req, res) => {
+  try {
+    const { title, startDate, endDate, isRecurring, isActive } = req.body;
+    const data = await HolidayCalendar.findById(req.params.id);
+    if (!data) return res.status(404).json({ message: 'Holiday not found' });
+    if (title) data.title = title;
+    if (startDate) data.startDate = startDate;
+    if (endDate) data.endDate = endDate;
+    if (isRecurring !== undefined) data.isRecurring = isRecurring;
+    if (isActive !== undefined) data.isActive = isActive;
+    await data.save();
+    res.status(200).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
 
 exports.getStudentDashboardStats = async (req, res) => {
   try {
@@ -1858,3 +1917,59 @@ exports.deleteAttendanceEntry = async (req, res) => {
   }
 };
 
+// ==========================================
+// CATEGORY & GENDER MASTER (SUPER ADMIN)
+// ==========================================
+
+exports.getCategoryGenderMasters = async (req, res) => {
+  try {
+    const { type } = req.query;
+    const query = { isActive: true };
+    if (type) query.type = type.toUpperCase();
+    const data = await CategoryGenderMaster.find(query).sort({ type: 1, sortOrder: 1, label: 1 });
+    res.status(200).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+exports.createCategoryGenderMaster = async (req, res) => {
+  try {
+    const { type, label, value, sortOrder } = req.body;
+    if (!type || !label || !value) {
+      return res.status(400).json({ message: 'Type, label, and value are required' });
+    }
+    const data = await CategoryGenderMaster.create({
+      type: type.toUpperCase(),
+      label,
+      value,
+      sortOrder: sortOrder || 0
+    });
+    res.status(201).json(data);
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'This value already exists for the selected type' });
+    }
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateCategoryGenderMaster = async (req, res) => {
+  try {
+    const { label, value, sortOrder, isActive } = req.body;
+    const data = await CategoryGenderMaster.findById(req.params.id);
+    if (!data) return res.status(404).json({ message: 'Record not found' });
+    if (label) data.label = label;
+    if (value) data.value = value;
+    if (sortOrder !== undefined) data.sortOrder = sortOrder;
+    if (isActive !== undefined) data.isActive = isActive;
+    await data.save();
+    res.status(200).json(data);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+exports.deleteCategoryGenderMaster = async (req, res) => {
+  try {
+    const data = await CategoryGenderMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    if (!data) return res.status(404).json({ message: 'Record not found' });
+    res.status(200).json({ message: 'Deleted successfully', data });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
