@@ -53,8 +53,6 @@ const roleNavConfig = {
   ],
   HOD: [
     { key: "overview", icon: Home, label: "Department Overview" },
-    { key: "policies", icon: Shield, label: "Policy Config" },
-    { key: "leaveRules", icon: Settings, label: "Leave Rules" },
     { key: "timetable", icon: Calendar, label: "Timetable Builder" },
     { key: "cloneTimetable", icon: CalendarRange, label: "Clone Timetable" },
     { key: "approvals", icon: Gavel, label: "Approvals" },
@@ -78,6 +76,8 @@ const roleNavConfig = {
     { key: "semesters", icon: Settings, label: "Semesters" },
     { key: "holidays", icon: Calendar, label: "Holiday Calendar" },
     { key: "categoryGender", icon: Layers, label: "Category & Gender Master" },
+    { key: "policies", icon: Shield, label: "Policy Configuration" },
+    { key: "leaveRules", icon: Settings, label: "Leave Rules" },
 
     { kind: "section", label: "🎓 SCHOLAR SYNC" },
     { key: "faculty", icon: Users, label: "Faculty Master" },
