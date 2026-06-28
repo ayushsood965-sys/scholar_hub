@@ -272,14 +272,36 @@ exports.getPolicies = async (req, res) => {
 };
 exports.createOrUpdatePolicy = async (req, res) => {
   try {
-    const { programType, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays } = req.body;
+    const { _id, programType, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays } = req.body;
     const departmentId = req.user.role === 'SUPER_ADMIN' ? null : req.user.departmentId;
-    let policy = await AttendancePolicyMaster.findOne({ departmentId, programType });
-    if (policy) {
-      Object.assign(policy, { minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays, isActive: true });
-      await policy.save();
+    
+    // Check if another active policy exists for the same program type
+    const existingActivePolicy = await AttendancePolicyMaster.findOne({
+      departmentId,
+      programType,
+      isActive: true,
+      ...(_id ? { _id: { $ne: _id } } : {})
+    });
+    
+    if (existingActivePolicy) {
+      return res.status(400).json({ message: `A policy configuration for program type '${programType}' already exists.` });
+    }
+
+    let policy;
+    if (_id) {
+      policy = await AttendancePolicyMaster.findById(_id);
+      if (policy) {
+        Object.assign(policy, { minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays, isActive: true });
+        await policy.save();
+      }
     } else {
-      policy = await AttendancePolicyMaster.create({ departmentId, programType, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays });
+      policy = await AttendancePolicyMaster.findOne({ departmentId, programType });
+      if (policy) {
+        Object.assign(policy, { minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays, isActive: true });
+        await policy.save();
+      } else {
+        policy = await AttendancePolicyMaster.create({ departmentId, programType, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays });
+      }
     }
     res.status(200).json(policy);
   } catch (error) { res.status(500).json({ message: error.message }); }

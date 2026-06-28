@@ -3,7 +3,7 @@ import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Edit2, X, Plus } from 'lucide-react';
+import { Edit2, X, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PolicyConfigTab = () => {
@@ -45,13 +45,24 @@ const PolicyConfigTab = () => {
       setFormOpen(false);
       fetchData();
     } catch (err) {
-      toast.error('Error updating policy');
+      toast.error(err.response?.data?.message || 'Error updating policy');
     }
   };
 
   const handleEdit = (policy) => {
     setFormData(policy);
     setFormOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this policy?')) return;
+    try {
+      await api.delete(`/attendance/policies/${id}`);
+      toast.success('Policy deleted successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete policy');
+    }
   };
 
   const columns = [
@@ -62,9 +73,14 @@ const PolicyConfigTab = () => {
     {
       header: 'Actions',
       accessor: (row) => (
-        <button className="btn btn-sm btn-outline" onClick={() => handleEdit(row)}>
-          <Edit2 size={16} style={{ marginRight: '4px' }} /> Edit
-        </button>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button className="btn btn-sm btn-outline" onClick={() => handleEdit(row)} title="Edit">
+            <Edit2 size={16} />
+          </button>
+          <button className="btn btn-sm btn-outline" style={{ color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleDelete(row._id)} title="Delete">
+            <Trash2 size={16} />
+          </button>
+        </div>
       )
     }
   ];
@@ -115,11 +131,17 @@ const PolicyConfigTab = () => {
                 <div className="grid-3">
                   <div className="form-group">
                     <label className="form-label">Program Type</label>
-                    <select className="form-input" value={formData.programType} onChange={e => setFormData({...formData, programType: e.target.value})}>
+                    <select className="form-input" required value={formData.programType} onChange={e => setFormData({...formData, programType: e.target.value})}>
                       <option value="">Select Program Type...</option>
-                      {degreeTypes.map(dt => (
-                        <option key={dt._id} value={dt.code}>{dt.name} ({dt.code})</option>
-                      ))}
+                      {degreeTypes.map(dt => {
+                        const configuredProgramTypes = data.map(p => p.programType);
+                        const isConfigured = configuredProgramTypes.includes(dt.code) && (!formData._id || formData.programType !== dt.code);
+                        return (
+                          <option key={dt._id} value={dt.code} disabled={isConfigured}>
+                            {dt.name} ({dt.code}) {isConfigured ? '— Configured' : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                   <div className="form-group">
