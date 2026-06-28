@@ -7,6 +7,7 @@ const SuperAdminDashboard = () => {
     const user = localStorage.getItem("user");
     const params = new URLSearchParams();
     if (token) params.set("token", token);
+    params.set("origin", "sync");
     if (user) {
       try {
         params.set("user", btoa(unescape(encodeURIComponent(user))));

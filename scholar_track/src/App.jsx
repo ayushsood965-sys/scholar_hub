@@ -4,6 +4,7 @@ import Landing from "./Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AuthBridge from "./pages/AuthBridge";
+import LogoutBridge from "./pages/LogoutBridge";
 import StudentDashboard from "./pages/StudentDashboard";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import HodDashboard from "./pages/HodDashboard";
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth-bridge" element={<AuthBridge />} />
+        <Route path="/logout-bridge" element={<LogoutBridge />} />
 
         {/* Protected Dashboard Routes */}
         <Route

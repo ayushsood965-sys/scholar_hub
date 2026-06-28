@@ -31,6 +31,7 @@ import { AuthContext } from "../context/AuthContext";
 import { NotificationContext } from "../context/NotificationContext";
 import ThemeToggle from "./ThemeToggle";
 import NotificationDropdown from "./NotificationDropdown";
+import { SCHOLAR_SYNC_URL } from "../config";
 
 const roleNavConfig = {
   STUDENT: [
@@ -115,8 +116,14 @@ const DashboardShell = ({
   const navItems = roleNavConfig[role] ?? roleNavConfig.STUDENT;
 
   const handleLogout = () => {
+    const origin = localStorage.getItem("login_origin") || "track";
     logout();
-    navigate("/");
+    localStorage.removeItem("login_origin");
+    if (origin === "sync") {
+      window.location.href = `${SCHOLAR_SYNC_URL}/logout-bridge?toast=Logged%20out%20successfully`;
+    } else {
+      window.location.href = "/logout-bridge?toast=Logged%20out%20successfully";
+    }
   };
 
   const roleDashMap = {

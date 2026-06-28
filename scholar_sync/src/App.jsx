@@ -9,6 +9,7 @@ import GenericPage from './pages/GenericPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import WorkflowPage from './pages/WorkflowPage';
+import LogoutBridge from './pages/LogoutBridge';
 import ProtectedRoute from './components/ProtectedRoute';
 import UtilityAction from './components/UtilityAction';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -29,6 +30,7 @@ function App() {
         {/* Auth & Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/logout-bridge" element={<LogoutBridge />} />
         <Route path="/workflow" element={<WorkflowPage />} />
         <Route path="/labs" element={<GenericPage title="Research Labs" description="Discover and explore departmental research labs." />} />
         <Route path="/collaborate" element={<GenericPage title="Collaborate" description="Find collaborators for your next big project." />} />

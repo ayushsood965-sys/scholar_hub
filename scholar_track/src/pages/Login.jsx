@@ -29,6 +29,9 @@ const Login = () => {
           if (storedUser) {
             toast.warning('You are already logged in. Please sign out to log in again or sign up.');
             const dashMap = { SUPER_ADMIN: '/super-dashboard', HOD: '/hod-dashboard', ADMIN: '/hod-dashboard', FACULTY: '/faculty-dashboard', STUDENT: '/student-dashboard' };
+            if (storedUser.role === 'SUPER_ADMIN' && !localStorage.getItem('login_origin')) {
+              localStorage.setItem('login_origin', 'track');
+            }
             navigate(dashMap[storedUser.role] ?? '/student-dashboard');
             return;
           }
@@ -55,6 +58,9 @@ const Login = () => {
     setError('');
     const result = await login(username, password);
     if (result.success) {
+      if (result.role === 'SUPER_ADMIN') {
+        localStorage.setItem('login_origin', 'track');
+      }
       navigate(dashMap[result.role] ?? '/student-dashboard');
     } else {
       setError(result.message ?? 'Authentication failed.');

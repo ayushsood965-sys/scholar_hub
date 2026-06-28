@@ -7,10 +7,13 @@ const AuthBridge = () => {
   useEffect(() => {
     const token = params.get("token");
     const userEncoded = params.get("user");
+    const origin = params.get("origin") || "track";
 
     if (token) {
       localStorage.setItem("token", token);
     }
+
+    localStorage.setItem("login_origin", origin);
 
     if (userEncoded) {
       try {

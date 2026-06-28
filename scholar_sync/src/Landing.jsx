@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Beaker, Users, FileText, Banknote } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { useToast } from './context/ToastContext';
 import { API_URL, API_BASE_URL } from './config';
 
 import Navbar from './components/Navbar';
@@ -10,6 +11,18 @@ import Footer from './components/Footer';
 const Landing = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const toast = useToast();
+  const toastShown = useRef(null);
+
+  useEffect(() => {
+    const toastMsg = searchParams.get('toast');
+    if (toastMsg && toastShown.current !== toastMsg) {
+      toastShown.current = toastMsg;
+      toast.success(toastMsg);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, toast]);
 
   useEffect(() => {
     const fetchProjects = async () => {

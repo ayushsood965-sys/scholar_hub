@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useToast } from './context/ToastContext';
 import { motion } from 'framer-motion';
 import { BarChart3, Shield, Clock, CalendarRange, ArrowRight } from 'lucide-react';
 import { API_URL } from './config';
@@ -9,6 +10,18 @@ import Footer from './components/Footer';
 const Landing = () => {
   const [stats, setStats] = useState({ scholars: 500, guides: 45, departments: 12, awardedDegrees: 84 });
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const toast = useToast();
+  const toastShown = useRef(null);
+
+  useEffect(() => {
+    const toastMsg = searchParams.get('toast');
+    if (toastMsg && toastShown.current !== toastMsg) {
+      toastShown.current = toastMsg;
+      toast.success(toastMsg);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, toast]);
 
   useEffect(() => {
     fetch(`${API_URL}/public/stats`)
