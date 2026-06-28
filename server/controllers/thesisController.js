@@ -122,10 +122,17 @@ const getAllTheses = async (req, res) => {
       filter.department = req.user.department;
     }
 
-    const theses = await Thesis.find(filter)
+    let mongoQuery = Thesis.find(filter)
       .populate('scholarId', 'name username email profile profileCompleted department')
       .populate('supervisorId', 'name username')
       .sort('-createdAt');
+
+    const limit = parseInt(req.query.limit) || 0;
+    const skip = parseInt(req.query.skip) || 0;
+    if (skip) mongoQuery = mongoQuery.skip(skip);
+    if (limit) mongoQuery = mongoQuery.limit(limit);
+
+    const theses = await mongoQuery;
     const augmented = await augmentThesesWithMilestones(theses);
     res.json(augmented);
   } catch (err) {
@@ -535,9 +542,16 @@ const updateAuditLog = async (req, res) => {
 // GET /api/thesis/assigned — Faculty fetches their assigned theses
 const getAssignedTheses = async (req, res) => {
   try {
-    const theses = await Thesis.find({ supervisorId: req.user._id })
+    let mongoQuery = Thesis.find({ supervisorId: req.user._id })
       .populate('scholarId', 'name username email profile profileCompleted department')
       .sort('-updatedAt');
+
+    const limit = parseInt(req.query.limit) || 0;
+    const skip = parseInt(req.query.skip) || 0;
+    if (skip) mongoQuery = mongoQuery.skip(skip);
+    if (limit) mongoQuery = mongoQuery.limit(limit);
+
+    const theses = await mongoQuery;
     const augmented = await augmentThesesWithMilestones(theses);
     res.json(augmented);
   } catch (err) {
@@ -548,10 +562,17 @@ const getAssignedTheses = async (req, res) => {
 // GET /api/thesis/dept — HOD fetches all theses in their department
 const getDeptTheses = async (req, res) => {
   try {
-    const theses = await Thesis.find({ department: req.user.department })
+    let mongoQuery = Thesis.find({ department: req.user.department })
       .populate('scholarId', 'name username email profile profileCompleted department')
       .populate('supervisorId', 'name username')
       .sort('-updatedAt');
+
+    const limit = parseInt(req.query.limit) || 0;
+    const skip = parseInt(req.query.skip) || 0;
+    if (skip) mongoQuery = mongoQuery.skip(skip);
+    if (limit) mongoQuery = mongoQuery.limit(limit);
+
+    const theses = await mongoQuery;
     const augmented = await augmentThesesWithMilestones(theses);
     res.json(augmented);
   } catch (err) {

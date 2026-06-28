@@ -71,12 +71,27 @@ export const ThesisProvider = ({ children }) => {
   const fetchAllTheses = useCallback(async (filters = {}) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams(filters).toString();
-      const { data } = await axios.get(`${API}/thesis/all?${params}`, getAuthHeader());
-      setAllTheses(data);
+      const params = new URLSearchParams(filters);
+      
+      // 1. Fetch first chunk (10 items)
+      params.set('limit', '10');
+      const { data: firstTen } = await axios.get(`${API}/thesis/all?${params.toString()}`, getAuthHeader());
+      setAllTheses(firstTen);
+      setLoading(false); // Stop loading indicator immediately
+
+      // 2. Fetch remaining data in background
+      params.delete('limit');
+      params.set('skip', '10');
+      const { data: rest } = await axios.get(`${API}/thesis/all?${params.toString()}`, getAuthHeader());
+      if (rest && rest.length > 0) {
+        setAllTheses(prev => {
+          const existingIds = new Set(prev.map(t => t._id.toString()));
+          const uniqueRest = rest.filter(t => !existingIds.has(t._id.toString()));
+          return [...prev, ...uniqueRest];
+        });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Error');
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -117,19 +132,47 @@ export const ThesisProvider = ({ children }) => {
   const fetchAssignedTheses = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${API}/thesis/assigned`, getAuthHeader());
-      setAllTheses(data);
-    } catch (err) { setError(err.message); }
-    finally { setLoading(false); }
+      // 1. Fetch first chunk (10 items)
+      const { data: firstTen } = await axios.get(`${API}/thesis/assigned?limit=10`, getAuthHeader());
+      setAllTheses(firstTen);
+      setLoading(false); // Stop loading indicator immediately
+
+      // 2. Fetch remaining in the background
+      const { data: rest } = await axios.get(`${API}/thesis/assigned?skip=10`, getAuthHeader());
+      if (rest && rest.length > 0) {
+        setAllTheses(prev => {
+          const existingIds = new Set(prev.map(t => t._id.toString()));
+          const uniqueRest = rest.filter(t => !existingIds.has(t._id.toString()));
+          return [...prev, ...uniqueRest];
+        });
+      }
+    } catch (err) { 
+      setError(err.message); 
+      setLoading(false);
+    }
   }, []);
 
   const fetchDeptTheses = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${API}/thesis/dept`, getAuthHeader());
-      setAllTheses(data);
-    } catch (err) { setError(err.message); }
-    finally { setLoading(false); }
+      // 1. Fetch first chunk (10 items)
+      const { data: firstTen } = await axios.get(`${API}/thesis/dept?limit=10`, getAuthHeader());
+      setAllTheses(firstTen);
+      setLoading(false); // Stop loading indicator immediately
+
+      // 2. Fetch remaining in the background
+      const { data: rest } = await axios.get(`${API}/thesis/dept?skip=10`, getAuthHeader());
+      if (rest && rest.length > 0) {
+        setAllTheses(prev => {
+          const existingIds = new Set(prev.map(t => t._id.toString()));
+          const uniqueRest = rest.filter(t => !existingIds.has(t._id.toString()));
+          return [...prev, ...uniqueRest];
+        });
+      }
+    } catch (err) { 
+      setError(err.message); 
+      setLoading(false);
+    }
   }, []);
 
   const drcApprove = async (id) => {
