@@ -12,6 +12,7 @@ const MarkAttendanceTab = () => {
   const [degreeNames, setDegreeNames] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   
   const [filters, setFilters] = useState({
     sessionId: '',
@@ -39,18 +40,20 @@ const MarkAttendanceTab = () => {
   useEffect(() => {
     const fetchMasters = async () => {
       try {
-        const [sesRes, dtRes, dnRes, semRes, ltRes] = await Promise.all([
+        const [sesRes, dtRes, dnRes, semRes, ltRes, holRes] = await Promise.all([
           api.get('/attendance/sessions'),
           api.get('/attendance/masters/degree-types'),
           api.get('/attendance/masters/degree-names'),
           api.get('/attendance/masters/semesters'),
-          api.get('/attendance/leave-types')
+          api.get('/attendance/leave-types'),
+          api.get('/attendance/holidays')
         ]);
         setSessions(sesRes.data);
         setDegreeTypes(dtRes.data);
         setDegreeNames(dnRes.data);
         setSemesters(semRes.data);
         setLeaveTypes(ltRes.data);
+        setHolidays(holRes.data);
       } catch (err) {
         toast.error('Failed to load master dropdowns');
       } finally {
@@ -63,10 +66,24 @@ const MarkAttendanceTab = () => {
   const selectedType = degreeTypes.find(d => d._id === filters.degreeTypeId);
   const isPhD = selectedType?.code?.toUpperCase() === 'PHD';
 
+  const checkHoliday = (selectedDate) => {
+    if (!selectedDate) return null;
+    const target = new Date(selectedDate).toISOString().split('T')[0];
+    return holidays.find(h => {
+      const start = new Date(h.startDate).toISOString().split('T')[0];
+      const end = new Date(h.endDate).toISOString().split('T')[0];
+      return target >= start && target <= end;
+    });
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || (!isPhD && !filters.semesterId) || !filters.date) {
       return toast.error('Please select all filters first');
+    }
+    const holiday = checkHoliday(filters.date);
+    if (holiday) {
+      return toast.error(`Cannot mark attendance. Selected date falls on a holiday: ${holiday.title}.`);
     }
     setLoadingMatrix(true);
     try {
@@ -389,6 +406,11 @@ const MarkAttendanceTab = () => {
             <div className="form-group mb-sm">
               <label className="form-label">Date</label>
               <input type="date" className="form-input" required value={filters.date} onChange={e => setFilters({...filters, date: e.target.value})} max={new Date().toISOString().split('T')[0]} />
+              {checkHoliday(filters.date) && (
+                <div style={{ color: '#EF4444', fontSize: '0.8rem', marginTop: '4px', fontWeight: '500' }}>
+                  ⚠️ Selected date is a holiday: {checkHoliday(filters.date).title}
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
               <button type="submit" className="btn btn-primary w-full" style={{ height: '46px' }}>

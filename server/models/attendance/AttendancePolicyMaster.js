@@ -10,7 +10,6 @@ const attendancePolicyMasterSchema = new mongoose.Schema(
     },
     programType: {
       type: String,
-      enum: ['PhD', 'PG', 'UG', 'Diploma'],
       required: true
     },
     minRequiredPercentage: {

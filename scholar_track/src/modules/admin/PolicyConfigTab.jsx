@@ -16,13 +16,18 @@ const PolicyConfigTab = () => {
     allowHalfDay: true, allowMedicalLeave: true, allowDutyLeave: true,
     allowCorrection: true, correctionWindowDays: 14
   });
+  const [degreeTypes, setDegreeTypes] = useState([]);
   const api = useApi();
   const toast = useToast();
 
   const fetchData = async () => {
     try {
-      const res = await api.get('/attendance/policies');
-      setData(res.data);
+      const [policiesRes, dtRes] = await Promise.all([
+        api.get('/attendance/policies'),
+        api.get('/attendance/masters/degree-types')
+      ]);
+      setData(policiesRes.data);
+      setDegreeTypes(dtRes.data);
     } catch (err) {
       toast.error('Failed to load policies');
     } finally {
@@ -111,10 +116,10 @@ const PolicyConfigTab = () => {
                   <div className="form-group">
                     <label className="form-label">Program Type</label>
                     <select className="form-input" value={formData.programType} onChange={e => setFormData({...formData, programType: e.target.value})}>
-                      <option value="PhD">PhD</option>
-                      <option value="PG">PG</option>
-                      <option value="UG">UG</option>
-                      <option value="Diploma">Diploma</option>
+                      <option value="">Select Program Type...</option>
+                      {degreeTypes.map(dt => (
+                        <option key={dt._id} value={dt.code}>{dt.name} ({dt.code})</option>
+                      ))}
                     </select>
                   </div>
                   <div className="form-group">

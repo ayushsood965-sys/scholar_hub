@@ -16,23 +16,26 @@ const LeaveTab = () => {
   const [formData, setFormData] = useState({
     leaveTypeId: '',
     startDate: '',
-    totalDays: 1,
     endDate: '',
+    totalDays: 0,
     reason: '',
     documentUrl: ''
   });
+  const [holidays, setHolidays] = useState([]);
   
   const api = useApi();
   const toast = useToast();
 
   const fetchLeaves = async () => {
     try {
-      const [lRes, ltRes] = await Promise.all([
+      const [lRes, ltRes, holRes] = await Promise.all([
         api.get('/attendance/leave/me'),
-        api.get('/attendance/leave-types')
+        api.get('/attendance/leave-types'),
+        api.get('/attendance/holidays')
       ]);
       setLeaves(lRes.data);
       setLeaveTypes(ltRes.data);
+      setHolidays(holRes.data);
       if (ltRes.data.length > 0) {
         setFormData(prev => ({ ...prev, leaveTypeId: ltRes.data[0]._id }));
       }
@@ -45,17 +48,44 @@ const LeaveTab = () => {
 
   useEffect(() => { fetchLeaves(); }, []);
 
-  // Automatically calculate end date when startDate or totalDays changes
+  // Automatically calculate total days when startDate, endDate or leaveType changes
   useEffect(() => {
-    if (formData.startDate && formData.totalDays > 0) {
+    if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
-      const days = parseInt(formData.totalDays, 10);
-      const end = new Date(start.getTime() + (days - 1) * 24 * 60 * 60 * 1000);
-      setFormData(prev => ({ ...prev, endDate: end.toISOString().split('T')[0] }));
+      const end = new Date(formData.endDate);
+      if (end < start) {
+        setFormData(prev => ({ ...prev, totalDays: 0 }));
+        return;
+      }
+      
+      const selectedLeave = leaveTypes.find(t => t._id === formData.leaveTypeId);
+      
+      let count = 0;
+      let cur = new Date(start);
+      while (cur <= end) {
+        const day = cur.getDay(); // 0 = Sunday
+        const curStr = cur.toISOString().split('T')[0];
+        const isSun = (day === 0);
+        const isHoli = holidays.some(h => {
+          const hStart = new Date(h.startDate).toISOString().split('T')[0];
+          const hEnd = new Date(h.endDate).toISOString().split('T')[0];
+          return curStr >= hStart && curStr <= hEnd;
+        });
+        
+        if (selectedLeave?.includeHolidays) {
+          count++;
+        } else {
+          if (!isSun && !isHoli) {
+            count++;
+          }
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+      setFormData(prev => ({ ...prev, totalDays: count }));
     } else {
-      setFormData(prev => ({ ...prev, endDate: '' }));
+      setFormData(prev => ({ ...prev, totalDays: 0 }));
     }
-  }, [formData.startDate, formData.totalDays]);
+  }, [formData.startDate, formData.endDate, formData.leaveTypeId, leaveTypes, holidays]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -81,16 +111,29 @@ const LeaveTab = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.leaveTypeId) return toast.error('Please select a leave type');
+    if (!formData.startDate || !formData.endDate) return toast.error('Please select start and end dates');
 
     const selectedLeave = leaveTypes.find(t => t._id === formData.leaveTypeId);
+    if (!selectedLeave) return toast.error('Selected leave type is invalid');
+
+    if (new Date(formData.endDate) < new Date(formData.startDate)) {
+      return toast.error('End date cannot be before start date');
+    }
+
+    if (formData.totalDays === 0) {
+      return toast.error('Selected leave period does not contain any working days.');
+    }
+
+    if (selectedLeave.documentUploadRule === 'mandatory' && !formData.documentUrl) {
+      return toast.error('Supporting document upload is mandatory for this leave type.');
+    }
     
     try {
       await api.post('/attendance/leave/apply', {
-        leaveType: selectedLeave?.leaveName || 'Leave',
         leaveTypeId: formData.leaveTypeId,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        totalDays: parseInt(formData.totalDays, 10),
+        totalDays: formData.totalDays,
         reason: formData.reason,
         documentUrl: formData.documentUrl
       });
@@ -99,8 +142,8 @@ const LeaveTab = () => {
       setFormData({
         leaveTypeId: leaveTypes[0]?._id || '',
         startDate: '',
-        totalDays: 1,
         endDate: '',
+        totalDays: 0,
         reason: '',
         documentUrl: ''
       });
@@ -197,29 +240,36 @@ const LeaveTab = () => {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Number of Days</label>
+                    <label className="form-label">End Date</label>
                     <input 
-                      type="number" 
-                      min="1" 
+                      type="date" 
                       className="form-input" 
                       required 
-                      value={formData.totalDays} 
-                      onChange={e => setFormData({...formData, totalDays: Math.max(1, parseInt(e.target.value, 10) || 1)})} 
+                      value={formData.endDate} 
+                      onChange={e => setFormData({...formData, endDate: e.target.value})} 
                     />
                   </div>
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">End Date (Auto-Calculated)</label>
-                    <div className="form-input" style={{ background: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                    <label className="form-label">Calculated Working Days</label>
+                    <div className="form-input" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', fontWeight: 'bold' }}>
                       <Calendar size={16} />
-                      {formData.endDate ? new Date(formData.endDate).toLocaleDateString() : 'Select Start Date & Days'}
+                      {formData.totalDays} Day(s)
                     </div>
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Supporting Document (Optional)</label>
+                    <label className="form-label">
+                      Supporting Document 
+                      {(() => {
+                        const selectedLeave = leaveTypes.find(t => t._id === formData.leaveTypeId);
+                        if (selectedLeave?.documentUploadRule === 'mandatory') return ' (Mandatory)';
+                        if (selectedLeave?.documentUploadRule === 'optional') return ' (Optional)';
+                        return ' (Not Required)';
+                      })()}
+                    </label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '42px' }}>
                       <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', margin: 0 }}>
                         <Upload size={16} />

@@ -7,7 +7,7 @@ const holidayCalendarSchema = new mongoose.Schema(
       ref: 'Department',
       default: null // null indicates university-wide
     },
-    holidayName: {
+    title: {
       type: String,
       required: true
     },

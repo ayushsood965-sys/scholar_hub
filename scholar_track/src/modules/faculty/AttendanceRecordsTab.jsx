@@ -13,6 +13,7 @@ const AttendanceRecordsTab = () => {
   const [degreeNames, setDegreeNames] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const [loadingFilters, setLoadingFilters] = useState(true);
 
   const [historyFilters, setHistoryFilters] = useState({
@@ -38,18 +39,20 @@ const AttendanceRecordsTab = () => {
   useEffect(() => {
     const fetchMasters = async () => {
       try {
-        const [sesRes, dtRes, dnRes, semRes, ltRes] = await Promise.all([
+        const [sesRes, dtRes, dnRes, semRes, ltRes, holRes] = await Promise.all([
           api.get('/attendance/sessions'),
           api.get('/attendance/masters/degree-types'),
           api.get('/attendance/masters/degree-names'),
           api.get('/attendance/masters/semesters'),
-          api.get('/attendance/leave-types')
+          api.get('/attendance/leave-types'),
+          api.get('/attendance/holidays')
         ]);
         setSessions(sesRes.data);
         setDegreeTypes(dtRes.data);
         setDegreeNames(dnRes.data);
         setSemesters(semRes.data);
         setLeaveTypes(ltRes.data);
+        setHolidays(holRes.data);
       } catch (err) {
         toast.error('Failed to load master dropdowns');
       } finally {
@@ -109,6 +112,16 @@ const AttendanceRecordsTab = () => {
 
   const combinedClasses = [...historyClasses];
 
+  const checkHoliday = (selectedDate) => {
+    if (!selectedDate) return null;
+    const target = new Date(selectedDate).toISOString().split('T')[0];
+    return holidays.find(h => {
+      const start = new Date(h.startDate).toISOString().split('T')[0];
+      const end = new Date(h.endDate).toISOString().split('T')[0];
+      return target >= start && target <= end;
+    });
+  };
+
   const handleSearchHistory = async () => {
     if (!historyFilters.sessionId) {
       return toast.error('Please select a session to search attendance records.');
@@ -126,6 +139,10 @@ const AttendanceRecordsTab = () => {
     }
     if (!historyFilters.date) {
       return toast.error('Please select a date to search attendance records.');
+    }
+    const holiday = checkHoliday(historyFilters.date);
+    if (holiday) {
+      return toast.error(`Cannot view/edit records. Selected date is a holiday: ${holiday.title}.`);
     }
     if (!historyFilters.timetableSlotId && !isHistoryPhD) {
       return toast.error('Please select a subject to search attendance records.');
@@ -268,6 +285,11 @@ const AttendanceRecordsTab = () => {
                     onChange={e => setHistoryFilters({ ...historyFilters, date: e.target.value, timetableSlotId: '' })}
                     max={new Date().toISOString().split('T')[0]}
                   />
+                  {checkHoliday(historyFilters.date) && (
+                    <div style={{ color: '#EF4444', fontSize: '0.8rem', marginTop: '4px', fontWeight: '500' }}>
+                      ⚠️ Selected date is a holiday: {checkHoliday(historyFilters.date).title}
+                    </div>
+                  )}
                 </div>
                 <div className="form-group mb-sm">
                   <label className="form-label">Subject</label>

@@ -11,8 +11,9 @@ const LeaveRulesTab = () => {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({
-    leaveName: '', leaveCode: '', maxDaysPerYear: 10,
-    requiresDocument: false, countsAsPresent: true
+    leaveName: '', leaveCode: '', maxDaysLimitType: 'year', maxDaysLimit: 10,
+    documentUploadRule: 'none', includeHolidays: false, countsAsPresent: false,
+    minDaysPerRequest: 1, advanceNoticeDays: 0, allowHalfDay: false, applicableGender: 'All'
   });
   const api = useApi();
   const toast = useToast();
@@ -36,7 +37,11 @@ const LeaveRulesTab = () => {
       await api.post('/attendance/leave-types', formData);
       toast.success('Leave Type created');
       setFormOpen(false);
-      setFormData({ leaveName: '', leaveCode: '', maxDaysPerYear: 10, requiresDocument: false, countsAsPresent: true });
+      setFormData({
+        leaveName: '', leaveCode: '', maxDaysLimitType: 'year', maxDaysLimit: 10,
+        documentUploadRule: 'none', includeHolidays: false, countsAsPresent: false,
+        minDaysPerRequest: 1, advanceNoticeDays: 0, allowHalfDay: false, applicableGender: 'All'
+      });
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error creating leave type');
@@ -57,7 +62,10 @@ const LeaveRulesTab = () => {
   const columns = [
     { header: 'Leave Name', accessor: 'leaveName' },
     { header: 'Code', accessor: 'leaveCode' },
-    { header: 'Max Days/Yr', accessor: 'maxDaysPerYear' },
+    { header: 'Limit', accessor: (row) => row.maxDaysLimit !== null ? `${row.maxDaysLimit} days per ${row.maxDaysLimitType}` : 'Unlimited' },
+    { header: 'Doc Rule', accessor: (row) => row.documentUploadRule.toUpperCase() },
+    { header: 'Count Holidays', accessor: (row) => row.includeHolidays ? 'Yes' : 'No' },
+    { header: 'Gender', accessor: 'applicableGender' },
     { header: 'Counts As Present', accessor: (row) => row.countsAsPresent ? 'Yes' : 'No' },
     {
       header: 'Actions',
@@ -110,23 +118,64 @@ const LeaveRulesTab = () => {
                     <input className="form-input" required value={formData.leaveName} onChange={e => setFormData({...formData, leaveName: e.target.value})} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Leave Code (e.g. DL for Duty Leave)</label>
+                    <label className="form-label">Leave Code (e.g. CL, ML, DL)</label>
                     <input className="form-input" required value={formData.leaveCode} onChange={e => setFormData({...formData, leaveCode: e.target.value.toUpperCase()})} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Max Days Per Year</label>
-                    <input type="number" className="form-input" required value={formData.maxDaysPerYear} onChange={e => setFormData({...formData, maxDaysPerYear: e.target.value})} />
+                    <label className="form-label">Limit Type</label>
+                    <select className="form-input" value={formData.maxDaysLimitType} onChange={e => setFormData({...formData, maxDaysLimitType: e.target.value})}>
+                      <option value="semester">Per Semester</option>
+                      <option value="year">Per Year</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid-3" style={{ marginTop: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Max Days Limit (0 for none/unlimited)</label>
+                    <input type="number" className="form-input" value={formData.maxDaysLimit || ''} onChange={e => setFormData({...formData, maxDaysLimit: e.target.value ? parseInt(e.target.value, 10) : null})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Document Upload Rule</label>
+                    <select className="form-input" value={formData.documentUploadRule} onChange={e => setFormData({...formData, documentUploadRule: e.target.value})}>
+                      <option value="none">None</option>
+                      <option value="optional">Optional</option>
+                      <option value="mandatory">Mandatory</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Applicable Gender</label>
+                    <select className="form-input" value={formData.applicableGender} onChange={e => setFormData({...formData, applicableGender: e.target.value})}>
+                      <option value="All">All</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid-3" style={{ marginTop: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Min Days Per Request</label>
+                    <input type="number" min="1" className="form-input" value={formData.minDaysPerRequest} onChange={e => setFormData({...formData, minDaysPerRequest: parseInt(e.target.value, 10) || 1})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Advance Notice Required (Days)</label>
+                    <input type="number" min="0" className="form-input" value={formData.advanceNoticeDays} onChange={e => setFormData({...formData, advanceNoticeDays: parseInt(e.target.value, 10) || 0})} />
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', gap: '24px', margin: '16px 0 20px 0', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '24px', margin: '20px 0 20px 0', flexWrap: 'wrap' }}>
                   <div className="form-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: 0 }}>
-                    <input type="checkbox" id="docReq" checked={formData.requiresDocument} onChange={e => setFormData({...formData, requiresDocument: e.target.checked})} />
-                    <label htmlFor="docReq" className="form-label" style={{ marginBottom: 0, cursor: 'pointer' }}>Requires Documentation</label>
+                    <input type="checkbox" id="incHoli" checked={formData.includeHolidays} onChange={e => setFormData({...formData, includeHolidays: e.target.checked})} />
+                    <label htmlFor="incHoli" className="form-label" style={{ marginBottom: 0, cursor: 'pointer' }}>Count Holidays & Sundays in Leave Period</label>
                   </div>
                   <div className="form-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: 0 }}>
                     <input type="checkbox" id="presentReq" checked={formData.countsAsPresent} onChange={e => setFormData({...formData, countsAsPresent: e.target.checked})} />
                     <label htmlFor="presentReq" className="form-label" style={{ marginBottom: 0, cursor: 'pointer' }}>Counts as Present (Credit Attendance)</label>
+                  </div>
+                  <div className="form-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: 0 }}>
+                    <input type="checkbox" id="halfDayReq" checked={formData.allowHalfDay} onChange={e => setFormData({...formData, allowHalfDay: e.target.checked})} />
+                    <label htmlFor="halfDayReq" className="form-label" style={{ marginBottom: 0, cursor: 'pointer' }}>Allow Half-Day Requests</label>
                   </div>
                 </div>
                 

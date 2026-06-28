@@ -84,10 +84,8 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   if (student.profile?.degreeTypeId) {
     const dt = await DegreeTypeMaster.findById(student.profile.degreeTypeId);
     if (dt) {
-      if (dt.code === 'PHD') { programType = 'PhD'; isPhD = true; }
-      else if (dt.code === 'UG') programType = 'UG';
-      else if (dt.code === 'PG') programType = 'PG';
-      else if (dt.code === 'DIPLOMA') programType = 'Diploma';
+      programType = dt.code;
+      if (dt.code === 'PHD') isPhD = true;
     }
   }
 

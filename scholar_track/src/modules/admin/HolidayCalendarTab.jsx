@@ -12,6 +12,7 @@ const HolidayCalendarTab = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ title: '', startDate: '', endDate: '', isRecurring: false });
+  const [seeding, setSeeding] = useState(false);
   const api = useApi();
   const toast = useToast();
 
@@ -62,6 +63,20 @@ const HolidayCalendarTab = () => {
     setFormOpen(true);
   };
 
+  const handleSeedHolidays = async () => {
+    if (!window.confirm('This will delete all current holidays and seed the Himachal Pradesh 2026 Gazetted Holidays. Do you want to proceed?')) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/attendance/holidays/seed');
+      toast.success(res.data.message || 'Holidays seeded successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to seed holidays');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure?')) return;
     try {
@@ -102,11 +117,18 @@ const HolidayCalendarTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Holiday Calendar</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Manage university-wide holidays.</p>
         </div>
-        {!formOpen && (
-          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
-            <Plus size={16} /> Add Holiday
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {!formOpen && (
+            <>
+              <button className="btn btn-outline" onClick={handleSeedHolidays} disabled={seeding}>
+                {seeding ? 'Seeding...' : 'Seed HP Govt Holidays'}
+              </button>
+              <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+                <Plus size={16} /> Add Holiday
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>

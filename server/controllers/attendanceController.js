@@ -453,6 +453,18 @@ exports.getAttendanceMatrix = async (req, res) => {
     const { sessionId, degreeTypeId, degreeNameId, semesterId, date } = req.query;
     const departmentId = req.user.departmentId;
     const targetDate = new Date(date);
+    
+    // Check if targetDate falls on a holiday
+    const holiday = await HolidayCalendar.findOne({
+      isActive: true,
+      startDate: { $lte: targetDate },
+      endDate: { $gte: targetDate },
+      $or: [{ departmentId }, { departmentId: null }]
+    });
+    if (holiday) {
+      return res.status(400).json({ message: `Cannot mark attendance. Selected date falls on a holiday: ${holiday.title}.` });
+    }
+
     const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][targetDate.getDay()];
     
     // Determine program type from degreeTypeId
@@ -592,6 +604,17 @@ exports.markAttendanceBulk = async (req, res) => {
     const facultyId = req.user._id;
     const departmentId = req.user.departmentId;
     
+    const targetDate = new Date(date);
+    const holiday = await HolidayCalendar.findOne({
+      isActive: true,
+      startDate: { $lte: targetDate },
+      endDate: { $gte: targetDate },
+      $or: [{ departmentId }, { departmentId: null }]
+    });
+    if (holiday) {
+      return res.status(400).json({ message: `Cannot save attendance. Selected date falls on a holiday: ${holiday.title}.` });
+    }
+
     const dt = await DegreeTypeMaster.findById(degreeTypeId);
     const isPhD = dt && dt.code === 'PHD';
 
@@ -683,34 +706,127 @@ exports.markAttendanceBulk = async (req, res) => {
 // ==========================================
 exports.applyLeave = async (req, res) => {
   try {
-    const { leaveType, startDate, endDate, totalDays, reason, documentUrl } = req.body;
+    const { leaveTypeId, startDate, endDate, reason, documentUrl } = req.body;
     const student = await User.findById(req.user._id);
     const departmentId = (await Department.findOne({ name: student.department }))?._id;
-
+    
+    const leaveRule = await LeaveTypeMaster.findById(leaveTypeId);
+    if (!leaveRule) {
+      return res.status(404).json({ message: 'Selected Leave Type not found.' });
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (end < start) {
+      return res.status(400).json({ message: 'End date cannot be before start date.' });
+    }
+    
+    if (leaveRule.applicableGender !== 'All' && student.profile?.gender) {
+      if (student.profile.gender.toLowerCase() !== leaveRule.applicableGender.toLowerCase()) {
+        return res.status(400).json({ message: `This leave type is only applicable for ${leaveRule.applicableGender} students.` });
+      }
+    }
+    
+    if (leaveRule.advanceNoticeDays > 0) {
+      const daysDiff = (start - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24);
+      if (daysDiff < leaveRule.advanceNoticeDays) {
+        return res.status(400).json({ message: `Advance notice of ${leaveRule.advanceNoticeDays} days is required for this leave type.` });
+      }
+    }
+    
+    if (leaveRule.documentUploadRule === 'mandatory' && !documentUrl) {
+      return res.status(400).json({ message: 'Supporting document upload is mandatory for this leave type.' });
+    }
+    
+    const holidays = await HolidayCalendar.find({
+      isActive: true,
+      $or: [{ departmentId }, { departmentId: null }]
+    });
+    
+    let totalDays = 0;
+    let cur = new Date(start);
+    while (cur <= end) {
+      const day = cur.getDay();
+      const curStr = cur.toISOString().split('T')[0];
+      const isSun = (day === 0);
+      const isHoli = holidays.some(h => {
+        const hStart = new Date(h.startDate).toISOString().split('T')[0];
+        const hEnd = new Date(h.endDate).toISOString().split('T')[0];
+        return curStr >= hStart && curStr <= hEnd;
+      });
+      
+      if (leaveRule.includeHolidays) {
+        totalDays++;
+      } else {
+        if (!isSun && !isHoli) {
+          totalDays++;
+        }
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    
+    if (totalDays === 0) {
+      return res.status(400).json({ message: 'Selected leave period does not contain any working days.' });
+    }
+    
+    if (totalDays < leaveRule.minDaysPerRequest) {
+      return res.status(400).json({ message: `Minimum duration for this leave request must be at least ${leaveRule.minDaysPerRequest} day(s).` });
+    }
+    
+    if (leaveRule.maxDaysLimit !== null) {
+      const limitType = leaveRule.maxDaysLimitType || 'year';
+      let dateFilter = {};
+      
+      if (limitType === 'year') {
+        const currentYear = start.getFullYear();
+        dateFilter = {
+          startDate: { $gte: new Date(`${currentYear}-01-01`) },
+          endDate: { $lte: new Date(`${currentYear}-12-31`) }
+        };
+      } else {
+        dateFilter = {
+          startDate: { $gte: new Date(new Date(start).setDate(start.getDate() - 150)) }
+        };
+      }
+      
+      const existingLeaves = await LeaveRequest.find({
+        studentId: student._id,
+        leaveType: leaveRule.leaveName,
+        status: { $in: ['APPROVED', 'PENDING_SUPERVISOR', 'PENDING_HOD'] },
+        ...dateFilter
+      });
+      
+      const usedDays = existingLeaves.reduce((sum, l) => sum + l.totalDays, 0);
+      if (usedDays + totalDays > leaveRule.maxDaysLimit) {
+        return res.status(400).json({
+          message: `Leave limit exceeded. Max allowed is ${leaveRule.maxDaysLimit} days per ${limitType}. You have already taken/applied for ${usedDays} days.`
+        });
+      }
+    }
+    
     let supervisorId = student.profile?.preferredGuideId;
     if (!supervisorId) supervisorId = (await User.findOne({ department: student.department, role: 'HOD' }))?._id;
-
+    
     const leave = await LeaveRequest.create({
       studentId: student._id, department: student.department, departmentId,
-      leaveType, startDate: new Date(startDate), endDate: new Date(endDate),
+      leaveType: leaveRule.leaveName, startDate: new Date(startDate), endDate: new Date(endDate),
       totalDays, reason, documentUrl,
       status: supervisorId ? 'PENDING_SUPERVISOR' : 'PENDING_HOD',
       currentAssigneeId: supervisorId,
       auditLog: [{ action: 'SUBMITTED', actorId: student._id, actorName: student.name, remarks: 'Applied' }]
     });
-
-    // Notify the supervisor (faculty/HOD) of the new leave application
+    
     if (supervisorId) {
       await createNotification({
         recipient: supervisorId,
         title: '📋 New Leave Application',
-        message: `${student.name} has applied for ${leaveType} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${totalDays} day(s)).`,
+        message: `${student.name} has applied for ${leaveRule.leaveName} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} (${totalDays} day(s)).`,
         type: 'LEAVE_APPLIED',
         link: 'leaves',
         source: 'SCHOLAR_TRACK'
       });
     }
-
+    
     res.status(201).json(leave);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -1231,6 +1347,17 @@ exports.applyCorrection = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized: You cannot request correction for this record.' });
     }
 
+    const targetDate = new Date(record.date);
+    const holiday = await HolidayCalendar.findOne({
+      isActive: true,
+      startDate: { $lte: targetDate },
+      endDate: { $gte: targetDate },
+      $or: [{ departmentId: req.user.departmentId }, { departmentId: null }]
+    });
+    if (holiday) {
+      return res.status(400).json({ message: `Cannot request correction for a date that falls on a holiday: ${holiday.title}.` });
+    }
+
     // Check existing corrections for these subjects
     const existingCorrections = await AttendanceCorrection.find({
       studentId: req.user._id,
@@ -1549,6 +1676,40 @@ exports.getHolidays = async (req, res) => {
   try {
     const holidays = await HolidayCalendar.find({ isActive: true }).sort({ startDate: 1 });
     res.status(200).json(holidays);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+exports.seedHolidays = async (req, res) => {
+  try {
+    await HolidayCalendar.deleteMany({});
+    const hpHolidays = [
+      { title: "Statehood Day", startDate: new Date("2026-01-25T00:00:00.000Z"), endDate: new Date("2026-01-25T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Republic Day", startDate: new Date("2026-01-26T00:00:00.000Z"), endDate: new Date("2026-01-26T00:00:00.000Z"), holidayType: "NATIONAL" },
+      { title: "Guru Ravidas's Birthday", startDate: new Date("2026-02-01T00:00:00.000Z"), endDate: new Date("2026-02-01T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Maha Shivratri", startDate: new Date("2026-02-15T00:00:00.000Z"), endDate: new Date("2026-02-15T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Holi", startDate: new Date("2026-03-04T00:00:00.000Z"), endDate: new Date("2026-03-04T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Id-ul-Fitr", startDate: new Date("2026-03-21T00:00:00.000Z"), endDate: new Date("2026-03-21T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Ram Navami", startDate: new Date("2026-03-26T00:00:00.000Z"), endDate: new Date("2026-03-26T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Good Friday", startDate: new Date("2026-04-03T00:00:00.000Z"), endDate: new Date("2026-04-03T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Dr. B. R. Ambedkar's Birthday", startDate: new Date("2026-04-14T00:00:00.000Z"), endDate: new Date("2026-04-14T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Himachal Day", startDate: new Date("2026-04-15T00:00:00.000Z"), endDate: new Date("2026-04-15T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Bhagwan Shree Parshuram Jayanti", startDate: new Date("2026-04-19T00:00:00.000Z"), endDate: new Date("2026-04-19T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Buddha Purnima", startDate: new Date("2026-05-01T00:00:00.000Z"), endDate: new Date("2026-05-01T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Id-ul-Zuha (Bakrid)", startDate: new Date("2026-05-27T00:00:00.000Z"), endDate: new Date("2026-05-27T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Maharana Pratap Jayanti", startDate: new Date("2026-06-17T00:00:00.000Z"), endDate: new Date("2026-06-17T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Muharram", startDate: new Date("2026-06-26T00:00:00.000Z"), endDate: new Date("2026-06-26T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Sant Guru Kabir Jayanti (Prakat Diwas)", startDate: new Date("2026-06-29T00:00:00.000Z"), endDate: new Date("2026-06-29T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Independence Day", startDate: new Date("2026-08-15T00:00:00.000Z"), endDate: new Date("2026-08-15T00:00:00.000Z"), holidayType: "NATIONAL" },
+      { title: "Janmashtami", startDate: new Date("2026-09-04T00:00:00.000Z"), endDate: new Date("2026-09-04T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Mahatma Gandhi's Birthday", startDate: new Date("2026-10-02T00:00:00.000Z"), endDate: new Date("2026-10-02T00:00:00.000Z"), holidayType: "NATIONAL" },
+      { title: "Dussehra", startDate: new Date("2026-10-20T00:00:00.000Z"), endDate: new Date("2026-10-20T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Maharishi Valmiki's Birthday", startDate: new Date("2026-10-26T00:00:00.000Z"), endDate: new Date("2026-10-26T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Diwali (Deepavali)", startDate: new Date("2026-11-08T00:00:00.000Z"), endDate: new Date("2026-11-08T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Guru Nanak's Birthday", startDate: new Date("2026-11-24T00:00:00.000Z"), endDate: new Date("2026-11-24T00:00:00.000Z"), holidayType: "STATE" },
+      { title: "Christmas Day", startDate: new Date("2026-12-25T00:00:00.000Z"), endDate: new Date("2026-12-25T00:00:00.000Z"), holidayType: "NATIONAL" }
+    ];
+    const data = await HolidayCalendar.insertMany(hpHolidays);
+    res.status(201).json({ message: `Successfully seeded ${data.length} official Himachal Pradesh Govt holidays for 2026.`, count: data.length });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 exports.createHoliday = async (req, res) => {

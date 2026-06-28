@@ -20,13 +20,48 @@ const leaveTypeMasterSchema = new mongoose.Schema(
       type: Number,
       default: null // null indicates unlimited (e.g. duty leave)
     },
+    maxDaysLimitType: {
+      type: String,
+      enum: ['semester', 'year'],
+      default: 'year'
+    },
+    maxDaysLimit: {
+      type: Number,
+      default: null // null indicates unlimited
+    },
+    documentUploadRule: {
+      type: String,
+      enum: ['none', 'optional', 'mandatory'],
+      default: 'none'
+    },
     requiresDocument: {
+      type: Boolean,
+      default: false
+    },
+    includeHolidays: {
       type: Boolean,
       default: false
     },
     countsAsPresent: {
       type: Boolean,
       default: false
+    },
+    minDaysPerRequest: {
+      type: Number,
+      default: 1
+    },
+    advanceNoticeDays: {
+      type: Number,
+      default: 0
+    },
+    allowHalfDay: {
+      type: Boolean,
+      default: false
+    },
+    applicableGender: {
+      type: String,
+      enum: ['All', 'Male', 'Female'],
+      default: 'All'
     },
     isActive: {
       type: Boolean,

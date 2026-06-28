@@ -92,6 +92,7 @@ router.post('/timetables/clone', protect, authorize('HOD', 'SUPER_ADMIN'), requi
 // ==========================================
 router.get('/holidays', protect, requireDepartment, attendanceController.getHolidays);
 router.post('/holidays', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.createHoliday);
+router.post('/holidays/seed', protect, authorize('SUPER_ADMIN'), attendanceController.seedHolidays);
 router.put('/holidays/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.updateHoliday);
 router.delete('/holidays/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.deleteHoliday);
 
