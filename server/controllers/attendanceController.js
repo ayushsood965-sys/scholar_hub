@@ -2321,12 +2321,238 @@ exports.getStudentDashboardStats = async (req, res) => {
   try {
     const session = await AcademicSessionMaster.findOne({ isCurrent: true });
     if (!session) return res.status(200).json({ error: 'No active session' });
-    const records = await AttendanceRecord.find({ studentId: req.user._id, date: { $gte: session.startDate, $lte: session.endDate } });
+    const student = req.user;
+    const records = await AttendanceRecord.find({ studentId: student._id, date: { $gte: session.startDate, $lte: session.endDate } });
     const holidays = await HolidayCalendar.find({ isActive: true });
-    const dt = req.user.profile?.degreeTypeId ? await DegreeTypeMaster.findById(req.user.profile.degreeTypeId) : null;
-    const timetables = dt && dt.code !== 'PHD' ? await TimetableMaster.find({ sessionId: session._id, semesterId: req.user.profile?.semesterId, isActive: true }) : [];
-    const stats = await calculateStudentStats(req.user, session, records, holidays, timetables);
-    res.status(200).json(stats);
+    const dt = student.profile?.degreeTypeId ? await DegreeTypeMaster.findById(student.profile.degreeTypeId) : null;
+    const timetables = dt && dt.code !== 'PHD' ? await TimetableMaster.find({ sessionId: session._id, semesterId: student.profile?.semesterId, isActive: true }) : [];
+    const stats = await calculateStudentStats(student, session, records, holidays, timetables);
+
+    // 1. Fetch last 5 leave requests
+    const leaveRequests = await LeaveRequest.find({ studentId: student._id })
+      .select('leaveType startDate endDate totalDays status createdAt')
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    // 2. Fetch timetables with populated faculty details for subjects mapping
+    const populatedTimetables = dt && dt.code !== 'PHD' 
+      ? await TimetableMaster.find({ sessionId: session._id, semesterId: student.profile?.semesterId, isActive: true }).populate('facultyId', 'name')
+      : [];
+
+    // 3. Compute week-over-week trends for subjects
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const subjectsWithTrend = (stats.subjectWiseAttendance || []).map(sub => {
+      const slot = populatedTimetables.find(t => t._id.toString() === sub.timetableSlotId.toString());
+      const facultyName = slot?.facultyId?.name || 'Unknown Faculty';
+      
+      const recentRecords = records.filter(r => new Date(r.date) >= oneWeekAgo && new Date(r.date) <= now);
+      const pastRecords = records.filter(r => new Date(r.date) >= twoWeeksAgo && new Date(r.date) < oneWeekAgo);
+      
+      const getSlotPercentage = (recs) => {
+        let total = 0, attended = 0;
+        recs.forEach(r => {
+          if (r.status === 'ON_LEAVE' && r.isLeaveOverride) {
+            total++;
+            attended++;
+          } else {
+            const c = r.classes.find(cl => cl.timetableSlotId?.toString() === sub.timetableSlotId.toString());
+            if (c) {
+              total++;
+              if (c.selected) attended++;
+            }
+          }
+        });
+        return total > 0 ? (attended / total) * 100 : null;
+      };
+      
+      const recentPct = getSlotPercentage(recentRecords);
+      const pastPct = getSlotPercentage(pastRecords);
+      
+      let direction = 'stable';
+      if (recentPct !== null && pastPct !== null) {
+        if (recentPct > pastPct) direction = 'up';
+        else if (recentPct < pastPct) direction = 'down';
+      }
+      
+      return {
+        ...sub,
+        facultyName,
+        trend: {
+          thisWeek: recentPct !== null ? Math.round(recentPct) : sub.percentage,
+          lastWeek: pastPct !== null ? Math.round(pastPct) : sub.percentage,
+          direction
+        }
+      };
+    });
+
+    // 4. Calculate total projected remaining classes & target widget status
+    let totalRemainingClasses = 0;
+    subjectsWithTrend.forEach(sub => {
+      const remaining = Math.max(0, (sub.totalClassesInSemester || 90) - sub.total);
+      totalRemainingClasses += remaining;
+    });
+
+    const currentPercentage = stats.percentage;
+    const requiredPercentage = stats.minRequiredPercentage;
+    const safeAbsencesRemaining = stats.safeAbsencesRemaining;
+    const classesToRecover = stats.consecutiveClassesToAttend;
+
+    const isRecoverable = (currentPercentage >= requiredPercentage) || 
+      (stats.presentDays + totalRemainingClasses >= Math.ceil(requiredPercentage * (stats.totalExpectedClasses + totalRemainingClasses) / 100));
+
+    const formula = currentPercentage >= requiredPercentage 
+      ? `You can miss up to ${safeAbsencesRemaining} more class(es) while maintaining at least ${requiredPercentage}% attendance.`
+      : isRecoverable 
+        ? `You must attend the next ${classesToRecover} consecutive class(es) to restore your attendance to ${requiredPercentage}%.`
+        : `Warning: It is mathematically impossible to reach ${requiredPercentage}% attendance this semester.`;
+
+    const targetWidget = {
+      currentPercentage,
+      requiredPercentage,
+      safeAbsencesRemaining,
+      classesToRecover,
+      totalRemainingClasses,
+      isRecoverable,
+      formula
+    };
+
+    // 5. Populate calendar data grouped by months
+    const monthMap = {};
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const sortedLogs = [...stats.logs].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    sortedLogs.forEach(log => {
+      const d = new Date(log.date);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const monthKey = `${year}-${month}`;
+      
+      if (!monthMap[monthKey]) {
+        monthMap[monthKey] = {
+          year,
+          month,
+          monthName: monthNames[month],
+          days: []
+        };
+      }
+      
+      let finalStatus = log.status;
+      if (log.status === 'FUTURE' || log.status === 'NOT_MARKED') {
+        if (d.getDay() === 0) {
+          finalStatus = 'WEEKEND';
+        }
+      }
+      
+      const isHoli = holidays.find(h => {
+        const dStr = d.toISOString().split('T')[0];
+        const hStart = new Date(h.startDate).toISOString().split('T')[0];
+        const hEnd = new Date(h.endDate).toISOString().split('T')[0];
+        return dStr >= hStart && dStr <= hEnd;
+      });
+      
+      if (isHoli) {
+        finalStatus = 'HOLIDAY';
+      }
+      
+      monthMap[monthKey].days.push({
+        date: log.date,
+        dayOfMonth: d.getDate(),
+        dayOfWeek: d.getDay(),
+        status: finalStatus,
+        remarks: log.remarks,
+        classes: log.classes,
+        holidayTitle: isHoli ? isHoli.title : null
+      });
+    });
+
+    const calendarMonths = Object.values(monthMap);
+
+    // 6. Compute weekly trends
+    const weeklyTrend = [];
+    const logsForTrend = [...stats.logs].sort((a,b) => new Date(a.date) - new Date(b.date));
+    const chunkSize = 7;
+    for (let i = 0; i < logsForTrend.length; i += chunkSize) {
+      const chunk = logsForTrend.slice(i, i + chunkSize);
+      if (chunk.length === 0) continue;
+      
+      let totalClassesInWeek = 0;
+      let presentInWeek = 0;
+      chunk.forEach(log => {
+        if (log.status === 'PRESENT') {
+          if (dt && dt.code === 'PHD') {
+            totalClassesInWeek++;
+            presentInWeek++;
+          } else {
+            (log.classes || []).forEach(c => {
+              totalClassesInWeek++;
+              if (c.selected) presentInWeek++;
+            });
+          }
+        } else if (log.status === 'ABSENT') {
+          if (dt && dt.code === 'PHD') {
+            totalClassesInWeek++;
+          } else {
+            (log.classes || []).forEach(c => {
+              totalClassesInWeek++;
+              if (c.selected) presentInWeek++;
+            });
+          }
+        }
+      });
+      
+      const weekNum = Math.floor(i / chunkSize) + 1;
+      const weekPerc = totalClassesInWeek > 0 ? Math.round((presentInWeek / totalClassesInWeek) * 100) : 100;
+      weeklyTrend.push({
+        weekLabel: `W${weekNum}`,
+        percentage: weekPerc
+      });
+    }
+
+    // 7. Upcoming classes (next 7 days)
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const upcomingClasses = [];
+    if (dt && dt.code !== 'PHD') {
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const dayName = dayNames[d.getDay()];
+        if (dayName === 'Sunday') continue;
+        
+        const dayHoli = holidays.find(h => {
+          const dStr = d.toISOString().split('T')[0];
+          const hStart = new Date(h.startDate).toISOString().split('T')[0];
+          const hEnd = new Date(h.endDate).toISOString().split('T')[0];
+          return dStr >= hStart && dStr <= hEnd;
+        });
+        if (dayHoli) continue;
+        
+        const daySlots = populatedTimetables.filter(t => t.dayOfWeek === dayName);
+        daySlots.forEach(slot => {
+          upcomingClasses.push({
+            date: d.toISOString().split('T')[0],
+            dayOfWeek: dayName,
+            subjectName: slot.subjectName,
+            subjectCode: slot.subjectCode,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            facultyName: slot.facultyId?.name || 'Unknown Faculty'
+          });
+        });
+      }
+    }
+
+    res.status(200).json({
+      ...stats,
+      subjectWiseAttendance: subjectsWithTrend,
+      leaveRequests,
+      targetWidget,
+      calendarMonths,
+      weeklyTrend: weeklyTrend.slice(-8),
+      upcomingClasses
+    });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
@@ -2831,100 +3057,6 @@ exports.getHodDashboardStats = async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-exports.getHodDrillDown = async (req, res) => {
-  try {
-    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
-    if (!session) return res.status(200).json([]);
-    const { view, id } = req.query;
-
-    if (view === 'faculty') {
-      const courses = await TimetableMaster.find({ facultyId: id, sessionId: session._id, isActive: true });
-      const courseIds = courses.map(c => c._id.toString());
-
-      const mappings = await StudentSemesterMapping.find({
-        sessionId: session._id,
-        'mappedSubjects.timetableSlotId': { $in: courseIds }
-      });
-      const studentIds = mappings.map(m => m.studentId);
-
-      const students = await User.find({ _id: { $in: studentIds } }).select('name profile email username');
-      const records = await AttendanceRecord.find({
-        studentId: { $in: studentIds },
-        date: { $gte: session.startDate, $lte: session.endDate }
-      });
-
-      const recordsByStudent = {};
-      records.forEach(rec => {
-        const sid = rec.studentId.toString();
-        if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
-        recordsByStudent[sid].push(rec);
-      });
-
-      const holidays = await HolidayCalendar.find({ isActive: true });
-      const list = [];
-
-      for (const student of students) {
-        const studentRecs = recordsByStudent[student._id.toString()] || [];
-        const stats = await calculateStudentStats(student, session, studentRecs, holidays, courses);
-
-        list.push({
-          studentId: student._id,
-          studentName: student.name,
-          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
-          email: student.profile?.email || student.username,
-          percentage: stats.percentage,
-          isDefaulter: stats.isDefaulter
-        });
-      }
-      return res.status(200).json(list);
-    }
-
-    if (view === 'course') {
-      const course = await TimetableMaster.findById(id);
-      if (!course) return res.status(404).json({ message: 'Course not found' });
-
-      const mappings = await StudentSemesterMapping.find({
-        sessionId: session._id,
-        'mappedSubjects.timetableSlotId': id
-      });
-      const studentIds = mappings.map(m => m.studentId);
-
-      const students = await User.find({ _id: { $in: studentIds } }).select('name profile email username');
-      const records = await AttendanceRecord.find({
-        studentId: { $in: studentIds },
-        date: { $gte: session.startDate, $lte: session.endDate }
-      });
-
-      const recordsByStudent = {};
-      records.forEach(rec => {
-        const sid = rec.studentId.toString();
-        if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
-        recordsByStudent[sid].push(rec);
-      });
-
-      const holidays = await HolidayCalendar.find({ isActive: true });
-      const list = [];
-
-      for (const student of students) {
-        const studentRecs = recordsByStudent[student._id.toString()] || [];
-        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
-
-        list.push({
-          studentId: student._id,
-          studentName: student.name,
-          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
-          email: student.profile?.email || student.username,
-          percentage: stats.percentage,
-          isDefaulter: stats.isDefaulter
-        });
-      }
-      return res.status(200).json(list);
-    }
-
-    res.status(400).json({ message: 'Invalid view parameter' });
-  } catch (error) { res.status(500).json({ message: error.message }); }
-};
-
 exports.getSuperAdminDashboardStats = async (req, res) => {
   try {
     const [
@@ -3095,5 +3227,155 @@ exports.deleteCategoryGenderMaster = async (req, res) => {
     const data = await CategoryGenderMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
     if (!data) return res.status(404).json({ message: 'Record not found' });
     res.status(200).json({ message: 'Deleted successfully', data });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+exports.getFacultyCourseDefaulters = async (req, res) => {
+  try {
+    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
+    if (!session) return res.status(200).json([]);
+    const courseId = req.params.courseId;
+
+    const course = await TimetableMaster.findById(courseId);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    const mappings = await StudentSemesterMapping.find({
+      sessionId: session._id,
+      'mappedSubjects.timetableSlotId': courseId
+    });
+    const studentIds = mappings.map(m => m.studentId);
+
+    const students = await User.find({ _id: { $in: studentIds } }).select('name profile email username');
+    const records = await AttendanceRecord.find({
+      studentId: { $in: studentIds },
+      date: { $gte: session.startDate, $lte: session.endDate }
+    });
+
+    const recordsByStudent = {};
+    records.forEach(rec => {
+      const sid = rec.studentId.toString();
+      if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+      recordsByStudent[sid].push(rec);
+    });
+
+    const holidays = await HolidayCalendar.find({ isActive: true });
+    const list = [];
+
+    for (const student of students) {
+      const studentRecs = recordsByStudent[student._id.toString()] || [];
+      const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
+      
+      if (stats.isDefaulter) {
+        const presentLogs = (stats.logs || []).filter(l => l.status === 'PRESENT');
+        const lastAttendedDate = presentLogs.length > 0 ? presentLogs[0].date : null;
+
+        list.push({
+          studentId: student._id,
+          studentName: student.name,
+          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
+          email: student.profile?.email || student.username,
+          attendedClasses: stats.presentDays,
+          totalClasses: stats.totalExpectedClasses,
+          percentage: stats.percentage,
+          lastAttendedDate
+        });
+      }
+    }
+
+    res.status(200).json(list);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+exports.getHodDrillDown = async (req, res) => {
+  try {
+    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
+    if (!session) return res.status(200).json([]);
+    const { view, id } = req.query;
+
+    if (view === 'faculty') {
+      const courses = await TimetableMaster.find({ facultyId: id, sessionId: session._id, isActive: true });
+      const courseIds = courses.map(c => c._id.toString());
+
+      const mappings = await StudentSemesterMapping.find({
+        sessionId: session._id,
+        'mappedSubjects.timetableSlotId': { $in: courseIds }
+      });
+      const studentIds = mappings.map(m => m.studentId);
+
+      const students = await User.find({ _id: { $in: studentIds } }).select('name profile email username');
+      const records = await AttendanceRecord.find({
+        studentId: { $in: studentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      });
+
+      const recordsByStudent = {};
+      records.forEach(rec => {
+        const sid = rec.studentId.toString();
+        if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+        recordsByStudent[sid].push(rec);
+      });
+
+      const holidays = await HolidayCalendar.find({ isActive: true });
+      const list = [];
+
+      for (const student of students) {
+        const studentRecs = recordsByStudent[student._id.toString()] || [];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, courses);
+
+        list.push({
+          studentId: student._id,
+          studentName: student.name,
+          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
+          email: student.profile?.email || student.username,
+          percentage: stats.percentage,
+          isDefaulter: stats.isDefaulter
+        });
+      }
+      return res.status(200).json(list);
+    }
+
+    if (view === 'course') {
+      const course = await TimetableMaster.findById(id);
+      if (!course) return res.status(404).json({ message: 'Course not found' });
+
+      const mappings = await StudentSemesterMapping.find({
+        sessionId: session._id,
+        'mappedSubjects.timetableSlotId': id
+      });
+      const studentIds = mappings.map(m => m.studentId);
+
+      const students = await User.find({ _id: { $in: studentIds } }).select('name profile email username');
+      const records = await AttendanceRecord.find({
+        studentId: { $in: studentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      });
+
+      const recordsByStudent = {};
+      records.forEach(rec => {
+        const sid = rec.studentId.toString();
+        if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+        recordsByStudent[sid].push(rec);
+      });
+
+      const holidays = await HolidayCalendar.find({ isActive: true });
+      const list = [];
+
+      for (const student of students) {
+        const studentRecs = recordsByStudent[student._id.toString()] || [];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
+
+        list.push({
+          studentId: student._id,
+          studentName: student.name,
+          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
+          email: student.profile?.email || student.username,
+          percentage: stats.percentage,
+          isDefaulter: stats.isDefaulter
+        });
+      }
+      return res.status(200).json(list);
+    }
+
+    res.status(400).json({ message: 'Invalid view parameter' });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
