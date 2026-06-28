@@ -122,6 +122,7 @@ const DataTable = ({
           <table className="data-table">
             <thead>
               <tr>
+                <th>S.No.</th>
                 {columns.map(col => (
                   <th
                     key={col.key}
@@ -146,6 +147,7 @@ const DataTable = ({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: i * 0.03 }}
                 >
+                  <td style={{ fontWeight: 600, color: '#6B7280' }}>{i + 1 + page * pageSize}</td>
                   {columns.map(col => (
                     <td key={col.key}>
                       {col.render

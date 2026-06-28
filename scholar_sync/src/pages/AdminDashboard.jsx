@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Home, Users, FileText, BarChart2, Settings, LogOut, Bell, CheckCircle2, User, GraduationCap, ShieldCheck, Clock, XCircle, Layers, Award, Edit, File, Plus, Calendar, Search, BookOpen } from 'lucide-react';
@@ -1899,7 +1899,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
   );
   const depts = [...new Set(cleanTheses.map(t => t && t.department).filter(Boolean))];
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     filtered,
     ['scholarId.name', 'department', 'title', 'supervisorId.name']
   );
@@ -1949,9 +1949,10 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
               <div style={{ padding: 32, textAlign: 'center', color: '#9CA3AF' }}>No records found.</div>
             ) : (
               <div className="file-list">
-                <div className="file-header"><div style={{ flex: 1.5 }}>Scholar</div><div style={{ flex: 1 }}>Dept</div><div style={{ flex: 2 }}>Title</div><div style={{ flex: 1.2 }}>Supervisor</div><div style={{ flex: 1 }}>Status</div><div style={{ flex: 1.4 }}>Action</div></div>
-                {paginatedData.map(t => (
+                <div className="file-header"><div style={{ flex: 0.5 }}>S.No.</div><div style={{ flex: 1.5 }}>Scholar</div><div style={{ flex: 1 }}>Dept</div><div style={{ flex: 2 }}>Title</div><div style={{ flex: 1.2 }}>Supervisor</div><div style={{ flex: 1 }}>Status</div><div style={{ flex: 1.4 }}>Action</div></div>
+                {paginatedData.map((t, idx) => (
                   <div key={t._id} className="file-item">
+                    <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                     <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <div className="file-name">{t.scholarId?.name}</div>
                       {['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(t.status) && milestoneMap[t._id] && (
@@ -2012,7 +2013,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
 // ── External Evaluation ──
 const ExternalEvaluation = ({ theses, onAuditLog }) => {
   const submitted = theses.filter(t => t.status === 'SUBMITTED');
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     submitted,
     ['scholarId.name', 'title']
   );
@@ -2025,8 +2026,9 @@ const ExternalEvaluation = ({ theses, onAuditLog }) => {
       {paginatedData.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No submitted theses yet.</div>
       ) : (
-        paginatedData.map(t => (
-          <div key={t._id} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        paginatedData.map((t, idx) => (
+          <div key={t._id} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, marginBottom: 12, position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 8, right: 12, background: '#7C3AED', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>{(currentPage - 1) * pageSize + idx + 1}</div>
             <div style={{ fontWeight: 700, marginBottom: 4 }}>{t.scholarId?.name}</div>
             <div style={{ fontSize: '0.85rem', color: '#374151', marginBottom: 12 }}>{t.title}</div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -2207,7 +2209,7 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     users,
     ['name', 'username', 'role']
   );
@@ -2259,6 +2261,7 @@ const ManageUsers = () => {
           ) : (
             <div className="file-list">
               <div className="file-header">
+                <div style={{ flex: 0.5 }}>S.No.</div>
                 <div style={{ flex: 2 }}>Name</div>
                 <div style={{ flex: 1.5 }}>Email Address</div>
                 <div style={{ flex: 1 }}>Role</div>
@@ -2267,8 +2270,9 @@ const ManageUsers = () => {
                 <div style={{ flex: 1 }}>Status</div>
                 <div style={{ flex: 2.2 }}>Action</div>
               </div>
-              {paginatedData.map(u => (
+              {paginatedData.map((u, idx) => (
                 <div key={u._id} className="file-item" style={{ opacity: u.isActive ? 1 : 0.65 }}>
+                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div className="file-name" style={{ flex: 2, fontWeight: 600 }}>{u.name}</div>
                   <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#64748B' }}>{u.username}</div>
                   <div style={{ flex: 1 }}>
@@ -2379,9 +2383,10 @@ const ManageFaculty = () => {
     <div className="card documents-card">
       <h3 className="card-title">Faculty Supervison Directory</h3>
       <div className="file-list">
-        <div className="file-header"><div style={{ flex: 2 }}>Name</div><div style={{ flex: 1.5 }}>Department</div><div style={{ flex: 1 }}>Sub-Role</div><div style={{ flex: 1.5 }}>Username</div></div>
-        {faculty.map(f => (
+        <div className="file-header"><div style={{ flex: 0.5 }}>S.No.</div><div style={{ flex: 2 }}>Name</div><div style={{ flex: 1.5 }}>Department</div><div style={{ flex: 1 }}>Sub-Role</div><div style={{ flex: 1.5 }}>Username</div></div>
+        {faculty.map((f, idx) => (
           <div key={f._id} className="file-item">
+            <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{idx + 1}</div>
             <div className="file-name" style={{ flex: 2 }}>{f.name}</div>
             <div className="file-date" style={{ flex: 1.5 }}>{f.department || '—'}</div>
             <div style={{ flex: 1 }}><span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, background: f.subRole === 'HOD' ? '#FEF3C7' : '#DBEAFE', color: f.subRole === 'HOD' ? '#D97706' : '#1D4ED8' }}>{f.subRole || 'SUPERVISOR'}</span></div>
@@ -2912,6 +2917,7 @@ const HODDocumentManager = ({ theses }) => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Chapter Draft Details</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Thesis Context</th>
@@ -2979,6 +2985,7 @@ const HODDocumentManager = ({ theses }) => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Paper Title</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Journal & Publisher</th>
@@ -2989,8 +2996,9 @@ const HODDocumentManager = ({ theses }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredPublications.map(p => (
+                    {filteredPublications.map((p, idx) => (
                       <tr key={p._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1}</td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontWeight: 700, color: '#1E293B' }}>{p.scholarName}</div>
                           <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{p.enrollmentNumber}</div>
@@ -3077,8 +3085,9 @@ const HODDocumentManager = ({ theses }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {researchOutputs.map(r => (
+                    {researchOutputs.map((r, idx) => (
                       <tr key={r._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1}</td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontWeight: 700, color: '#1E293B' }}>{r.scholarName}</div>
                           <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{r.enrollmentNumber}</div>
@@ -3407,6 +3416,7 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
 
       <div className="file-list">
         <div className="file-header">
+          <div style={{ flex: 0.5 }}>S.No.</div>
           <div style={{ flex: 1.8 }}>Scholar</div>
           <div style={{ flex: 0.8 }}>Session</div>
           <div style={{ flex: 1.2 }}>Date</div>
@@ -3414,9 +3424,10 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
           <div style={{ flex: 1.2 }}>Status</div>
           <div style={{ flex: 2.2, textAlign: 'center' }}>Grading Actions</div>
         </div>
-        {racs.map(r => (
+        {racs.map((r, idx) => (
           <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{idx + 1}</div>
               <div style={{ flex: 1.8 }}>
                 <div style={{ fontWeight: 700 }}>{r.scholar?.name || 'Academic Scholar'}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
@@ -3640,6 +3651,7 @@ const HODChangeRequestsTab = ({ user }) => {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
                 <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
                 <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Request Type</th>
                 <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Current Value</th>
@@ -3649,7 +3661,7 @@ const HODChangeRequestsTab = ({ user }) => {
               </tr>
             </thead>
             <tbody>
-              {sortedRequests.map(r => {
+              {sortedRequests.map((r, idx) => {
                 const isPending = r.status === 'PENDING';
                 const isGuideChange = r.type === 'GUIDE_CHANGE';
                 const proposedFaculty = faculty.find(f => f._id === r.proposedValue);
@@ -3664,6 +3676,7 @@ const HODChangeRequestsTab = ({ user }) => {
                       transition: 'background-color 0.2s' 
                     }}
                   >
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1}</td>
                     <td style={{ padding: '14px 16px', fontWeight: 600, color: '#0F172A' }}>
                       <div style={{ fontWeight: 700 }}>{r.scholarId?.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 400 }}>{r.scholarId?.username}</div>
@@ -4082,7 +4095,7 @@ const DefaultersTab = () => {
     });
   }, [defaulters, sortField, sortAsc]);
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     sorted,
     ['scholarName', 'enrollmentNumber', 'scholarDepartment', 'milestoneTitle']
   );
@@ -4144,8 +4157,9 @@ const DefaultersTab = () => {
                 <div style={{ flex: 1, textAlign: 'center' }}>Status</div>
                 <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
               </div>
-              {paginatedData.map(d => (
+              {paginatedData.map((d, idx) => (
                 <div key={d._id} className="file-item" style={{ padding: '14px 8px', borderBottom: '1px solid #F1F5F9', alignItems: 'center' }}>
+                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div style={{ flex: 1.5, fontWeight: 700, color: '#1E293B' }}>{d.scholarName}</div>
                   <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#475569' }}>{d.enrollmentNumber}</div>
                   <div style={{ flex: 1, fontSize: '0.85rem', color: '#475569' }}>{d.scholarDepartment}</div>
@@ -4305,7 +4319,7 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
                 </td>
               </tr>
             ) : (
-              filteredTheses.map(t => (
+              filteredTheses.map((t, idx) => (
                 <tr key={t._id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ fontWeight: 700, color: '#1E293B' }}>{t.scholarId?.name || 'N/A'}</div>
@@ -4514,7 +4528,7 @@ const MeetingsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [btnLoading, setBtnLoading] = useState({});
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     meetings,
     ['scholarId.name', 'department', 'reason', 'time', 'status']
   );
@@ -4593,7 +4607,7 @@ const MeetingsTab = ({ user }) => {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {paginatedData.map((meeting) => {
+              {paginatedData.map((meeting, idx) => {
                 const statusStyle = getStatusStyle(meeting.status);
                 const isInvited = meeting.invitedAttendees?.some(a => (a._id || a) === user?._id);
                 const hasAccepted = meeting.attendees?.some(a => (a._id || a) === user?._id);
@@ -4610,9 +4624,11 @@ const MeetingsTab = ({ user }) => {
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 12,
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
                     }}
                   >
+                    <div style={{ position: 'absolute', top: 8, right: 12, background: 'linear-gradient(135deg, #7C3AED 0%, #9061F9 100%)', color: 'white', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)', zIndex: 1 }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                         <div style={{

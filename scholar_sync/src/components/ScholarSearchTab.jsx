@@ -24,7 +24,7 @@ const ScholarSearchTab = ({ user }) => {
   const [results, setResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     results,
     ['scholarId.name', 'enrollmentNumber', 'department', 'supervisorId.name']
   );
@@ -346,7 +346,7 @@ const ScholarSearchTab = ({ user }) => {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {paginatedData.map(r => (
+              {paginatedData.map((r, idx) => (
                 <div
                   key={r._id}
                   className="card"
@@ -357,9 +357,29 @@ const ScholarSearchTab = ({ user }) => {
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     gap: 16,
-                    borderLeft: '5px solid #7C3AED'
+                    borderLeft: '5px solid #7C3AED',
+                    position: 'relative',
+                    overflow: 'hidden'
                   }}
                 >
+                  <div style={{
+                    position: 'absolute',
+                    top: -15,
+                    right: -15,
+                    width: 60,
+                    height: 60,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #7C3AED 0%, #9061F9 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '1.1rem',
+                    fontWeight: 800,
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)'
+                  }}>
+                    {(currentPage - 1) * pageSize + idx + 1}
+                  </div>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <h5 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text, #0F172A)' }}>

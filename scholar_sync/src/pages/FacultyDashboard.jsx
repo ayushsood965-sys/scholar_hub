@@ -2412,7 +2412,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
 // ── Scholar List ──
 const ScholarList = ({ theses, onSelect, title, subRole }) => {
   const { loading } = useContext(ThesisContext);
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, currentPage, pageSize, renderGridControls } = useGridControl(
     theses,
     ['scholarId.name', 'department', 'title']
   );
@@ -2433,15 +2433,17 @@ const ScholarList = ({ theses, onSelect, title, subRole }) => {
           ) : (
             <div className="file-list">
               <div className="file-header">
+                <div style={{ flex: '0.5' }}>S.No.</div>
                 <div style={{ flex: 1.5 }}>Scholar</div>
                 <div style={{ flex: 1 }}>Dept</div>
                 <div style={{ flex: 2 }}>Title</div>
                 <div style={{ flex: 1.2 }}>Status</div>
                 <div style={{ flex: 0.8 }}>Action</div>
               </div>
-              {paginatedData.map(t => (
+              {paginatedData.map((t, idx) => (
                 <div key={t._id} className="file-item">
-                  <div className="file-name" style={{ flex: 1.5 }}>{t.scholarId?.name}</div>
+                  <div style={{ flex: '0.5', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (currentPage - 1) * pageSize}</div>
+                  <div className="file-name" style={{ flex: 1.5 }}>{t.scholarId?.name || <span style={{ color: '#DC2626', fontStyle: 'italic', fontSize: '0.8rem' }}>⚠️ Unassigned</span>}</div>
                   <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
                   <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 40)}...</div>
                   <div style={{ flex: 1.2 }}>
@@ -2561,6 +2563,14 @@ const HODChangeRequestsTab = ({ user }) => {
     }
   };
 
+  // Sort requests by most recent first
+  const sortedRequests = [...requests].sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
+
+  const { paginatedData, currentPage, pageSize, renderGridControls } = useGridControl(
+    sortedRequests,
+    ['scholarId.name', 'type', 'status', 'currentValue', 'proposedValue']
+  );
+
   if (loading) {
     return (
       <div className="premium-preloader-container">
@@ -2569,15 +2579,6 @@ const HODChangeRequestsTab = ({ user }) => {
       </div>
     );
   }
-
-  const sortedRequests = useMemo(() => {
-    return [...(Array.isArray(requests) ? requests : [])].sort((a, b) => (a.status === 'PENDING' ? -1 : 1));
-  }, [requests]);
-
-  const { paginatedData, renderGridControls } = useGridControl(
-    sortedRequests,
-    ['scholarId.name', 'type', 'status', 'currentValue', 'proposedValue']
-  );
 
   return (
     <div className="card" style={{ padding: 24, background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
@@ -2599,6 +2600,7 @@ const HODChangeRequestsTab = ({ user }) => {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>S.No.</th>
                 <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
                 <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Request Type</th>
                 <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Current Value</th>
@@ -2608,7 +2610,7 @@ const HODChangeRequestsTab = ({ user }) => {
               </tr>
             </thead>
             <tbody>
-              {paginatedData.map(r => {
+              {paginatedData.map((r, idx) => {
                 const isPending = r.status === 'PENDING';
                 const isGuideChange = r.type === 'GUIDE_CHANGE';
                 const proposedFaculty = faculty.find(f => f._id === r.proposedValue);
@@ -2623,6 +2625,7 @@ const HODChangeRequestsTab = ({ user }) => {
                       transition: 'background-color 0.2s' 
                     }}
                   >
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (currentPage - 1) * pageSize}</td>
                     <td style={{ padding: '14px 16px', fontWeight: 600, color: '#0F172A' }}>
                       <div style={{ fontWeight: 700 }}>{r.scholarId?.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 400 }}>{r.scholarId?.username}</div>
@@ -2649,7 +2652,7 @@ const HODChangeRequestsTab = ({ user }) => {
                     <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                       <button 
                         onClick={() => handleSelectRequest(r)}
-                        className="btn-primary" 
+                        className="btn-primary"
                         style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#3B82F6', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
                       >
                         {isPending ? 'Review' : 'View Details'}
@@ -3980,7 +3983,7 @@ const PendingReviewsQueue = ({ theses, user }) => {
     );
   }
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     items,
     ['scholarName', 'title', 'docType']
   );
@@ -4007,14 +4010,16 @@ const PendingReviewsQueue = ({ theses, user }) => {
           ) : (
             <div className="file-list">
               <div className="file-header">
+                <div style={{ flex: 0.5 }}>S.No.</div>
                 <div style={{ flex: 1.5 }}>Scholar</div>
                 <div style={{ flex: 2 }}>Document Name</div>
                 <div style={{ flex: 1 }}>Category</div>
                 <div style={{ flex: 1.5 }}>Submitted Date</div>
                 <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
               </div>
-              {paginatedData.map(i => (
+              {paginatedData.map((i, idx) => (
                 <div key={i._id} className="file-item">
+                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div style={{ flex: 1.5, fontWeight: 700 }}>{i.scholarName}</div>
                   <div style={{ flex: 2, fontSize: '0.9rem', color: '#1E293B' }}>{i.title}</div>
                   <div style={{ flex: 1 }}><span style={{ fontSize: '0.72rem', background: i.docType === 'MILESTONE' ? '#EFF6FF' : '#F5F3FF', color: i.docType === 'MILESTONE' ? '#1E40AF' : '#5B21B6', padding: '3px 8px', borderRadius: 12, fontWeight: 600 }}>{i.docType}</span></div>
@@ -4039,7 +4044,7 @@ const FacultyDefaultersPage = ({ user, subRole }) => {
   const [defaulters, setDefaulters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     defaulters,
     ['scholarName', 'enrollmentNumber', 'milestoneTitle']
   );
@@ -4103,14 +4108,16 @@ const FacultyDefaultersPage = ({ user, subRole }) => {
           ) : (
             <div className="file-list">
               <div className="file-header">
+                <div style={{ flex: 0.5 }}>S.No.</div>
                 <div style={{ flex: 1.5 }}>Scholar</div>
                 <div style={{ flex: 1.5 }}>Enrollment Number</div>
                 <div style={{ flex: 1.5 }}>Milestone</div>
                 <div style={{ flex: 1.5 }}>Due Date</div>
                 <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
               </div>
-              {paginatedData.map(d => (
+              {paginatedData.map((d, idx) => (
                 <div key={d._id} className="file-item">
+                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div style={{ flex: 1.5, fontWeight: 700 }}>{d.scholarName}</div>
                   <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.enrollmentNumber}</div>
                   <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.milestoneTitle}</div>
@@ -4141,7 +4148,7 @@ const MeetingsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [btnLoading, setBtnLoading] = useState({});
 
-  const { paginatedData, renderGridControls } = useGridControl(
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
     meetings,
     ['scholarId.name', 'department', 'reason', 'time', 'status']
   );
@@ -4220,7 +4227,7 @@ const MeetingsTab = ({ user }) => {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {paginatedData.map((meeting) => {
+              {paginatedData.map((meeting, idx) => {
                 const statusStyle = getStatusStyle(meeting.status);
                 const isInvited = meeting.invitedAttendees?.some(a => (a._id || a) === user?._id);
                 const hasAccepted = meeting.attendees?.some(a => (a._id || a) === user?._id);
@@ -4237,9 +4244,11 @@ const MeetingsTab = ({ user }) => {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 12,
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  position: 'relative'
                 }}
               >
+                <div style={{ position: 'absolute', top: 8, right: 12, background: 'linear-gradient(135deg, #7C3AED 0%, #9061F9 100%)', color: 'white', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)', zIndex: 1 }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{
