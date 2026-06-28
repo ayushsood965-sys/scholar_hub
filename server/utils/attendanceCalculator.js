@@ -222,6 +222,61 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
     }
   }
 
+  const subjectWiseAttendance = [];
+  if (!isPhD) {
+    const studentSlots = rawTimetables || [];
+    studentSlots.forEach(slot => {
+      const dates = getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
+      let subjectPresent = 0;
+      let subjectAbsent = 0;
+      
+      dates.forEach(date => {
+        const dStr = date.toDateString();
+        const existingRecord = recordMap[dStr];
+        if (existingRecord) {
+          if (existingRecord.status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
+            subjectPresent++;
+          } else {
+            const classItem = existingRecord.classes.find(c => c.timetableSlotId?.toString() === slot._id.toString());
+            if (classItem) {
+              if (classItem.selected) {
+                subjectPresent++;
+              } else {
+                subjectAbsent++;
+              }
+            } else {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              if (date < today) {
+                subjectAbsent++;
+              }
+            }
+          }
+        } else {
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          if (date < today) {
+            subjectAbsent++;
+          }
+        }
+      });
+      
+      const totalForSubject = subjectPresent + subjectAbsent;
+      const percentageForSubject = totalForSubject > 0 ? parseFloat(((subjectPresent / totalForSubject) * 100).toFixed(2)) : 100;
+      
+      subjectWiseAttendance.push({
+        timetableSlotId: slot._id,
+        subjectCode: slot.subjectCode,
+        subjectName: slot.subjectName,
+        facultyId: slot.facultyId,
+        total: totalForSubject,
+        attended: subjectPresent,
+        percentage: percentageForSubject,
+        totalClassesInSemester: slot.totalClassesInSemester || 90
+      });
+    });
+  }
+
   return {
     percentage,
     totalWorkingDays,
@@ -234,7 +289,9 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
     warningThreshold: warningLevel,
     safeAbsencesRemaining: safeAbsences,
     consecutiveClassesToAttend: classesToAttend,
-    logs: processedLogs.reverse()
+    logs: processedLogs.reverse(),
+    subjectWiseAttendance,
+    isPhD
   };
 };
 

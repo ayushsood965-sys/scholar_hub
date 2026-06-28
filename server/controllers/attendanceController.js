@@ -2333,6 +2333,7 @@ exports.getStudentDashboardStats = async (req, res) => {
 exports.getFacultyDashboardStats = async (req, res) => {
   try {
     const session = await AcademicSessionMaster.findOne({ isCurrent: true });
+    if (!session) return res.status(200).json({ error: 'No active session' });
     const facultyId = req.user._id;
     const deptId = req.user.department;
 
@@ -2341,16 +2342,137 @@ exports.getFacultyDashboardStats = async (req, res) => {
       .populate('degreeNameId', 'name')
       .populate('semesterId', 'name');
 
-    // 2. Next week's classes — compute dates for next 7 days
+    // Get today's marked attendance for this faculty
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayDayName = dayNames[today.getDay()];
+    const todayStr = toLocalDateString(today);
+    const markedToday = await AttendanceRecord.find({
+      facultyId,
+      date: todayStr,
+    }).select('timetableSlotId');
+
+    // Compute student mappings and stats
+    const allMappings = await StudentSemesterMapping.find({ sessionId: session._id });
+    const courseStudentsMap = {};
+    allMappings.forEach(mapping => {
+      (mapping.mappedSubjects || []).forEach(sub => {
+        const cid = sub.timetableSlotId?.toString();
+        if (cid) {
+          if (!courseStudentsMap[cid]) courseStudentsMap[cid] = [];
+          courseStudentsMap[cid].push(mapping.studentId.toString());
+        }
+      });
+    });
+
+    const facultyCoursesIds = courses.map(c => c._id.toString());
+    const targetStudentIdsSet = new Set();
+    facultyCoursesIds.forEach(cid => {
+      if (courseStudentsMap[cid]) {
+        courseStudentsMap[cid].forEach(sid => targetStudentIdsSet.add(sid));
+      }
+    });
+    const targetStudentIds = Array.from(targetStudentIdsSet);
+
+    const allRecords = await AttendanceRecord.find({
+      studentId: { $in: targetStudentIds },
+      date: { $gte: session.startDate, $lte: session.endDate }
+    });
+
+    const recordsByStudent = {};
+    allRecords.forEach(rec => {
+      const sid = rec.studentId.toString();
+      if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+      recordsByStudent[sid].push(rec);
+    });
+
+    const holidays = await HolidayCalendar.find({ isActive: true });
+    const studentsInfo = await User.find({ _id: { $in: targetStudentIds } }).select('profile department');
+    const studentMap = {};
+    studentsInfo.forEach(s => { studentMap[s._id.toString()] = s; });
+
+    const courseStats = [];
+    const totalDefaultersSet = new Set();
+    const byCourseDefaulters = [];
+
+    for (const course of courses) {
+      const cid = course._id.toString();
+      const sids = courseStudentsMap[cid] || [];
+      
+      let totalPercentageSum = 0;
+      let courseDefaulterCount = 0;
+      let activeStudentsCount = 0;
+      const weeklyLogs = {};
+
+      for (const sid of sids) {
+        const student = studentMap[sid];
+        if (!student) continue;
+        
+        const studentRecs = recordsByStudent[sid] || [];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
+        
+        totalPercentageSum += stats.percentage;
+        activeStudentsCount++;
+        
+        if (stats.isDefaulter) {
+          courseDefaulterCount++;
+          totalDefaultersSet.add(sid);
+        }
+
+        (stats.logs || []).forEach((log, idx) => {
+          const weekNum = Math.floor(idx / 7) + 1;
+          const weekLabel = `W${weekNum}`;
+          if (!weeklyLogs[weekLabel]) {
+            weeklyLogs[weekLabel] = { sum: 0, count: 0 };
+          }
+          if (log.status === 'PRESENT') {
+            weeklyLogs[weekLabel].sum += 100;
+            weeklyLogs[weekLabel].count++;
+          } else if (log.status === 'ABSENT') {
+            weeklyLogs[weekLabel].count++;
+          }
+        });
+      }
+      
+      const avgPercentage = activeStudentsCount > 0 ? parseFloat((totalPercentageSum / activeStudentsCount).toFixed(2)) : 100;
+      
+      const trendArray = Object.entries(weeklyLogs).map(([label, data]) => ({
+        weekLabel: label,
+        percentage: data.count > 0 ? Math.round(data.sum / data.count) : 100
+      })).slice(-8);
+
+      const hasMarkedToday = markedToday.some(m => m.timetableSlotId?.toString() === cid);
+      
+      courseStats.push({
+        timetableSlotId: course._id,
+        subjectCode: course.subjectCode,
+        subjectName: course.subjectName,
+        degreeName: course.degreeNameId?.name || 'N/A',
+        semesterName: course.semesterId?.name || 'N/A',
+        totalStudents: activeStudentsCount,
+        classesHeld: activeStudentsCount > 0 ? (recordsByStudent[sids[0]] || []).length : 0,
+        avgAttendancePercentage: avgPercentage,
+        defaulterCount: courseDefaulterCount,
+        markingStatus: hasMarkedToday ? 'FULLY_MARKED' : 'NOT_MARKED',
+        weeklyTrend: trendArray
+      });
+      
+      if (courseDefaulterCount > 0) {
+        byCourseDefaulters.push({
+          subjectName: course.subjectName,
+          count: courseDefaulterCount
+        });
+      }
+    }
+
+    // 2. Next week's classes — compute dates for next 7 days
     const nextWeekClasses = [];
     for (let i = 1; i <= 7; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const dayName = dayNames[d.getDay()];
-      if (dayName === 'Sunday') continue; // Skip Sunday — no academic classes
+      if (dayName === 'Sunday') continue;
       const dateStr = toLocalDateString(d);
       const dayCourses = courses.filter(c => c.dayOfWeek === dayName);
       for (const c of dayCourses) {
@@ -2367,25 +2489,15 @@ exports.getFacultyDashboardStats = async (req, res) => {
         });
       }
     }
-    // Sort by date then start time
     nextWeekClasses.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return a.startTime.localeCompare(b.startTime);
     });
 
-    // 3. Pending leaves count (assigned to this faculty)
     const pendingLeavesCount = await LeaveRequest.countDocuments({ currentAssigneeId: facultyId, status: { $in: ['PENDING_FACULTY', 'PENDING'] } });
-
-    // 4. Pending corrections count (assigned to this faculty)
     const pendingCorrectionsCount = await AttendanceCorrection.countDocuments({ facultyId, status: 'PENDING_FACULTY' });
+    const lowAttendanceCount = totalDefaultersSet.size;
 
-    // 5. Low-attendance students — NOT computed here (lazy-loaded on "View List" click)
-    // This avoids N+1 queries on every dashboard load
-    const lowAttendanceCount = 0;
-
-    // 6. Today's classes
-    const todayDayName = dayNames[today.getDay()];
-    const todayStr = toLocalDateString(today);
     const todayClasses = courses
       .filter(c => c.dayOfWeek === todayDayName)
       .map(c => ({
@@ -2397,12 +2509,6 @@ exports.getFacultyDashboardStats = async (req, res) => {
         degreeNameId: c.degreeNameId,
         semesterId: c.semesterId,
       }));
-
-    // Get today's marked attendance for this faculty
-    const markedToday = await AttendanceRecord.find({
-      facultyId,
-      date: todayStr,
-    }).select('timetableSlotId');
 
     const scholarsCount = await User.countDocuments({ department: deptId, role: 'STUDENT', isActive: true });
 
@@ -2416,6 +2522,11 @@ exports.getFacultyDashboardStats = async (req, res) => {
       pendingLeavesCount,
       pendingCorrectionsCount,
       lowAttendanceCount,
+      courseStats,
+      defaulterSummary: {
+        totalDefaulters: totalDefaultersSet.size,
+        byCourse: byCourseDefaulters
+      }
     });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -2519,29 +2630,298 @@ exports.getHodDashboardStats = async (req, res) => {
         defaulters: [],
         warnings: [],
         rosterStats: [],
-        auditLogs: []
+        auditLogs: [],
+        facultyStats: [],
+        courseStats: [],
+        weeklyTrend: []
       });
     }
-    const students = await User.find({ department: req.user.department, role: 'STUDENT', isActive: true }).select('name profile email username');
+
+    const deptName = req.user.department;
+    const deptId = req.user.departmentId;
+
+    const students = await User.find({ department: deptName, role: 'STUDENT', isActive: true })
+      .select('name profile email username department');
+    const studentIds = students.map(s => s._id);
+
     const holidays = await HolidayCalendar.find({ isActive: true });
-    
+    const allTimetables = await TimetableMaster.find({ sessionId: session._id, isActive: true })
+      .populate('facultyId', 'name')
+      .populate('degreeNameId', 'name')
+      .populate('semesterId', 'name');
+
+    const allMappings = await StudentSemesterMapping.find({ sessionId: session._id });
+    const studentSlotsMap = {};
+    allMappings.forEach(m => {
+      studentSlotsMap[m.studentId.toString()] = m.mappedSubjects || [];
+    });
+
+    const allRecords = await AttendanceRecord.find({
+      studentId: { $in: studentIds },
+      date: { $gte: session.startDate, $lte: session.endDate }
+    });
+
+    const recordsByStudent = {};
+    allRecords.forEach(rec => {
+      const sid = rec.studentId.toString();
+      if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+      recordsByStudent[sid].push(rec);
+    });
+
     const scholarStatsList = [];
     const defaulters = [];
     const warnings = [];
+    const weeklyLogs = {};
+    const facultyDataMap = {};
+    const courseDataMap = {};
 
     for (const student of students) {
-      const records = await AttendanceRecord.find({ studentId: student._id, date: { $gte: session.startDate, $lte: session.endDate } });
-      const dt = student.profile?.degreeTypeId ? await DegreeTypeMaster.findById(student.profile.degreeTypeId) : null;
-      const timetables = dt && dt.code !== 'PHD' ? await TimetableMaster.find({ sessionId: session._id, semesterId: student.profile?.semesterId, isActive: true }) : [];
-      const stats = await calculateStudentStats(student, session, records, holidays, timetables);
-      const sData = { studentId: student._id, name: student.name, enrollmentNumber: student.profile?.enrollmentNumber || 'N/A', email: student.profile?.email || student.username, ...stats };
+      const sid = student._id.toString();
+      const records = recordsByStudent[sid] || [];
+      const isPhD = student.profile?.degreeType === 'PHD';
+
+      let studentTimetables = [];
+      if (!isPhD && studentSlotsMap[sid]) {
+        const slotIds = studentSlotsMap[sid].map(s => s.timetableSlotId?.toString());
+        studentTimetables = allTimetables.filter(t => slotIds.includes(t._id.toString()));
+      }
+
+      const stats = await calculateStudentStats(student, session, records, holidays, studentTimetables);
+      
+      const sData = {
+        studentId: student._id,
+        name: student.name,
+        enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
+        email: student.profile?.email || student.username,
+        percentage: stats.percentage,
+        isDefaulter: stats.isDefaulter,
+        isWarning: stats.isWarning
+      };
+
       scholarStatsList.push(sData);
       if (stats.isDefaulter) defaulters.push(sData);
       if (stats.isWarning) warnings.push(sData);
+
+      // Group weekly logs for HOD trend
+      (stats.logs || []).forEach((log, idx) => {
+        const weekLabel = `W${Math.floor(idx / 7) + 1}`;
+        if (!weeklyLogs[weekLabel]) {
+          weeklyLogs[weekLabel] = { sum: 0, count: 0 };
+        }
+        if (log.status === 'PRESENT') {
+          weeklyLogs[weekLabel].sum += 100;
+          weeklyLogs[weekLabel].count++;
+        } else if (log.status === 'ABSENT') {
+          weeklyLogs[weekLabel].count++;
+        }
+      });
+
+      // Group subject-wise statistics for comparisons
+      if (!isPhD) {
+        (stats.subjectWiseAttendance || []).forEach(sub => {
+          const slotId = sub.timetableSlotId?.toString();
+          const slot = allTimetables.find(t => t._id.toString() === slotId);
+          if (!slot) return;
+
+          const fid = slot.facultyId?._id?.toString() || slot.facultyId?.toString();
+          const fname = slot.facultyId?.name || 'Unknown Faculty';
+
+          if (fid) {
+            if (!facultyDataMap[fid]) {
+              facultyDataMap[fid] = {
+                facultyId: fid,
+                facultyName: fname,
+                coursesSet: new Set(),
+                studentsCount: 0,
+                presentSum: 0,
+                totalSum: 0,
+                defaulterCount: 0
+              };
+            }
+            facultyDataMap[fid].coursesSet.add(slotId);
+            facultyDataMap[fid].studentsCount++;
+            facultyDataMap[fid].presentSum += sub.attended;
+            facultyDataMap[fid].totalSum += sub.total;
+            if (sub.percentage < 75) {
+              facultyDataMap[fid].defaulterCount++;
+            }
+          }
+
+          if (slotId) {
+            if (!courseDataMap[slotId]) {
+              courseDataMap[slotId] = {
+                timetableSlotId: slotId,
+                subjectCode: slot.subjectCode,
+                subjectName: slot.subjectName,
+                facultyName: fname,
+                degreeName: slot.degreeNameId?.name || 'N/A',
+                semesterName: slot.semesterId?.name || 'N/A',
+                enrolledStudents: 0,
+                presentSum: 0,
+                totalSum: 0,
+                defaulterCount: 0
+              };
+            }
+            courseDataMap[slotId].enrolledStudents++;
+            courseDataMap[slotId].presentSum += sub.attended;
+            courseDataMap[slotId].totalSum += sub.total;
+            if (sub.percentage < 75) {
+              courseDataMap[slotId].defaulterCount++;
+            }
+          }
+        });
+      }
     }
-    const avg = scholarStatsList.length > 0 ? parseFloat((scholarStatsList.reduce((acc, curr) => acc + curr.percentage, 0) / scholarStatsList.length).toFixed(2)) : 100;
-    const auditLogs = await AttendanceRecord.find({ departmentId: req.user.departmentId }).populate('studentId', 'name').populate('markedBy', 'name').sort({ updatedAt: -1 }).limit(20);
-    res.status(200).json({ sessionName: session?.sessionName, totalStudentsCount: students.length, averageDeptPercentage: avg, defaulterCount: defaulters.length, warningCount: warnings.length, defaulters, warnings, rosterStats: scholarStatsList, auditLogs });
+
+    const avg = scholarStatsList.length > 0 
+      ? parseFloat((scholarStatsList.reduce((acc, curr) => acc + curr.percentage, 0) / scholarStatsList.length).toFixed(2)) 
+      : 100;
+
+    const auditLogs = await AttendanceRecord.find({ departmentId: deptId })
+      .populate('studentId', 'name')
+      .populate('markedBy', 'name')
+      .sort({ updatedAt: -1 })
+      .limit(20);
+
+    const facultyStats = Object.values(facultyDataMap).map(f => ({
+      facultyId: f.facultyId,
+      facultyName: f.facultyName,
+      coursesCount: f.coursesSet.size,
+      totalStudents: f.studentsCount,
+      avgPercentage: f.totalSum > 0 ? Math.round((f.presentSum / f.totalSum) * 100) : 100,
+      defaulterCount: f.defaulterCount
+    }));
+
+    const courseStats = Object.values(courseDataMap).map(c => ({
+      timetableSlotId: c.timetableSlotId,
+      subjectCode: c.subjectCode,
+      subjectName: c.subjectName,
+      facultyName: c.facultyName,
+      degreeName: c.degreeName,
+      semesterName: c.semesterName,
+      enrolledStudents: c.enrolledStudents,
+      avgPercentage: c.totalSum > 0 ? Math.round((c.presentSum / c.totalSum) * 100) : 100,
+      defaulterCount: c.defaulterCount
+    }));
+
+    const weeklyTrend = Object.entries(weeklyLogs).map(([label, data]) => ({
+      weekLabel: label,
+      percentage: data.count > 0 ? Math.round(data.sum / data.count) : 100
+    })).slice(-8);
+
+    const pendingLeaveCount = await LeaveRequest.countDocuments({ departmentId: deptId, status: 'PENDING_HOD' });
+    const pendingCorrectionCount = await AttendanceCorrection.countDocuments({ status: 'PENDING_HOD' });
+
+    res.status(200).json({
+      sessionName: session?.sessionName,
+      totalStudentsCount: students.length,
+      averageDeptPercentage: avg,
+      defaulterCount: defaulters.length,
+      warningCount: warnings.length,
+      defaulters,
+      warnings,
+      rosterStats: scholarStatsList,
+      auditLogs,
+      facultyStats,
+      courseStats,
+      weeklyTrend,
+      pendingLeaveCount,
+      pendingCorrectionCount
+    });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+exports.getHodDrillDown = async (req, res) => {
+  try {
+    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
+    if (!session) return res.status(200).json([]);
+    const { view, id } = req.query;
+
+    if (view === 'faculty') {
+      const courses = await TimetableMaster.find({ facultyId: id, sessionId: session._id, isActive: true });
+      const courseIds = courses.map(c => c._id.toString());
+
+      const mappings = await StudentSemesterMapping.find({
+        sessionId: session._id,
+        'mappedSubjects.timetableSlotId': { $in: courseIds }
+      });
+      const studentIds = mappings.map(m => m.studentId);
+
+      const students = await User.find({ _id: { $in: studentIds } }).select('name profile email username');
+      const records = await AttendanceRecord.find({
+        studentId: { $in: studentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      });
+
+      const recordsByStudent = {};
+      records.forEach(rec => {
+        const sid = rec.studentId.toString();
+        if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+        recordsByStudent[sid].push(rec);
+      });
+
+      const holidays = await HolidayCalendar.find({ isActive: true });
+      const list = [];
+
+      for (const student of students) {
+        const studentRecs = recordsByStudent[student._id.toString()] || [];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, courses);
+
+        list.push({
+          studentId: student._id,
+          studentName: student.name,
+          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
+          email: student.profile?.email || student.username,
+          percentage: stats.percentage,
+          isDefaulter: stats.isDefaulter
+        });
+      }
+      return res.status(200).json(list);
+    }
+
+    if (view === 'course') {
+      const course = await TimetableMaster.findById(id);
+      if (!course) return res.status(404).json({ message: 'Course not found' });
+
+      const mappings = await StudentSemesterMapping.find({
+        sessionId: session._id,
+        'mappedSubjects.timetableSlotId': id
+      });
+      const studentIds = mappings.map(m => m.studentId);
+
+      const students = await User.find({ _id: { $in: studentIds } }).select('name profile email username');
+      const records = await AttendanceRecord.find({
+        studentId: { $in: studentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      });
+
+      const recordsByStudent = {};
+      records.forEach(rec => {
+        const sid = rec.studentId.toString();
+        if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
+        recordsByStudent[sid].push(rec);
+      });
+
+      const holidays = await HolidayCalendar.find({ isActive: true });
+      const list = [];
+
+      for (const student of students) {
+        const studentRecs = recordsByStudent[student._id.toString()] || [];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
+
+        list.push({
+          studentId: student._id,
+          studentName: student.name,
+          enrollmentNumber: student.profile?.enrollmentNumber || 'N/A',
+          email: student.profile?.email || student.username,
+          percentage: stats.percentage,
+          isDefaulter: stats.isDefaulter
+        });
+      }
+      return res.status(200).json(list);
+    }
+
+    res.status(400).json({ message: 'Invalid view parameter' });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 

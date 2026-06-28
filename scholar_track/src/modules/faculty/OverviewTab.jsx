@@ -19,10 +19,13 @@ import useApi from '../../hooks/useApi';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { useToast } from '../../context/ToastContext';
 import { progressiveFetch } from '../../utils/progressiveFetch';
+import CourseStatsCard from './CourseStatsCard';
+import DefaulterDrillDown from './DefaulterDrillDown';
 import './OverviewTab.css';
 
 const OverviewTab = () => {
   const [stats, setStats] = useState(null);
+  const [drillDownCourseId, setDrillDownCourseId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showLowAttendance, setShowLowAttendance] = useState(false);
   const [lowAttendanceStudents, setLowAttendanceStudents] = useState([]);
@@ -370,6 +373,26 @@ const OverviewTab = () => {
         </motion.div>
       </div>
 
+      {/* ─── Course-wise Stats Grid ─── */}
+      <div style={{ marginBottom: '32px' }}>
+        <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)', fontWeight: '600' }}>My Courses Performance</h3>
+        {safeStats.courseStats && safeStats.courseStats.length > 0 ? (
+          <div className="grid-3" style={{ gap: '16px' }}>
+            {safeStats.courseStats.map(c => (
+              <CourseStatsCard 
+                key={c.timetableSlotId} 
+                course={c} 
+                onViewDefaulters={(id) => setDrillDownCourseId(id)} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="glass-panel" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            No course statistics available for this session.
+          </div>
+        )}
+      </div>
+
       {/* ─── Pending Actions: Leaves & Corrections ─── */}
       {(safeStats.pendingLeavesCount > 0 || safeStats.pendingCorrectionsCount > 0) && (
         <div className="overview-two-col">
@@ -550,6 +573,15 @@ const OverviewTab = () => {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {drillDownCourseId && (
+          <DefaulterDrillDown 
+            courseId={drillDownCourseId} 
+            onClose={() => setDrillDownCourseId(null)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

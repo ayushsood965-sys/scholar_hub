@@ -130,7 +130,9 @@ router.put('/leave/:id/action', protect, authorize('FACULTY', 'HOD', 'ADMIN', 'S
 router.get('/dashboard/student', protect, authorize('STUDENT'), requireDepartment, attendanceController.getStudentDashboardStats);
 router.get('/dashboard/faculty', protect, authorize('FACULTY'), requireDepartment, attendanceController.getFacultyDashboardStats);
 router.get('/dashboard/faculty/low-attendance-students', protect, authorize('FACULTY'), requireDepartment, attendanceController.getFacultyLowAttendanceStudents);
+router.get('/dashboard/faculty/course/:courseId/defaulters', protect, authorize('FACULTY'), requireDepartment, attendanceController.getFacultyCourseDefaulters);
 router.get('/dashboard/hod', protect, authorize('HOD'), requireDepartment, attendanceController.getHodDashboardStats);
+router.get('/dashboard/hod/drill-down', protect, authorize('HOD'), requireDepartment, attendanceController.getHodDrillDown);
 router.get('/dashboard/super', protect, authorize('SUPER_ADMIN'), attendanceController.getSuperAdminDashboardStats);
 
 // Student absences for corrections selection
