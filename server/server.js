@@ -58,15 +58,7 @@ connectDB().then(async () => {
       console.log('👑 Super Admin user already exists.');
     }
 
-    // Auto-seed departments if the collection is empty
-    const deptCount = await Department.countDocuments();
-    if (deptCount === 0) {
-      const departmentsToSeed = require('./utils/departmentsData');
-      await Department.insertMany(departmentsToSeed);
-      console.log('🏛️ Auto-seeded default departments successfully.');
-    } else {
-      console.log('🏛️ Departments already populated.');
-    }
+
 
     // Auto-seed research labs, funding opportunities, and events
     const ResearchLab = require('./models/ResearchLab');
@@ -241,25 +233,7 @@ connectDB().then(async () => {
       console.log(' Auto-seeded default collaboration calls.');
     }
 
-    // Auto-seed category and gender masters
-    const CategoryGenderMaster = require('./models/CategoryGenderMaster');
-    const cgCount = await CategoryGenderMaster.countDocuments();
-    if (cgCount === 0) {
-      const categoryGenderToSeed = [
-        { type: 'GENDER', label: 'Male', value: 'Male', sortOrder: 1 },
-        { type: 'GENDER', label: 'Female', value: 'Female', sortOrder: 2 },
-        { type: 'GENDER', label: 'Other', value: 'Other', sortOrder: 3 },
-        { type: 'CATEGORY', label: 'General / Unreserved', value: 'General', sortOrder: 1 },
-        { type: 'CATEGORY', label: 'OBC (Other Backward Classes)', value: 'OBC', sortOrder: 2 },
-        { type: 'CATEGORY', label: 'SC (Scheduled Caste)', value: 'SC', sortOrder: 3 },
-        { type: 'CATEGORY', label: 'ST (Scheduled Tribe)', value: 'ST', sortOrder: 4 },
-        { type: 'CATEGORY', label: 'EWS (Economically Weaker Section)', value: 'EWS', sortOrder: 5 },
-      ];
-      await CategoryGenderMaster.insertMany(categoryGenderToSeed);
-      console.log('️ Auto-seeded default category and gender masters.');
-    } else {
-      console.log('️ Category and gender masters already populated.');
-    }
+
   } catch (err) {
     console.error('❌ Error during auto-seeding:', err);
   }
