@@ -5,24 +5,49 @@ const { createNotification } = require('./notificationController');
 
 const augmentThesesWithMilestones = async (theses) => {
   const Publication = require('../models/Publication');
-  const augmented = [];
-  for (let thesis of theses) {
+  if (!theses || theses.length === 0) return [];
+
+  const thesisIds = theses.map(t => t._id);
+
+  // Fetch all milestones and publications in parallel
+  const [allMilestones, allPublications] = await Promise.all([
+    Milestone.find({ 
+      thesisId: { $in: thesisIds }, 
+      type: { $in: ['SYNOPSIS', 'FINAL_SUBMISSION', 'PRE_SUBMISSION'] } 
+    }),
+    Publication.find({ thesisId: { $in: thesisIds } })
+  ]);
+
+  // Group milestones by thesisId in memory
+  const milestonesMap = {};
+  allMilestones.forEach(m => {
+    const tId = m.thesisId.toString();
+    if (!milestonesMap[tId]) milestonesMap[tId] = {};
+    milestonesMap[tId][m.type] = m.status;
+  });
+
+  // Group publications by thesisId in memory
+  const publicationsMap = {};
+  allPublications.forEach(p => {
+    const tId = p.thesisId ? p.thesisId.toString() : '';
+    if (tId) {
+      if (!publicationsMap[tId]) publicationsMap[tId] = [];
+      publicationsMap[tId].push(p);
+    }
+  });
+
+  return theses.map(thesis => {
     const thesisObj = thesis.toObject();
-    const synopsis = await Milestone.findOne({ thesisId: thesis._id, type: 'SYNOPSIS' });
-    thesisObj.synopsisStatus = synopsis ? synopsis.status : null;
+    const tId = thesis._id.toString();
 
-    const finalSub = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
-    thesisObj.finalSubStatus = finalSub ? finalSub.status : null;
+    const mTypes = milestonesMap[tId] || {};
+    thesisObj.synopsisStatus = mTypes['SYNOPSIS'] || null;
+    thesisObj.finalSubStatus = mTypes['FINAL_SUBMISSION'] || null;
+    thesisObj.preSubMilestoneStatus = mTypes['PRE_SUBMISSION'] || null;
 
-    const preSub = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
-    thesisObj.preSubMilestoneStatus = preSub ? preSub.status : null;
-
-    const publications = await Publication.find({ thesisId: thesis._id });
-    thesisObj.publications = publications;
-
-    augmented.push(thesisObj);
-  }
-  return augmented;
+    thesisObj.publications = publicationsMap[tId] || [];
+    return thesisObj;
+  });
 };
 
 // ── SCHOLAR ──────────────────────────────────────────────
