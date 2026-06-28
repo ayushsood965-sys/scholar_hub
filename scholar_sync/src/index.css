@@ -33,6 +33,38 @@
   --color-success: #34d399;
   --color-success-light: #059669;
   --color-border: #2d2d30;        /* Sleek matching grey borders */
+  color-scheme: dark;
+}
+
+/* ─── Glassmorphism Variants for Dashboard Content ─── */
+.glass-transparent {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(19, 58, 38, 0.03);
+  border-radius: 12px;
+}
+
+[data-theme='dark'] .glass-transparent {
+  background: rgba(30, 30, 32, 0.12);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 16px rgba(19, 58, 38, 0.02);
+  border-radius: 10px;
+}
+
+[data-theme='dark'] .glass-subtle {
+  background: rgba(30, 30, 32, 0.08);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* Stunning Selector Cascades for complete dark mode styling */
@@ -51,7 +83,6 @@
 }
 
 [data-theme='dark'] .form-input,
-[data-theme='dark'] select.form-input,
 [data-theme='dark'] textarea.form-input,
 [data-theme='dark'] input.form-input {
   background-color: rgba(255, 255, 255, 0.03) !important;
@@ -62,6 +93,31 @@
   box-shadow: 
     inset 0 1px 2px rgba(0, 0, 0, 0.2),
     0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* CRITICAL: Select dropdowns need appearance:none to allow custom dark styling */
+[data-theme='dark'] select.form-input,
+[data-theme='dark'] select {
+  background-color: rgba(24, 24, 27, 0.95) !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2388898b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 14px !important;
+  padding-right: 36px !important;
+  color: #FFFFFF !important;
+}
+
+/* Style dropdown option elements in dark mode */
+[data-theme='dark'] select.form-input option,
+[data-theme='dark'] select option {
+  background-color: #1e1e20 !important;
+  color: #FFFFFF !important;
 }
 
 [data-theme='dark'] .form-input:hover {
@@ -393,6 +449,11 @@
 /* Forms & Modals inside dashboards */
 [data-theme='dark'] select {
   color-scheme: dark !important;
+  background-color: rgba(24, 24, 27, 0.95) !important;
+  color: #FFFFFF !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
 }
 
 [data-theme='dark'] input[type="date"] {
@@ -4395,32 +4456,36 @@ body {
 }
 
 /* ======================================== */
-/* FORM INPUT STYLES FOR DARK MODE */
+/* INLINE STYLE OVERRIDES FOR DARK MODE */
 /* ======================================== */
 
-/* Form input base styles - ensure dark background */
-[data-theme='dark'] .form-input,
-[data-theme='dark'] input.form-input,
-[data-theme='dark'] select.form-input,
-[data-theme='dark'] textarea.form-input {
-  background: var(--color-sidebar) !important;
-  color: var(--color-text-primary) !important;
-  border-color: var(--color-border) !important;
+/* ======================================== */
+/* INLINE STYLE OVERRIDES FOR DARK MODE */
+/* ======================================== */
+
+/* Override inline background: white / #FFFFFF */
+[data-theme='dark'] [style*="background: white"],
+[data-theme='dark'] [style*="background: white"],
+[data-theme='dark'] [style*="background-color: white"],
+[data-theme='dark'] [style*="background: rgb(255, 255, 255)"],
+[data-theme='dark'] [style*="background-color: rgb(255, 255, 255)"],
+[data-theme='dark'] [style*="background: #FFFFFF"],
+[data-theme='dark'] [style*="background: #ffffff"],
+[data-theme='dark'] [style*="background-color: #FFFFFF"],
+[data-theme='dark'] [style*="background-color: #ffffff"] {
+  background: var(--color-surface) !important;
+  background-color: var(--color-surface) !important;
 }
 
-/* Form input placeholder */
-[data-theme='dark'] .form-input::placeholder {
-  color: var(--color-text-secondary) !important;
+/* Catch-all for any white-ish inline background */
+[data-theme='dark'] *[style*="background: rgba(255, 255, 255"] {
+  background: rgba(30, 30, 32, 0.95) !important;
 }
 
-/* Searchable dropdown trigger - ensure proper dark styling */
-[data-theme='dark'] .searchable-dropdown-trigger {
-  background: var(--color-sidebar) !important;
-  color: var(--color-text-primary) !important;
-}
-
-/* Dropdown menu with high specificity */
-[data-theme='dark'] .searchable-dropdown-menu {
-  background: rgba(30, 30, 32, 0.98) !important;
+/* Override inline color: white that might be invisible on dark bg */
+[data-theme='dark'] [style*="color: white"],
+[data-theme='dark'] [style*="color: #FFFFFF"],
+[data-theme='dark'] [style*="color: #ffffff"],
+[data-theme='dark'] [style*="color: rgb(255, 255, 255)"] {
   color: var(--color-text-primary) !important;
 }

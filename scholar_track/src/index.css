@@ -326,6 +326,37 @@ img {
   border-radius: var(--radius-xl);
 }
 
+/* ─── Glassmorphism Variants for Dashboard Content ─── */
+.glass-transparent {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(19, 58, 38, 0.03);
+  border-radius: var(--radius-xl);
+}
+
+[data-theme="dark"] .glass-transparent {
+  background: rgba(30, 30, 32, 0.12);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 16px rgba(19, 58, 38, 0.02);
+  border-radius: var(--radius-lg);
+}
+
+[data-theme="dark"] .glass-subtle {
+  background: rgba(30, 30, 32, 0.08);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+}
+
 /* ─── Claymorphism ─── */
 .clay-card {
   background: var(--clay-bg);

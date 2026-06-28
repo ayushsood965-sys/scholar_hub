@@ -68,7 +68,7 @@ const StaffProfileTab = () => {
   };
 
   return (
-    <div className="glass-panel p-xl" style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div className="glass-transparent p-xl" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <div className="flex justify-between items-center mb-lg">
         <div>
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>My Profile</h2>

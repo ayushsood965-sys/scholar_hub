@@ -4,6 +4,7 @@ import Footer from '../components/Footer';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useThemeStyles } from '../context/ThemeContext';
 import { jwtDecode } from 'jwt-decode';
 
 const Login = () => {
@@ -14,6 +15,7 @@ const Login = () => {
   const { login } = useContext(AuthContext);
   const toast = useToast();
   const navigate = useNavigate();
+  const theme = useThemeStyles();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -89,36 +91,38 @@ const Login = () => {
           <h1 className="page-title">Welcome Back</h1>
           <p className="page-desc">Log in to access your ScholarSync dashboard.</p>
           
-          {error && <div style={{ color: 'red', marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
-          
+          {error && <div style={{ color: theme.error, marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
+
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">Username (Email ID)</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Enter your email id" 
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter your email id"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
               />
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
-              <input 
-                type="password" 
-                className="form-input" 
-                placeholder="••••••••" 
+              <input
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
               />
             </div>
             <button type="submit" className="btn-primary" style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: '24px', cursor: 'pointer' }}>
               Log In
             </button>
           </form>
-          
-          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: '#4B5563' }}>
-            Don't have an account? <Link to="/signup" style={{ color: '#133A26', fontWeight: 600 }}>Sign up</Link>
+
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: theme.textSecondary }}>
+            Don't have an account? <Link to="/signup" style={{ color: theme.primary, fontWeight: 600 }}>Sign up</Link>
           </p>
         </div>
       </div>

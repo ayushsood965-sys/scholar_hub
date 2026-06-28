@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { ThesisProvider } from './context/ThesisContext'
 import { ToastProvider } from './context/ToastContext'
+import { ThemeProvider } from './context/ThemeContext'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <NotificationProvider>
         <AuthProvider>
           <ThesisProvider>
-            <App />
+            <ThemeProvider>
+              <App />
+            </ThemeProvider>
           </ThesisProvider>
         </AuthProvider>
       </NotificationProvider>

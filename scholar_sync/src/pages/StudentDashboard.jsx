@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
 import { useToast } from '../context/ToastContext';
+import { useThemeStyles } from '../context/ThemeContext';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
 import axios from 'axios';
@@ -31,6 +32,7 @@ const formatMonthYear = (val) => {
 const MilestoneTimeline = ({ thesis, milestones = [] }) => {
   const [drcMeetings, setDrcMeetings] = useState([]);
   const [racSessions, setRacSessions] = useState([]);
+  const theme = useThemeStyles();
 
   const currentStatus = thesis?.status || 'REGISTRATION_PENDING';
 
@@ -2773,6 +2775,7 @@ const AwardedView = ({ thesis }) => (
 const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
   const [drcMeetings, setDrcMeetings] = useState([]);
   const [publications, setPublications] = useState([]);
+  const theme = useThemeStyles();
 
   useEffect(() => {
     if (thesis) {
@@ -2966,8 +2969,8 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
         {/* Left Hand: Ph.D. Profile Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <NotificationPanel user={user} onTabChange={setActiveTab} />
-          <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '16px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
+          <div className="card" style={{ padding: '24px', background: 'var(--color-surface, #ffffff)', borderRadius: '16px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary, #0F172A)', marginBottom: '16px', borderBottom: '1px solid var(--color-border, #F1F5F9)', paddingBottom: '12px' }}>
               📝 Ph.D. Research Overview
             </h3>
             
@@ -2979,16 +2982,16 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
                 ['Research Advisor', thesis.supervisorId?.name || 'Awaiting Allocation'],
                 ['Assigned Co-Supervisor', thesis.coSupervisorId?.name || 'None Assigned']
               ].map(([k, v]) => (
-                <div key={k} style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #F1F5F9' }}>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>{k}</div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0F172A' }}>{v}</div>
+                <div key={k} style={{ background: 'var(--color-sidebar-hover, #F8FAFC)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border, #F1F5F9)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted, #64748B)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>{k}</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-primary, #0F172A)' }}>{v}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ background: '#F0FDF4', borderRadius: '12px', padding: '16px', border: '1px solid #DCFCE7' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', marginBottom: '4px' }}>Next Action Required</div>
-              <div style={{ fontSize: '0.82rem', color: '#15803D', lineHeight: 1.5 }}>{s.nextAction}</div>
+            <div style={{ background: 'rgba(22, 101, 52, 0.1)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(22, 101, 52, 0.2)' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary, #166534)', textTransform: 'uppercase', marginBottom: '4px' }}>Next Action Required</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-primary, #15803D)', lineHeight: 1.5 }}>{s.nextAction}</div>
             </div>
           </div>
 
@@ -5760,6 +5763,7 @@ const ProfileTab = () => {
   const [subTab, setSubTab] = useState('general'); // general | academic | guide
   const [loading, setLoading] = useState(false);
   const [guideUnlocked, setGuideUnlocked] = useState(false);
+  const theme = useThemeStyles();
 
   // Fetch fresh user data from server on mount to avoid stale localStorage cache
   useEffect(() => {
@@ -7141,37 +7145,27 @@ const ProfileTab = () => {
       )}
 
       {thesis && thesis.status !== 'REGISTRATION_PENDING' && (
-        <div style={{
-          background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
-          border: '1px solid #E2E8F0',
-          padding: '16px 20px',
-          borderRadius: '12px',
-          marginBottom: '24px',
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '4px' }}>
+        <div className="glass-transparent" style={{ padding: '16px 20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px', marginBottom: '4px' }}>
             <span style={{ fontSize: '1.1rem' }}>🎓</span>
-            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ph.D. Registration Allocation Details</span>
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ph.D. Registration Allocation Details</span>
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px', fontSize: '0.85rem' }}>
             <div style={{ gridColumn: 'span 2' }}>
-              <strong style={{ color: '#475569' }}>Thesis Title:</strong>
-              <div style={{ fontWeight: 700, color: '#0F172A', marginTop: '2px', fontSize: '0.9rem' }}>
+              <strong style={{ color: 'var(--color-text-secondary)' }}>Thesis Title:</strong>
+              <div style={{ fontWeight: 700, color: 'var(--color-text-primary)', marginTop: '2px', fontSize: '0.9rem' }}>
                 {thesis.title || 'N/A'}
               </div>
             </div>
             <div>
-              <strong style={{ color: '#475569' }}>Supervisor Assigned:</strong>
-              <div style={{ fontWeight: 700, color: '#0369A1', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+              <strong style={{ color: 'var(--color-text-secondary)' }}>Supervisor Assigned:</strong>
+              <div style={{ fontWeight: 700, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                 <span>👤</span> {thesis.supervisorId?.name || 'Pending Allocation'}
               </div>
             </div>
             <div>
-              <strong style={{ color: '#475569' }}>Active Phase / Current Milestone:</strong>
+              <strong style={{ color: 'var(--color-text-secondary)' }}>Active Phase / Current Milestone:</strong>
               <div style={{ marginTop: '2px' }}>
                 <span style={{ 
                   fontWeight: 700, 
@@ -9315,6 +9309,7 @@ const StudentDashboard = () => {
   const { user } = useContext(AuthContext);
   const { thesis, milestones, loading, fetchMyThesis, submitMilestone } = useContext(ThesisContext);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(user && !user.profileCompleted);
+  const theme = useThemeStyles();
 
   useEffect(() => { 
     fetchMyThesis(); 

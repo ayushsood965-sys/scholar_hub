@@ -917,7 +917,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const canProceedToGuide = class10Saved && class12Saved;
 
   return (
-    <div className="glass-panel p-xl">
+    <div className="glass-transparent p-xl">
       {/* Registration/Verification Status Banner */}
       <div style={{ marginBottom: '24px' }}>
         {isPhD ? (

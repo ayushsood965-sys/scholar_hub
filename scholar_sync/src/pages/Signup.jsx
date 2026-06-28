@@ -4,6 +4,7 @@ import Footer from '../components/Footer';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useThemeStyles } from '../context/ThemeContext';
 import { jwtDecode } from 'jwt-decode';
 import { API_URL } from '../config';
 
@@ -11,6 +12,7 @@ const Signup = () => {
   const { register } = useContext(AuthContext);
   const toast = useToast();
   const navigate = useNavigate();
+  const theme = useThemeStyles();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -252,7 +254,7 @@ const Signup = () => {
           <form onSubmit={handleSubmit}>
             {/* ROLE SELECTOR */}
             <div className="form-group">
-              <label className="form-label">Select Your Role <span style={{ color: '#EF4444' }}>*</span></label>
+              <label className="form-label">Select Your Role <span style={{ color: theme.error }}>*</span></label>
               <select
                 className="form-input"
                 value={role}
@@ -262,11 +264,24 @@ const Signup = () => {
                   setAcademicSession('');
                 }}
                 required
+                style={{
+                  backgroundColor: theme.inputBg,
+                  color: theme.inputText,
+                  borderColor: theme.inputBorder,
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23${theme.isDark ? '88898b' : '6B7280'}' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '14px',
+                  paddingRight: '36px',
+                }}
               >
-                <option value="">-- Select Role --</option>
-                <option value="STUDENT">PhD Scholar / Candidate</option>
-                <option value="FACULTY">Faculty / Supervisor</option>
-                <option value="HOD">Head of Department (HOD)</option>
+                <option value="" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>-- Select Role --</option>
+                <option value="STUDENT" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>PhD Scholar / Candidate</option>
+                <option value="FACULTY" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>Faculty / Supervisor</option>
+                <option value="HOD" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>Head of Department (HOD)</option>
               </select>
             </div>
 
@@ -274,23 +289,36 @@ const Signup = () => {
             {role === 'STUDENT' && (
               <>
                 <div className="form-group">
-                  <label className="form-label">Department <span style={{ color: '#EF4444' }}>*</span></label>
+                  <label className="form-label">Department <span style={{ color: theme.error }}>*</span></label>
                   <div className="searchable-dropdown-container" ref={dropdownRef}>
                     <div
                       className="form-input searchable-dropdown-trigger"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      style={{
+                        backgroundColor: theme.inputBg,
+                        borderColor: theme.inputBorder,
+                        color: department ? theme.inputText : theme.inputPlaceholder,
+                      }}
                     >
-                      <span style={{ color: department ? 'inherit' : '#9CA3AF' }}>
+                      <span style={{ color: department ? theme.inputText : theme.inputPlaceholder }}>
                         {department || 'Select your department'}
                       </span>
                       <span style={{
                         transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s ease',
-                        fontSize: '0.8rem', color: '#6B7280'
+                        fontSize: '0.8rem',
+                        color: theme.textMuted
                       }}>▼</span>
                     </div>
                     {isDropdownOpen && (
-                      <div className="searchable-dropdown-menu">
+                      <div 
+                        className="searchable-dropdown-menu"
+                        style={{
+                          backgroundColor: theme.dropdownBg,
+                          borderColor: theme.dropdownBorder,
+                          boxShadow: theme.cardShadow,
+                        }}
+                      >
                         <div className="searchable-dropdown-search-wrapper">
                           <input
                             type="text"
@@ -300,6 +328,11 @@ const Signup = () => {
                             onChange={e => setSearchQuery(e.target.value)}
                             autoFocus
                             onClick={e => e.stopPropagation()}
+                            style={{
+                              backgroundColor: theme.inputBg,
+                              borderColor: theme.inputBorder,
+                              color: theme.inputText,
+                            }}
                           />
                         </div>
                         <div className="searchable-dropdown-list">
@@ -319,12 +352,17 @@ const Signup = () => {
                                     setSearchQuery('');
                                     if (error.includes('No PhD')) setError('');
                                   }}
+                                  style={{
+                                    color: theme.textPrimary,
+                                    backgroundColor: department === d.name ? theme.primaryLight : 'transparent',
+                                    '&:hover': { backgroundColor: theme.dropdownItemHover },
+                                  }}
                                 >
                                   {d.name}
                                 </div>
                               ))
                           ) : (
-                            <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.9rem', textAlign: 'center' }}>
+                            <div style={{ padding: '10px', color: theme.textMuted, fontSize: '0.9rem', textAlign: 'center' }}>
                               No departments found
                             </div>
                           )}
@@ -395,22 +433,35 @@ const Signup = () => {
                 )}
 
                 <div className="form-group">
-                  <label className="form-label">Academic Session <span style={{ color: '#EF4444' }}>*</span></label>
+                  <label className="form-label">Academic Session <span style={{ color: theme.error }}>*</span></label>
                   <select
                     className="form-input"
                     value={academicSession}
                     onChange={e => setAcademicSession(e.target.value)}
                     required
+                    style={{
+                      backgroundColor: theme.inputBg,
+                      color: theme.inputText,
+                      borderColor: theme.inputBorder,
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23${theme.isDark ? '88898b' : '6B7280'}' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '14px',
+                      paddingRight: '36px',
+                    }}
                   >
-                    <option value="">-- Select Session --</option>
+                    <option value="" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>-- Select Session --</option>
                     {sessionOptions.map(s => (
-                      <option key={s._id} value={s.sessionName}>{s.sessionName}</option>
+                      <option key={s._id} value={s.sessionName} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{s.sessionName}</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Email Address <span style={{ color: '#EF4444' }}>*</span></label>
+                  <label className="form-label">Email Address <span style={{ color: theme.error }}>*</span></label>
                   <input
                     className="form-input"
                     type="email"
@@ -418,22 +469,24 @@ const Signup = () => {
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     required
+                    style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Phone Number (Indian Format) <span style={{ color: '#EF4444' }}>*</span></label>
+                  <label className="form-label">Phone Number (Indian Format) <span style={{ color: theme.error }}>*</span></label>
                   <input
                     className="form-input"
                     placeholder="Enter 10-digit mobile number e.g. 9876543210"
                     value={phoneNumber}
                     onChange={e => setPhoneNumber(e.target.value)}
                     required
+                    style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Password <span style={{ color: '#EF4444' }}>*</span></label>
+                  <label className="form-label">Password <span style={{ color: theme.error }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <input
                       className="form-input"
@@ -442,13 +495,14 @@ const Signup = () => {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required
+                      style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPwd(!showPwd)}
                       style={{
                         position: 'absolute', right: '12px', top: '50%',
-                        transform: 'translateY(-50%)', color: '#6B7280',
+                        transform: 'translateY(-50%)', color: theme.textMuted,
                         background: 'none', border: 'none', cursor: 'pointer',
                         fontSize: '0.85rem'
                       }}
@@ -459,7 +513,7 @@ const Signup = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Confirm Password <span style={{ color: '#EF4444' }}>*</span></label>
+                  <label className="form-label">Confirm Password <span style={{ color: theme.error }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <input
                       className="form-input"
@@ -468,13 +522,14 @@ const Signup = () => {
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
                       required
+                      style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPwd(!showConfirmPwd)}
                       style={{
                         position: 'absolute', right: '12px', top: '50%',
-                        transform: 'translateY(-50%)', color: '#6B7280',
+                        transform: 'translateY(-50%)', color: theme.textMuted,
                         background: 'none', border: 'none', cursor: 'pointer',
                         fontSize: '0.85rem'
                       }}
