@@ -2618,6 +2618,14 @@ exports.getFacultyDashboardStats = async (req, res) => {
     const studentMap = {};
     studentsInfo.forEach(s => { studentMap[s._id.toString()] = s; });
 
+    const degreeTypes = await DegreeTypeMaster.find().select('code');
+    const degreeTypeMap = {};
+    degreeTypes.forEach(dt => { degreeTypeMap[dt._id.toString()] = dt.code; });
+
+    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
+    const policyMap = {};
+    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+
     const courseStats = [];
     const totalDefaultersSet = new Set();
     const byCourseDefaulters = [];
@@ -2636,7 +2644,10 @@ exports.getFacultyDashboardStats = async (req, res) => {
         if (!student) continue;
         
         const studentRecs = recordsByStudent[sid] || [];
-        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
+        const degreeTypeIdStr = student.profile?.degreeTypeId?.toString();
+        const degreeCode = degreeTypeIdStr ? degreeTypeMap[degreeTypeIdStr] : 'PG';
+        const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy);
         
         totalPercentageSum += stats.percentage;
         activeStudentsCount++;
@@ -2803,6 +2814,10 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
     const allTimetables = await TimetableMaster.find({ isActive: true })
       .select('sessionId semesterId dayOfWeek');
 
+    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
+    const policyMap = {};
+    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+
     // Batch fetch: holidays
     const holidays = await HolidayCalendar.find({ isActive: true });
 
@@ -2818,6 +2833,7 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
       const records = recordsByStudent[sid] || [];
       const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
       const isPhD = degreeCode === 'PHD';
+      const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
 
       // Get timetables for this student's semester
       const timetables = !isPhD ? allTimetables.filter(t =>
@@ -2825,7 +2841,7 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
         (!t.semesterId || t.semesterId.toString() === studentSemesterMap[sid])
       ) : [];
 
-      const stats = await calculateStudentStats(student, session, records, holidays, timetables);
+      const stats = await calculateStudentStats(student, session, records, holidays, timetables, degreeCode, preResolvedPolicy);
 
       if (stats.isDefaulter) {
         studentStatsList.push({
@@ -2894,6 +2910,14 @@ exports.getHodDashboardStats = async (req, res) => {
       recordsByStudent[sid].push(rec);
     });
 
+    const degreeTypes = await DegreeTypeMaster.find().select('code');
+    const degreeTypeMap = {};
+    degreeTypes.forEach(dt => { degreeTypeMap[dt._id.toString()] = dt.code; });
+
+    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
+    const policyMap = {};
+    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+
     const scholarStatsList = [];
     const defaulters = [];
     const warnings = [];
@@ -2904,7 +2928,10 @@ exports.getHodDashboardStats = async (req, res) => {
     for (const student of students) {
       const sid = student._id.toString();
       const records = recordsByStudent[sid] || [];
-      const isPhD = student.profile?.degreeType === 'PHD';
+      const degreeTypeIdStr = student.profile?.degreeTypeId?.toString();
+      const degreeCode = degreeTypeIdStr ? degreeTypeMap[degreeTypeIdStr] : 'PG';
+      const isPhD = degreeCode === 'PHD';
+      const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
 
       let studentTimetables = [];
       if (!isPhD && studentSlotsMap[sid]) {
@@ -2912,7 +2939,7 @@ exports.getHodDashboardStats = async (req, res) => {
         studentTimetables = allTimetables.filter(t => slotIds.includes(t._id.toString()));
       }
 
-      const stats = await calculateStudentStats(student, session, records, holidays, studentTimetables);
+      const stats = await calculateStudentStats(student, session, records, holidays, studentTimetables, degreeCode, preResolvedPolicy);
       
       const sData = {
         studentId: student._id,
@@ -3258,12 +3285,22 @@ exports.getFacultyCourseDefaulters = async (req, res) => {
       recordsByStudent[sid].push(rec);
     });
 
+    const degreeTypes = await DegreeTypeMaster.find().select('code');
+    const degreeTypeMap = {};
+    degreeTypes.forEach(dt => { degreeTypeMap[dt._id.toString()] = dt.code; });
+
+    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
+    const policyMap = {};
+    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+
     const holidays = await HolidayCalendar.find({ isActive: true });
     const list = [];
 
     for (const student of students) {
       const studentRecs = recordsByStudent[student._id.toString()] || [];
-      const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
+      const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
+      const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+      const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy);
       
       if (stats.isDefaulter) {
         const presentLogs = (stats.logs || []).filter(l => l.status === 'PRESENT');
@@ -3291,6 +3328,14 @@ exports.getHodDrillDown = async (req, res) => {
     const session = await AcademicSessionMaster.findOne({ isCurrent: true });
     if (!session) return res.status(200).json([]);
     const { view, id } = req.query;
+
+    const degreeTypes = await DegreeTypeMaster.find().select('code');
+    const degreeTypeMap = {};
+    degreeTypes.forEach(dt => { degreeTypeMap[dt._id.toString()] = dt.code; });
+
+    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
+    const policyMap = {};
+    activePolicies.forEach(p => { policyMap[p.programType] = p; });
 
     if (view === 'faculty') {
       const courses = await TimetableMaster.find({ facultyId: id, sessionId: session._id, isActive: true });
@@ -3320,7 +3365,9 @@ exports.getHodDrillDown = async (req, res) => {
 
       for (const student of students) {
         const studentRecs = recordsByStudent[student._id.toString()] || [];
-        const stats = await calculateStudentStats(student, session, studentRecs, holidays, courses);
+        const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
+        const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, courses, degreeCode, preResolvedPolicy);
 
         list.push({
           studentId: student._id,
@@ -3362,7 +3409,9 @@ exports.getHodDrillDown = async (req, res) => {
 
       for (const student of students) {
         const studentRecs = recordsByStudent[student._id.toString()] || [];
-        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course]);
+        const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
+        const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy);
 
         list.push({
           studentId: student._id,

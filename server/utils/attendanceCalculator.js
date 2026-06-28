@@ -74,14 +74,14 @@ const getTimetableLectures = (startDate, endDate, dayOfWeek, holidays) => {
   return lectureDates;
 };
 
-const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables) => {
+const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables, preResolvedDegreeCode = null, preResolvedPolicy = null) => {
   const departmentId = student.department; // String name or ID, but policy uses ID. Wait, policy uses ObjectId
   const deptQuery = student.departmentId || null; // Might need to resolve actual dept ID from user if needed, but fallback to global
   
   // Resolve programType from degreeTypeId
-  let programType = 'PG';
-  let isPhD = false;
-  if (student.profile?.degreeTypeId) {
+  let programType = preResolvedDegreeCode || 'PG';
+  let isPhD = programType === 'PHD';
+  if (!preResolvedDegreeCode && student.profile?.degreeTypeId) {
     const dt = await DegreeTypeMaster.findById(student.profile.degreeTypeId);
     if (dt) {
       programType = dt.code;
@@ -90,7 +90,10 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   }
 
   // 1. Fetch policy
-  let policy = await AttendancePolicyMaster.findOne({ programType, isActive: true }).sort({ departmentId: -1 });
+  let policy = preResolvedPolicy;
+  if (!policy) {
+    policy = await AttendancePolicyMaster.findOne({ programType, isActive: true }).sort({ departmentId: -1 });
+  }
   if (!policy) {
     policy = {
       minRequiredPercentage: 75,
