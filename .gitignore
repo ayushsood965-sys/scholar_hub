@@ -27,3 +27,25 @@ Thumbs.db
 # Backup folders
 sh_backup/
 temp_backup/
+
+# Uploads and temporary assets
+uploads/
+**/uploads/
+*.tmp
+tmp.txt
+scholar_sync/tmp.txt
+
+# Scratch, test, and debug scripts (excluding main source)
+scratch/
+**/scratch/
+server/check_*.js
+server/test_*.js
+server/reset_*.js
+server/scratch_*.js
+server/cleanup_*.js
+server/verify_*.js
+server/find_user.js
+server/inspect_other.js
+server/delete_research_outputs.js
+server/update_pubs.js
+scholar_track/test_*.cjs

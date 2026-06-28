@@ -3862,6 +3862,11 @@ const PendingReviewsQueue = ({ theses, user }) => {
     }
   };
 
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
+    items,
+    ['scholarName', 'title', 'docType']
+  );
+
   if (selectedDoc) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -3982,11 +3987,6 @@ const PendingReviewsQueue = ({ theses, user }) => {
       </div>
     );
   }
-
-  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
-    items,
-    ['scholarName', 'title', 'docType']
-  );
 
   return (
     <div className="card">

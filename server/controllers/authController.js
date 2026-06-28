@@ -44,16 +44,20 @@ const login = async (req, res) => {
     }
 
     if (await user.matchPassword(password)) {
-      // Proactively ensure seeded users have a welcome notification
-      const { getWelcomeNotificationData } = require('./notificationController');
-      const welcomeData = getWelcomeNotificationData(user);
-      await createNotification({
-        recipient: user._id,
-        title: welcomeData.title,
-        message: welcomeData.message,
-        type: 'WELCOME',
-        link: welcomeData.link
-      });
+      // Proactively ensure seeded users have a welcome notification (if they don't already have one)
+      const Notification = require('../models/Notification');
+      const welcomeExists = await Notification.findOne({ recipient: user._id, type: 'WELCOME' });
+      if (!welcomeExists) {
+        const { getWelcomeNotificationData } = require('./notificationController');
+        const welcomeData = getWelcomeNotificationData(user);
+        await createNotification({
+          recipient: user._id,
+          title: welcomeData.title,
+          message: welcomeData.message,
+          type: 'WELCOME',
+          link: welcomeData.link
+        });
+      }
 
       // Resolve departmentId for client-side filtering
       let userDepartmentId = null;

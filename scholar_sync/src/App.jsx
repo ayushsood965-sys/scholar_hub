@@ -11,11 +11,13 @@ import Signup from './pages/Signup';
 import WorkflowPage from './pages/WorkflowPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import UtilityAction from './components/UtilityAction';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
         <Route path="/" element={<Landing />} />
         
         {/* Protected Dashboard Routes */}
@@ -41,7 +43,8 @@ function App() {
         <Route path="/seed" element={<UtilityAction type="seed" />} />
         <Route path="/seed-users" element={<UtilityAction type="seed-users" />} />
       </Routes>
-    </Router>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

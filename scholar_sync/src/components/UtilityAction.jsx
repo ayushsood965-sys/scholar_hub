@@ -76,12 +76,16 @@ const UtilityAction = ({ type }) => {
       facultyCount
     } : { password };
 
-    axios.post(`${API_BASE_URL}/${endpoint}`, payload, {
-      headers: { 
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    })
+    const headers = { 
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    axios.post(`${API_BASE_URL}/api/${endpoint}`, payload, { headers })
       .then(res => {
         setSuccess(true);
         setShowModal(false);
