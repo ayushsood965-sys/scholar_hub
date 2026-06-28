@@ -1734,6 +1734,297 @@ exports.seedHolidays = async (req, res) => {
     res.status(201).json({ message: `Successfully seeded ${data.length} official Himachal Pradesh Govt holidays for 2026.`, count: data.length });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
+
+exports.seedAllMasters = async (req, res) => {
+  try {
+    // 1. Seed Degree Types
+    const degreeTypesToSeed = [
+      { name: 'Undergraduate', code: 'UG' },
+      { name: 'Postgraduate', code: 'PG' },
+      { name: 'PhD', code: 'PHD' },
+      { name: 'Certificate', code: 'CERT' },
+      { name: 'Diploma', code: 'DIP' },
+      { name: 'Advanced Diploma', code: 'ADVDIP' }
+    ];
+
+    let dtAdded = 0;
+    const degreeTypesMap = {};
+    for (const dt of degreeTypesToSeed) {
+      let doc = await DegreeTypeMaster.findOne({ code: dt.code });
+      if (!doc) {
+        doc = await DegreeTypeMaster.create(dt);
+        dtAdded++;
+      }
+      degreeTypesMap[dt.code] = doc._id;
+    }
+
+    // 2. Seed Departments
+    const departmentsToSeed = [
+      { name: 'Department of Commerce', code: 'COMMERCE', faculty: 'Faculty of Commerce & Management' },
+      { name: 'HPU Business School', code: 'HPUBS', faculty: 'Faculty of Commerce & Management' },
+      { name: 'Institute of Vocational Studies', code: 'IVS', faculty: 'Faculty of Commerce & Management' },
+      { name: 'Department of Bio Sciences', code: 'BIOSCI', faculty: 'Faculty of Life Sciences' },
+      { name: 'Department of Bio Technology', code: 'BIOTECH', faculty: 'Faculty of Life Sciences' },
+      { name: 'Department of Environmental Science', code: 'ENVSCI', faculty: 'Faculty of Life Sciences' },
+      { name: 'Department of Forensic Science', code: 'FORENSIC', faculty: 'Faculty of Life Sciences' },
+      { name: 'Department of Microbiology', code: 'MICROBIO', faculty: 'Faculty of Life Sciences' },
+      { name: 'Department of Law', code: 'LAW', faculty: 'Faculty of LAW' },
+      { name: 'Department of Education', code: 'EDU', faculty: 'Faculty of Education' },
+      { name: 'Department of Physical Education', code: 'PHYEDU', faculty: 'Faculty of Education' },
+      { name: 'Department of Computer Science', code: 'COMSCI', faculty: 'Faculty of Physical Sciences' },
+      { name: 'Department of Physics', code: 'PHYSICS', faculty: 'Faculty of Physical Sciences' },
+      { name: 'Department of Chemistry', code: 'CHEMISTRY', faculty: 'Faculty of Physical Sciences' },
+      { name: 'Department of Mathematics', code: 'MATHS', faculty: 'Faculty of Physical Sciences' },
+      { name: 'Department of Data Science and Artificial Intelligence', code: 'DSAI', faculty: 'Faculty of Physical Sciences' },
+      { name: 'Department of Geography', code: 'GEOGRAPHY', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Economics', code: 'ECONOMICS', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of History', code: 'HISTORY', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Journalism and Mass Communications', code: 'JMC', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Political Science', code: 'POLSCI', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Psychology', code: 'PSYCHOLOGY', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Population Studies', code: 'POPSTUD', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Public Administration', code: 'PUBADMIN', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Sociology and Social Work', code: 'SOCIO', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Yoga Studies', code: 'YOGA', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Library and Information Science', code: 'LIBSCI', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Archaeology', code: 'ARCHAEOLOGY', faculty: 'Faculty of Social Sciences' },
+      { name: 'Department of Performing Arts', code: 'PERFART', faculty: 'Faculty of Performing & Visual Arts' },
+      { name: 'Department of Visual Arts', code: 'VISART', faculty: 'Faculty of Performing & Visual Arts' },
+      { name: 'Centre for Buddhist Studies', code: 'CBS', faculty: 'Faculty of Languages' },
+      { name: 'Department of Modern European and Foreign Languages', code: 'MEFL', faculty: 'Faculty of Languages' },
+      { name: 'Department of Sanskrit', code: 'SANSKRIT', faculty: 'Faculty of Languages' },
+      { name: 'Department of English', code: 'ENGLISH', faculty: 'Faculty of Languages' },
+      { name: 'Department of Hindi', code: 'HINDI', faculty: 'Faculty of Languages' },
+      { name: 'Department of Computer Science Engineering', code: 'CSE', faculty: 'Faculty of Engineering and Technology (UIT)' },
+      { name: 'Department of Information Technology', code: 'IT', faculty: 'Faculty of Engineering and Technology (UIT)' },
+      { name: 'Department of Civil Engineering', code: 'CE', faculty: 'Faculty of Engineering and Technology (UIT)' },
+      { name: 'Department of Electronics and Communication', code: 'ECE', faculty: 'Faculty of Engineering and Technology (UIT)' },
+      { name: 'Department of Electrical Engineering', code: 'EE', faculty: 'Faculty of Engineering and Technology (UIT)' },
+      { name: 'Department of Interdisciplinary Studies', code: 'DIS', faculty: 'Faculty of Envr, Sustainability and Dev. Studies' }
+    ];
+
+    let deptsAdded = 0;
+    const deptsMap = {};
+    for (const d of departmentsToSeed) {
+      let doc = await Department.findOne({ code: d.code });
+      if (!doc) {
+        doc = await Department.create(d);
+        deptsAdded++;
+      } else {
+        doc.faculty = d.faculty;
+        await doc.save();
+      }
+      deptsMap[d.code] = doc._id;
+    }
+
+    // 3. Seed Degree Names
+    const degreeNamesToSeed = [
+      { deptCode: 'COMMERCE', typeCode: 'UG', name: 'B.Com.', code: 'BCOM' },
+      { deptCode: 'COMMERCE', typeCode: 'PG', name: 'M.Com.', code: 'MCOM' },
+      { deptCode: 'COMMERCE', typeCode: 'PHD', name: 'Ph.D. Commerce', code: 'PHD-COMM' },
+      { deptCode: 'HPUBS', typeCode: 'UG', name: 'BBA', code: 'BBA' },
+      { deptCode: 'HPUBS', typeCode: 'PG', name: 'MBA', code: 'MBA' },
+      { deptCode: 'HPUBS', typeCode: 'PG', name: 'MBA (Rural Development)', code: 'MBA-RD' },
+      { deptCode: 'HPUBS', typeCode: 'PHD', name: 'Ph.D. Management', code: 'PHD-MGMT' },
+      { deptCode: 'IVS', typeCode: 'UG', name: 'BHM', code: 'BHM' },
+      { deptCode: 'IVS', typeCode: 'UG', name: 'FYICTTM', code: 'FYICTTM' },
+      { deptCode: 'IVS', typeCode: 'PG', name: 'MTTM', code: 'MTTM' },
+      { deptCode: 'IVS', typeCode: 'PHD', name: 'Ph.D. Tourism', code: 'PHD-TOUR' },
+      { deptCode: 'BIOSCI', typeCode: 'UG', name: 'B.Sc. Botany', code: 'BSC-BOT' },
+      { deptCode: 'BIOSCI', typeCode: 'UG', name: 'B.Sc. Zoology', code: 'BSC-ZOO' },
+      { deptCode: 'BIOSCI', typeCode: 'PG', name: 'M.Sc. Botany', code: 'MSC-BOT' },
+      { deptCode: 'BIOSCI', typeCode: 'PG', name: 'M.Sc. Zoology', code: 'MSC-ZOO' },
+      { deptCode: 'BIOSCI', typeCode: 'PHD', name: 'Ph.D. Botany', code: 'PHD-BOT' },
+      { deptCode: 'BIOSCI', typeCode: 'PHD', name: 'Ph.D. Zoology', code: 'PHD-ZOO' },
+      { deptCode: 'BIOSCI', typeCode: 'CERT', name: 'Certificate in Beekeeping', code: 'CERT-BEEP' },
+      { deptCode: 'BIOSCI', typeCode: 'CERT', name: 'Certificate in Mushroom Farming', code: 'CERT-MUSH' },
+      { deptCode: 'BIOTECH', typeCode: 'UG', name: 'B.Sc. Bio-Technology', code: 'BSC-BIOTECH' },
+      { deptCode: 'BIOTECH', typeCode: 'PG', name: 'M.Sc. Biotechnology', code: 'MSC-BIOTECH' },
+      { deptCode: 'BIOTECH', typeCode: 'PHD', name: 'Ph.D. Bio-Technology', code: 'PHD-BIOTECH' },
+      { deptCode: 'BIOTECH', typeCode: 'DIP', name: 'Diploma in Biotechnology', code: 'DIP-BIOTECH' },
+      { deptCode: 'ENVSCI', typeCode: 'PG', name: 'M.Sc. Environmental Science', code: 'MSC-ENVSCI' },
+      { deptCode: 'ENVSCI', typeCode: 'PHD', name: 'Ph.D. Environmental Science', code: 'PHD-ENVSCI' },
+      { deptCode: 'ENVSCI', typeCode: 'CERT', name: 'Certificate in Environmental Science', code: 'CERT-ENVSCI' },
+      { deptCode: 'FORENSIC', typeCode: 'PG', name: 'M.Sc. Forensic Science', code: 'MSC-FORENSIC' },
+      { deptCode: 'FORENSIC', typeCode: 'PHD', name: 'Ph.D. Forensic Science', code: 'PHD-FORENSIC' },
+      { deptCode: 'FORENSIC', typeCode: 'CERT', name: 'Certificate in Forensic Science', code: 'CERT-FORENSIC' },
+      { deptCode: 'MICROBIO', typeCode: 'UG', name: 'B.Sc. Microbiology', code: 'BSC-MICRO' },
+      { deptCode: 'MICROBIO', typeCode: 'PG', name: 'M.Sc. Microbiology', code: 'MSC-MICRO' },
+      { deptCode: 'MICROBIO', typeCode: 'PHD', name: 'Ph.D. Microbiology', code: 'PHD-MICRO' },
+      { deptCode: 'MICROBIO', typeCode: 'CERT', name: 'Certificate in Microbiology', code: 'CERT-MICRO' },
+      { deptCode: 'LAW', typeCode: 'UG', name: 'LLB', code: 'LLB' },
+      { deptCode: 'LAW', typeCode: 'PG', name: 'LLM', code: 'LLM' },
+      { deptCode: 'LAW', typeCode: 'PHD', name: 'Ph.D. Law', code: 'PHD-LAW' },
+      { deptCode: 'EDU', typeCode: 'UG', name: 'B.Ed.', code: 'BED' },
+      { deptCode: 'EDU', typeCode: 'PG', name: 'M.Ed.', code: 'MED' },
+      { deptCode: 'EDU', typeCode: 'PG', name: 'M.A. Education', code: 'MA-EDU' },
+      { deptCode: 'EDU', typeCode: 'PHD', name: 'Ph.D. Education', code: 'PHD-EDU' },
+      { deptCode: 'PHYEDU', typeCode: 'PG', name: 'M.P.Ed.', code: 'MPED' },
+      { deptCode: 'PHYEDU', typeCode: 'PG', name: 'M.A. Physical Education', code: 'MA-PHYEDU' },
+      { deptCode: 'PHYEDU', typeCode: 'PHD', name: 'Ph.D. Physical Education', code: 'PHD-PHYEDU' },
+      { deptCode: 'COMSCI', typeCode: 'UG', name: 'BCA', code: 'BCA' },
+      { deptCode: 'COMSCI', typeCode: 'PG', name: 'MCA', code: 'MCA' },
+      { deptCode: 'COMSCI', typeCode: 'PG', name: 'M.Tech. Computer Science', code: 'MTECH-CS' },
+      { deptCode: 'COMSCI', typeCode: 'PHD', name: 'Ph.D. Computer Science', code: 'PHD-CS' },
+      { deptCode: 'COMSCI', typeCode: 'DIP', name: 'PGDCA', code: 'PGDCA' },
+      { deptCode: 'PHYSICS', typeCode: 'UG', name: 'B.Sc. Physics', code: 'BSC-PHYSICS' },
+      { deptCode: 'PHYSICS', typeCode: 'PG', name: 'M.Sc. Physics', code: 'MSC-PHYSICS' },
+      { deptCode: 'PHYSICS', typeCode: 'PHD', name: 'Ph.D. Physics', code: 'PHD-PHYSICS' },
+      { deptCode: 'CHEMISTRY', typeCode: 'UG', name: 'B.Sc. Chemistry', code: 'BSC-CHEMISTRY' },
+      { deptCode: 'CHEMISTRY', typeCode: 'PG', name: 'M.Sc. Chemistry', code: 'MSC-CHEMISTRY' },
+      { deptCode: 'CHEMISTRY', typeCode: 'PHD', name: 'Ph.D. Chemistry', code: 'PHD-CHEMISTRY' },
+      { deptCode: 'MATHS', typeCode: 'UG', name: 'B.Sc. Mathematics', code: 'BSC-MATHS' },
+      { deptCode: 'MATHS', typeCode: 'PG', name: 'M.Sc. Mathematics', code: 'MSC-MATHS' },
+      { deptCode: 'MATHS', typeCode: 'PHD', name: 'Ph.D. Mathematics', code: 'PHD-MATHS' },
+      { deptCode: 'MATHS', typeCode: 'DIP', name: 'PG Diploma in Ancient Indian Mathematics', code: 'DIP-AIM' },
+      { deptCode: 'DSAI', typeCode: 'UG', name: 'B.Sc. Data Science', code: 'BSC-DS' },
+      { deptCode: 'DSAI', typeCode: 'UG', name: 'B.Sc. Artificial Intelligence', code: 'BSC-AI' },
+      { deptCode: 'DSAI', typeCode: 'PG', name: 'M.Sc. Data Science', code: 'MSC-DS' },
+      { deptCode: 'DSAI', typeCode: 'PG', name: 'M.Sc. Artificial Intelligence', code: 'MSC-AI' },
+      { deptCode: 'GEOGRAPHY', typeCode: 'UG', name: 'B.A. Geography', code: 'BA-GEOG' },
+      { deptCode: 'GEOGRAPHY', typeCode: 'PG', name: 'M.A. Geography', code: 'MA-GEOG' },
+      { deptCode: 'GEOGRAPHY', typeCode: 'PG', name: 'M.Sc. Geography', code: 'MSC-GEOG' },
+      { deptCode: 'GEOGRAPHY', typeCode: 'PHD', name: 'Ph.D. Geography', code: 'PHD-GEOG' },
+      { deptCode: 'ECONOMICS', typeCode: 'UG', name: 'B.A. Economics', code: 'BA-ECON' },
+      { deptCode: 'ECONOMICS', typeCode: 'PG', name: 'M.A. Economics', code: 'MA-ECON' },
+      { deptCode: 'ECONOMICS', typeCode: 'PHD', name: 'Ph.D. Economics', code: 'PHD-ECON' },
+      { deptCode: 'ECONOMICS', typeCode: 'CERT', name: 'Certificate in Environmental Economics', code: 'CERT-ENVECON' },
+      { deptCode: 'HISTORY', typeCode: 'UG', name: 'B.A. History', code: 'BA-HIST' },
+      { deptCode: 'HISTORY', typeCode: 'PG', name: 'M.A. History', code: 'MA-HIST' },
+      { deptCode: 'HISTORY', typeCode: 'PHD', name: 'Ph.D. History', code: 'PHD-HIST' },
+      { deptCode: 'JMC', typeCode: 'PG', name: 'M.A. Journalism and Mass Communication (MAJMC)', code: 'MAJMC' },
+      { deptCode: 'JMC', typeCode: 'PHD', name: 'Ph.D. Journalism & Mass Communication', code: 'PHD-JMC' },
+      { deptCode: 'POLSCI', typeCode: 'UG', name: 'B.A. Political Science', code: 'BA-POLSCI' },
+      { deptCode: 'POLSCI', typeCode: 'PG', name: 'M.A. Political Science', code: 'MA-POLSCI' },
+      { deptCode: 'POLSCI', typeCode: 'PHD', name: 'Ph.D. Political Science', code: 'PHD-POLSCI' },
+      { deptCode: 'POLSCI', typeCode: 'CERT', name: 'Certificate in Public Policy & Governance', code: 'CERT-PPG' },
+      { deptCode: 'PSYCHOLOGY', typeCode: 'UG', name: 'B.A. Psychology', code: 'BA-PSYCH' },
+      { deptCode: 'PSYCHOLOGY', typeCode: 'PG', name: 'M.A. Psychology', code: 'MA-PSYCH' },
+      { deptCode: 'PSYCHOLOGY', typeCode: 'PHD', name: 'Ph.D. Psychology', code: 'PHD-PSYCH' },
+      { deptCode: 'POPSTUD', typeCode: 'DIP', name: 'PG Diploma in Population Studies', code: 'DIP-POP' },
+      { deptCode: 'PUBADMIN', typeCode: 'UG', name: 'B.A. Public Administration', code: 'BA-PUBAD' },
+      { deptCode: 'PUBADMIN', typeCode: 'PG', name: 'M.A. Public Administration', code: 'MA-PUBAD' },
+      { deptCode: 'PUBADMIN', typeCode: 'PHD', name: 'Ph.D. Public Administration', code: 'PHD-PUBAD' },
+      { deptCode: 'SOCIO', typeCode: 'UG', name: 'B.A. Sociology', code: 'BA-SOC' },
+      { deptCode: 'SOCIO', typeCode: 'PG', name: 'M.A. Sociology', code: 'MA-SOC' },
+      { deptCode: 'SOCIO', typeCode: 'PG', name: 'M.A. Social Work', code: 'MA-SW' },
+      { deptCode: 'SOCIO', typeCode: 'PHD', name: 'Ph.D. Sociology', code: 'PHD-SOC' },
+      { deptCode: 'SOCIO', typeCode: 'PHD', name: 'Ph.D. Social Work', code: 'PHD-SW' },
+      { deptCode: 'SOCIO', typeCode: 'CERT', name: 'Certificate in Social Work', code: 'CERT-SW' },
+      { deptCode: 'YOGA', typeCode: 'PG', name: 'M.A. Yoga Studies', code: 'MA-YOGA' },
+      { deptCode: 'YOGA', typeCode: 'PHD', name: 'Ph.D. Yoga Studies', code: 'PHD-YOGA' },
+      { deptCode: 'YOGA', typeCode: 'DIP', name: 'Diploma in Yoga', code: 'DIP-YOGA' },
+      { deptCode: 'LIBSCI', typeCode: 'UG', name: 'B.Lib.I.Sc.', code: 'BLIB' },
+      { deptCode: 'LIBSCI', typeCode: 'PG', name: 'M.Lib.I.Sc.', code: 'MLIB' },
+      { deptCode: 'ARCHAEOLOGY', typeCode: 'PG', name: 'M.A. Archaeology and Ancient History', code: 'MA-ARCH' },
+      { deptCode: 'PERFART', typeCode: 'UG', name: 'B.A. Performing Arts', code: 'BA-PERF' },
+      { deptCode: 'PERFART', typeCode: 'PG', name: 'M.A. Performing Arts', code: 'MA-PERF' },
+      { deptCode: 'PERFART', typeCode: 'PG', name: 'M.A. Music', code: 'MA-MUS' },
+      { deptCode: 'PERFART', typeCode: 'PHD', name: 'Ph.D. Performing Arts', code: 'PHD-PERF' },
+      { deptCode: 'PERFART', typeCode: 'PHD', name: 'Ph.D. Music', code: 'PHD-MUS' },
+      { deptCode: 'PERFART', typeCode: 'DIP', name: 'PG Diploma in Tabla', code: 'DIP-TABLA' },
+      { deptCode: 'VISART', typeCode: 'UG', name: 'BFA', code: 'BFA' },
+      { deptCode: 'VISART', typeCode: 'PG', name: 'M.A. Visual Arts (Painting)', code: 'MA-PAINT' },
+      { deptCode: 'VISART', typeCode: 'PG', name: 'MFA (Pahari Miniature Painting)', code: 'MFA-PMP' },
+      { deptCode: 'VISART', typeCode: 'PHD', name: 'Ph.D. Visual Arts', code: 'PHD-VIS' },
+      { deptCode: 'CBS', typeCode: 'CERT', name: 'Certificate in Bhoti Language', code: 'CERT-BHOTI' },
+      { deptCode: 'CBS', typeCode: 'DIP', name: 'Diploma in Bhoti Language', code: 'DIP-BHOTI' },
+      { deptCode: 'CBS', typeCode: 'ADVDIP', name: 'Advanced Diploma in Bhoti Language', code: 'ADVDIP-BHOTI' },
+      { deptCode: 'MEFL', typeCode: 'CERT', name: 'Certificate in German', code: 'CERT-GER' },
+      { deptCode: 'MEFL', typeCode: 'CERT', name: 'Certificate in Russian', code: 'CERT-RUS' },
+      { deptCode: 'MEFL', typeCode: 'DIP', name: 'Diploma in German', code: 'DIP-GER' },
+      { deptCode: 'MEFL', typeCode: 'DIP', name: 'Diploma in Russian', code: 'DIP-RUS' },
+      { deptCode: 'MEFL', typeCode: 'ADVDIP', name: 'Advanced Diploma in German', code: 'ADVDIP-GER' },
+      { deptCode: 'MEFL', typeCode: 'ADVDIP', name: 'Advanced Diploma in Russian', code: 'ADVDIP-RUS' },
+      { deptCode: 'SANSKRIT', typeCode: 'UG', name: 'B.A. Sanskrit', code: 'BA-SANSKRIT' },
+      { deptCode: 'SANSKRIT', typeCode: 'PG', name: 'M.A. Sanskrit', code: 'MA-SANSKRIT' },
+      { deptCode: 'SANSKRIT', typeCode: 'PHD', name: 'Ph.D. Sanskrit', code: 'PHD-SANSKRIT' },
+      { deptCode: 'SANSKRIT', typeCode: 'CERT', name: 'Certificate in Indian Knowledge System', code: 'CERT-IKS' },
+      { deptCode: 'ENGLISH', typeCode: 'UG', name: 'B.A. English', code: 'BA-ENG' },
+      { deptCode: 'ENGLISH', typeCode: 'PG', name: 'M.A. English', code: 'MA-ENG' },
+      { deptCode: 'ENGLISH', typeCode: 'PHD', name: 'Ph.D. English', code: 'PHD-ENG' },
+      { deptCode: 'HINDI', typeCode: 'UG', name: 'B.A. Hindi', code: 'BA-HINDI' },
+      { deptCode: 'HINDI', typeCode: 'PG', name: 'M.A. Hindi', code: 'MA-HINDI' },
+      { deptCode: 'HINDI', typeCode: 'PHD', name: 'Ph.D. Hindi', code: 'PHD-HINDI' },
+      { deptCode: 'HINDI', typeCode: 'DIP', name: 'Diploma in Folk Literature', code: 'DIP-FOLK' },
+      { deptCode: 'CSE', typeCode: 'UG', name: 'B.Tech. Computer Science Engineering (CSE)', code: 'BTECH-CSE' },
+      { deptCode: 'CSE', typeCode: 'PG', name: 'M.Tech. Computer Science Engineering', code: 'MTECH-CSE' },
+      { deptCode: 'CSE', typeCode: 'PHD', name: 'Ph.D. Computer Science Engineering', code: 'PHD-CSE' },
+      { deptCode: 'IT', typeCode: 'UG', name: 'B.Tech. Information Technology (IT)', code: 'BTECH-IT' },
+      { deptCode: 'IT', typeCode: 'PG', name: 'M.Tech. Information Technology', code: 'MTECH-IT' },
+      { deptCode: 'IT', typeCode: 'PHD', name: 'Ph.D. Information Technology', code: 'PHD-IT' },
+      { deptCode: 'CE', typeCode: 'UG', name: 'B.Tech. Civil Engineering (CE)', code: 'BTECH-CE' },
+      { deptCode: 'CE', typeCode: 'PG', name: 'M.Tech. Civil Engineering (Geotechnical Engineering)', code: 'MTECH-CE' },
+      { deptCode: 'CE', typeCode: 'PHD', name: 'Ph.D. Civil Engineering', code: 'PHD-CE' },
+      { deptCode: 'ECE', typeCode: 'UG', name: 'B.Tech. Electronics and Communication (ECE)', code: 'BTECH-ECE' },
+      { deptCode: 'ECE', typeCode: 'PG', name: 'M.Tech. Electronics and Communication', code: 'MTECH-ECE' },
+      { deptCode: 'ECE', typeCode: 'PHD', name: 'Ph.D. Electronics and Communication Engineering', code: 'PHD-ECE' },
+      { deptCode: 'EE', typeCode: 'UG', name: 'B.Tech. Electrical Engineering (EE)', code: 'BTECH-EE' },
+      { deptCode: 'EE', typeCode: 'PG', name: 'M.Tech. Electrical Engineering (Power & Energy Systems)', code: 'MTECH-EE' },
+      { deptCode: 'EE', typeCode: 'PHD', name: 'Ph.D. Electrical Engineering', code: 'PHD-EE' },
+      { deptCode: 'DIS', typeCode: 'PG', name: 'M.Tech. Energy Science and Engineering', code: 'MTECH-ENERGY' },
+      { deptCode: 'DIS', typeCode: 'PHD', name: 'Ph.D. Energy Science & Technology', code: 'PHD-ENERGY' },
+      { deptCode: 'DIS', typeCode: 'CERT', name: 'Certificate in Energy Science and Engineering', code: 'CERT-ENERGY' },
+      { deptCode: 'DIS', typeCode: 'CERT', name: 'Certificate in Rethinking Development: Issues and Challenges', code: 'CERT-DEV' },
+      { deptCode: 'DIS', typeCode: 'DIP', name: 'PG Diploma in Disaster & Disaster Management', code: 'DIP-DISASTER' },
+      { deptCode: 'DIS', typeCode: 'DIP', name: 'PG Diploma in Tribal Studies', code: 'DIP-TRIBAL' }
+    ];
+
+    let namesAdded = 0;
+    for (const n of degreeNamesToSeed) {
+      const typeId = degreeTypesMap[n.typeCode];
+      const deptId = deptsMap[n.deptCode];
+      if (typeId && deptId) {
+        let doc = await DegreeNameMaster.findOne({ code: n.code });
+        if (!doc) {
+          await DegreeNameMaster.create({
+            degreeTypeId: typeId,
+            departmentId: deptId,
+            name: n.name,
+            code: n.code
+          });
+          namesAdded++;
+        }
+      }
+    }
+
+    // 4. Seed default policies for newly created/active degree types
+    let policiesAdded = 0;
+    for (const dtCode of Object.keys(degreeTypesMap)) {
+      const exists = await AttendancePolicyMaster.findOne({ departmentId: null, programType: dtCode });
+      if (!exists) {
+        await AttendancePolicyMaster.create({
+          departmentId: null,
+          programType: dtCode,
+          minRequiredPercentage: 75,
+          warningThreshold: 80,
+          maxCondonationPercentage: 10,
+          editLockHours: 48,
+          allowHalfDay: true,
+          allowMedicalLeave: true,
+          allowDutyLeave: true,
+          allowCorrection: true,
+          correctionWindowDays: 14,
+          isActive: true
+        });
+        policiesAdded++;
+      }
+    }
+
+    res.status(201).json({
+      message: `Master seeding complete successfully!`,
+      details: {
+        degreeTypesSeeded: dtAdded,
+        departmentsSeeded: deptsAdded,
+        degreeNamesSeeded: namesAdded,
+        policiesSeeded: policiesAdded
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.createHoliday = async (req, res) => {
   try {
     const holiday = await HolidayCalendar.create(req.body);

@@ -15,6 +15,11 @@ const departmentSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
+    faculty: {
+      type: String,
+      default: '',
+      trim: true
+    },
   },
   {
     timestamps: true,

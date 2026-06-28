@@ -22,6 +22,7 @@ const upload = multer({ storage });
 // ==========================================
 router.get('/masters/degree-types', protect, attendanceController.getDegreeTypes);
 router.post('/masters/degree-types', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeType);
+router.post('/masters/seed-all', protect, authorize('SUPER_ADMIN'), attendanceController.seedAllMasters);
 router.put('/masters/degree-types/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateDegreeType);
 router.delete('/masters/degree-types/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeType);
 

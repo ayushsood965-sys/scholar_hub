@@ -12,6 +12,7 @@ const DegreeTypeMasterTab = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ name: '', code: '' });
+  const [seeding, setSeeding] = useState(false);
   const api = useApi();
   const toast = useToast();
 
@@ -57,6 +58,20 @@ const DegreeTypeMasterTab = () => {
     setFormOpen(true);
   };
 
+  const handleSeedAllMasters = async () => {
+    if (!window.confirm('This will seed the complete list of departments, degree types, and degree names. Duplicate entries will be prevented. Do you want to proceed?')) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/attendance/masters/seed-all');
+      toast.success(res.data.message || 'Master data seeded successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to seed master data');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this Degree Type?')) return;
     try {
@@ -95,11 +110,18 @@ const DegreeTypeMasterTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Degree Types</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>e.g. PhD, PG, UG, Diploma</p>
         </div>
-        {!formOpen && (
-          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
-            <Plus size={16} /> Add Degree Type
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {!formOpen && (
+            <>
+              <button className="btn btn-outline" onClick={handleSeedAllMasters} disabled={seeding}>
+                {seeding ? 'Seeding...' : 'Seed Master Data'}
+              </button>
+              <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+                <Plus size={16} /> Add Degree Type
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>

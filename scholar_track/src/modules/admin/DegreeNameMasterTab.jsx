@@ -16,6 +16,7 @@ const DegreeNameMasterTab = () => {
   const [formData, setFormData] = useState({ degreeTypeId: '', departmentId: '', name: '', code: '' });
   const [deptSearch, setDeptSearch] = useState('');
   const [isDeptOpen, setIsDeptOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const deptDropdownRef = useRef(null);
   const api = useApi();
   const toast = useToast();
@@ -88,6 +89,20 @@ const DegreeNameMasterTab = () => {
     setFormOpen(true);
   };
 
+  const handleSeedAllMasters = async () => {
+    if (!window.confirm('This will seed the complete list of departments, degree types, and degree names. Duplicate entries will be prevented. Do you want to proceed?')) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/attendance/masters/seed-all');
+      toast.success(res.data.message || 'Master data seeded successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to seed master data');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure?')) return;
     try {
@@ -108,7 +123,22 @@ const DegreeNameMasterTab = () => {
 
   const columns = [
     { header: 'Degree Type', accessor: (row) => row.degreeTypeId?.name || 'N/A' },
-    { header: 'Department', accessor: (row) => row.departmentId?.name || 'N/A' },
+    {
+      header: 'Department',
+      accessor: (row) => {
+        if (!row.departmentId) return 'N/A';
+        return (
+          <span>
+            {row.departmentId.name}
+            {row.departmentId.faculty && (
+              <span style={{ color: '#EF4444', fontWeight: '500', marginLeft: '8px' }}>
+                ({row.departmentId.faculty})
+              </span>
+            )}
+          </span>
+        );
+      }
+    },
     { header: 'Degree Name', accessor: 'name' },
     { header: 'Code', accessor: 'code' },
     {
@@ -135,11 +165,18 @@ const DegreeNameMasterTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Degree Names</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>e.g. M.Sc. Computer Science, B.Tech ECE</p>
         </div>
-        {!formOpen && (
-          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
-            <Plus size={16} /> Add Degree Name
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {!formOpen && (
+            <>
+              <button className="btn btn-outline" onClick={handleSeedAllMasters} disabled={seeding}>
+                {seeding ? 'Seeding...' : 'Seed Master Data'}
+              </button>
+              <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+                <Plus size={16} /> Add Degree Name
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
