@@ -20,7 +20,7 @@ const SemesterMaster = require('../models/attendance/SemesterMaster');
 const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 const CategoryGenderMaster = require('../models/CategoryGenderMaster');
 
-const { calculateStudentStats } = require('../utils/attendanceCalculator');
+const { calculateStudentStats, getTimetableLectures } = require('../utils/attendanceCalculator');
 const { createNotification } = require('./notificationController');
 
 const createSystemNotification = async (recipientId, title, message, type = 'INFO', link = '') => {
@@ -2626,6 +2626,11 @@ exports.getFacultyDashboardStats = async (req, res) => {
     const policyMap = {};
     activePolicies.forEach(p => { policyMap[p.programType] = p; });
 
+    const preResolvedLectureDatesCache = {};
+    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(day => {
+      preResolvedLectureDatesCache[day] = getTimetableLectures(session.startDate, session.endDate, day, holidays);
+    });
+
     const courseStats = [];
     const totalDefaultersSet = new Set();
     const byCourseDefaulters = [];
@@ -2647,7 +2652,7 @@ exports.getFacultyDashboardStats = async (req, res) => {
         const degreeTypeIdStr = student.profile?.degreeTypeId?.toString();
         const degreeCode = degreeTypeIdStr ? degreeTypeMap[degreeTypeIdStr] : 'PG';
         const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
-        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy);
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy, preResolvedLectureDatesCache);
         
         totalPercentageSum += stats.percentage;
         activeStudentsCount++;
@@ -2826,6 +2831,11 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
       studentSemesterMap[s._id.toString()] = s.profile?.semesterId?.toString() || null;
     }
 
+    const preResolvedLectureDatesCache = {};
+    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(day => {
+      preResolvedLectureDatesCache[day] = getTimetableLectures(session.startDate, session.endDate, day, holidays);
+    });
+
     const studentStatsList = [];
 
     for (const student of students) {
@@ -2841,7 +2851,7 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
         (!t.semesterId || t.semesterId.toString() === studentSemesterMap[sid])
       ) : [];
 
-      const stats = await calculateStudentStats(student, session, records, holidays, timetables, degreeCode, preResolvedPolicy);
+      const stats = await calculateStudentStats(student, session, records, holidays, timetables, degreeCode, preResolvedPolicy, preResolvedLectureDatesCache);
 
       if (stats.isDefaulter) {
         studentStatsList.push({
@@ -2918,6 +2928,11 @@ exports.getHodDashboardStats = async (req, res) => {
     const policyMap = {};
     activePolicies.forEach(p => { policyMap[p.programType] = p; });
 
+    const preResolvedLectureDatesCache = {};
+    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(day => {
+      preResolvedLectureDatesCache[day] = getTimetableLectures(session.startDate, session.endDate, day, holidays);
+    });
+
     const scholarStatsList = [];
     const defaulters = [];
     const warnings = [];
@@ -2939,7 +2954,7 @@ exports.getHodDashboardStats = async (req, res) => {
         studentTimetables = allTimetables.filter(t => slotIds.includes(t._id.toString()));
       }
 
-      const stats = await calculateStudentStats(student, session, records, holidays, studentTimetables, degreeCode, preResolvedPolicy);
+      const stats = await calculateStudentStats(student, session, records, holidays, studentTimetables, degreeCode, preResolvedPolicy, preResolvedLectureDatesCache);
       
       const sData = {
         studentId: student._id,

@@ -74,7 +74,7 @@ const getTimetableLectures = (startDate, endDate, dayOfWeek, holidays) => {
   return lectureDates;
 };
 
-const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables, preResolvedDegreeCode = null, preResolvedPolicy = null) => {
+const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables, preResolvedDegreeCode = null, preResolvedPolicy = null, preResolvedLectureDatesCache = null) => {
   const departmentId = student.department; // String name or ID, but policy uses ID. Wait, policy uses ObjectId
   const deptQuery = student.departmentId || null; // Might need to resolve actual dept ID from user if needed, but fallback to global
   
@@ -120,7 +120,9 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
     const studentSlots = rawTimetables || [];
     const datesSet = new Set();
     studentSlots.forEach(slot => {
-      const dates = getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
+      const dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
+        ? preResolvedLectureDatesCache[slot.dayOfWeek]
+        : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
       dates.forEach(dt => {
         datesSet.add(dt.toDateString());
         totalExpectedClasses++;
@@ -229,7 +231,9 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   if (!isPhD) {
     const studentSlots = rawTimetables || [];
     studentSlots.forEach(slot => {
-      const dates = getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
+      const dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
+        ? preResolvedLectureDatesCache[slot.dayOfWeek]
+        : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
       let subjectPresent = 0;
       let subjectAbsent = 0;
       
