@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const LeaveTab = () => {
   const [leaves, setLeaves] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -19,7 +20,8 @@ const LeaveTab = () => {
     endDate: '',
     totalDays: 0,
     reason: '',
-    documentUrl: ''
+    documentUrl: '',
+    isHalfDay: false
   });
   const [holidays, setHolidays] = useState([]);
   
@@ -28,16 +30,29 @@ const LeaveTab = () => {
 
   const fetchLeaves = async () => {
     try {
-      const [lRes, ltRes, holRes] = await Promise.all([
+      const [lRes, ltRes, holRes, meRes] = await Promise.all([
         api.get('/attendance/leave/me'),
         api.get('/attendance/leave-types'),
-        api.get('/attendance/holidays')
+        api.get('/attendance/holidays'),
+        api.get('/auth/me')
       ]);
       setLeaves(lRes.data);
-      setLeaveTypes(ltRes.data);
-      setHolidays(holRes.data);
-      if (ltRes.data.length > 0) {
-        setFormData(prev => ({ ...prev, leaveTypeId: ltRes.data[0]._id }));
+      setLeaveTypes(ltRes.data || []);
+      setHolidays(holRes.data || []);
+      setCurrentUser(meRes.data);
+
+      // Filter leave types by gender to set the initial select value
+      const studentGender = meRes.data?.profile?.gender || 'All';
+      const initialFiltered = (ltRes.data || []).filter(lt => {
+        if (!lt.isActive) return false;
+        if (lt.applicableGender === 'All') return true;
+        return lt.applicableGender.toLowerCase() === studentGender.toLowerCase();
+      });
+
+      if (initialFiltered.length > 0) {
+        setFormData(prev => ({ ...prev, leaveTypeId: initialFiltered[0]._id }));
+      } else {
+        setFormData(prev => ({ ...prev, leaveTypeId: '' }));
       }
     } catch (err) {
       toast.error('Failed to load leave records');
@@ -45,6 +60,15 @@ const LeaveTab = () => {
       setLoading(false);
     }
   };
+
+  const filteredLeaveTypes = useMemo(() => {
+    const studentGender = currentUser?.profile?.gender || 'All';
+    return leaveTypes.filter(lt => {
+      if (!lt.isActive) return false;
+      if (lt.applicableGender === 'All') return true;
+      return lt.applicableGender.toLowerCase() === studentGender.toLowerCase();
+    });
+  }, [leaveTypes, currentUser]);
 
   useEffect(() => { fetchLeaves(); }, []);
 
@@ -60,6 +84,16 @@ const LeaveTab = () => {
       
       const selectedLeave = leaveTypes.find(t => t._id === formData.leaveTypeId);
       
+      if (formData.isHalfDay && formData.startDate !== formData.endDate) {
+        setFormData(prev => ({ ...prev, isHalfDay: false }));
+        return;
+      }
+
+      if (formData.isHalfDay) {
+        setFormData(prev => ({ ...prev, totalDays: 0.5 }));
+        return;
+      }
+
       let count = 0;
       let cur = new Date(start);
       while (cur <= end) {
@@ -85,7 +119,7 @@ const LeaveTab = () => {
     } else {
       setFormData(prev => ({ ...prev, totalDays: 0 }));
     }
-  }, [formData.startDate, formData.endDate, formData.leaveTypeId, leaveTypes, holidays]);
+  }, [formData.startDate, formData.endDate, formData.leaveTypeId, formData.isHalfDay, leaveTypes, holidays]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -120,8 +154,29 @@ const LeaveTab = () => {
       return toast.error('End date cannot be before start date');
     }
 
+    if (formData.isHalfDay && formData.startDate !== formData.endDate) {
+      return toast.error('Half-day leaves can only be applied for a single day.');
+    }
+
     if (formData.totalDays === 0) {
       return toast.error('Selected leave period does not contain any working days.');
+    }
+
+    // Validate minDaysPerRequest
+    if (selectedLeave.minDaysPerRequest && formData.totalDays < selectedLeave.minDaysPerRequest) {
+      return toast.error(`Minimum duration for this leave request must be at least ${selectedLeave.minDaysPerRequest} day(s).`);
+    }
+
+    // Validate advanceNoticeDays
+    if (selectedLeave.advanceNoticeDays > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(formData.startDate);
+      start.setHours(0, 0, 0, 0);
+      const daysDiff = (start - today) / (1000 * 60 * 60 * 24);
+      if (daysDiff < selectedLeave.advanceNoticeDays) {
+        return toast.error(`Advance notice of ${selectedLeave.advanceNoticeDays} days is required for this leave type.`);
+      }
     }
 
     if (selectedLeave.documentUploadRule === 'mandatory' && !formData.documentUrl) {
@@ -135,17 +190,19 @@ const LeaveTab = () => {
         endDate: formData.endDate,
         totalDays: formData.totalDays,
         reason: formData.reason,
-        documentUrl: formData.documentUrl
+        documentUrl: formData.documentUrl,
+        isHalfDay: formData.isHalfDay
       });
       toast.success('Leave requested successfully');
       setFormOpen(false);
       setFormData({
-        leaveTypeId: leaveTypes[0]?._id || '',
+        leaveTypeId: filteredLeaveTypes[0]?._id || '',
         startDate: '',
         endDate: '',
         totalDays: 0,
         reason: '',
-        documentUrl: ''
+        documentUrl: '',
+        isHalfDay: false
       });
       fetchLeaves();
     } catch (err) {
@@ -214,6 +271,60 @@ const LeaveTab = () => {
                 </button>
               </div>
               <form onSubmit={handleSubmit}>
+                {(() => {
+                  const selectedLeave = leaveTypes.find(t => t._id === formData.leaveTypeId);
+                  if (!selectedLeave) return null;
+                  return (
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      marginBottom: '20px',
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: '12px'
+                    }}>
+                      <div>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Leave Limit</span>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          {selectedLeave.maxDaysLimit ? `${selectedLeave.maxDaysLimit} days per ${selectedLeave.maxDaysLimitType || 'year'}` : 'No Limit'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Min Days Required</span>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          {selectedLeave.minDaysPerRequest || 1} day(s)
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Advance Notice Needed</span>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          {selectedLeave.advanceNoticeDays || 'No notice'} {selectedLeave.advanceNoticeDays > 0 ? 'day(s)' : ''}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Half-Day Policy</span>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          {selectedLeave.allowHalfDay ? 'Allowed' : 'Not Allowed'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Holidays & Weekends</span>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          {selectedLeave.includeHolidays ? 'Count as Leave' : 'Excluded'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Document Upload</span>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          {selectedLeave.documentUploadRule === 'mandatory' ? 'Mandatory' : selectedLeave.documentUploadRule === 'optional' ? 'Optional' : 'Not Required'}
+                        </strong>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid-3">
                   <div className="form-group">
                     <label className="form-label">Leave Type</label>
@@ -224,7 +335,7 @@ const LeaveTab = () => {
                       onChange={e => setFormData({...formData, leaveTypeId: e.target.value})}
                     >
                       <option value="">Select Leave Type...</option>
-                      {leaveTypes.map(t => <option key={t._id} value={t._id}>{t.leaveName} ({t.leaveCode})</option>)}
+                      {filteredLeaveTypes.map(t => <option key={t._id} value={t._id}>{t.leaveName} ({t.leaveCode})</option>)}
                     </select>
                   </div>
 
@@ -251,13 +362,36 @@ const LeaveTab = () => {
                   </div>
                 </div>
 
-                <div className="grid-2">
+                <div className="grid-3">
                   <div className="form-group">
                     <label className="form-label">Calculated Working Days</label>
                     <div className="form-input" style={{ background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', fontWeight: 'bold' }}>
                       <Calendar size={16} />
                       {formData.totalDays} Day(s)
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    {(() => {
+                      const selectedLeave = leaveTypes.find(t => t._id === formData.leaveTypeId);
+                      if (selectedLeave?.allowHalfDay && formData.startDate && formData.endDate && formData.startDate === formData.endDate) {
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '42px', marginTop: '28px' }}>
+                            <input 
+                              type="checkbox" 
+                              id="isHalfDay" 
+                              checked={formData.isHalfDay} 
+                              onChange={e => setFormData({ ...formData, isHalfDay: e.target.checked })} 
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="isHalfDay" className="form-label" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
+                              Apply as Half-Day Leave
+                            </label>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
 
                   <div className="form-group">

@@ -56,6 +56,11 @@ const timetableMasterSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    totalClassesInSemester: {
+      type: Number,
+      required: true,
+      default: 90
     }
   },
   { timestamps: true }

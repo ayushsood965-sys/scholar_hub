@@ -19,7 +19,15 @@ const TimetableTab = () => {
   
   const [formOpen, setFormOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState(null);
-  const [formData, setFormData] = useState({ dayOfWeek: 'Monday', startTime: '09:00', endTime: '10:00', subjectCode: '', subjectName: '', facultyId: '' });
+  const [formData, setFormData] = useState({ 
+    dayOfWeek: 'Monday', 
+    startTime: '09:00', 
+    endTime: '10:00', 
+    subjectCode: '', 
+    subjectName: '', 
+    facultyId: '',
+    totalClassesInSemester: 90
+  });
 
   const api = useApi();
   const toast = useToast();
@@ -68,7 +76,15 @@ const TimetableTab = () => {
   useEffect(() => { fetchTimetable(); }, [filters]);
 
   const resetForm = () => {
-    setFormData({ dayOfWeek: 'Monday', startTime: '09:00', endTime: '10:00', subjectCode: '', subjectName: '', facultyId: '' });
+    setFormData({ 
+      dayOfWeek: 'Monday', 
+      startTime: '09:00', 
+      endTime: '10:00', 
+      subjectCode: '', 
+      subjectName: '', 
+      facultyId: '',
+      totalClassesInSemester: 90
+    });
     setEditingSlot(null);
     setFormOpen(false);
   };
@@ -81,7 +97,8 @@ const TimetableTab = () => {
       endTime: slot.endTime,
       subjectCode: slot.subjectCode,
       subjectName: slot.subjectName,
-      facultyId: slot.facultyId?._id || slot.facultyId || ''
+      facultyId: slot.facultyId?._id || slot.facultyId || '',
+      totalClassesInSemester: slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90
     });
     setFormOpen(true);
   };
@@ -233,6 +250,20 @@ const TimetableTab = () => {
                           {faculties.map(f => <option key={f._id} value={f._id}>{f.name}{f.username ? ` (${f.username})` : ''}</option>)}
                         </select>
                       </div>
+                      <div className="form-group">
+                        <label className="form-label">No. of Days in Semester</label>
+                        <input 
+                          type="number" 
+                          className="form-input" 
+                          required 
+                          min="1"
+                          value={formData.totalClassesInSemester} 
+                          onChange={e => setFormData({...formData, totalClassesInSemester: parseInt(e.target.value) || 0})} 
+                        />
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: '1.2' }}>
+                          Enter the total number of days/sessions this class will run in a semester.
+                        </div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
                       <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
@@ -281,6 +312,7 @@ const TimetableTab = () => {
                         </div>
                         <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', marginTop: '8px' }}>{slot.subjectName}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{slot.subjectCode}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--status-present)', marginTop: '4px', fontWeight: '500' }}>Semester Days: {slot.totalClassesInSemester || 90}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
                           <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: 'white', fontWeight: 'bold', flexShrink: 0 }}>
                             {slot.facultyId?.name?.charAt(0) || '?'}

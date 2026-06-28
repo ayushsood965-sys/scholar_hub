@@ -521,7 +521,8 @@ exports.cloneTimetable = async (req, res) => {
       facultyId: s.facultyId,
       dayOfWeek: s.dayOfWeek,
       startTime: s.startTime,
-      endTime: s.endTime
+      endTime: s.endTime,
+      totalClassesInSemester: s.totalClassesInSemester || 90
     }));
     if (newSlots.length > 0) {
       await TimetableMaster.insertMany(newSlots);
@@ -791,7 +792,7 @@ exports.markAttendanceBulk = async (req, res) => {
 // ==========================================
 exports.applyLeave = async (req, res) => {
   try {
-    const { leaveTypeId, startDate, endDate, reason, documentUrl } = req.body;
+    const { leaveTypeId, startDate, endDate, reason, documentUrl, isHalfDay } = req.body;
     const student = await User.findById(req.user._id);
     const departmentId = (await Department.findOne({ name: student.department }))?._id;
     
@@ -804,6 +805,15 @@ exports.applyLeave = async (req, res) => {
     const end = new Date(endDate);
     if (end < start) {
       return res.status(400).json({ message: 'End date cannot be before start date.' });
+    }
+
+    if (isHalfDay) {
+      if (start.toDateString() !== end.toDateString()) {
+        return res.status(400).json({ message: 'Half-day leaves can only be applied for a single day.' });
+      }
+      if (!leaveRule.allowHalfDay) {
+        return res.status(400).json({ message: 'Half-day leaves are not allowed for this leave type.' });
+      }
     }
     
     if (leaveRule.applicableGender !== 'All' && student.profile?.gender) {
@@ -829,25 +839,29 @@ exports.applyLeave = async (req, res) => {
     });
     
     let totalDays = 0;
-    let cur = new Date(start);
-    while (cur <= end) {
-      const day = cur.getDay();
-      const curStr = cur.toISOString().split('T')[0];
-      const isSun = (day === 0);
-      const isHoli = holidays.some(h => {
-        const hStart = new Date(h.startDate).toISOString().split('T')[0];
-        const hEnd = new Date(h.endDate).toISOString().split('T')[0];
-        return curStr >= hStart && curStr <= hEnd;
-      });
-      
-      if (leaveRule.includeHolidays) {
-        totalDays++;
-      } else {
-        if (!isSun && !isHoli) {
+    if (isHalfDay) {
+      totalDays = 0.5;
+    } else {
+      let cur = new Date(start);
+      while (cur <= end) {
+        const day = cur.getDay();
+        const curStr = cur.toISOString().split('T')[0];
+        const isSun = (day === 0);
+        const isHoli = holidays.some(h => {
+          const hStart = new Date(h.startDate).toISOString().split('T')[0];
+          const hEnd = new Date(h.endDate).toISOString().split('T')[0];
+          return curStr >= hStart && curStr <= hEnd;
+        });
+        
+        if (leaveRule.includeHolidays) {
           totalDays++;
+        } else {
+          if (!isSun && !isHoli) {
+            totalDays++;
+          }
         }
+        cur.setDate(cur.getDate() + 1);
       }
-      cur.setDate(cur.getDate() + 1);
     }
     
     if (totalDays === 0) {
@@ -895,7 +909,7 @@ exports.applyLeave = async (req, res) => {
     const leave = await LeaveRequest.create({
       studentId: student._id, department: student.department, departmentId,
       leaveType: leaveRule.leaveName, startDate: new Date(startDate), endDate: new Date(endDate),
-      totalDays, reason, documentUrl,
+      totalDays, reason, documentUrl, isHalfDay: !!isHalfDay,
       status: supervisorId ? 'PENDING_SUPERVISOR' : 'PENDING_HOD',
       currentAssigneeId: supervisorId,
       auditLog: [{ action: 'SUBMITTED', actorId: student._id, actorName: student.name, remarks: 'Applied' }]
