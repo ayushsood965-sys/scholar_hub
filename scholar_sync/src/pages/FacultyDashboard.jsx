@@ -14,6 +14,7 @@ import { useToast } from '../context/ToastContext';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
 import { useTabPersistence } from '../hooks/useTabPersistence';
+import { progressiveFetch } from '../utils/progressiveFetch';
 import ThemeToggle from '../components/ThemeToggle';
 import UnifiedScholarModal from '../components/UnifiedScholarModal';
 import PublicConfigTab from '../components/PublicConfigTab';
@@ -4052,18 +4053,26 @@ const FacultyDefaultersPage = ({ user, subRole }) => {
   const fetchDefaulters = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${API_URL}/milestones/defaulters`, getAuthHeader());
-      
-      // Filter based on user role
-      if (subRole === 'HOD') {
-        setDefaulters(data.filter(d => d.scholarDepartment === user.department));
-      } else {
-        setDefaulters(data.filter(d => d.supervisorId === user._id));
-      }
+      await progressiveFetch(`${API_URL}/milestones/defaulters`, {}, (data, isBackground) => {
+        const filtered = subRole === 'HOD' 
+          ? data.filter(d => d.scholarDepartment === user.department)
+          : data.filter(d => d.supervisorId === user._id);
+
+        if (!isBackground) {
+          setDefaulters(filtered);
+          setLoading(false);
+        } else {
+          setDefaulters(prev => {
+            const existingIds = new Set(prev.map(d => d._id));
+            const uniqueNew = filtered.filter(d => !existingIds.has(d._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) {
       console.error(err);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -4156,23 +4165,31 @@ const MeetingsTab = ({ user }) => {
   const fetchMeetings = async () => {
     try {
       const endpoint = user?.role === 'HOD' ? 'dept' : 'faculty';
-      const res = await axios.get(`${API}/meetings/${endpoint}`, getAuthHeader());
-      
-      // Legacy data fix
-      const formatted = res.data.map(m => {
-        if ((!m.invitedAttendees || m.invitedAttendees.length === 0) && m.attendees && m.attendees.length > 0) {
-          m.invitedAttendees = m.attendees;
-          if (m.status !== 'APPROVED') {
-            m.attendees = [];
+      await progressiveFetch(`${API}/meetings/${endpoint}`, {}, (data, isBackground) => {
+        // Legacy data fix
+        const formatted = data.map(m => {
+          if ((!m.invitedAttendees || m.invitedAttendees.length === 0) && m.attendees && m.attendees.length > 0) {
+            m.invitedAttendees = m.attendees;
+            if (m.status !== 'APPROVED') {
+              m.attendees = [];
+            }
           }
-        }
-        return m;
-      });
+          return m;
+        });
 
-      setMeetings(formatted);
+        if (!isBackground) {
+          setMeetings(formatted);
+          setLoading(false);
+        } else {
+          setMeetings(prev => {
+            const existingIds = new Set(prev.map(m => m._id));
+            const uniqueNew = formatted.filter(m => !existingIds.has(m._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) {
       toast.error('Failed to load meetings.');
-    } finally {
       setLoading(false);
     }
   };

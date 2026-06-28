@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 import { useTabPersistence } from '../hooks/useTabPersistence';
+import { progressiveFetch } from '../utils/progressiveFetch';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
 import ThemeToggle from '../components/ThemeToggle';
@@ -4044,11 +4045,20 @@ const DefaultersTab = () => {
   const fetchDefaulters = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${API}/milestones/defaulters`, getAuthHeader());
-      setDefaulters(data);
+      await progressiveFetch(`${API}/milestones/defaulters`, {}, (data, isBackground) => {
+        if (!isBackground) {
+          setDefaulters(data);
+          setLoading(false);
+        } else {
+          setDefaulters(prev => {
+            const existingIds = new Set(prev.map(d => d._id));
+            const uniqueNew = data.filter(d => !existingIds.has(d._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) {
       console.error('Error fetching defaulters', err);
-    } finally {
       setLoading(false);
     }
   };
@@ -4536,23 +4546,31 @@ const MeetingsTab = ({ user }) => {
   const fetchMeetings = async () => {
     try {
       const endpoint = user?.role === 'HOD' ? 'dept' : 'faculty';
-      const res = await axios.get(`${API}/meetings/${endpoint}`, getAuthHeader());
-      
-      // Legacy data fix
-      const formatted = res.data.map(m => {
-        if ((!m.invitedAttendees || m.invitedAttendees.length === 0) && m.attendees && m.attendees.length > 0) {
-          m.invitedAttendees = m.attendees;
-          if (m.status !== 'APPROVED') {
-            m.attendees = [];
+      await progressiveFetch(`${API}/meetings/${endpoint}`, {}, (data, isBackground) => {
+        // Legacy data fix
+        const formatted = data.map(m => {
+          if ((!m.invitedAttendees || m.invitedAttendees.length === 0) && m.attendees && m.attendees.length > 0) {
+            m.invitedAttendees = m.attendees;
+            if (m.status !== 'APPROVED') {
+              m.attendees = [];
+            }
           }
-        }
-        return m;
-      });
+          return m;
+        });
 
-      setMeetings(formatted);
+        if (!isBackground) {
+          setMeetings(formatted);
+          setLoading(false);
+        } else {
+          setMeetings(prev => {
+            const existingIds = new Set(prev.map(m => m._id));
+            const uniqueNew = formatted.filter(m => !existingIds.has(m._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) {
       toast.error('Failed to load meetings.');
-    } finally {
       setLoading(false);
     }
   };

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Department = require('../models/Department');
 const Notification = require('../models/Notification');
 const LeaveRequest = require('../models/LeaveRequest');
+const paginate = require('../utils/paginate');
 
 const AttendancePolicyMaster = require('../models/attendance/AttendancePolicyMaster');
 const LeaveTypeMaster = require('../models/attendance/LeaveTypeMaster');
@@ -737,10 +738,12 @@ exports.getPendingLeaves = async (req, res) => {
       query = { status: { $in: ['PENDING_SUPERVISOR', 'PENDING_HOD'] } };
     }
 
-    const leaves = await LeaveRequest.find(query)
+    let mongoQuery = LeaveRequest.find(query)
       .populate('studentId', 'name username profile')
       .populate('currentAssigneeId', 'name')
       .sort({ createdAt: -1 });
+
+    const leaves = await paginate(mongoQuery, req.query);
 
     res.status(200).json(leaves);
   } catch (error) {
@@ -1353,11 +1356,13 @@ exports.getPendingCorrections = async (req, res) => {
       query = { status: 'PENDING_HOD' };
     }
     
-    const corrections = await AttendanceCorrection.find(query)
+    let mongoQuery = AttendanceCorrection.find(query)
       .populate('studentId', 'name username profile')
       .populate('recordId')
       .populate('facultyId', 'name')
       .sort({ createdAt: -1 });
+
+    const corrections = await paginate(mongoQuery, req.query);
     
     res.status(200).json(corrections);
   } catch (error) {

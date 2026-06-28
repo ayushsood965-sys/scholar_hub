@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../../config';
 import useApi from '../../hooks/useApi';
 import { AuthContext } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { progressiveFetch } from '../../utils/progressiveFetch';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { CheckCircle, XCircle, ChevronDown, ChevronUp, FileText, UserCheck, ShieldCheck, Calendar, Clock } from 'lucide-react';
@@ -26,17 +27,8 @@ const ApprovalsTab = () => {
   const fetchApprovals = async () => {
     try {
       setLoading(true);
-      const [leaveRes, corrRes, regRes, facultyRes] = await Promise.all([
-        api.get('/attendance/leave/pending'),
-        api.get('/attendance/corrections/pending'),
-        api.get('/thesis/all?status=REGISTRATION_PENDING'),
-        api.get('/auth/faculty')
-      ]);
-      setLeaves(leaveRes.data);
-      setCorrections(corrRes.data);
-      setRegistrations(regRes.data);
-
-      // Filter faculties to only active, verified supervisors/HODs in the same department
+      
+      const facultyRes = await api.get('/auth/faculty');
       const deptFaculty = facultyRes.data.filter(f => 
         f.department === user?.department && 
         (f.role === 'FACULTY' || f.role === 'HOD') && 
@@ -44,9 +36,49 @@ const ApprovalsTab = () => {
         f.isVerified
       );
       setFaculties(deptFaculty);
+
+      // Fetch pending leaves progressively
+      progressiveFetch(api, '/attendance/leave/pending', {}, (data, isBackground) => {
+        if (!isBackground) {
+          setLeaves(data);
+          setLoading(false);
+        } else {
+          setLeaves(prev => {
+            const existingIds = new Set(prev.map(l => l._id));
+            const uniqueNew = data.filter(l => !existingIds.has(l._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
+
+      // Fetch pending corrections progressively
+      progressiveFetch(api, '/attendance/corrections/pending', {}, (data, isBackground) => {
+        if (!isBackground) {
+          setCorrections(data);
+        } else {
+          setCorrections(prev => {
+            const existingIds = new Set(prev.map(c => c._id));
+            const uniqueNew = data.filter(c => !existingIds.has(c._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
+
+      // Fetch pending registrations progressively
+      progressiveFetch(api, '/thesis/all?status=REGISTRATION_PENDING', {}, (data, isBackground) => {
+        if (!isBackground) {
+          setRegistrations(data);
+        } else {
+          setRegistrations(prev => {
+            const existingIds = new Set(prev.map(r => r._id));
+            const uniqueNew = data.filter(r => !existingIds.has(r._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
+
     } catch (err) {
       toast.error('Failed to load pending approvals');
-    } finally {
       setLoading(false);
     }
   };

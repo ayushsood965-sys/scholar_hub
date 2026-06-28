@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
 import { API_URL } from '../config';
+import { progressiveFetch } from '../utils/progressiveFetch';
 
 export const ThesisContext = createContext();
 
@@ -71,25 +72,19 @@ export const ThesisProvider = ({ children }) => {
   const fetchAllTheses = useCallback(async (filters = {}) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams(filters);
-      
-      // 1. Fetch first chunk (10 items)
-      params.set('limit', '10');
-      const { data: firstTen } = await axios.get(`${API}/thesis/all?${params.toString()}`, getAuthHeader());
-      setAllTheses(firstTen);
-      setLoading(false); // Stop loading indicator immediately
-
-      // 2. Fetch remaining data in background
-      params.delete('limit');
-      params.set('skip', '10');
-      const { data: rest } = await axios.get(`${API}/thesis/all?${params.toString()}`, getAuthHeader());
-      if (rest && rest.length > 0) {
-        setAllTheses(prev => {
-          const existingIds = new Set(prev.map(t => t._id.toString()));
-          const uniqueRest = rest.filter(t => !existingIds.has(t._id.toString()));
-          return [...prev, ...uniqueRest];
-        });
-      }
+      const params = new URLSearchParams(filters).toString();
+      await progressiveFetch(`${API}/thesis/all?${params}`, {}, (data, isBackground) => {
+        if (!isBackground) {
+          setAllTheses(data);
+          setLoading(false);
+        } else {
+          setAllTheses(prev => {
+            const existingIds = new Set(prev.map(t => t._id.toString()));
+            const uniqueNew = data.filter(t => !existingIds.has(t._id.toString()));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Error');
       setLoading(false);
@@ -132,20 +127,18 @@ export const ThesisProvider = ({ children }) => {
   const fetchAssignedTheses = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch first chunk (10 items)
-      const { data: firstTen } = await axios.get(`${API}/thesis/assigned?limit=10`, getAuthHeader());
-      setAllTheses(firstTen);
-      setLoading(false); // Stop loading indicator immediately
-
-      // 2. Fetch remaining in the background
-      const { data: rest } = await axios.get(`${API}/thesis/assigned?skip=10`, getAuthHeader());
-      if (rest && rest.length > 0) {
-        setAllTheses(prev => {
-          const existingIds = new Set(prev.map(t => t._id.toString()));
-          const uniqueRest = rest.filter(t => !existingIds.has(t._id.toString()));
-          return [...prev, ...uniqueRest];
-        });
-      }
+      await progressiveFetch(`${API}/thesis/assigned`, {}, (data, isBackground) => {
+        if (!isBackground) {
+          setAllTheses(data);
+          setLoading(false);
+        } else {
+          setAllTheses(prev => {
+            const existingIds = new Set(prev.map(t => t._id.toString()));
+            const uniqueNew = data.filter(t => !existingIds.has(t._id.toString()));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) { 
       setError(err.message); 
       setLoading(false);
@@ -155,20 +148,18 @@ export const ThesisProvider = ({ children }) => {
   const fetchDeptTheses = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch first chunk (10 items)
-      const { data: firstTen } = await axios.get(`${API}/thesis/dept?limit=10`, getAuthHeader());
-      setAllTheses(firstTen);
-      setLoading(false); // Stop loading indicator immediately
-
-      // 2. Fetch remaining in the background
-      const { data: rest } = await axios.get(`${API}/thesis/dept?skip=10`, getAuthHeader());
-      if (rest && rest.length > 0) {
-        setAllTheses(prev => {
-          const existingIds = new Set(prev.map(t => t._id.toString()));
-          const uniqueRest = rest.filter(t => !existingIds.has(t._id.toString()));
-          return [...prev, ...uniqueRest];
-        });
-      }
+      await progressiveFetch(`${API}/thesis/dept`, {}, (data, isBackground) => {
+        if (!isBackground) {
+          setAllTheses(data);
+          setLoading(false);
+        } else {
+          setAllTheses(prev => {
+            const existingIds = new Set(prev.map(t => t._id.toString()));
+            const uniqueNew = data.filter(t => !existingIds.has(t._id.toString()));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) { 
       setError(err.message); 
       setLoading(false);

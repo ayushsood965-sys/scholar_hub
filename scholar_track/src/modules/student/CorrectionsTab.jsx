@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { progressiveFetch } from '../../utils/progressiveFetch';
 import DataTable from '../../components/ui/DataTable';
 import {
   AlertTriangle,
@@ -58,15 +59,25 @@ const CorrectionsTab = () => {
 
   const fetchData = async () => {
     try {
-      const [datesRes, corrRes] = await Promise.all([
-        api.get('/attendance/my-absences'),
-        api.get('/attendance/corrections/me')
-      ]);
+      // 1. Fetch absences first (typically a small list of active dates)
+      const datesRes = await api.get('/attendance/my-absences');
       setDates(datesRes.data);
-      setCorrections(corrRes.data);
+
+      // 2. Fetch correction history progressively
+      await progressiveFetch(api, '/attendance/corrections/me', {}, (data, isBackground) => {
+        if (!isBackground) {
+          setCorrections(data);
+          setLoading(false);
+        } else {
+          setCorrections(prev => {
+            const existingIds = new Set(prev.map(c => c._id));
+            const uniqueNew = data.filter(c => !existingIds.has(c._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) {
       toast.error('Failed to load correction data');
-    } finally {
       setLoading(false);
     }
   };

@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const paginate = require('../utils/paginate');
 
 const getWelcomeNotificationData = (user) => {
   let title = '🎉 Welcome to ScholarSync!';
@@ -82,7 +83,8 @@ exports.getNotifications = async (req, res) => {
       filter = baseFilter;
     }
 
-    const notifications = await Notification.find(filter).sort({ createdAt: -1 });
+    let mongoQuery = Notification.find(filter).sort({ createdAt: -1 });
+    const notifications = await paginate(mongoQuery, req.query);
 
     // Format output: add 'read' virtual boolean for client convenience
     const formatted = notifications.map(n => {

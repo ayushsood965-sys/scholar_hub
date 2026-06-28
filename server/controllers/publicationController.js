@@ -1,5 +1,6 @@
 const Publication = require('../models/Publication');
 const Thesis = require('../models/Thesis');
+const paginate = require('../utils/paginate');
 
 // POST /api/publications — Submit a publication log with PDF proof file
 const submitPublication = async (req, res) => {
@@ -55,7 +56,8 @@ const submitPublication = async (req, res) => {
 const getPublicationsByThesis = async (req, res) => {
   try {
     const { thesisId } = req.params;
-    const pubs = await Publication.find({ thesisId }).sort('-publicationDate');
+    let mongoQuery = Publication.find({ thesisId }).sort('-publicationDate');
+    const pubs = await paginate(mongoQuery, req.query);
     res.json(pubs);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -68,9 +70,10 @@ const getDeptPublications = async (req, res) => {
     const { department } = req.params;
     const theses = await Thesis.find({ department });
     const thesisIds = theses.map(t => t._id);
-    const pubs = await Publication.find({ thesisId: { $in: thesisIds } })
+    let mongoQuery = Publication.find({ thesisId: { $in: thesisIds } })
       .populate('scholarId')
       .sort('-createdAt');
+    const pubs = await paginate(mongoQuery, req.query);
     res.json(pubs);
   } catch (err) {
     res.status(500).json({ message: err.message });

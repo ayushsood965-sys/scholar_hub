@@ -2,6 +2,7 @@ const Milestone = require('../models/Milestone');
 const Thesis = require('../models/Thesis');
 const User = require('../models/User');
 const RACReview = require('../models/RACReview');
+const paginate = require('../utils/paginate');
 const { createNotification } = require('./notificationController');
 
 const getPeriodMeta = (startDate, seq) => {
@@ -443,7 +444,7 @@ const createMilestone = async (req, res) => {
 // GET /api/milestones/defaulters — Admin fetches scholars whose progress reports are overdue (Step 5)
 const getDefaulters = async (req, res) => {
   try {
-    const overdueReports = await Milestone.find({
+    let mongoQuery = Milestone.find({
       type: '6_MONTH_REPORT',
       dueDate: { $lt: new Date() },
       status: 'PENDING'
@@ -451,6 +452,8 @@ const getDefaulters = async (req, res) => {
       path: 'thesisId',
       populate: { path: 'scholarId' }
     });
+
+    const overdueReports = await paginate(mongoQuery, req.query);
 
     const formatted = overdueReports.map(m => {
       const thesis = m.thesisId;

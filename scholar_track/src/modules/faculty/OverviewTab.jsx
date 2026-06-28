@@ -18,6 +18,7 @@ import {
 import useApi from '../../hooks/useApi';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { useToast } from '../../context/ToastContext';
+import { progressiveFetch } from '../../utils/progressiveFetch';
 import './OverviewTab.css';
 
 const OverviewTab = () => {
@@ -53,12 +54,25 @@ const OverviewTab = () => {
     const fetchLowAttendance = async () => {
       setLowAttendanceLoading(true);
       try {
-        const res = await api.get('/attendance/dashboard/faculty/low-attendance-students');
-        if (!cancelled) setLowAttendanceStudents(res.data);
+        await progressiveFetch(api, '/attendance/dashboard/faculty/low-attendance-students', {}, (data, isBackground) => {
+          if (!cancelled) {
+            if (!isBackground) {
+              setLowAttendanceStudents(data);
+              setLowAttendanceLoading(false);
+            } else {
+              setLowAttendanceStudents(prev => {
+                const existingIds = new Set(prev.map(s => s._id || s.id));
+                const uniqueNew = data.filter(s => !existingIds.has(s._id || s.id));
+                return [...prev, ...uniqueNew];
+              });
+            }
+          }
+        });
       } catch (err) {
-        if (!cancelled) toast.error('Failed to load low attendance list');
-      } finally {
-        if (!cancelled) setLowAttendanceLoading(false);
+        if (!cancelled) {
+          toast.error('Failed to load low attendance list');
+          setLowAttendanceLoading(false);
+        }
       }
     };
     fetchLowAttendance();

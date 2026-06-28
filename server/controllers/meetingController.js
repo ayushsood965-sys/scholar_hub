@@ -1,6 +1,7 @@
 const Meeting = require('../models/Meeting');
 const Thesis = require('../models/Thesis');
 const User = require('../models/User');
+const paginate = require('../utils/paginate');
 const { createNotification } = require('./notificationController');
 
 // POST /api/meetings — Student requests a meeting
@@ -50,11 +51,13 @@ const requestMeeting = async (req, res) => {
 // GET /api/meetings/me — Student fetches their own requested meetings
 const getMyMeetings = async (req, res) => {
   try {
-    const meetings = await Meeting.find({ scholarId: req.user._id })
+    let mongoQuery = Meeting.find({ scholarId: req.user._id })
       .populate('invitedAttendees', 'name email username role subRole')
       .populate('attendees', 'name email username role subRole')
       .populate('rejectedAttendees', 'name email username role subRole')
       .sort({ createdAt: -1 });
+
+    const meetings = await paginate(mongoQuery, req.query);
 
     // Legacy data fallback
     const formatted = meetings.map(m => {
@@ -77,12 +80,14 @@ const getMyMeetings = async (req, res) => {
 // GET /api/meetings/dept — HOD fetches department meeting requests
 const getDeptMeetings = async (req, res) => {
   try {
-    const meetings = await Meeting.find({ department: req.user.department })
+    let mongoQuery = Meeting.find({ department: req.user.department })
       .populate('scholarId', 'name email username profile')
       .populate('invitedAttendees', 'name email username role subRole')
       .populate('attendees', 'name email username role subRole')
       .populate('rejectedAttendees', 'name email username role subRole')
       .sort({ createdAt: -1 });
+
+    const meetings = await paginate(mongoQuery, req.query);
 
     // Legacy data fallback
     const formatted = meetings.map(m => {
@@ -105,7 +110,7 @@ const getDeptMeetings = async (req, res) => {
 // GET /api/meetings/faculty — Faculty fetches meetings where they are in invite list
 const getFacultyMeetings = async (req, res) => {
   try {
-    const meetings = await Meeting.find({ 
+    let mongoQuery = Meeting.find({ 
       invitedAttendees: req.user._id
     })
       .populate('scholarId', 'name email username profile')
@@ -113,6 +118,8 @@ const getFacultyMeetings = async (req, res) => {
       .populate('attendees', 'name email username role subRole')
       .populate('rejectedAttendees', 'name email username role subRole')
       .sort({ createdAt: -1 });
+
+    const meetings = await paginate(mongoQuery, req.query);
 
     // Legacy data fallback
     const formatted = meetings.map(m => {

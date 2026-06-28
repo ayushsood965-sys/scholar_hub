@@ -3,6 +3,7 @@ import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import { AuthContext } from '../../context/AuthContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { progressiveFetch } from '../../utils/progressiveFetch';
 import { Search, History, Save, ChevronDown, X, Edit3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -137,12 +138,21 @@ const AttendanceRecordsTab = () => {
         timetableSlotId: historyFilters.timetableSlotId || '',
         date: historyFilters.date
       });
-      const res = await api.get(`/attendance/faculty/marked?${queryParams.toString()}`);
-      setHistoryList(res.data);
+      await progressiveFetch(api, `/attendance/faculty/marked?${queryParams.toString()}`, {}, (data, isBackground) => {
+        if (!isBackground) {
+          setHistoryList(data);
+          setHistoryLoading(false);
+        } else {
+          setHistoryList(prev => {
+            const existingIds = new Set(prev.map(item => item._id || item.id));
+            const uniqueNew = data.filter(item => !existingIds.has(item._id || item.id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      });
     } catch (err) {
       toast.error('Failed to retrieve marked attendance history');
       setHistoryList([]);
-    } finally {
       setHistoryLoading(false);
     }
   };
