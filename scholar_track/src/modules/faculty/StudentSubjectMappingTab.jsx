@@ -11,6 +11,7 @@ const StudentSubjectMappingTab = () => {
   const [degreeTypes, setDegreeTypes] = useState([]);
   const [degreeNames, setDegreeNames] = useState([]);
   const [semesters, setSemesters] = useState([]);
+  const [semesterDegreeMappings, setSemesterDegreeMappings] = useState([]);
 
   const [filters, setFilters] = useState({
     sessionId: '',
@@ -39,10 +40,11 @@ const StudentSubjectMappingTab = () => {
     const fetchFilters = async () => {
       try {
         const res = await api.get('/student-mapping/filters');
-        setSessions(res.data.sessions);
-        setDegreeTypes(res.data.degreeTypes);
-        setDegreeNames(res.data.degreeNames);
-        setSemesters(res.data.semesters);
+        setSessions(res.data.sessions || []);
+        setDegreeTypes(res.data.degreeTypes || []);
+        setDegreeNames(res.data.degreeNames || []);
+        setSemesters(res.data.semesters || []);
+        setSemesterDegreeMappings(res.data.semesterDegreeMappings || []);
       } catch (err) {
         toast.error('Failed to load filter data');
       } finally {
@@ -272,19 +274,52 @@ const StudentSubjectMappingTab = () => {
     }
   };
 
-  if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
-
-  const availableDegreeNames = degreeNames.filter(d => {
-    const matchType = d.degreeTypeId?._id === filters.degreeTypeId;
-    const matchDept = !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
-    return matchType && matchDept;
-  });
+  const availableDegreeNames = useMemo(() => {
+    if (!Array.isArray(degreeNames)) return [];
+    return degreeNames.filter(d => {
+      if (!d) return false;
+      const typeId = d.degreeTypeId?._id || d.degreeTypeId;
+      const matchType = typeId === filters.degreeTypeId;
+      const matchDept = !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
+      return matchType && matchDept;
+    });
+  }, [degreeNames, filters.degreeTypeId, user?.departmentId]);
 
   // Derive available degree types from department-filtered degree names
-  const departmentDegreeNames = degreeNames.filter(d => {
-    return !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
-  });
-  const availableDegreeTypes = [...new Map(departmentDegreeNames.filter(d => d.degreeTypeId).map(d => [d.degreeTypeId._id, d.degreeTypeId])).values()];
+  const availableDegreeTypes = useMemo(() => {
+    if (!Array.isArray(degreeNames)) return [];
+    const deptDegreeNames = degreeNames.filter(d => {
+      if (!d) return false;
+      const deptId = d.departmentId?._id || d.departmentId;
+      return !user?.departmentId || !deptId || deptId === user.departmentId;
+    });
+    const typeMap = new Map();
+    deptDegreeNames.forEach(d => {
+      const dt = d.degreeTypeId;
+      if (dt) {
+        const id = dt._id || dt;
+        const typeObj = degreeTypes.find(t => t && t._id === id);
+        const name = dt.name || typeObj?.name || 'Unknown';
+        const code = dt.code || typeObj?.code || '';
+        if (!typeMap.has(id)) {
+          typeMap.set(id, { _id: id, name, code });
+        }
+      }
+    });
+    return [...typeMap.values()];
+  }, [degreeNames, degreeTypes, user?.departmentId]);
+
+  // Derive mapped semesters for the selected degree name
+  const availableSemesters = useMemo(() => {
+    if (!filters.degreeNameId || !Array.isArray(semesterDegreeMappings)) return [];
+    const mappedIds = semesterDegreeMappings
+      .filter(m => m && (m.degreeNameId?._id || m.degreeNameId) === filters.degreeNameId)
+      .map(m => m.semesterId?._id || m.semesterId)
+      .filter(Boolean);
+    return semesters.filter(s => s && mappedIds.includes(s._id));
+  }, [filters.degreeNameId, semesters, semesterDegreeMappings]);
+
+  if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
 
   return (
     <div className="mark-attendance-tab">
@@ -319,7 +354,7 @@ const StudentSubjectMappingTab = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Degree Name</label>
-              <select className="form-input" required value={filters.degreeNameId} onChange={e => setFilters({ ...filters, degreeNameId: e.target.value })} disabled={!filters.degreeTypeId}>
+              <select className="form-input" required value={filters.degreeNameId} onChange={e => setFilters({ ...filters, degreeNameId: e.target.value, semesterId: '' })} disabled={!filters.degreeTypeId}>
                 <option value="">Select Degree...</option>
                 {availableDegreeNames.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
               </select>
@@ -329,9 +364,9 @@ const StudentSubjectMappingTab = () => {
             {!isPhD && (
               <div className="form-group mb-sm">
                 <label className="form-label">Semester</label>
-                <select className="form-input" required value={filters.semesterId} onChange={e => setFilters({ ...filters, semesterId: e.target.value })} disabled={!filters.degreeTypeId}>
+                <select className="form-input" required value={filters.semesterId} onChange={e => setFilters({ ...filters, semesterId: e.target.value })} disabled={!filters.degreeNameId}>
                   <option value="">Select Semester...</option>
-                  {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  {availableSemesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                 </select>
               </div>
             )}

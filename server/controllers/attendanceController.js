@@ -56,9 +56,35 @@ exports.getDegreeTypes = async (req, res) => {
 };
 exports.createDegreeType = async (req, res) => {
   try {
-    const data = await DegreeTypeMaster.create(req.body);
+    const { name, code } = req.body;
+    if (!name || !code) {
+      return res.status(400).json({ message: 'Name and Code are required' });
+    }
+    const duplicate = await DegreeTypeMaster.findOne({
+      $or: [
+        { name: name.trim() },
+        { code: code.trim().toUpperCase() }
+      ]
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: 'Degree Type Name or Code already exists' });
+    }
+    const data = await DegreeTypeMaster.create({
+      name: name.trim(),
+      code: code.trim().toUpperCase()
+    });
     res.status(201).json(data);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    if (error.code === 11000) {
+      let dupMessage = 'A duplicate entry already exists in the database.';
+      if (error.keyValue) {
+        const fields = Object.keys(error.keyValue);
+        dupMessage = `Duplicate entry detected: ${fields.join(', ')} '${error.keyValue[fields[0]]}' already exists.`;
+      }
+      return res.status(409).json({ message: dupMessage });
+    }
+    res.status(500).json({ message: error.message });
+  }
 };
 exports.deleteDegreeType = async (req, res) => {
   try {
@@ -111,7 +137,17 @@ exports.createDegreeName = async (req, res) => {
     }
     const data = await DegreeNameMaster.create(req.body);
     res.status(201).json(data);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    if (error.code === 11000) {
+      let dupMessage = 'A duplicate entry already exists in the database.';
+      if (error.keyValue) {
+        const fields = Object.keys(error.keyValue);
+        dupMessage = `Duplicate entry detected: ${fields.join(', ')} '${error.keyValue[fields[0]]}' already exists.`;
+      }
+      return res.status(409).json({ message: dupMessage });
+    }
+    res.status(500).json({ message: error.message });
+  }
 };
 exports.updateDegreeName = async (req, res) => {
   try {
@@ -127,7 +163,17 @@ exports.updateDegreeName = async (req, res) => {
     const data = await DegreeNameMaster.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!data) return res.status(404).json({ message: 'Degree name not found' });
     res.status(200).json(data);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    if (error.code === 11000) {
+      let dupMessage = 'A duplicate entry already exists in the database.';
+      if (error.keyValue) {
+        const fields = Object.keys(error.keyValue);
+        dupMessage = `Duplicate entry detected: ${fields.join(', ')} '${error.keyValue[fields[0]]}' already exists.`;
+      }
+      return res.status(409).json({ message: dupMessage });
+    }
+    res.status(500).json({ message: error.message });
+  }
 };
 exports.deleteDegreeName = async (req, res) => {
   try {
@@ -335,6 +381,23 @@ exports.deleteLeaveType = async (req, res) => {
     const leaveType = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
     res.status(200).json(leaveType);
   } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.updateLeaveType = async (req, res) => {
+  try {
+    const data = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!data) return res.status(404).json({ message: 'Leave type not found' });
+    res.status(200).json(data);
+  } catch (error) {
+    if (error.code === 11000) {
+      let dupMessage = 'A duplicate entry already exists in the database.';
+      if (error.keyValue) {
+        const fields = Object.keys(error.keyValue);
+        dupMessage = `Duplicate entry detected: ${fields.join(', ')} '${error.keyValue[fields[0]]}' already exists.`;
+      }
+      return res.status(409).json({ message: dupMessage });
+    }
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // ==========================================
@@ -2011,16 +2074,118 @@ exports.seedAllMasters = async (req, res) => {
       }
     }
 
+    // 5. Seed UGC Leave Types (Global)
+    const leaveTypesToSeed = [
+      {
+        leaveName: 'Casual Leave',
+        leaveCode: 'CL',
+        maxDaysPerYear: 8,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'optional',
+        requiresDocument: false,
+        includeHolidays: false,
+        countsAsPresent: false,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 1,
+        allowHalfDay: true,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Medical Leave',
+        leaveCode: 'ML',
+        maxDaysPerYear: 15,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: false,
+        countsAsPresent: false,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 0,
+        allowHalfDay: false,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Duty Leave',
+        leaveCode: 'DL',
+        maxDaysPerYear: null,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: false,
+        countsAsPresent: true,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 2,
+        allowHalfDay: true,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Maternity Leave',
+        leaveCode: 'MAT',
+        maxDaysPerYear: 240,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: true,
+        countsAsPresent: false,
+        minDaysPerRequest: 5,
+        advanceNoticeDays: 15,
+        allowHalfDay: false,
+        applicableGender: 'Female',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Paternity Leave',
+        leaveCode: 'PAT',
+        maxDaysPerYear: 15,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: true,
+        countsAsPresent: false,
+        minDaysPerRequest: 3,
+        advanceNoticeDays: 7,
+        allowHalfDay: false,
+        applicableGender: 'Male',
+        isActive: true,
+        departmentId: null
+      }
+    ];
+
+    let leaveTypesAdded = 0;
+    for (const lt of leaveTypesToSeed) {
+      const exists = await LeaveTypeMaster.findOne({ leaveCode: lt.leaveCode, departmentId: null });
+      if (!exists) {
+        await LeaveTypeMaster.create(lt);
+        leaveTypesAdded++;
+      }
+    }
+
     res.status(201).json({
       message: `Master seeding complete successfully!`,
       details: {
         degreeTypesSeeded: dtAdded,
         departmentsSeeded: deptsAdded,
         degreeNamesSeeded: namesAdded,
-        policiesSeeded: policiesAdded
+        policiesSeeded: policiesAdded,
+        leaveTypesSeeded: leaveTypesAdded
       }
     });
   } catch (error) {
+    if (error.code === 11000) {
+      let dupMessage = 'A duplicate entry already exists in the database.';
+      if (error.keyValue) {
+        const fields = Object.keys(error.keyValue);
+        dupMessage = `Duplicate entry detected: ${fields.join(', ')} '${error.keyValue[fields[0]]}' already exists.`;
+      }
+      return res.status(409).json({ message: dupMessage });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -2030,10 +2195,11 @@ exports.seedSemesterDegreeMappings = async (req, res) => {
     // 1. Ensure semesters 1 to 10 exist
     const semestersMap = {};
     for (let i = 1; i <= 10; i++) {
-      let sem = await SemesterMaster.findOne({ number: i });
-      if (!sem) {
-        sem = await SemesterMaster.create({ name: `Semester ${i}`, number: i, isActive: true });
-      }
+      const sem = await SemesterMaster.findOneAndUpdate(
+        { number: i },
+        { $setOnInsert: { name: `Semester ${i}`, number: i, isActive: true } },
+        { upsert: true, new: true }
+      );
       semestersMap[i] = sem._id;
     }
 
@@ -2083,6 +2249,14 @@ exports.seedSemesterDegreeMappings = async (req, res) => {
           }
         }
       }
+
+      // Cleanup extra mappings that exceed the correct semCount
+      const mappedSemesters = await SemesterDegreeMapping.find({ degreeNameId: dn._id }).populate('semesterId');
+      for (const m of mappedSemesters) {
+        if (!m.semesterId || m.semesterId.number > semCount) {
+          await SemesterDegreeMapping.deleteOne({ _id: m._id });
+        }
+      }
     }
 
     res.status(201).json({
@@ -2090,6 +2264,14 @@ exports.seedSemesterDegreeMappings = async (req, res) => {
       mappingsAdded
     });
   } catch (error) {
+    if (error.code === 11000) {
+      let dupMessage = 'A duplicate entry already exists in the database.';
+      if (error.keyValue) {
+        const fields = Object.keys(error.keyValue);
+        dupMessage = `Duplicate entry detected: ${fields.join(', ')} '${error.keyValue[fields[0]]}' already exists.`;
+      }
+      return res.status(409).json({ message: dupMessage });
+    }
     res.status(500).json({ message: error.message });
   }
 };

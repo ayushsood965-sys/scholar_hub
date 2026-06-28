@@ -7,6 +7,7 @@ const DegreeNameMaster = require('../models/attendance/DegreeNameMaster');
 const SemesterMaster = require('../models/attendance/SemesterMaster');
 const AcademicSessionMaster = require('../models/attendance/AcademicSessionMaster');
 const StudentSemesterMapping = require('../models/attendance/StudentSemesterMapping');
+const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 
 // ==========================================
 // 1. GET FILTER DATA (sessions, degree types, names, semesters)
@@ -22,7 +23,8 @@ exports.getFilterData = async (req, res) => {
     }
     const degreeNames = await DegreeNameMaster.find(degreeNameQuery).populate('degreeTypeId').populate('departmentId');
     const semesters = await SemesterMaster.find({ isActive: true }).sort({ number: 1 });
-    res.status(200).json({ sessions, degreeTypes, degreeNames, semesters });
+    const semesterDegreeMappings = await SemesterDegreeMapping.find({ isActive: true });
+    res.status(200).json({ sessions, degreeTypes, degreeNames, semesters, semesterDegreeMappings });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

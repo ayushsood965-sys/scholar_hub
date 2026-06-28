@@ -78,6 +78,7 @@ router.delete('/policies/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attenda
 router.get('/leave-types', protect, requireDepartment, attendanceController.getLeaveTypes);
 router.post('/leave-types', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.createLeaveType);
 router.delete('/leave-types/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.deleteLeaveType);
+router.put('/leave-types/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.updateLeaveType);
 
 // ==========================================
 // 5. TIMETABLE
