@@ -16,6 +16,7 @@ import UnifiedScholarModal from '../components/UnifiedScholarModal';
 import PublicConfigTab from '../components/PublicConfigTab';
 import DetailedReportsTab from '../components/DetailedReportsTab';
 import ScholarSearchTab from '../components/ScholarSearchTab';
+import { useGridControl } from '../hooks/useGridControl';
 
 const API = API_URL;
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
@@ -24,7 +25,7 @@ const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.
 
 const Header = ({ title }) => {
   const { user } = useContext(AuthContext);
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useContext(NotificationContext);
+  const { notifications = [], markAsRead = (() => {}), markAllAsRead = (() => {}), unreadCount = 0 } = useContext(NotificationContext) || {};
   const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
@@ -641,7 +642,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
           
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {/* Show Transfer button if current user is HOD, scholar belongs to this department, and thesis is not submitted/awarded */}
-            {user.role === 'HOD' && thesis.department === user.department && !['SUBMITTED', 'AWARDED'].includes(thesis.status) && (
+            {user?.role === 'HOD' && thesis.department === user?.department && !['SUBMITTED', 'AWARDED'].includes(thesis.status) && (
               <button
                 onClick={() => setShowTransferModal(true)}
                 className="btn-outline"
@@ -1734,13 +1735,14 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
 // ── Overview Page ──
 const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
   const isHOD = user?.role === 'HOD';
+  const cleanTheses = Array.isArray(theses) ? theses : [];
   const counts = {
-    total: theses.length,
-    pending: theses.filter(t => t.status === 'REGISTRATION_PENDING').length,
-    active: theses.filter(t => t.status === 'ACTIVE_RESEARCH').length,
-    awarded: theses.filter(t => t.status === 'AWARDED').length
+    total: cleanTheses.length,
+    pending: cleanTheses.filter(t => t && t.status === 'REGISTRATION_PENDING').length,
+    active: cleanTheses.filter(t => t && t.status === 'ACTIVE_RESEARCH').length,
+    awarded: cleanTheses.filter(t => t && t.status === 'AWARDED').length
   };
-  const awaitingDRC = theses.filter(t => t.status === 'SYNOPSIS_PENDING' && t.synopsisStatus === 'APPROVED').length;
+  const awaitingDRC = cleanTheses.filter(t => t && t.status === 'SYNOPSIS_PENDING' && t.synopsisStatus === 'APPROVED').length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1792,13 +1794,13 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
             <span>📂 Scholars Summary Checklist</span>
           </h3>
 
-          {theses.length === 0 ? (
+          {cleanTheses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: '0.85rem' }}>
               No scholars currently registered in this department.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {theses.slice(0, 6).map(t => (
+              {cleanTheses.slice(0, 6).map(t => (
                 <div
                   key={t._id}
                   onClick={() => onSelectThesis(t._id)}
@@ -1885,19 +1887,26 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
 
 // ── Manage Scholars ──
 const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
+  const { loading } = useContext(ThesisContext);
   const [filter, setFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [milestoneMap, setMilestoneMap] = useState({});
 
-  const filtered = theses.filter(t =>
+  const cleanTheses = Array.isArray(theses) ? theses : [];
+  const filtered = cleanTheses.filter(t => t &&
     (!filter || t.status === filter) &&
     (!deptFilter || t.department === deptFilter)
   );
-  const depts = [...new Set(theses.map(t => t.department))];
+  const depts = [...new Set(cleanTheses.map(t => t && t.department).filter(Boolean))];
+
+  const { paginatedData, renderGridControls } = useGridControl(
+    filtered,
+    ['scholarId.name', 'department', 'title', 'supervisorId.name']
+  );
 
   useEffect(() => {
     const fetchCompliance = async () => {
-      const activeTheses = theses.filter(t => ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(t.status));
+      const activeTheses = cleanTheses.filter(t => t && ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(t.status));
       const map = {};
       await Promise.all(activeTheses.map(async (t) => {
         try {
@@ -1909,7 +1918,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
       }));
       setMilestoneMap(map);
     };
-    if (theses.length > 0) {
+    if (cleanTheses.length > 0) {
       fetchCompliance();
     }
   }, [theses]);
@@ -1928,60 +1937,73 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
       </div>
       <div className="card documents-card">
         <h3 className="card-title">Scholar Registrations ({filtered.length})</h3>
-        <div className="file-list">
-          <div className="file-header"><div style={{ flex: 1.5 }}>Scholar</div><div style={{ flex: 1 }}>Dept</div><div style={{ flex: 2 }}>Title</div><div style={{ flex: 1.2 }}>Supervisor</div><div style={{ flex: 1 }}>Status</div><div style={{ flex: 1.4 }}>Action</div></div>
-          {filtered.length === 0 && <div style={{ padding: 32, textAlign: 'center', color: '#9CA3AF' }}>No records found.</div>}
-          {filtered.map(t => (
-            <div key={t._id} className="file-item">
-              <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div className="file-name">{t.scholarId?.name}</div>
-                {['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(t.status) && milestoneMap[t._id] && (
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    {milestoneMap[t._id].map(m => (
-                      <span 
-                        key={m._id} 
-                        title={`${m.title} - Approved`}
-                        style={{ 
-                          display: 'inline-flex', 
-                          alignItems: 'center', 
-                          gap: 2, 
-                          background: '#D1FAE5', 
-                          color: '#065F46', 
-                          fontSize: '0.65rem', 
-                          fontWeight: 700, 
-                          padding: '1px 6px', 
-                          borderRadius: 4,
-                          border: '1px solid #A7F3D0'
-                        }}
-                      >
-                        S{m.sequence} ✓
-                      </span>
-                    ))}
-                    {milestoneMap[t._id].length === 0 && (
-                      <span style={{ fontSize: '0.65rem', color: '#9CA3AF', fontStyle: 'italic' }}>No reports cleared</span>
-                    )}
+        {loading ? (
+          <div className="premium-preloader-container" style={{ padding: '40px 20px' }}>
+            <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
+            <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading scholars...</div>
+          </div>
+        ) : (
+          <>
+            {renderGridControls()}
+            {paginatedData.length === 0 ? (
+              <div style={{ padding: 32, textAlign: 'center', color: '#9CA3AF' }}>No records found.</div>
+            ) : (
+              <div className="file-list">
+                <div className="file-header"><div style={{ flex: 1.5 }}>Scholar</div><div style={{ flex: 1 }}>Dept</div><div style={{ flex: 2 }}>Title</div><div style={{ flex: 1.2 }}>Supervisor</div><div style={{ flex: 1 }}>Status</div><div style={{ flex: 1.4 }}>Action</div></div>
+                {paginatedData.map(t => (
+                  <div key={t._id} className="file-item">
+                    <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div className="file-name">{t.scholarId?.name}</div>
+                      {['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(t.status) && milestoneMap[t._id] && (
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {milestoneMap[t._id].map(m => (
+                            <span 
+                              key={m._id} 
+                              title={`${m.title} - Approved`}
+                              style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: 2, 
+                                background: '#D1FAE5', 
+                                color: '#065F46', 
+                                fontSize: '0.65rem', 
+                                fontWeight: 700, 
+                                padding: '1px 6px', 
+                                borderRadius: 4,
+                                border: '1px solid #A7F3D0'
+                              }}
+                            >
+                              S{m.sequence} ✓
+                            </span>
+                          ))}
+                          {milestoneMap[t._id].length === 0 && (
+                            <span style={{ fontSize: '0.65rem', color: '#9CA3AF', fontStyle: 'italic' }}>No reports cleared</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
+                    <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 35)}...</div>
+                    <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#6b7280' }}>{t.supervisorId?.name || '—'}</div>
+                    <div style={{ flex: 1 }}>
+                      {(() => {
+                        const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
+                        return (
+                          <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
+                            {badge.text}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <div className="file-actions" style={{ flex: 1.4, display: 'flex', gap: 6 }}>
+                      <button className="btn-action" onClick={() => onSelectThesis(t._id)}>Open</button>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-              <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
-              <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 35)}...</div>
-              <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#6b7280' }}>{t.supervisorId?.name || '—'}</div>
-              <div style={{ flex: 1 }}>
-                {(() => {
-                  const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
-                  return (
-                    <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
-                      {badge.text}
-                    </span>
-                  );
-                })()}
-              </div>
-              <div className="file-actions" style={{ flex: 1.4, display: 'flex', gap: 6 }}>
-                <button className="btn-action" onClick={() => onSelectThesis(t._id)}>Open</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -1990,21 +2012,30 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
 // ── External Evaluation ──
 const ExternalEvaluation = ({ theses, onAuditLog }) => {
   const submitted = theses.filter(t => t.status === 'SUBMITTED');
+  const { paginatedData, renderGridControls } = useGridControl(
+    submitted,
+    ['scholarId.name', 'title']
+  );
+
   return (
     <div className="card documents-card">
       <h3 className="card-title">External Evaluation Tracker</h3>
       <p style={{ color: '#6b7280', marginBottom: 16, fontSize: '0.9rem' }}>Track submitted theses through the external examiner evaluation process.</p>
-      {submitted.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No submitted theses yet.</div>}
-      {submitted.map(t => (
-        <div key={t._id} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>{t.scholarId?.name}</div>
-          <div style={{ fontSize: '0.85rem', color: '#374151', marginBottom: 12 }}>{t.title}</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-outline" onClick={() => onAuditLog(t._id, 'DISPATCHED_TO_EXAMINER', 'Thesis dispatched to external examiner')} style={{ fontSize: '0.8rem', padding: '4px 12px' }}>📤 Mark Dispatched</button>
-            <button className="btn-outline" onClick={() => onAuditLog(t._id, 'EXAMINER_REPORT_RECEIVED', 'External examiner report received')} style={{ fontSize: '0.8rem', padding: '4px 12px' }}>📥 Report Received</button>
+      {renderGridControls()}
+      {paginatedData.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No submitted theses yet.</div>
+      ) : (
+        paginatedData.map(t => (
+          <div key={t._id} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>{t.scholarId?.name}</div>
+            <div style={{ fontSize: '0.85rem', color: '#374151', marginBottom: 12 }}>{t.title}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-outline" onClick={() => onAuditLog(t._id, 'DISPATCHED_TO_EXAMINER', 'Thesis dispatched to external examiner')} style={{ fontSize: '0.8rem', padding: '4px 12px' }}>📤 Mark Dispatched</button>
+              <button className="btn-outline" onClick={() => onAuditLog(t._id, 'EXAMINER_REPORT_RECEIVED', 'External examiner report received')} style={{ fontSize: '0.8rem', padding: '4px 12px' }}>📥 Report Received</button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 };
@@ -2176,6 +2207,11 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const { paginatedData, renderGridControls } = useGridControl(
+    users,
+    ['name', 'username', 'role']
+  );
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -2216,113 +2252,120 @@ const ManageUsers = () => {
           <div className="premium-preloader-text">Loading department directory...</div>
         </div>
       ) : (
-        <div className="file-list">
-          <div className="file-header">
-            <div style={{ flex: 2 }}>Name</div>
-            <div style={{ flex: 1.5 }}>Email Address</div>
-            <div style={{ flex: 1 }}>Role</div>
-            <div style={{ flex: 1 }}>Profile</div>
-            <div style={{ flex: 1 }}>Verification</div>
-            <div style={{ flex: 1 }}>Status</div>
-            <div style={{ flex: 2.2 }}>Action</div>
-          </div>
-          {users.map(u => (
-            <div key={u._id} className="file-item" style={{ opacity: u.isActive ? 1 : 0.65 }}>
-              <div className="file-name" style={{ flex: 2, fontWeight: 600 }}>{u.name}</div>
-              <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#64748B' }}>{u.username}</div>
-              <div style={{ flex: 1 }}>
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: u.role === 'HOD' ? '#FEF3C7' : u.role === 'FACULTY' ? '#DBEAFE' : '#E0F2FE',
-                  color: u.role === 'HOD' ? '#D97706' : u.role === 'FACULTY' ? '#1D4ED8' : '#0369A1'
-                }}>
-                  {u.role}
-                </span>
+        <>
+          {renderGridControls()}
+          {paginatedData.length === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', color: '#9CA3AF' }}>No records found.</div>
+          ) : (
+            <div className="file-list">
+              <div className="file-header">
+                <div style={{ flex: 2 }}>Name</div>
+                <div style={{ flex: 1.5 }}>Email Address</div>
+                <div style={{ flex: 1 }}>Role</div>
+                <div style={{ flex: 1 }}>Profile</div>
+                <div style={{ flex: 1 }}>Verification</div>
+                <div style={{ flex: 1 }}>Status</div>
+                <div style={{ flex: 2.2 }}>Action</div>
               </div>
-              <div style={{ flex: 1 }}>
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: u.profileCompleted ? '#D1FAE5' : '#FEF2F2',
-                  color: u.profileCompleted ? '#065F46' : '#991B1B'
-                }}>
-                  {u.profileCompleted ? 'Complete' : 'Incomplete'}
-                </span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: u.isVerified ? '#D1FAE5' : '#FEF3C7',
-                  color: u.isVerified ? '#065F46' : '#D97706'
-                }}>
-                  {u.isVerified ? 'Verified' : 'Unverified'}
-                </span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: u.isActive ? '#D1FAE5' : '#F3F4F6',
-                  color: u.isActive ? '#065F46' : '#374151'
-                }}>
-                  {u.isActive ? 'Active' : 'Disabled'}
-                </span>
-              </div>
-              <div style={{ flex: 2.2, display: 'flex', gap: 6, alignItems: 'center' }}>
-                <button 
-                  onClick={() => handleToggleActive(u._id)}
-                  style={{
-                    background: u.isActive ? '#DC2626' : '#059669',
-                    color: 'white',
-                    border: 'none',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {u.isActive ? 'Disable ID' : 'Enable ID'}
-                </button>
-                {!u.isVerified && (u.role === 'STUDENT' || u.role === 'FACULTY') && (
-                  <button 
-                    onClick={async () => {
-                      try {
-                        await axios.put(`${API}/auth/users/${u._id}/verify`, {}, getAuthHeader());
-                        toast.success("Account verified successfully!");
-                        fetchUsers();
-                      } catch (err) {
-                        toast.error(err.response?.data?.message || 'Verification failed');
-                      }
-                    }}
-                    style={{
-                      background: '#2563EB',
-                      color: 'white',
-                      border: 'none',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
+              {paginatedData.map(u => (
+                <div key={u._id} className="file-item" style={{ opacity: u.isActive ? 1 : 0.65 }}>
+                  <div className="file-name" style={{ flex: 2, fontWeight: 600 }}>{u.name}</div>
+                  <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#64748B' }}>{u.username}</div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 12,
                       fontSize: '0.75rem',
                       fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Verify ID
-                  </button>
-                )}
-              </div>
+                      background: u.role === 'HOD' ? '#FEF3C7' : u.role === 'FACULTY' ? '#DBEAFE' : '#E0F2FE',
+                      color: u.role === 'HOD' ? '#D97706' : u.role === 'FACULTY' ? '#1D4ED8' : '#0369A1'
+                    }}>
+                      {u.role}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      background: u.profileCompleted ? '#D1FAE5' : '#FEF2F2',
+                      color: u.profileCompleted ? '#065F46' : '#991B1B'
+                    }}>
+                      {u.profileCompleted ? 'Complete' : 'Incomplete'}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      background: u.isVerified ? '#D1FAE5' : '#FEF3C7',
+                      color: u.isVerified ? '#065F46' : '#D97706'
+                    }}>
+                      {u.isVerified ? 'Verified' : 'Unverified'}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      background: u.isActive ? '#D1FAE5' : '#F3F4F6',
+                      color: u.isActive ? '#065F46' : '#374151'
+                    }}>
+                      {u.isActive ? 'Active' : 'Disabled'}
+                    </span>
+                  </div>
+                  <div style={{ flex: 2.2, display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <button 
+                      onClick={() => handleToggleActive(u._id)}
+                      style={{
+                        background: u.isActive ? '#DC2626' : '#059669',
+                        color: 'white',
+                        border: 'none',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {u.isActive ? 'Disable ID' : 'Enable ID'}
+                    </button>
+                    {!u.isVerified && (u.role === 'STUDENT' || u.role === 'FACULTY') && (
+                      <button 
+                        onClick={async () => {
+                          try {
+                            await axios.put(`${API}/auth/users/${u._id}/verify`, {}, getAuthHeader());
+                            toast.success("Account verified successfully!");
+                            fetchUsers();
+                          } catch (err) {
+                            toast.error(err.response?.data?.message || 'Verification failed');
+                          }
+                        }}
+                        style={{
+                          background: '#2563EB',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Verify ID
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -3577,7 +3620,7 @@ const HODChangeRequestsTab = ({ user }) => {
     );
   }
 
-  const sortedRequests = [...requests].sort((a, b) => (a.status === 'PENDING' ? -1 : 1));
+  const sortedRequests = [...(Array.isArray(requests) ? requests : [])].sort((a, b) => (a.status === 'PENDING' ? -1 : 1));
 
   return (
     <div className="card" style={{ padding: 24, background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
@@ -3981,7 +4024,6 @@ const DefaultersTab = () => {
   const toast = useToast();
   const [defaulters, setDefaulters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('dueDate');
   const [sortAsc, setSortAsc] = useState(true);
   const [remindingId, setRemindingId] = useState(null);
@@ -4023,30 +4065,27 @@ const DefaultersTab = () => {
     }
   };
 
-  const filtered = defaulters.filter(d => {
-    const term = searchTerm.toLowerCase();
-    return (
-      d.scholarName.toLowerCase().includes(term) ||
-      d.enrollmentNumber.toLowerCase().includes(term) ||
-      d.scholarDepartment.toLowerCase().includes(term) ||
-      d.milestoneTitle.toLowerCase().includes(term)
-    );
-  });
+  const sorted = useMemo(() => {
+    return [...(Array.isArray(defaulters) ? defaulters : [])].sort((a, b) => {
+      let valA = a[sortField] || '';
+      let valB = b[sortField] || '';
+      if (sortField === 'dueDate') {
+        valA = new Date(valA);
+        valB = new Date(valB);
+      } else {
+        valA = valA.toString().toLowerCase();
+        valB = valB.toString().toLowerCase();
+      }
+      if (valA < valB) return sortAsc ? -1 : 1;
+      if (valA > valB) return sortAsc ? 1 : -1;
+      return 0;
+    });
+  }, [defaulters, sortField, sortAsc]);
 
-  const sorted = [...filtered].sort((a, b) => {
-    let valA = a[sortField] || '';
-    let valB = b[sortField] || '';
-    if (sortField === 'dueDate') {
-      valA = new Date(valA);
-      valB = new Date(valB);
-    } else {
-      valA = valA.toString().toLowerCase();
-      valB = valB.toString().toLowerCase();
-    }
-    if (valA < valB) return sortAsc ? -1 : 1;
-    if (valA > valB) return sortAsc ? 1 : -1;
-    return 0;
-  });
+  const { paginatedData, renderGridControls } = useGridControl(
+    sorted,
+    ['scholarName', 'enrollmentNumber', 'scholarDepartment', 'milestoneTitle']
+  );
 
   return (
     <div className="card" style={{ padding: 24, borderRadius: 16, border: '1px solid #E2E8F0', background: 'white' }}>
@@ -4066,16 +4105,8 @@ const DefaultersTab = () => {
         </div>
       </div>
 
-      <div style={{ marginBottom: 20, display: 'flex', gap: 12 }}>
-        <input 
-          type="text" 
-          className="form-input" 
-          placeholder="Filter by name, department, enrollment no..." 
-          value={searchTerm} 
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{ maxWidth: 400 }}
-        />
-        <button onClick={fetchDefaulters} className="btn-outline" style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap' }}>
+      <div style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button onClick={fetchDefaulters} className="btn-outline" style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap', height: 'fit-content' }}>
           🔄 Refresh
         </button>
       </div>
@@ -4085,58 +4116,63 @@ const DefaultersTab = () => {
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
           <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading defaulter list...</div>
         </div>
-      ) : sorted.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 48, background: '#F8FAFC', borderRadius: 12, color: '#64748B' }}>
-          <span style={{ fontSize: '2rem' }}>🎉</span>
-          <p style={{ fontWeight: 700, marginTop: 10, color: '#334155' }}>No Defaulters Found</p>
-          <p style={{ fontSize: '0.8rem', marginTop: 2 }}>All scholars in this department are up-to-date with progress reports.</p>
-        </div>
       ) : (
-        <div className="file-list" style={{ overflowX: 'auto' }}>
-          <div className="file-header" style={{ fontWeight: 700, borderBottom: '2px solid #CBD5E1', paddingBottom: 12 }}>
-            <div style={{ flex: 1.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('scholarName')}>
-              Scholar {sortField === 'scholarName' ? (sortAsc ? '▲' : '▼') : ''}
+        <>
+          {renderGridControls()}
+          {paginatedData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 48, background: '#F8FAFC', borderRadius: 12, color: '#64748B' }}>
+              <span style={{ fontSize: '2rem' }}>🎉</span>
+              <p style={{ fontWeight: 700, marginTop: 10, color: '#334155' }}>No Defaulters Found</p>
+              <p style={{ fontSize: '0.8rem', marginTop: 2 }}>All scholars in this department are up-to-date with progress reports.</p>
             </div>
-            <div style={{ flex: 1.2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('enrollmentNumber')}>
-              Enrollment No. {sortField === 'enrollmentNumber' ? (sortAsc ? '▲' : '▼') : ''}
-            </div>
-            <div style={{ flex: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('scholarDepartment')}>
-              Dept {sortField === 'scholarDepartment' ? (sortAsc ? '▲' : '▼') : ''}
-            </div>
-            <div style={{ flex: 2 }}>Overdue Report</div>
-            <div style={{ flex: 1.2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('dueDate')}>
-              Due Date {sortField === 'dueDate' ? (sortAsc ? '▲' : '▼') : ''}
-            </div>
-            <div style={{ flex: 1, textAlign: 'center' }}>Status</div>
-            <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
-          </div>
-          {sorted.map(d => (
-            <div key={d._id} className="file-item" style={{ padding: '14px 8px', borderBottom: '1px solid #F1F5F9', alignItems: 'center' }}>
-              <div style={{ flex: 1.5, fontWeight: 700, color: '#1E293B' }}>{d.scholarName}</div>
-              <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#475569' }}>{d.enrollmentNumber}</div>
-              <div style={{ flex: 1, fontSize: '0.85rem', color: '#475569' }}>{d.scholarDepartment}</div>
-              <div style={{ flex: 2, fontSize: '0.85rem', fontWeight: 600, color: '#7F1D1D' }}>{d.milestoneTitle}</div>
-              <div style={{ flex: 1.2, fontSize: '0.82rem', color: '#475569' }}>
-                {new Date(d.dueDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+          ) : (
+            <div className="file-list" style={{ overflowX: 'auto' }}>
+              <div className="file-header" style={{ fontWeight: 700, borderBottom: '2px solid #CBD5E1', paddingBottom: 12 }}>
+                <div style={{ flex: 1.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('scholarName')}>
+                  Scholar {sortField === 'scholarName' ? (sortAsc ? '▲' : '▼') : ''}
+                </div>
+                <div style={{ flex: 1.2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('enrollmentNumber')}>
+                  Enrollment No. {sortField === 'enrollmentNumber' ? (sortAsc ? '▲' : '▼') : ''}
+                </div>
+                <div style={{ flex: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('scholarDepartment')}>
+                  Dept {sortField === 'scholarDepartment' ? (sortAsc ? '▲' : '▼') : ''}
+                </div>
+                <div style={{ flex: 2 }}>Overdue Report</div>
+                <div style={{ flex: 1.2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleSort('dueDate')}>
+                  Due Date {sortField === 'dueDate' ? (sortAsc ? '▲' : '▼') : ''}
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>Status</div>
+                <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
               </div>
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                <span style={{ fontSize: '0.72rem', background: '#FEE2E2', color: '#991B1B', padding: '3px 10px', borderRadius: 12, fontWeight: 700 }}>
-                  OVERDUE
-                </span>
-              </div>
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                <button 
-                  onClick={() => handleSendReminder(d._id)} 
-                  disabled={remindingId === d._id}
-                  className="btn-action" 
-                  style={{ background: '#DC2626', display: 'flex', gap: 4, alignItems: 'center', padding: '5px 12px', fontSize: '0.75rem' }}
-                >
-                  <Bell size={12} /> {remindingId === d._id ? 'Sending...' : 'Remind'}
-                </button>
-              </div>
+              {paginatedData.map(d => (
+                <div key={d._id} className="file-item" style={{ padding: '14px 8px', borderBottom: '1px solid #F1F5F9', alignItems: 'center' }}>
+                  <div style={{ flex: 1.5, fontWeight: 700, color: '#1E293B' }}>{d.scholarName}</div>
+                  <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#475569' }}>{d.enrollmentNumber}</div>
+                  <div style={{ flex: 1, fontSize: '0.85rem', color: '#475569' }}>{d.scholarDepartment}</div>
+                  <div style={{ flex: 2, fontSize: '0.85rem', fontWeight: 600, color: '#7F1D1D' }}>{d.milestoneTitle}</div>
+                  <div style={{ flex: 1.2, fontSize: '0.82rem', color: '#475569' }}>
+                    {new Date(d.dueDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', background: '#FEE2E2', color: '#991B1B', padding: '3px 10px', borderRadius: 12, fontWeight: 700 }}>
+                      OVERDUE
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <button 
+                      onClick={() => handleSendReminder(d._id)} 
+                      disabled={remindingId === d._id}
+                      className="btn-action" 
+                      style={{ background: '#DC2626', display: 'flex', gap: 4, alignItems: 'center', padding: '5px 12px', fontSize: '0.75rem' }}
+                    >
+                      <Bell size={12} /> {remindingId === d._id ? 'Sending...' : 'Remind'}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -4202,7 +4238,9 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
   };
 
   // Filter candidates by search term
-  const filteredTheses = theses.filter(t => {
+  const cleanTheses = Array.isArray(theses) ? theses : [];
+  const filteredTheses = cleanTheses.filter(t => {
+    if (!t) return false;
     const term = searchTerm.toLowerCase();
     const name = t.scholarId?.name?.toLowerCase() || '';
     const enrollment = t.enrollmentNumber?.toLowerCase() || '';
@@ -4411,7 +4449,7 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
 };
 
 const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
-  const { logout, user } = useContext(AuthContext);
+  const { logout = (() => {}), user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const items = [
     { key: 'overview', label: user?.role === 'ADMIN' ? 'System Overview' : 'Department Overview', Icon: Home },
@@ -4476,6 +4514,11 @@ const MeetingsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [btnLoading, setBtnLoading] = useState({});
 
+  const { paginatedData, renderGridControls } = useGridControl(
+    meetings,
+    ['scholarId.name', 'department', 'reason', 'time', 'status']
+  );
+
   const fetchMeetings = async () => {
     try {
       const endpoint = user?.role === 'HOD' ? 'dept' : 'faculty';
@@ -4539,173 +4582,178 @@ const MeetingsTab = ({ user }) => {
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
           <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading meetings...</div>
         </div>
-      ) : meetings.length === 0 ? (
-        <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
-          <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-          <p style={{ margin: 0, fontWeight: 600 }}>No meeting requests found</p>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When scholars propose guidance consultation meetings, they will appear here.</p>
-        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {meetings.map((meeting) => {
-            const statusStyle = getStatusStyle(meeting.status);
-            const isInvited = meeting.invitedAttendees?.some(a => (a._id || a) === user._id);
-            const hasAccepted = meeting.attendees?.some(a => (a._id || a) === user._id);
-            const hasRejected = meeting.rejectedAttendees?.some(r => (r._id || r) === user._id);
+        <>
+          {renderGridControls()}
+          {paginatedData.length === 0 ? (
+            <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
+              <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+              <p style={{ margin: 0, fontWeight: 600 }}>No meeting requests found</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When scholars propose guidance consultation meetings, they will appear here.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {paginatedData.map((meeting) => {
+                const statusStyle = getStatusStyle(meeting.status);
+                const isInvited = meeting.invitedAttendees?.some(a => (a._id || a) === user?._id);
+                const hasAccepted = meeting.attendees?.some(a => (a._id || a) === user?._id);
+                const hasRejected = meeting.rejectedAttendees?.some(r => (r._id || r) === user?._id);
 
-            return (
-              <div
-                key={meeting._id}
-                style={{
-                  background: 'var(--color-surface, #ffffff)',
-                  border: `1px solid var(--color-border, #E2E8F0)`,
-                  borderRadius: 12,
-                  padding: 16,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <div style={{
-                      background: 'var(--color-bg, #F1F5F9)',
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      textAlign: 'center',
-                      border: '1px solid var(--color-border, #E2E8F0)'
-                    }}>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-text-secondary, #64748B)', textTransform: 'uppercase' }}>
-                        {new Date(meeting.date).toLocaleString('default', { month: 'short' })}
+                return (
+                  <div
+                    key={meeting._id}
+                    style={{
+                      background: 'var(--color-surface, #ffffff)',
+                      border: `1px solid var(--color-border, #E2E8F0)`,
+                      borderRadius: 12,
+                      padding: 16,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <div style={{
+                          background: 'var(--color-bg, #F1F5F9)',
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          textAlign: 'center',
+                          border: '1px solid var(--color-border, #E2E8F0)'
+                        }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-text-secondary, #64748B)', textTransform: 'uppercase' }}>
+                            {new Date(meeting.date).toLocaleString('default', { month: 'short' })}
+                          </div>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text, #0F172A)' }}>
+                            {new Date(meeting.date).getDate()}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, color: 'var(--color-text, #0F172A)' }}>
+                            Suggested Time: {meeting.time}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)' }}>
+                            Proposed by: <strong>{meeting.scholarId?.name}</strong> ({meeting.department})
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text, #0F172A)' }}>
-                        {new Date(meeting.date).getDate()}
-                      </div>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: 12,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        background: statusStyle.bg,
+                        color: statusStyle.text,
+                        border: `1px solid ${statusStyle.border}`
+                      }}>
+                        {meeting.status}
+                      </span>
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 700, color: 'var(--color-text, #0F172A)' }}>
-                        Suggested Time: {meeting.time}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                        Proposed by: <strong>{meeting.scholarId?.name}</strong> ({meeting.department})
-                      </div>
+
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text, #334155)', lineHeight: 1.4 }}>
+                      <strong>Agenda:</strong> {meeting.reason}
                     </div>
-                  </div>
-                  <span style={{
-                    padding: '4px 10px',
-                    borderRadius: 12,
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    background: statusStyle.bg,
-                    color: statusStyle.text,
-                    border: `1px solid ${statusStyle.border}`
-                  }}>
-                    {meeting.status}
-                  </span>
-                </div>
 
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text, #334155)', lineHeight: 1.4 }}>
-                  <strong>Agenda:</strong> {meeting.reason}
-                </div>
+                    {meeting.invitedAttendees && meeting.invitedAttendees.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>Invited Attendees:</span>
+                        {meeting.invitedAttendees.map(member => {
+                          const acc = meeting.attendees?.some(a => (a._id || a) === member._id);
+                          const rej = meeting.rejectedAttendees?.some(r => (r._id || r) === member._id);
+                          let memberStatus = 'Pending';
+                          let mBg = 'var(--color-bg, #F1F5F9)';
+                          let mColor = 'var(--color-text-secondary, #64748B)';
+                          if (acc) {
+                            memberStatus = 'Accepted';
+                            mBg = '#D1FAE5';
+                            mColor = '#065F46';
+                          } else if (rej) {
+                            memberStatus = 'Rejected';
+                            mBg = '#FEE2E2';
+                            mColor = '#991B1B';
+                          }
+                          return (
+                            <span
+                              key={member._id}
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '2px 8px',
+                                background: mBg,
+                                border: '1px solid var(--color-border, #E2E8F0)',
+                                color: mColor,
+                                borderRadius: 6,
+                                fontWeight: 600
+                              }}
+                            >
+                              {member.name} {member.role === 'HOD' ? '(HOD)' : `(${member.subRole || 'Faculty'})`} ({memberStatus})
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
 
-                {meeting.invitedAttendees && meeting.invitedAttendees.length > 0 && (
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>Invited Attendees:</span>
-                    {meeting.invitedAttendees.map(member => {
-                      const acc = meeting.attendees?.some(a => (a._id || a) === member._id);
-                      const rej = meeting.rejectedAttendees?.some(r => (r._id || r) === member._id);
-                      let memberStatus = 'Pending';
-                      let mBg = 'var(--color-bg, #F1F5F9)';
-                      let mColor = 'var(--color-text-secondary, #64748B)';
-                      if (acc) {
-                        memberStatus = 'Accepted';
-                        mBg = '#D1FAE5';
-                        mColor = '#065F46';
-                      } else if (rej) {
-                        memberStatus = 'Rejected';
-                        mBg = '#FEE2E2';
-                        mColor = '#991B1B';
-                      }
-                      return (
-                        <span
-                          key={member._id}
+                    {isInvited && (
+                      <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)' }}>Your Response:</span>
+                        
+                        <button
+                          className="btn-primary"
+                          disabled={btnLoading[meeting._id]}
+                          onClick={() => handleRespond(meeting._id, 'ACCEPT')}
                           style={{
-                            fontSize: '0.72rem',
-                            padding: '2px 8px',
-                            background: mBg,
-                            border: '1px solid var(--color-border, #E2E8F0)',
-                            color: mColor,
+                            background: hasAccepted ? '#059669' : '#10B981',
+                            border: 'none',
+                            color: '#ffffff',
+                            padding: '6px 12px',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
                             borderRadius: 6,
-                            fontWeight: 600
+                            opacity: hasAccepted ? 0.7 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
                           }}
                         >
-                          {member.name} {member.role === 'HOD' ? '(HOD)' : `(${member.subRole || 'Faculty'})`} ({memberStatus})
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
+                          {hasAccepted ? '✓ You Accepted' : 'Accept'}
+                        </button>
 
-                {isInvited && (
-                  <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)' }}>Your Response:</span>
-                    
-                    <button
-                      className="btn-primary"
-                      disabled={btnLoading[meeting._id]}
-                      onClick={() => handleRespond(meeting._id, 'ACCEPT')}
-                      style={{
-                        background: hasAccepted ? '#059669' : '#10B981',
-                        border: 'none',
-                        color: '#ffffff',
-                        padding: '6px 12px',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        borderRadius: 6,
-                        opacity: hasAccepted ? 0.7 : 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      {hasAccepted ? '✓ You Accepted' : 'Accept'}
-                    </button>
+                        <button
+                          className="btn-outline"
+                          disabled={btnLoading[meeting._id]}
+                          onClick={() => handleRespond(meeting._id, 'REJECT')}
+                          style={{
+                            borderColor: hasRejected ? '#991B1B' : '#EF4444',
+                            color: hasRejected ? '#991B1B' : '#EF4444',
+                            background: 'transparent',
+                            padding: '6px 12px',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            borderRadius: 6,
+                            opacity: hasRejected ? 0.7 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          {hasRejected ? '✗ You Rejected' : 'Reject'}
+                        </button>
+                      </div>
+                    )}
 
-                    <button
-                      className="btn-outline"
-                      disabled={btnLoading[meeting._id]}
-                      onClick={() => handleRespond(meeting._id, 'REJECT')}
-                      style={{
-                        borderColor: hasRejected ? '#991B1B' : '#EF4444',
-                        color: hasRejected ? '#991B1B' : '#EF4444',
-                        background: 'transparent',
-                        padding: '6px 12px',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        borderRadius: 6,
-                        opacity: hasRejected ? 0.7 : 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      {hasRejected ? '✗ You Rejected' : 'Reject'}
-                    </button>
+                    {!isInvited && user?.role === 'HOD' && (
+                      <div style={{ fontSize: '0.75rem', color: '#64748B', fontStyle: 'italic', marginTop: 4 }}>
+                        ℹ️ You are viewing this meeting as HOD (Not invited as attendee).
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {!isInvited && user?.role === 'HOD' && (
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', fontStyle: 'italic', marginTop: 4 }}>
-                    ℹ️ You are viewing this meeting as HOD (Not invited as attendee).
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -4718,10 +4766,10 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useTabPersistence('sync_admin_tab', 'overview');
   const [selectedThesisId, setSelectedThesisId] = useState(null);
   const [selectedThesisData, setSelectedThesisData] = useState(null);
-  const { allTheses, fetchAllTheses, verifyEnrollment, assignSupervisor, clearCoursework, awardDegree, updateAuditLog, drcApprove, seminarClear, fetchThesisById, reviewMilestone, finalApprove } = useContext(ThesisContext);
-  const { user, fetchMe } = useContext(AuthContext);
+  const { allTheses = [], fetchAllTheses = (() => {}), verifyEnrollment = (() => {}), assignSupervisor = (() => {}), clearCoursework = (() => {}), awardDegree = (() => {}), updateAuditLog = (() => {}), drcApprove = (() => {}), seminarClear = (() => {}), fetchThesisById = (() => {}), reviewMilestone = (() => {}), finalApprove = (() => {}) } = useContext(ThesisContext) || {};
+  const { user, fetchMe = (() => {}) } = useContext(AuthContext) || {};
 
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(user && !user.profileCompleted);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(!!(user && !user.profileCompleted));
 
   const handleTabChange = (tab) => {
     if (tab === 'registration' || tab === 'registrations') {

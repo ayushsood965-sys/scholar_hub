@@ -19,6 +19,7 @@ import UnifiedScholarModal from '../components/UnifiedScholarModal';
 import PublicConfigTab from '../components/PublicConfigTab';
 import DetailedReportsTab from '../components/DetailedReportsTab';
 import ScholarSearchTab from '../components/ScholarSearchTab';
+import { useGridControl } from '../hooks/useGridControl';
 
 const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
   const { logout } = useContext(AuthContext);
@@ -2409,33 +2410,62 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
 };
 
 // ── Scholar List ──
-const ScholarList = ({ theses, onSelect, title, subRole }) => (
-  <div className="card documents-card">
-    <h3 className="card-title">{title}</h3>
-    {theses.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No records found.</div>}
-    <div className="file-list">
-      {theses.length > 0 && <div className="file-header"><div style={{ flex: 1.5 }}>Scholar</div><div style={{ flex: 1 }}>Dept</div><div style={{ flex: 2 }}>Title</div><div style={{ flex: 1.2 }}>Status</div><div style={{ flex: 0.8 }}>Action</div></div>}
-      {theses.map(t => (
-        <div key={t._id} className="file-item">
-          <div className="file-name" style={{ flex: 1.5 }}>{t.scholarId?.name}</div>
-          <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
-          <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 40)}...</div>
-          <div style={{ flex: 1.2 }}>
-            {(() => {
-              const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
-              return (
-                <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
-                  {badge.text}
-                </span>
-              );
-            })()}
-          </div>
-          <div className="file-actions" style={{ flex: 0.8 }}><button className="btn-action" onClick={() => onSelect(t._id)}>Review</button></div>
+const ScholarList = ({ theses, onSelect, title, subRole }) => {
+  const { loading } = useContext(ThesisContext);
+  const { paginatedData, renderGridControls } = useGridControl(
+    theses,
+    ['scholarId.name', 'department', 'title']
+  );
+
+  return (
+    <div className="card documents-card">
+      <h3 className="card-title">{title}</h3>
+      {loading ? (
+        <div className="premium-preloader-container" style={{ padding: '40px 20px' }}>
+          <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
+          <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading scholars...</div>
         </div>
-      ))}
+      ) : (
+        <>
+          {renderGridControls()}
+          {paginatedData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No records found.</div>
+          ) : (
+            <div className="file-list">
+              <div className="file-header">
+                <div style={{ flex: 1.5 }}>Scholar</div>
+                <div style={{ flex: 1 }}>Dept</div>
+                <div style={{ flex: 2 }}>Title</div>
+                <div style={{ flex: 1.2 }}>Status</div>
+                <div style={{ flex: 0.8 }}>Action</div>
+              </div>
+              {paginatedData.map(t => (
+                <div key={t._id} className="file-item">
+                  <div className="file-name" style={{ flex: 1.5 }}>{t.scholarId?.name}</div>
+                  <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
+                  <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 40)}...</div>
+                  <div style={{ flex: 1.2 }}>
+                    {(() => {
+                      const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
+                      return (
+                        <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
+                          {badge.text}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <div className="file-actions" style={{ flex: 0.8 }}>
+                    <button className="btn-action" onClick={() => onSelect(t._id)}>Review</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // ── DRC Page (HOD) ──
 const DRCPage = ({ theses, onSelect }) => {
@@ -2540,7 +2570,14 @@ const HODChangeRequestsTab = ({ user }) => {
     );
   }
 
-  const sortedRequests = [...requests].sort((a, b) => (a.status === 'PENDING' ? -1 : 1));
+  const sortedRequests = useMemo(() => {
+    return [...(Array.isArray(requests) ? requests : [])].sort((a, b) => (a.status === 'PENDING' ? -1 : 1));
+  }, [requests]);
+
+  const { paginatedData, renderGridControls } = useGridControl(
+    sortedRequests,
+    ['scholarId.name', 'type', 'status', 'currentValue', 'proposedValue']
+  );
 
   return (
     <div className="card" style={{ padding: 24, background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
@@ -2551,7 +2588,9 @@ const HODChangeRequestsTab = ({ user }) => {
         Review, reassign, approve, or reject student requests for Thesis Title modifications and Research Supervisor (Guide) reallocations.
       </p>
 
-      {sortedRequests.length === 0 ? (
+      {renderGridControls()}
+
+      {paginatedData.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0', fontStyle: 'italic' }}>
           No academic modification requests logged for your department.
         </div>
@@ -2569,7 +2608,7 @@ const HODChangeRequestsTab = ({ user }) => {
               </tr>
             </thead>
             <tbody>
-              {sortedRequests.map(r => {
+              {paginatedData.map(r => {
                 const isPending = r.status === 'PENDING';
                 const isGuideChange = r.type === 'GUIDE_CHANGE';
                 const proposedFaculty = faculty.find(f => f._id === r.proposedValue);
@@ -3941,6 +3980,11 @@ const PendingReviewsQueue = ({ theses, user }) => {
     );
   }
 
+  const { paginatedData, renderGridControls } = useGridControl(
+    items,
+    ['scholarName', 'title', 'docType']
+  );
+
   return (
     <div className="card">
       <h3 className="card-title">Pending Reviews Queue</h3>
@@ -3953,33 +3997,38 @@ const PendingReviewsQueue = ({ theses, user }) => {
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
           <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading pending reviews queue...</div>
         </div>
-      ) : items.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: '#F8FAFC', borderRadius: 12 }}>
-          <span>🍃</span> You have no pending documents in your queue. All reviews are up to date!
-        </div>
       ) : (
-        <div className="file-list">
-          <div className="file-header">
-            <div style={{ flex: 1.5 }}>Scholar</div>
-            <div style={{ flex: 2 }}>Document Name</div>
-            <div style={{ flex: 1 }}>Category</div>
-            <div style={{ flex: 1.5 }}>Submitted Date</div>
-            <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
-          </div>
-          {items.map(i => (
-            <div key={i._id} className="file-item">
-              <div style={{ flex: 1.5, fontWeight: 700 }}>{i.scholarName}</div>
-              <div style={{ flex: 2, fontSize: '0.9rem', color: '#1E293B' }}>{i.title}</div>
-              <div style={{ flex: 1 }}><span style={{ fontSize: '0.72rem', background: i.docType === 'MILESTONE' ? '#EFF6FF' : '#F5F3FF', color: i.docType === 'MILESTONE' ? '#1E40AF' : '#5B21B6', padding: '3px 8px', borderRadius: 12, fontWeight: 600 }}>{i.docType}</span></div>
-              <div style={{ flex: 1.5, fontSize: '0.82rem', color: '#64748B' }}>{new Date(i.submittedAt).toLocaleString()}</div>
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                <button onClick={() => setSelectedDoc(i)} className="btn-action" style={{ background: '#133A26' }}>
-                  Evaluate
-                </button>
-              </div>
+        <>
+          {renderGridControls()}
+          {paginatedData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: '#F8FAFC', borderRadius: 12 }}>
+              <span>🍃</span> You have no pending documents in your queue. All reviews are up to date!
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="file-list">
+              <div className="file-header">
+                <div style={{ flex: 1.5 }}>Scholar</div>
+                <div style={{ flex: 2 }}>Document Name</div>
+                <div style={{ flex: 1 }}>Category</div>
+                <div style={{ flex: 1.5 }}>Submitted Date</div>
+                <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
+              </div>
+              {paginatedData.map(i => (
+                <div key={i._id} className="file-item">
+                  <div style={{ flex: 1.5, fontWeight: 700 }}>{i.scholarName}</div>
+                  <div style={{ flex: 2, fontSize: '0.9rem', color: '#1E293B' }}>{i.title}</div>
+                  <div style={{ flex: 1 }}><span style={{ fontSize: '0.72rem', background: i.docType === 'MILESTONE' ? '#EFF6FF' : '#F5F3FF', color: i.docType === 'MILESTONE' ? '#1E40AF' : '#5B21B6', padding: '3px 8px', borderRadius: 12, fontWeight: 600 }}>{i.docType}</span></div>
+                  <div style={{ flex: 1.5, fontSize: '0.82rem', color: '#64748B' }}>{new Date(i.submittedAt).toLocaleString()}</div>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <button onClick={() => setSelectedDoc(i)} className="btn-action" style={{ background: '#133A26' }}>
+                      Evaluate
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -3989,6 +4038,11 @@ const FacultyDefaultersPage = ({ user, subRole }) => {
   const toast = useToast();
   const [defaulters, setDefaulters] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const { paginatedData, renderGridControls } = useGridControl(
+    defaulters,
+    ['scholarName', 'enrollmentNumber', 'milestoneTitle']
+  );
 
   const fetchDefaulters = async () => {
     setLoading(true);
@@ -4039,37 +4093,42 @@ const FacultyDefaultersPage = ({ user, subRole }) => {
           <div className="premium-preloader-spinner"></div>
           <div className="premium-preloader-text">Loading progress report defaulters...</div>
         </div>
-      ) : defaulters.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: '#F8FAFC', borderRadius: 12 }}>
-          <span>🍃</span> No progress report defaulters found in your scope. All scholars are up to date!
-        </div>
       ) : (
-        <div className="file-list">
-          <div className="file-header">
-            <div style={{ flex: 1.5 }}>Scholar</div>
-            <div style={{ flex: 1.5 }}>Enrollment Number</div>
-            <div style={{ flex: 1.5 }}>Milestone</div>
-            <div style={{ flex: 1.5 }}>Due Date</div>
-            <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
-          </div>
-          {defaulters.map(d => (
-            <div key={d._id} className="file-item">
-              <div style={{ flex: 1.5, fontWeight: 700 }}>{d.scholarName}</div>
-              <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.enrollmentNumber}</div>
-              <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.milestoneTitle}</div>
-              <div style={{ flex: 1.5, fontSize: '0.82rem', color: '#DC2626', fontWeight: 600 }}>{new Date(d.dueDate).toLocaleDateString()}</div>
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                <button 
-                  onClick={() => handleRemind(d.scholarId, d.scholarName)} 
-                  className="btn-action" 
-                  style={{ background: '#DC2626', padding: '6px 12px' }}
-                >
-                  Remind
-                </button>
-              </div>
+        <>
+          {renderGridControls()}
+          {paginatedData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: '#F8FAFC', borderRadius: 12 }}>
+              <span>🍃</span> No progress report defaulters found in your scope. All scholars are up to date!
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="file-list">
+              <div className="file-header">
+                <div style={{ flex: 1.5 }}>Scholar</div>
+                <div style={{ flex: 1.5 }}>Enrollment Number</div>
+                <div style={{ flex: 1.5 }}>Milestone</div>
+                <div style={{ flex: 1.5 }}>Due Date</div>
+                <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
+              </div>
+              {paginatedData.map(d => (
+                <div key={d._id} className="file-item">
+                  <div style={{ flex: 1.5, fontWeight: 700 }}>{d.scholarName}</div>
+                  <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.enrollmentNumber}</div>
+                  <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.milestoneTitle}</div>
+                  <div style={{ flex: 1.5, fontSize: '0.82rem', color: '#DC2626', fontWeight: 600 }}>{new Date(d.dueDate).toLocaleDateString()}</div>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <button 
+                      onClick={() => handleRemind(d.scholarId, d.scholarName)} 
+                      className="btn-action" 
+                      style={{ background: '#DC2626', padding: '6px 12px' }}
+                    >
+                      Remind
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -4081,6 +4140,11 @@ const MeetingsTab = ({ user }) => {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [btnLoading, setBtnLoading] = useState({});
+
+  const { paginatedData, renderGridControls } = useGridControl(
+    meetings,
+    ['scholarId.name', 'department', 'reason', 'time', 'status']
+  );
 
   const fetchMeetings = async () => {
     try {
@@ -4145,21 +4209,24 @@ const MeetingsTab = ({ user }) => {
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
           <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading meetings...</div>
         </div>
-      ) : meetings.length === 0 ? (
-        <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
-          <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-          <p style={{ margin: 0, fontWeight: 600 }}>No meeting requests found</p>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When scholars propose guidance consultation meetings, they will appear here.</p>
-        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {meetings.map((meeting) => {
-            const statusStyle = getStatusStyle(meeting.status);
-            const isInvited = meeting.invitedAttendees?.some(a => (a._id || a) === user._id);
-            const hasAccepted = meeting.attendees?.some(a => (a._id || a) === user._id);
-            const hasRejected = meeting.rejectedAttendees?.some(r => (r._id || r) === user._id);
+        <>
+          {renderGridControls()}
+          {paginatedData.length === 0 ? (
+            <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
+              <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+              <p style={{ margin: 0, fontWeight: 600 }}>No meeting requests found</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When scholars propose guidance consultation meetings, they will appear here.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {paginatedData.map((meeting) => {
+                const statusStyle = getStatusStyle(meeting.status);
+                const isInvited = meeting.invitedAttendees?.some(a => (a._id || a) === user?._id);
+                const hasAccepted = meeting.attendees?.some(a => (a._id || a) === user?._id);
+                const hasRejected = meeting.rejectedAttendees?.some(r => (r._id || r) === user?._id);
 
-            return (
+                return (
               <div
                 key={meeting._id}
                 style={{
@@ -4313,7 +4380,9 @@ const MeetingsTab = ({ user }) => {
           })}
         </div>
       )}
-    </div>
+    </>
+  )}
+</div>
   );
 };
 

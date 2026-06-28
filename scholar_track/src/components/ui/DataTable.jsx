@@ -5,24 +5,33 @@ import EmptyState from './EmptyState';
 
 const DataTable = ({
   columns = [],
-  data = [],
-  searchable = false,
+  data: rawData = [],
+  searchable = true,
   searchPlaceholder = 'Search...',
-  pageSize = 10,
+  pageSize: defaultPageSize = 10,
   emptyTitle,
   emptyMessage,
 }) => {
+  const data = Array.isArray(rawData) ? rawData : [];
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return data;
     const q = search.toLowerCase();
     return data.filter(row =>
       columns.some(col => {
-        const val = col.accessor ? (typeof col.accessor === 'function' ? col.accessor(row) : row?.[col.accessor]) : '';
+        let val = '';
+        if (col.accessor) {
+          if (typeof col.accessor === 'function') {
+            val = col.accessor(row);
+          } else {
+            val = col.accessor.split('.').reduce((acc, part) => acc && acc[part], row);
+          }
+        }
         return String(val ?? '').toLowerCase().includes(q);
       })
     );
@@ -32,8 +41,17 @@ const DataTable = ({
     if (!sortKey) return filtered;
     return [...filtered].sort((a, b) => {
       const col = columns.find(c => c.key === sortKey);
-      const aVal = col?.accessor ? (typeof col.accessor === 'function' ? col.accessor(a) : a?.[col.accessor]) : '';
-      const bVal = col?.accessor ? (typeof col.accessor === 'function' ? col.accessor(b) : b?.[col.accessor]) : '';
+      let aVal = '';
+      let bVal = '';
+      if (col?.accessor) {
+        if (typeof col.accessor === 'function') {
+          aVal = col.accessor(a);
+          bVal = col.accessor(b);
+        } else {
+          aVal = col.accessor.split('.').reduce((acc, part) => acc && acc[part], a) ?? '';
+          bVal = col.accessor.split('.').reduce((acc, part) => acc && acc[part], b) ?? '';
+        }
+      }
       if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
       return 0;
@@ -54,21 +72,48 @@ const DataTable = ({
 
   return (
     <div>
-      {searchable && (
-        <div className="table-search">
-          <div style={{ position: 'relative', flex: 1, maxWidth: '320px' }}>
+      {/* Search and Page Size Filter Grid Controls */}
+      <div className="grid-controls-container" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        gap: '12px', 
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+        width: '100%'
+      }}>
+        {/* Search Box */}
+        {searchable && (
+          <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
             <input
               className="form-input"
-              style={{ paddingLeft: '36px' }}
+              style={{ paddingLeft: '36px', width: '100%' }}
               placeholder={searchPlaceholder}
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(0); }}
             />
           </div>
+        )}
+
+        {/* Page Size Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary, #64748B)' }}>Show:</span>
+            <select
+              className="form-input"
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}
+              style={{ width: 'auto', padding: '6px 12px', cursor: 'pointer', borderRadius: '6px' }}
+            >
+              <option value="10">view 1-10</option>
+              <option value="20">view 1-20</option>
+              <option value="30">view 1-30</option>
+            </select>
+          </div>
           <span className="text-sm text-muted">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
         </div>
-      )}
+      </div>
 
       {paginated.length === 0 ? (
         <EmptyState title={emptyTitle ?? 'No records found'} message={emptyMessage ?? 'Try adjusting your search or filters.'} />

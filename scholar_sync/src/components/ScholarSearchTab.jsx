@@ -6,6 +6,7 @@ import { API_URL } from '../config';
 import { ThesisContext } from '../context/ThesisContext';
 import { useToast } from '../context/ToastContext';
 import UnifiedScholarModal from './UnifiedScholarModal';
+import { useGridControl } from '../hooks/useGridControl';
 
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
@@ -22,6 +23,11 @@ const ScholarSearchTab = ({ user }) => {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
+
+  const { paginatedData, renderGridControls } = useGridControl(
+    results,
+    ['scholarId.name', 'enrollmentNumber', 'department', 'supervisorId.name']
+  );
 
   // Profile modal states
   const [selectedThesisId, setSelectedThesisId] = useState(null);
@@ -332,13 +338,15 @@ const ScholarSearchTab = ({ user }) => {
             Search Results ({results.length})
           </h4>
 
-          {results.length === 0 ? (
+          {renderGridControls()}
+
+          {paginatedData.length === 0 ? (
             <div className="card" style={{ padding: 40, textAlign: 'center', color: '#64748B' }}>
               No scholar records found matching the query. Please refine the enrollment number or select a different department.
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {results.map(r => (
+              {paginatedData.map(r => (
                 <div
                   key={r._id}
                   className="card"
