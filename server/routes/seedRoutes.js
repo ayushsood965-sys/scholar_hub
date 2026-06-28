@@ -100,6 +100,32 @@ router.post('/masters', verifySeedPassword, async (req, res) => {
       );
     }
 
+    // 5. Seed default Policies for all Degree Types
+    const seededDegreeTypes = await DegreeTypeMaster.find({});
+    const AttendancePolicyMaster = require('../models/attendance/AttendancePolicyMaster');
+    for (const dt of seededDegreeTypes) {
+      await AttendancePolicyMaster.findOneAndUpdate(
+        { departmentId: null, programType: dt.code },
+        {
+          $setOnInsert: {
+            departmentId: null,
+            programType: dt.code,
+            minRequiredPercentage: 75,
+            warningThreshold: 80,
+            maxCondonationPercentage: 10,
+            editLockHours: 48,
+            allowHalfDay: true,
+            allowMedicalLeave: true,
+            allowDutyLeave: true,
+            allowCorrection: true,
+            correctionWindowDays: 14,
+            isActive: true
+          }
+        },
+        { upsert: true }
+      );
+    }
+
     res.json({ message: 'Master data seeded successfully' });
   } catch (error) {
     console.error(error);
