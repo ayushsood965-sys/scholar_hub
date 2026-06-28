@@ -14,6 +14,7 @@ const SemesterDegreeMappingTab = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ degreeNameId: '', semesterId: '' });
+  const [seeding, setSeeding] = useState(false);
   const api = useApi();
   const toast = useToast();
 
@@ -72,6 +73,20 @@ const SemesterDegreeMappingTab = () => {
     }
   };
 
+  const handleSeedMappings = async () => {
+    if (!window.confirm('This will seed the semester mappings for all degree programs based on their durations. Duplicate mappings will be skipped. Do you want to proceed?')) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/attendance/masters/seed-mappings');
+      toast.success(res.data.message || 'Semester mappings seeded successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to seed mappings');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure?')) return;
     try {
@@ -110,11 +125,18 @@ const SemesterDegreeMappingTab = () => {
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Semester-Degree Mappings</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Assign semesters to their respective degree courses.</p>
         </div>
-        {!formOpen && (
-          <button className="btn btn-primary" onClick={() => { resetForm(); setFormOpen(true); }}>
-            <Plus size={16} /> Add Mapping
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {!formOpen && (
+            <>
+              <button className="btn btn-outline" onClick={handleSeedMappings} disabled={seeding}>
+                {seeding ? 'Seeding...' : 'Seed Master Data'}
+              </button>
+              <button className="btn btn-primary" onClick={() => { resetForm(); setFormOpen(true); }}>
+                <Plus size={16} /> Add Mapping
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>

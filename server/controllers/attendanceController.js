@@ -2025,6 +2025,75 @@ exports.seedAllMasters = async (req, res) => {
   }
 };
 
+exports.seedSemesterDegreeMappings = async (req, res) => {
+  try {
+    // 1. Ensure semesters 1 to 10 exist
+    const semestersMap = {};
+    for (let i = 1; i <= 10; i++) {
+      let sem = await SemesterMaster.findOne({ number: i });
+      if (!sem) {
+        sem = await SemesterMaster.create({ name: `Semester ${i}`, number: i, isActive: true });
+      }
+      semestersMap[i] = sem._id;
+    }
+
+    // 2. Fetch all degree names and populate their degree types
+    const degreeNames = await DegreeNameMaster.find({}).populate('degreeTypeId');
+    let mappingsAdded = 0;
+
+    for (const dn of degreeNames) {
+      const typeCode = dn.degreeTypeId?.code || ''; // e.g. UG, PG, PHD, CERT, DIP, ADVDIP
+      const code = dn.code || '';
+
+      let semCount = 0;
+
+      if (typeCode === 'PHD') {
+        semCount = 0;
+      } else if (['CERT', 'DIP', 'ADVDIP'].includes(typeCode)) {
+        semCount = 2;
+      } else if (typeCode === 'PG') {
+        if (code === 'MLIB') {
+          semCount = 2; // M.Lib.I.Sc. is 1 year (2 semesters)
+        } else {
+          semCount = 4; // standard PG / M.Sc. is 2 years (4 semesters)
+        }
+      } else if (typeCode === 'UG') {
+        if (code === 'BLIB') {
+          semCount = 2; // B.Lib.I.Sc. is 1 year (2 semesters)
+        } else if (['BTECH-CSE', 'BTECH-IT', 'BTECH-CE', 'BTECH-ECE', 'BTECH-EE', 'BFA', 'BHM'].includes(code)) {
+          semCount = 8; // B.Tech, BFA, BHM are 4 years (8 semesters)
+        } else if (code === 'FYICTTM') {
+          semCount = 10; // Five Year Integrated course is 5 years (10 semesters)
+        } else {
+          semCount = 6; // Standard UG (B.Com, BBA, BCA, B.Sc, B.A, B.Ed) is 3 years (6 semesters)
+        }
+      }
+
+      for (let s = 1; s <= semCount; s++) {
+        const semId = semestersMap[s];
+        if (semId) {
+          const mapping = await SemesterDegreeMapping.findOne({ degreeNameId: dn._id, semesterId: semId });
+          if (!mapping) {
+            await SemesterDegreeMapping.create({
+              degreeNameId: dn._id,
+              semesterId: semId,
+              isActive: true
+            });
+            mappingsAdded++;
+          }
+        }
+      }
+    }
+
+    res.status(201).json({
+      message: `Successfully seeded semester degree mappings!`,
+      mappingsAdded
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.createHoliday = async (req, res) => {
   try {
     const holiday = await HolidayCalendar.create(req.body);

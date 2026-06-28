@@ -45,6 +45,7 @@ router.put('/sessions/:id/current', protect, authorize('SUPER_ADMIN'), attendanc
 
 router.get('/masters/semester-degree-mappings', protect, attendanceController.getSemesterDegreeMappings);
 router.post('/masters/semester-degree-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createSemesterDegreeMapping);
+router.post('/masters/seed-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.seedSemesterDegreeMappings);
 router.put('/masters/semester-degree-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateSemesterDegreeMapping);
 router.delete('/masters/semester-degree-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSemesterDegreeMapping);
 
