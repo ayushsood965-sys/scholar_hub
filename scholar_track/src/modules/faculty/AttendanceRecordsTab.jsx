@@ -14,6 +14,7 @@ const AttendanceRecordsTab = () => {
   const [semesters, setSemesters] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [holidays, setHolidays] = useState([]);
+  const [semesterDegreeMappings, setSemesterDegreeMappings] = useState([]);
   const [loadingFilters, setLoadingFilters] = useState(true);
 
   const [historyFilters, setHistoryFilters] = useState({
@@ -39,13 +40,14 @@ const AttendanceRecordsTab = () => {
   useEffect(() => {
     const fetchMasters = async () => {
       try {
-        const [sesRes, dtRes, dnRes, semRes, ltRes, holRes] = await Promise.all([
+        const [sesRes, dtRes, dnRes, semRes, ltRes, holRes, sdmRes] = await Promise.all([
           api.get('/attendance/sessions'),
           api.get('/attendance/masters/degree-types'),
           api.get('/attendance/masters/degree-names'),
           api.get('/attendance/masters/semesters'),
           api.get('/attendance/leave-types'),
-          api.get('/attendance/holidays')
+          api.get('/attendance/holidays'),
+          api.get('/attendance/masters/semester-degree-mappings')
         ]);
         setSessions(sesRes.data);
         setDegreeTypes(dtRes.data);
@@ -53,6 +55,7 @@ const AttendanceRecordsTab = () => {
         setSemesters(semRes.data);
         setLeaveTypes(ltRes.data);
         setHolidays(holRes.data);
+        setSemesterDegreeMappings(sdmRes.data || []);
       } catch (err) {
         toast.error('Failed to load master dropdowns');
       } finally {
@@ -212,6 +215,15 @@ const AttendanceRecordsTab = () => {
     return [...new Map(departmentDegreeNames.filter(d => d.degreeTypeId).map(d => [d.degreeTypeId._id, d.degreeTypeId])).values()];
   }, [departmentDegreeNames]);
 
+  const availableSemesters = useMemo(() => {
+    if (!historyFilters.degreeNameId || !Array.isArray(semesterDegreeMappings)) return [];
+    const mappedIds = semesterDegreeMappings
+      .filter(m => m && (m.degreeNameId?._id || m.degreeNameId) === historyFilters.degreeNameId)
+      .map(m => m.semesterId?._id || m.semesterId)
+      .filter(Boolean);
+    return semesters.filter(s => s && mappedIds.includes(s._id));
+  }, [historyFilters.degreeNameId, semesters, semesterDegreeMappings]);
+
   if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
 
   return (
@@ -269,10 +281,10 @@ const AttendanceRecordsTab = () => {
                       className="form-input"
                       value={historyFilters.semesterId}
                       onChange={e => setHistoryFilters({ ...historyFilters, semesterId: e.target.value, timetableSlotId: '' })}
-                      disabled={!historyFilters.degreeTypeId}
+                      disabled={!historyFilters.degreeNameId}
                     >
                       <option value="">Select Semester...</option>
-                      {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                      {availableSemesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                     </select>
                   </div>
                 )}

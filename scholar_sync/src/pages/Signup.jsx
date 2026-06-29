@@ -358,7 +358,7 @@ const Signup = () => {
                                     '&:hover': { backgroundColor: theme.dropdownItemHover },
                                   }}
                                 >
-                                  {d.name}
+                                  {d.name} {d.faculty ? `(${d.faculty})` : ''}
                                 </div>
                               ))
                           ) : (
@@ -590,7 +590,7 @@ const Signup = () => {
                                     setSearchQuery('');
                                   }}
                                 >
-                                  {d.name}
+                                  {d.name} {d.faculty ? `(${d.faculty})` : ''}
                                 </div>
                               ))
                           ) : (

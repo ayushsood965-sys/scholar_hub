@@ -13,24 +13,8 @@ const connectDB = async () => {
     await backfillSHNos();
     await backfillPhdStatus();
   } catch (error) {
-    console.log(`⚠️ Connection to primary MongoDB failed: ${error.message}`);
-    console.log('🔄 Spawning an in-memory MongoDB server as fallback...');
-    try {
-      const { MongoMemoryServer } = require('mongodb-memory-server');
-      const mongoServer = await MongoMemoryServer.create();
-      const mongoUri = mongoServer.getUri();
-      
-      // Override the environment variable so other components use the in-memory server
-      process.env.MONGO_URI = mongoUri;
-      
-      const conn = await mongoose.connect(mongoUri);
-      console.log(`🚀 In-Memory MongoDB Started and Connected: ${mongoUri}`);
-      await backfillSHNos();
-      await backfillPhdStatus();
-    } catch (innerError) {
-      console.error(`❌ Fallback in-memory MongoDB failed: ${innerError.message}`);
-      process.exit(1);
-    }
+    console.error(`❌ Connection to MongoDB Atlas failed: ${error.message}`);
+    process.exit(1);
   }
 };
 

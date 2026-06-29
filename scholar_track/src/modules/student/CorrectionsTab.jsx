@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import { AuthContext } from '../../context/AuthContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { progressiveFetch } from '../../utils/progressiveFetch';
 import DataTable from '../../components/ui/DataTable';
@@ -16,7 +17,9 @@ import {
   Send,
   Plus,
   History,
-  Lock
+  Lock,
+  Layers,
+  GraduationCap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../config';
@@ -37,13 +40,20 @@ const statusBadge = (status) => {
 };
 
 const CorrectionsTab = () => {
+  const { user } = useContext(AuthContext);
+  const isPhD = user?.profile?.isPhD || false;
+
   const [dates, setDates] = useState([]);
   const [corrections, setCorrections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  // Form selections states
+  const [semesters, setSemesters] = useState([]);
+  const [selectedSemester, setSelectedSemester] = useState('');
+  const [selectedDate, setSelectedDate] = useState(''); // Stores the recordId
+  const [selectedSubject, setSelectedSubject] = useState(''); // Stores the timetableSlotId
+  
   const [currentAbsentSubjects, setCurrentAbsentSubjects] = useState([]);
   const [currentRecordId, setCurrentRecordId] = useState('');
 
@@ -54,16 +64,51 @@ const CorrectionsTab = () => {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // For timeline tracking modal
+  const [selectedCorrectionDetails, setSelectedCorrectionDetails] = useState(null);
+
   const api = useApi();
   const toast = useToast();
 
+  const fetchSemesters = async () => {
+    try {
+      const [semRes, sdmRes] = await Promise.all([
+        api.get('/attendance/masters/semesters'),
+        api.get('/attendance/masters/semester-degree-mappings')
+      ]);
+      const sems = semRes.data || [];
+      const sdm = sdmRes.data || [];
+      const studentDegreeNameId = user?.profile?.degreeNameId;
+      if (studentDegreeNameId) {
+        const mappedIds = sdm
+          .filter(m => m && (m.degreeNameId?._id || m.degreeNameId) === studentDegreeNameId)
+          .map(m => m.semesterId?._id || m.semesterId)
+          .filter(Boolean);
+        const filtered = sems.filter(s => s && mappedIds.includes(s._id));
+        setSemesters(filtered);
+      } else {
+        setSemesters(sems);
+      }
+    } catch (err) {
+      toast.error('Failed to load semesters');
+    }
+  };
+
+  const fetchAbsences = async (semId) => {
+    try {
+      const params = semId ? { semesterId: semId } : {};
+      const res = await api.get('/attendance/my-absences', { params });
+      setDates(res.data || []);
+    } catch (err) {
+      toast.error('Failed to load absent records');
+    }
+  };
+
   const fetchData = async () => {
     try {
-      // 1. Fetch absences first (typically a small list of active dates)
-      const datesRes = await api.get('/attendance/my-absences');
-      setDates(datesRes.data);
-
-      // 2. Fetch correction history progressively
+      setLoading(true);
+      
+      // Fetch corrections history progressively
       await progressiveFetch(api, '/attendance/corrections/me', {}, (data, isBackground) => {
         if (!isBackground) {
           setCorrections(data);
@@ -82,42 +127,38 @@ const CorrectionsTab = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    if (user && !isPhD) {
+      fetchSemesters();
+    }
+  }, [user]);
 
-  const handleDateSelect = (dateStr) => {
-    setSelectedDate(dateStr);
-    const dateEntry = dates.find(d => {
-      const dStr = new Date(d.date).toISOString().split('T')[0];
-      return dStr === dateStr;
-    });
+  useEffect(() => {
+    if (isPhD) {
+      fetchAbsences();
+    } else if (selectedSemester) {
+      fetchAbsences(selectedSemester);
+    } else {
+      setDates([]);
+    }
+  }, [selectedSemester, isPhD]);
+
+  const handleDateSelect = (recordId) => {
+    setSelectedDate(recordId);
+    setSelectedSubject('');
+    const dateEntry = dates.find(d => d.recordId === recordId);
     if (dateEntry) {
       setCurrentAbsentSubjects(dateEntry.absentSubjects || []);
-      setCurrentRecordId(dateEntry.recordId || '');
-      setSelectedSubjects([]);
+      setCurrentRecordId(recordId);
     } else {
       setCurrentAbsentSubjects([]);
       setCurrentRecordId('');
-      setSelectedSubjects([]);
     }
     setCorrectionType('PRESENT');
     setLeaveType('');
     setReason('');
     setFile(null);
-  };
-
-  const handleSubjectToggle = (slotId) => {
-    setSelectedSubjects(prev =>
-      prev.includes(slotId) ? prev.filter(id => id !== slotId) : [...prev, slotId]
-    );
-  };
-
-  const handleSelectAllSubjects = () => {
-    const eligible = currentAbsentSubjects.filter(s => s.eligible);
-    if (selectedSubjects.length === eligible.length) {
-      setSelectedSubjects([]);
-    } else {
-      setSelectedSubjects(eligible.map(s => s.timetableSlotId));
-    }
   };
 
   const handleFileUpload = async (e) => {
@@ -132,11 +173,11 @@ const CorrectionsTab = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedDate || !currentRecordId) {
-      return toast.error('Please select a date with absent subjects.');
+    if (!selectedDate) {
+      return toast.error('Please select an absent date.');
     }
-    if (selectedSubjects.length === 0) {
-      return toast.error('Please select at least one subject to correct.');
+    if (!isPhD && !selectedSubject) {
+      return toast.error('Please select a class/subject to correct.');
     }
     if (!reason || reason.trim().length < 10) {
       return toast.error('Please provide a detailed reason (at least 10 characters).');
@@ -146,17 +187,18 @@ const CorrectionsTab = () => {
     }
 
     // Check if this is a 2nd attempt (last chance)
-    const hasLastChanceSubjects = selectedSubjects.some(slotId => {
-      const sub = currentAbsentSubjects.find(s => s.timetableSlotId === slotId);
+    const selectedSlotId = isPhD ? null : selectedSubject;
+    const hasLastChance = !isPhD && (() => {
+      const sub = currentAbsentSubjects.find(s => s.timetableSlotId === selectedSlotId);
       return sub?.correctionAttempts + 1 >= 2;
-    });
+    })();
 
-    if (hasLastChanceSubjects) {
+    if (hasLastChance) {
       const confirmed = window.confirm(
         '⚠️ Final Attempt Warning\n\n' +
-        'One or more selected subjects have already had one correction request that was rejected. ' +
-        'This will be your final attempt for these subjects. After submission, you will NOT be able to ' +
-        'request correction for these subjects again.\n\n' +
+        'This subject/date correction request has already had one attempt rejected. ' +
+        'This will be your final attempt. After submission, you will NOT be able to ' +
+        'request correction for this subject/date again.\n\n' +
         'Do you want to proceed?'
       );
       if (!confirmed) return;
@@ -178,7 +220,7 @@ const CorrectionsTab = () => {
 
       const res = await api.post('/attendance/corrections', {
         recordId: currentRecordId,
-        timetableSlotIds: selectedSubjects,
+        timetableSlotIds: isPhD ? [] : [selectedSubject],
         correctionType,
         leaveType: correctionType === 'ON_LEAVE' ? leaveType : '',
         reason,
@@ -188,12 +230,15 @@ const CorrectionsTab = () => {
       if (res.data.isLastChance) {
         toast.success(res.data.message, { duration: 8000 });
       } else {
-        toast.success(res.data.message);
+        toast.success(res.data.message || 'Correction requested successfully');
       }
 
       setFormOpen(false);
+      setSelectedSemester('');
       setSelectedDate('');
-      setSelectedSubjects([]);
+      setSelectedSubject('');
+      setCurrentAbsentSubjects([]);
+      setCurrentRecordId('');
       setCorrectionType('PRESENT');
       setLeaveType('');
       setReason('');
@@ -209,15 +254,18 @@ const CorrectionsTab = () => {
   const correctionColumns = [
     {
       header: 'Date',
-      accessor: (row) => row.recordId?.date
-        ? new Date(row.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-        : 'N/A'
+      accessor: (row) => {
+        const dateVal = row.recordId?.date || row.customDate;
+        return dateVal
+          ? new Date(dateVal).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          : 'N/A';
+      }
     },
     {
-      header: 'Subjects',
+      header: 'Subject/Class',
       accessor: (row) => {
         const subCount = row.timetableSlotIds?.length || 0;
-        return subCount > 0 ? `${subCount} subject(s)` : 'All';
+        return subCount > 0 ? `${subCount} subject(s)` : 'Daily Check-in';
       }
     },
     {
@@ -250,12 +298,29 @@ const CorrectionsTab = () => {
     {
       header: 'Submitted',
       accessor: (row) => new Date(row.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    },
+    {
+      header: 'Timeline',
+      accessor: (row) => (
+        <button 
+          className="btn btn-secondary btn-sm"
+          style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: '4px' }}
+          onClick={() => setSelectedCorrectionDetails(row)}
+        >
+          View Timeline
+        </button>
+      )
     }
   ];
 
   if (loading) return <SkeletonLoader count={1} height={400} />;
 
-  const eligibleDates = dates.filter(d => d.absentSubjects?.some(s => s.eligible));
+  const eligibleDates = dates;
+
+  const isDateSelected = !!selectedDate;
+  const isSubjectRequired = !isPhD;
+  const isSubjectSelected = isPhD || !!selectedSubject;
+  const showNextSteps = isDateSelected && isSubjectSelected;
 
   return (
     <div className="glass-panel p-xl">
@@ -266,7 +331,7 @@ const CorrectionsTab = () => {
             Request corrections for absent records. Maximum 2 attempts per subject per date.
           </p>
         </div>
-        {!formOpen && eligibleDates.length > 0 && (
+        {!formOpen && (
           <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
             <Plus size={16} /> Request Correction
           </button>
@@ -287,110 +352,89 @@ const CorrectionsTab = () => {
                 <span className="inline-form-title">
                   <Plus size={18} /> Request Attendance Correction
                 </span>
-                <button className="inline-form-close" onClick={() => setFormOpen(false)}>
+                <button className="inline-form-close" onClick={() => { setFormOpen(false); setSelectedSemester(''); setSelectedDate(''); setSelectedSubject(''); }}>
                   <XCircle size={18} />
                 </button>
               </div>
               <form onSubmit={handleSubmit}>
-                {/* Step 1: Select Date */}
-                <div className="form-group">
-                  <label className="form-label">
-                    <CalendarDays size={14} /> Select Absent Date
-                  </label>
-                  <select className="form-input" value={selectedDate} onChange={e => handleDateSelect(e.target.value)} required>
-                    <option value="">Select a date with absent marks...</option>
-                    {eligibleDates.map(d => {
-                      const dateStr = new Date(d.date).toISOString().split('T')[0];
-                      const subCount = d.absentSubjects?.filter(s => s.eligible).length || 0;
-                      return (
-                        <option key={d.recordId} value={dateStr}>
-                          {new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          {' — '}{subCount} subject(s)
-                        </option>
-                      );
-                    })}
-                  </select>
+                <div className="grid-2">
+                  {/* Step 1a: Select Semester (only if not PhD) */}
+                  {!isPhD && (
+                    <div className="form-group">
+                      <label className="form-label">
+                        <GraduationCap size={14} /> Select Semester
+                      </label>
+                      <select 
+                        className="form-input" 
+                        value={selectedSemester} 
+                        onChange={e => {
+                          setSelectedSemester(e.target.value);
+                          setSelectedDate('');
+                          setSelectedSubject('');
+                          setCurrentAbsentSubjects([]);
+                        }} 
+                        required
+                      >
+                        <option value="">Choose semester...</option>
+                        {semesters.map(sem => (
+                          <option key={sem._id} value={sem._id}>
+                            {sem.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Step 1b: Select Absent Date */}
+                  {(isPhD || selectedSemester) && (
+                    <div className="form-group">
+                      <label className="form-label">
+                        <CalendarDays size={14} /> Select Absent Date
+                      </label>
+                      <select 
+                        className="form-input" 
+                        value={selectedDate} 
+                        onChange={e => handleDateSelect(e.target.value)} 
+                        required
+                      >
+                        <option value="">Choose date...</option>
+                        {eligibleDates.map(d => (
+                          <option key={d.recordId} value={d.recordId}>
+                            {new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {!isPhD && ` — ${d.absentSubjects?.length || 0} class(es)`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
-                {/* Step 2: Select Subjects */}
-                {selectedDate && currentAbsentSubjects.length > 0 && (
+                {/* Step 2: Select Subject (only if not PhD) */}
+                {!isPhD && selectedDate && (
                   <div className="form-group" style={{ marginTop: 16 }}>
-                    <div className="flex justify-between items-center mb-md">
-                      <label className="form-label">
-                        <BookOpen size={14} /> Select Subjects to Correct
-                      </label>
-                      <button type="button" className="btn btn-sm btn-outline" onClick={handleSelectAllSubjects}>
-                        {selectedSubjects.length === currentAbsentSubjects.filter(s => s.eligible).length ? 'Deselect All' : 'Select All'}
-                      </button>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                      {currentAbsentSubjects.map(sub => {
-                        const slotId = sub.timetableSlotId;
-                        const isSelected = selectedSubjects.includes(slotId);
-                        const isLocked = sub.locked;
-                        const isEligible = sub.eligible;
-
-                        return (
-                          <div
-                            key={slotId}
-                            onClick={() => { if (isLocked || !isEligible) return; handleSubjectToggle(slotId); }}
-                            className="glass-card"
-                            style={{
-                              padding: '10px 14px',
-                              cursor: isLocked || !isEligible ? 'not-allowed' : 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              opacity: isLocked ? 0.5 : 1,
-                              border: isSelected
-                                ? '2px solid var(--color-primary)'
-                                : isLocked
-                                  ? '2px solid #EF4444'
-                                  : '1px solid rgba(255,255,255,0.15)'
-                            }}
-                          >
-                            <div style={{
-                              width: '20px', height: '20px', borderRadius: '5px',
-                              border: isSelected ? 'none' : '2px solid var(--color-border-solid)',
-                              background: isSelected ? 'var(--color-primary)' : 'transparent',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                            }}>
-                              {isSelected && <CheckCircle size={12} color="#fff" />}
-                              {isLocked && <Lock size={12} color="#EF4444" />}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>
-                                {sub.subjectName || 'Unknown Subject'}
-                              </div>
-                              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-                                Code: {sub.subjectCode || 'N/A'}
-                              </div>
-                            </div>
-                            {isLocked && (
-                              <span className="badge" style={{ background: '#FEE2E2', color: '#DC2626', fontSize: '0.6rem' }}>
-                                Max Attempts
-                              </span>
-                            )}
-                            {!isEligible && !isLocked && sub.latestStatus === 'PENDING_FACULTY' && (
-                              <span className="badge badge-warning" style={{ fontSize: '0.6rem' }}>Pending</span>
-                            )}
-                            {!isEligible && !isLocked && sub.latestStatus === 'PENDING_HOD' && (
-                              <span className="badge badge-warning" style={{ fontSize: '0.6rem' }}>Pending HOD</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {selectedSubjects.length > 0 && (
-                      <p style={{ fontSize: '0.78rem', color: 'var(--color-primary)', marginTop: '8px' }}>
-                        {selectedSubjects.length} subject(s) selected
-                      </p>
-                    )}
+                    <label className="form-label">
+                      <BookOpen size={14} /> Select Class / Subject
+                    </label>
+                    <select 
+                      className="form-input" 
+                      value={selectedSubject} 
+                      onChange={e => setSelectedSubject(e.target.value)} 
+                      required
+                    >
+                      <option value="">Choose subject class...</option>
+                      {currentAbsentSubjects.map(sub => (
+                        <option key={sub.timetableSlotId} value={sub.timetableSlotId} disabled={sub.locked}>
+                          {sub.subjectName} ({sub.subjectCode})
+                          {sub.locked ? ' — Locked (Max attempts reached)' : ''}
+                          {!sub.eligible && !sub.locked && sub.latestStatus ? ` — Pending Status: ${sub.latestStatus}` : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
                 {/* Step 3: Correction Type */}
-                {selectedSubjects.length > 0 && (
+                {showNextSteps && (
                   <div className="grid-2" style={{ marginTop: 16 }}>
                     <div className="form-group">
                       <label className="form-label">Requested Status</label>
@@ -414,10 +458,10 @@ const CorrectionsTab = () => {
                 )}
 
                 {/* Step 4: Reason */}
-                {selectedSubjects.length > 0 && (
+                {showNextSteps && (
                   <div className="form-group" style={{ marginTop: 16 }}>
                     <label className="form-label">
-                      <FileText size={14} /> Reason for Correction
+                      <FileText size={14} /> Reason / Remarks for Appeal
                     </label>
                     <textarea
                       className="form-input"
@@ -426,12 +470,13 @@ const CorrectionsTab = () => {
                       rows={3}
                       placeholder="Explain why the attendance should be corrected..."
                       style={{ minHeight: '80px' }}
+                      required
                     />
                   </div>
                 )}
 
                 {/* Step 5: File Upload */}
-                {selectedSubjects.length > 0 && (
+                {showNextSteps && (
                   <div className="form-group" style={{ marginTop: 12 }}>
                     <label className="form-label">
                       <Upload size={14} /> Supporting Document <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(Optional)</span>
@@ -476,11 +521,11 @@ const CorrectionsTab = () => {
                 )}
 
                 {/* Submit */}
-                {selectedSubjects.length > 0 && (
+                {showNextSteps && (
                   <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
                     <button type="button" className="btn btn-secondary" onClick={() => setFormOpen(false)}>Cancel</button>
                     <button type="submit" className="btn btn-primary" disabled={submitting || uploading}>
-                      <Send size={16} /> {submitting ? 'Submitting...' : 'Submit Correction'}
+                      <Send size={16} /> {submitting ? 'Submitting...' : 'Submit Appeal'}
                     </button>
                   </div>
                 )}
@@ -514,6 +559,128 @@ const CorrectionsTab = () => {
           </div>
         )}
       </div>
+
+      {/* Timeline Stepper Modal */}
+      <AnimatePresence>
+        {selectedCorrectionDetails && (
+          <div className="modal-backdrop" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px'
+          }} onClick={() => setSelectedCorrectionDetails(null)}>
+            <motion.div 
+              className="glass-panel" 
+              style={{ 
+                maxWidth: '520px', 
+                width: '100%', 
+                padding: '24px', 
+                background: 'var(--color-bg)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border-solid)',
+                boxShadow: 'var(--shadow-xl)',
+                position: 'relative'
+              }}
+              onClick={e => e.stopPropagation()}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex justify-between items-center mb-md pb-xs" style={{ borderBottom: '1px solid var(--color-border-solid)', paddingBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Layers size={18} style={{ color: 'var(--color-primary)' }} />
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
+                    Correction Appeal Timeline
+                  </h3>
+                </div>
+                <button className="inline-form-close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }} onClick={() => setSelectedCorrectionDetails(null)}>
+                  <XCircle size={20} />
+                </button>
+              </div>
+
+              {/* General details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', fontSize: '0.88rem', color: 'var(--color-text-secondary)', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border-solid)' }}>
+                <div>
+                  <strong>Date of Absence:</strong> {
+                    (selectedCorrectionDetails.recordId?.date || selectedCorrectionDetails.customDate)
+                      ? new Date(selectedCorrectionDetails.recordId?.date || selectedCorrectionDetails.customDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+                      : 'N/A'
+                  }
+                </div>
+                <div>
+                  <strong>Assigned Faculty:</strong> {selectedCorrectionDetails.facultyId?.name || 'Supervisor'}
+                </div>
+                <div>
+                  <strong>Your Appeal Reason:</strong> <span style={{ color: 'var(--color-text-primary)' }}>{selectedCorrectionDetails.reason}</span>
+                </div>
+                {selectedCorrectionDetails.documentUrl && (
+                  <div>
+                    <strong>Attachment:</strong>{' '}
+                    <a href={`${API_BASE_URL}${selectedCorrectionDetails.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontWeight: 500 }}>
+                      View Reference Document
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Timeline Stepper */}
+              <h4 style={{ fontSize: '0.92rem', fontWeight: 700, marginBottom: '14px', color: 'var(--color-text-primary)' }}>
+                Transition Stages & Remarks
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', paddingLeft: '24px', maxHeight: '250px', overflowY: 'auto' }}>
+                <div style={{ position: 'absolute', left: '9px', top: '6px', bottom: '6px', width: '2px', background: 'var(--color-border-solid)' }}></div>
+                
+                {(selectedCorrectionDetails.auditLog || []).map((log, index) => {
+                  const isLast = index === (selectedCorrectionDetails.auditLog.length - 1);
+                  let nodeColor = 'var(--color-text-muted)';
+                  if (log.action === 'APPROVED') nodeColor = '#10B981';
+                  else if (log.action === 'REJECTED') nodeColor = '#EF4444';
+                  else if (log.action === 'RECOMMENDED') nodeColor = '#F59E0B';
+                  else if (log.action === 'SUBMITTED') nodeColor = 'var(--color-primary)';
+
+                  return (
+                    <div key={log._id || index} style={{ position: 'relative' }}>
+                      {/* Node point */}
+                      <div style={{
+                        position: 'absolute',
+                        left: '-20px',
+                        top: '5px',
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: nodeColor,
+                        border: '2px solid var(--color-bg)',
+                        boxShadow: '0 0 0 2px rgba(255,255,255,0.05)'
+                      }}></div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                          {log.action}
+                        </span>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                          By {log.actorName} • {new Date(log.timestamp).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {log.remarks && (
+                          <p style={{ fontSize: '0.8rem', marginTop: '4px', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px', fontStyle: 'italic', color: 'var(--color-text-secondary)', borderLeft: '3px solid var(--color-primary)' }}>
+                            "{log.remarks}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

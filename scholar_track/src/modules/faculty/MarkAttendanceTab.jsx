@@ -13,6 +13,7 @@ const MarkAttendanceTab = () => {
   const [semesters, setSemesters] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [holidays, setHolidays] = useState([]);
+  const [semesterDegreeMappings, setSemesterDegreeMappings] = useState([]);
   
   const [filters, setFilters] = useState({
     sessionId: '',
@@ -40,13 +41,14 @@ const MarkAttendanceTab = () => {
   useEffect(() => {
     const fetchMasters = async () => {
       try {
-        const [sesRes, dtRes, dnRes, semRes, ltRes, holRes] = await Promise.all([
+        const [sesRes, dtRes, dnRes, semRes, ltRes, holRes, sdmRes] = await Promise.all([
           api.get('/attendance/sessions'),
           api.get('/attendance/masters/degree-types'),
           api.get('/attendance/masters/degree-names'),
           api.get('/attendance/masters/semesters'),
           api.get('/attendance/leave-types'),
-          api.get('/attendance/holidays')
+          api.get('/attendance/holidays'),
+          api.get('/attendance/masters/semester-degree-mappings')
         ]);
         setSessions(sesRes.data);
         setDegreeTypes(dtRes.data);
@@ -54,6 +56,7 @@ const MarkAttendanceTab = () => {
         setSemesters(semRes.data);
         setLeaveTypes(ltRes.data);
         setHolidays(holRes.data);
+        setSemesterDegreeMappings(sdmRes.data || []);
       } catch (err) {
         toast.error('Failed to load master dropdowns');
       } finally {
@@ -65,6 +68,15 @@ const MarkAttendanceTab = () => {
 
   const selectedType = degreeTypes.find(d => d._id === filters.degreeTypeId);
   const isPhD = selectedType?.code?.toUpperCase() === 'PHD';
+
+  const availableSemesters = useMemo(() => {
+    if (!filters.degreeNameId || !Array.isArray(semesterDegreeMappings)) return [];
+    const mappedIds = semesterDegreeMappings
+      .filter(m => m && (m.degreeNameId?._id || m.degreeNameId) === filters.degreeNameId)
+      .map(m => m.semesterId?._id || m.semesterId)
+      .filter(Boolean);
+    return semesters.filter(s => s && mappedIds.includes(s._id));
+  }, [filters.degreeNameId, semesters, semesterDegreeMappings]);
 
   const checkHoliday = (selectedDate) => {
     if (!selectedDate) return null;
@@ -397,9 +409,9 @@ const MarkAttendanceTab = () => {
             {!isPhD && (
               <div className="form-group mb-sm">
                 <label className="form-label">Semester</label>
-                <select className="form-input" required value={filters.semesterId} onChange={e => setFilters({...filters, semesterId: e.target.value})} disabled={!filters.degreeTypeId}>
+                <select className="form-input" required value={filters.semesterId} onChange={e => setFilters({...filters, semesterId: e.target.value})} disabled={!filters.degreeNameId}>
                   <option value="">Select Semester...</option>
-                  {semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  {availableSemesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                 </select>
               </div>
             )}

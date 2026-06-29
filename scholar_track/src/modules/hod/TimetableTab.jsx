@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -11,6 +11,7 @@ const TimetableTab = () => {
   const [degreeNames, setDegreeNames] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [faculties, setFaculties] = useState([]);
+  const [semesterDegreeMappings, setSemesterDegreeMappings] = useState([]);
   
   const [filters, setFilters] = useState({ sessionId: '', degreeTypeId: '', degreeNameId: '', semesterId: '' });
   const [timetable, setTimetable] = useState([]);
@@ -34,17 +35,19 @@ const TimetableTab = () => {
 
   const fetchMasterData = async () => {
     try {
-      const [sesRes, dtRes, dnRes, semRes, facRes] = await Promise.all([
+      const [sesRes, dtRes, dnRes, semRes, facRes, sdmRes] = await Promise.all([
         api.get('/attendance/sessions'),
         api.get('/attendance/masters/degree-types'),
         api.get('/attendance/masters/degree-names'),
         api.get('/attendance/masters/semesters'),
-        api.get('/auth/faculty') 
+        api.get('/auth/faculty'),
+        api.get('/attendance/masters/semester-degree-mappings')
       ]);
       setSessions(sesRes.data);
       setDegreeTypes(dtRes.data);
       setDegreeNames(dnRes.data);
       setSemesters(semRes.data);
+      setSemesterDegreeMappings(sdmRes.data || []);
       
       const allUsers = facRes.data?.data || facRes.data || [];
       setFaculties(allUsers.filter(u => u.role === 'FACULTY' || u.role === 'HOD'));
@@ -141,6 +144,15 @@ const TimetableTab = () => {
   // Filter degree names based on degree type
   const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === filters.degreeTypeId);
 
+  const availableSemesters = useMemo(() => {
+    if (!filters.degreeNameId || !Array.isArray(semesterDegreeMappings)) return [];
+    const mappedIds = semesterDegreeMappings
+      .filter(m => m && (m.degreeNameId?._id || m.degreeNameId) === filters.degreeNameId)
+      .map(m => m.semesterId?._id || m.semesterId)
+      .filter(Boolean);
+    return semesters.filter(s => s && mappedIds.includes(s._id));
+  }, [filters.degreeNameId, semesters, semesterDegreeMappings]);
+
   return (
     <div className="glass-panel p-xl">
       <div className="flex justify-between items-center mb-lg">
@@ -161,7 +173,7 @@ const TimetableTab = () => {
           <option value="">Select Degree Type...</option>
           {degreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
         </select>
-        <select className="form-input" value={filters.degreeNameId} onChange={e => setFilters({...filters, degreeNameId: e.target.value})} disabled={!filters.degreeTypeId}>
+        <select className="form-input" value={filters.degreeNameId} onChange={e => setFilters({...filters, degreeNameId: e.target.value, semesterId: ''})} disabled={!filters.degreeTypeId}>
           <option value="">Select Degree...</option>
           {availableDegreeNames.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
         </select>
@@ -169,11 +181,11 @@ const TimetableTab = () => {
           className="form-input" 
           value={filters.semesterId} 
           onChange={e => setFilters({...filters, semesterId: e.target.value})}
-          disabled={!filters.degreeTypeId || isPhD}
+          disabled={!filters.degreeNameId || isPhD}
           style={{ opacity: isPhD ? 0.3 : 1 }}
         >
           <option value="">{isPhD ? 'Semester (N/A)' : 'Select Semester...'}</option>
-          {!isPhD && semesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+          {!isPhD && availableSemesters.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
         </select>
       </div>
 

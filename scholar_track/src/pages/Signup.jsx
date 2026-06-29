@@ -387,7 +387,7 @@ const Signup = () => {
                                     if (error.includes('PhD candidates')) setError('');
                                   }}
                                 >
-                                  {d.name}
+                                  {d.name} {d.faculty ? `(${d.faculty})` : ''}
                                 </div>
                               ))
                           ) : (
@@ -691,7 +691,7 @@ const Signup = () => {
                                     setSearchQuery('');
                                   }}
                                 >
-                                  {d.name}
+                                  {d.name} {d.faculty ? `(${d.faculty})` : ''}
                                 </div>
                               ))
                           ) : (

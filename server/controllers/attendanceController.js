@@ -1279,29 +1279,91 @@ exports.actionLeave = async (req, res) => {
 // Get student's absences with correction eligibility info
 exports.getMyAbsences = async (req, res) => {
   try {
-    const records = await AttendanceRecord.find({
+    const isPhD = req.user.profile?.isPhD || false;
+    const { semesterId } = req.query;
+
+    if (isPhD) {
+      const records = await AttendanceRecord.find({
+        studentId: req.user._id,
+        status: 'ABSENT',
+        courseCode: 'DAILY'
+      }).sort({ date: -1 });
+
+      const corrections = await AttendanceCorrection.find({
+        studentId: req.user._id
+      });
+
+      const recordCorrectionMap = {};
+      corrections.forEach(c => {
+        const rid = c.recordId?.toString() || '';
+        if (!recordCorrectionMap[rid]) {
+          recordCorrectionMap[rid] = { attempts: 0, latestStatus: null };
+        }
+        recordCorrectionMap[rid].attempts = Math.max(
+          recordCorrectionMap[rid].attempts,
+          c.correctionAttempt || 1
+        );
+        if (['APPROVED', 'REJECTED', 'PENDING_FACULTY', 'PENDING_HOD'].includes(c.status)) {
+          recordCorrectionMap[rid].latestStatus = c.status;
+        }
+      });
+
+      const result = [];
+      records.forEach(record => {
+        const rid = record._id.toString();
+        const info = recordCorrectionMap[rid];
+
+        let eligible = true;
+        let locked = false;
+        let attempts = 0;
+        let latestStatus = null;
+
+        if (info) {
+          attempts = info.attempts;
+          latestStatus = info.latestStatus;
+          if (latestStatus === 'APPROVED') {
+            return;
+          }
+          if (attempts >= 2) {
+            eligible = false;
+            locked = true;
+          }
+        }
+
+        result.push({
+          date: record.date,
+          recordId: record._id,
+          absentSubjects: [],
+          eligible,
+          locked,
+          correctionAttempts: attempts,
+          latestStatus,
+          isPhD: true
+        });
+      });
+
+      return res.status(200).json(result);
+    }
+
+    // Standard student flow
+    const query = {
       studentId: req.user._id,
       status: 'ABSENT'
-    })
-    .populate('classes.timetableSlotId')
-    .sort({ date: -1 });
+    };
+    if (semesterId) {
+      query.semesterId = semesterId;
+    }
+
+    const records = await AttendanceRecord.find(query)
+      .populate('classes.timetableSlotId')
+      .sort({ date: -1 });
 
     // Get all existing corrections by this student
     const corrections = await AttendanceCorrection.find({
       studentId: req.user._id
     });
 
-    // Build a map: date + timetableSlotId → correction info
-    // key = `${dateStr}_${slotId}`
-    const correctionMap = {};
-    corrections.forEach(c => {
-      const dateStr = c.createdAt ? 'override' : '';
-      (c.timetableSlotIds || []).forEach(slotId => {
-        // We need the date from the record, not correction
-      });
-    });
-
-    // Instead, let's build this from the corrections referencing recordIds
+    // Build a map: recordId + timetableSlotId → correction info
     const recordCorrectionMap = {};
     corrections.forEach(c => {
       const rid = c.recordId?.toString() || '';
@@ -1314,9 +1376,7 @@ exports.getMyAbsences = async (req, res) => {
           recordCorrectionMap[key].attempts,
           c.correctionAttempt || 1
         );
-        // Track the latest status for this subject
-        if (c.status === 'APPROVED' || c.status === 'REJECTED' || 
-            c.status === 'PENDING_FACULTY' || c.status === 'PENDING_HOD') {
+        if (['APPROVED', 'REJECTED', 'PENDING_FACULTY', 'PENDING_HOD'].includes(c.status)) {
           recordCorrectionMap[key].latestStatus = c.status;
         }
       });
@@ -1335,35 +1395,13 @@ exports.getMyAbsences = async (req, res) => {
         };
       }
 
-      // Find classes where student was absent (selected: false or no class record with selected)
       const absentClasses = (record.classes || []).filter(c => {
-        // Class is "selected" means it was marked (attendance was taken for it)
-        // Student is absent for this subject if selected is false
-        // Actually in the attendance system, classes array stores which subjects were selected
-        // If a subject's class has selected: true, it was part of the attendance marking
-        // Absent means the status was marked ABSENT for this subject
-        
-        // Simplifying: if the record status is ABSENT and this class entry exists
-        // with selected: true, then student was marked absent for this subject
         return c.selected === true;
       }).map(c => ({
         timetableSlotId: c.timetableSlotId?._id || c.timetableSlotId,
         subjectName: c.subjectName || c.timetableSlotId?.subjectName || 'Unknown',
         subjectCode: c.timetableSlotId?.subjectCode || ''
       }));
-
-      // Also include any subjects where the class entry has timetableSlotId populated
-      // but selection state was false (meaning it was an unmarked subject)
-      // Actually let me re-read: In AttendanceRecord, classes array stores:
-      // [{timetableSlotId, subjectName, selected}] where selected=true means faculty decided
-      // to take attendance for this subject
-      
-      // The logic: If a student was marked ABSENT for a record, but we need to know
-      // which SPECIFIC subjects they were absent for. The classes array tells us which
-      // subjects were taught and their selection state.
-
-      // Actually the simplest approach: if the record.status is 'ABSENT' and a class entry
-      // has selected:true, that means the student was marked for that subject with ABSENT status
 
       dateMap[dateStr].absentSubjects.push(...absentClasses);
     });
@@ -1379,7 +1417,6 @@ exports.getMyAbsences = async (req, res) => {
         const info = recordCorrectionMap[key];
         
         if (!info) {
-          // No correction ever made for this subject
           sub.eligible = true;
           sub.correctionAttempts = 0;
           sub.latestStatus = null;
@@ -1389,21 +1426,17 @@ exports.getMyAbsences = async (req, res) => {
         sub.correctionAttempts = info.attempts;
         sub.latestStatus = info.latestStatus;
 
-        // Don't show if APPROVED (already corrected)
         if (info.latestStatus === 'APPROVED') {
           sub.eligible = false;
-          return false; // Remove from available list
+          return false;
         }
         
-        // Show if PENDING or REJECTED (can be corrected again if under max)
         if (info.attempts >= 2) {
-          // Max 2 attempts reached - still show but mark as locked
           sub.eligible = false;
           sub.locked = true;
-          return true; // Show but with lock icon
+          return true;
         }
         
-        // Still eligible
         sub.eligible = true;
         return true;
       });
@@ -1424,12 +1457,15 @@ exports.getMyAbsences = async (req, res) => {
 exports.applyCorrection = async (req, res) => {
   try {
     const { recordId, timetableSlotIds = [], correctionType, leaveType, reason, documentUrl } = req.body;
+    const isPhD = req.user.profile?.isPhD || false;
     
     if (!recordId) {
       return res.status(400).json({ message: 'Record reference is required.' });
     }
-    if (!timetableSlotIds || timetableSlotIds.length === 0) {
-      return res.status(400).json({ message: 'Please select at least one subject to correct.' });
+    if (!isPhD) {
+      if (!timetableSlotIds || timetableSlotIds.length === 0) {
+        return res.status(400).json({ message: 'Please select at least one subject to correct.' });
+      }
     }
     if (!correctionType || !['PRESENT', 'ON_LEAVE'].includes(correctionType)) {
       return res.status(400).json({ message: 'Please select a valid correction type (Present or On Leave).' });
@@ -1457,76 +1493,99 @@ exports.applyCorrection = async (req, res) => {
       return res.status(400).json({ message: `Cannot request correction for a date that falls on a holiday: ${holiday.title}.` });
     }
 
-    // Check existing corrections for these subjects
-    const existingCorrections = await AttendanceCorrection.find({
-      studentId: req.user._id,
-      recordId,
-      timetableSlotIds: { $in: timetableSlotIds }
-    }).sort({ createdAt: -1 });
+    // Check existing corrections
+    let thisAttempt = 1;
+    let isLastChance = false;
 
-    // Group existing corrections by timetableSlotId to check per-subject limits
-    const maxAttemptsReached = [];
-    const justRejectedSubjects = [];
-    
-    timetableSlotIds.forEach(slotId => {
-      const subjectCorrections = existingCorrections.filter(c => 
-        (c.timetableSlotIds || []).some(s => s.toString() === slotId)
-      );
-      
-      // Check if any correction is already APPROVED for this subject
-      const approvedCorrection = subjectCorrections.find(c => c.status === 'APPROVED');
+    if (isPhD) {
+      const existingCorrections = await AttendanceCorrection.find({
+        studentId: req.user._id,
+        recordId
+      }).sort({ createdAt: -1 });
+
+      const approvedCorrection = existingCorrections.find(c => c.status === 'APPROVED');
       if (approvedCorrection) {
-        maxAttemptsReached.push(slotId);
-        return;
+        return res.status(400).json({ message: 'You already have an approved correction request for this date.' });
       }
 
-      // Count total attempts (approved + rejected)
-      const totalAttempts = subjectCorrections.length;
+      const totalAttempts = existingCorrections.length;
       if (totalAttempts >= 2) {
-        maxAttemptsReached.push(slotId);
-        return;
+        return res.status(400).json({ message: 'Maximum correction attempts (2) reached for this date.' });
       }
 
-      // Check if the last correction for this subject was REJECTED
-      const lastCorrection = subjectCorrections[subjectCorrections.length - 1];
-      if (lastCorrection && lastCorrection.status === 'REJECTED') {
-        justRejectedSubjects.push({
-          slotId,
-          attemptsSoFar: totalAttempts,
-          isLastAttempt: totalAttempts + 1 >= 2
+      thisAttempt = totalAttempts + 1;
+      isLastChance = thisAttempt >= 2;
+    } else {
+      // Check existing corrections for these subjects
+      const existingCorrections = await AttendanceCorrection.find({
+        studentId: req.user._id,
+        recordId,
+        timetableSlotIds: { $in: timetableSlotIds }
+      }).sort({ createdAt: -1 });
+
+      // Group existing corrections by timetableSlotId to check per-subject limits
+      const maxAttemptsReached = [];
+      
+      timetableSlotIds.forEach(slotId => {
+        const subjectCorrections = existingCorrections.filter(c => 
+          (c.timetableSlotIds || []).some(s => s.toString() === slotId)
+        );
+        
+        // Check if any correction is already APPROVED for this subject
+        const approvedCorrection = subjectCorrections.find(c => c.status === 'APPROVED');
+        if (approvedCorrection) {
+          maxAttemptsReached.push(slotId);
+          return;
+        }
+
+        // Count total attempts (approved + rejected)
+        const totalAttempts = subjectCorrections.length;
+        if (totalAttempts >= 2) {
+          maxAttemptsReached.push(slotId);
+          return;
+        }
+      });
+
+      if (maxAttemptsReached.length > 0) {
+        return res.status(400).json({
+          message: 'One or more selected subjects have already reached the maximum correction attempts (2). These subjects cannot be corrected again.',
+          blockedSubjects: maxAttemptsReached
         });
       }
-    });
 
-    // If any subject has reached max attempts, block the entire request
-    if (maxAttemptsReached.length > 0) {
-      return res.status(400).json({
-        message: 'One or more selected subjects have already reached the maximum correction attempts (2). These subjects cannot be corrected again.',
-        blockedSubjects: maxAttemptsReached
-      });
+      const maxAttempt = existingCorrections.reduce((max, c) => Math.max(max, c.correctionAttempt || 0), 0);
+      thisAttempt = maxAttempt + 1;
+      isLastChance = thisAttempt >= 2;
     }
 
-    // Calculate the attempt number for this new correction
-    const maxAttempt = existingCorrections.reduce((max, c) => Math.max(max, c.correctionAttempt || 0), 0);
-    const thisAttempt = maxAttempt + 1;
-    const isLastChance = thisAttempt >= 2;
+    let assignedFacultyId = record.facultyId;
+    if (isPhD) {
+      if (req.user.profile?.preferredGuideId) {
+        const mongoose = require('mongoose');
+        if (mongoose.Types.ObjectId.isValid(req.user.profile.preferredGuideId)) {
+          assignedFacultyId = req.user.profile.preferredGuideId;
+        }
+      }
+    }
 
     const correction = await AttendanceCorrection.create({
       studentId: req.user._id,
       recordId,
-      timetableSlotIds,
+      timetableSlotIds: isPhD ? [] : timetableSlotIds,
       correctionType,
       leaveType: correctionType === 'ON_LEAVE' ? leaveType : '',
       reason,
       documentUrl: documentUrl || '',
       status: 'PENDING_FACULTY',
-      facultyId: record.facultyId,
+      facultyId: assignedFacultyId,
       correctionAttempt: thisAttempt,
       auditLog: [{
         action: 'SUBMITTED',
         actorId: req.user._id,
         actorName: req.user.name,
-        remarks: `Correction request submitted for ${timetableSlotIds.length} subject(s). Attempt #${thisAttempt}`
+        remarks: isPhD 
+          ? `Correction request submitted for daily check-in. Attempt #${thisAttempt}`
+          : `Correction request submitted for ${timetableSlotIds.length} subject(s). Attempt #${thisAttempt}`
       }]
     });
 
@@ -1671,29 +1730,42 @@ exports.actionCorrection = async (req, res) => {
       // Update the attendance record's classes for the corrected subjects
       const record = await AttendanceRecord.findById(correction.recordId);
       if (record) {
-        const correctedSlotIds = (correction.timetableSlotIds || []).map(id => id.toString());
-        
-        // Update the specific subjects in the classes array
-        record.classes = record.classes.map(cls => {
-          const slotId = cls.timetableSlotId?.toString() || '';
-          if (correctedSlotIds.includes(slotId)) {
-            return {
-              ...cls.toObject(),
-              selected: correction.correctionType === 'PRESENT' ? true : false,
-              correctionStatus: correction.correctionType === 'PRESENT' ? 'PRESENT' : 'ON_LEAVE',
-              correctionApproved: true,
-              leaveType: correction.correctionType === 'ON_LEAVE' ? correction.leaveType : ''
-            };
-          }
-          return cls;
-        });
-
-        // If ALL subjects in the record are now corrected, update the overall status
-        const allClassesCorrected = record.classes.every(cls => cls.correctionApproved);
-        if (allClassesCorrected) {
+        if (record.courseCode === 'DAILY') {
+          // PhD check-in record
           record.status = correction.correctionType;
           if (correction.correctionType === 'ON_LEAVE') {
             record.leaveType = correction.leaveType;
+            record.isLeaveOverride = true;
+          } else {
+            record.leaveType = '';
+            record.isLeaveOverride = false;
+          }
+        } else {
+          // Standard student slot-wise record
+          const correctedSlotIds = (correction.timetableSlotIds || []).map(id => id.toString());
+          
+          // Update the specific subjects in the classes array
+          record.classes = record.classes.map(cls => {
+            const slotId = cls.timetableSlotId?.toString() || '';
+            if (correctedSlotIds.includes(slotId)) {
+              return {
+                ...cls.toObject(),
+                selected: correction.correctionType === 'PRESENT' ? true : false,
+                correctionStatus: correction.correctionType === 'PRESENT' ? 'PRESENT' : 'ON_LEAVE',
+                correctionApproved: true,
+                leaveType: correction.correctionType === 'ON_LEAVE' ? correction.leaveType : ''
+              };
+            }
+            return cls;
+          });
+
+          // If ALL subjects in the record are now corrected, update the overall status
+          const allClassesCorrected = record.classes.every(cls => cls.correctionApproved);
+          if (allClassesCorrected) {
+            record.status = correction.correctionType;
+            if (correction.correctionType === 'ON_LEAVE') {
+              record.leaveType = correction.leaveType;
+            }
           }
         }
         
