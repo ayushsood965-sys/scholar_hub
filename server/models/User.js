@@ -90,6 +90,7 @@ const userSchema = new mongoose.Schema(
       committees: { type: mongoose.Schema.Types.Mixed, default: [] },
       projects: { type: mongoose.Schema.Types.Mixed, default: [] },
       publications: { type: mongoose.Schema.Types.Mixed, default: [] },
+      ipr: { type: mongoose.Schema.Types.Mixed, default: [] },
       privacySettings: {
         type: mongoose.Schema.Types.Mixed,
         default: {

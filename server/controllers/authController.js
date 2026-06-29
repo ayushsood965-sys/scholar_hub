@@ -216,6 +216,7 @@ const updateProfile = async (req, res) => {
     user.profileCompleted = true;
     user.markModified('profile');
     user.markModified('profile.qualifications');
+    user.markModified('profile.ipr');
     await user.save();
 
     // Resolve departmentId for client-side filtering

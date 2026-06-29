@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2 } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -5765,7 +5765,74 @@ const ProfileTab = () => {
   const [guideUnlocked, setGuideUnlocked] = useState(false);
   const theme = useThemeStyles();
 
-  // Fetch fresh user data from server on mount to avoid stale localStorage cache
+  // ── Milestone sidebar state & refs ──
+  const [activeSection, setActiveSection] = useState('personal');
+  const sectionRefs = {
+    personal: React.useRef(null),
+    education: React.useRef(null),
+    supervisor: React.useRef(null)
+  };
+  const milestonePlaceholderRef = React.useRef(null);
+  const mobileBarRef = React.useRef(null);
+  const isAutoScrollingRef = React.useRef(false);
+
+  const milestoneItems = [
+    { key: 'personal', label: 'Personal Info', Icon: User },
+    { key: 'education', label: 'Academic Qualifications', Icon: BookOpen },
+    { key: 'supervisor', label: 'Supervisor Preference', Icon: UserCheck }
+  ];
+
+  const profileLayoutCSS = `
+    .profile-layout-container { display:flex; gap:28px; max-width:1280px; margin:0 auto; padding:12px; position:relative; }
+    .card.active-card { border-color:#133A26 !important; box-shadow:0 6px 20px rgba(19,58,38,0.12) !important; }
+    .timeline-sidebar-panel { width:260px; flex-shrink:0; display:block; }
+    .profile-details-column { flex:1; display:flex; flex-direction:column; gap:24px; min-width:0; }
+    .mobile-milestones-bar { display:none; }
+    .mobile-milestone-link { display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 12px; background:none; border:none; color:#64748b; font-size:0.72rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.2s; flex-shrink:0; }
+    .mobile-milestone-link.active { color:#133A26; position:relative; }
+    .mobile-milestone-link.active::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:#133A26; border-radius:3px; }
+    @media (max-width:1024px) {
+      .timeline-sidebar-panel { display:none; }
+      .mobile-milestones-bar { display:flex; position:sticky; top:64px; background:#fff; border-bottom:1px solid #e5e7eb; padding:0 16px; gap:16px; overflow-x:auto; z-index:100; margin:-12px -12px 16px -12px; scroll-behavior:smooth; }
+    }
+  `;
+
+  const scrollToSection = (key) => {
+    setActiveSection(key);
+    isAutoScrollingRef.current = true;
+    sectionRefs[key].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => { isAutoScrollingRef.current = false; }, 850);
+  };
+
+  // Highlight active card border
+  useEffect(() => {
+    Object.entries(sectionRefs).forEach(([key, ref]) => {
+      if (ref.current) {
+        ref.current.classList.toggle('active-card', key === activeSection);
+      }
+    });
+  }, [activeSection]);
+
+  // Click on a section card sets it active
+  useEffect(() => {
+    const listeners = [];
+    Object.entries(sectionRefs).forEach(([key, ref]) => {
+      if (ref.current) {
+        const h = () => setActiveSection(key);
+        ref.current.addEventListener('click', h);
+        listeners.push({ el: ref.current, h });
+      }
+    });
+    return () => listeners.forEach(({ el, h }) => el.removeEventListener('click', h));
+  }, []);
+
+  // Auto-scroll mobile bar
+  useEffect(() => {
+    if (mobileBarRef.current) {
+      const el = mobileBarRef.current.querySelector(`.mobile-milestone-link[data-key="${activeSection}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeSection]);
   useEffect(() => {
     fetchMe();
   }, []);
@@ -7089,7 +7156,9 @@ const ProfileTab = () => {
   const canProceedToGuide = class10Saved && class12Saved;
 
   return (
-    <div className="card" style={{ maxWidth: 850, margin: '0 auto', padding: '24px' }}>
+    <div style={{ padding: '24px', position: 'relative' }}>
+      <style>{profileLayoutCSS}</style>
+
       {/* Dynamic Profile Registration Status Banner */}
       {!thesis ? (
         <div style={{
@@ -7221,101 +7290,129 @@ const ProfileTab = () => {
         </div>
       </div>
 
-      {/* Internal Navigation Tabs */}
-      <div style={{ display: 'flex', borderBottom: '2px solid #F3F4F6', gap: '16px', marginBottom: '24px' }}>
-        <button 
-          onClick={() => setSubTab('general')}
-          style={{ 
-            padding: '10px 16px', 
-            fontSize: '0.9rem', 
-            fontWeight: 600, 
-            background: 'none', 
-            border: 'none', 
-            borderBottom: subTab === 'general' ? '3px solid #133A26' : '3px solid transparent', 
-            color: subTab === 'general' ? '#133A26' : '#6B7280', 
-            cursor: 'pointer', 
-            transition: 'all 0.2s' 
-          }}
-        >
-          👤 General Information
-        </button>
-        {(thesis || isGeneralInfoComplete()) ? (
-          <button 
-            onClick={() => setSubTab('academic')}
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: subTab === 'academic' ? '3px solid #133A26' : '3px solid transparent', 
-              color: subTab === 'academic' ? '#133A26' : '#6B7280', 
-              cursor: 'pointer', 
-              transition: 'all 0.2s' 
-            }}
-          >
-            🎓 Academic Qualifications
-          </button>
-        ) : (
-          <button 
-            disabled
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: '3px solid transparent', 
-              color: '#9CA3AF', 
-              cursor: 'not-allowed', 
-              opacity: 0.6
-            }}
-            title="Complete and save General Information to unlock"
-          >
-            🔒 Academic Qualifications
-          </button>
-        )}
-        {(thesis || guideUnlocked || (isGeneralInfoComplete() && isAcademicQualificationsComplete())) ? (
-          <button 
-            onClick={() => setSubTab('guide')}
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: subTab === 'guide' ? '3px solid #133A26' : '3px solid transparent', 
-              color: subTab === 'guide' ? '#133A26' : '#6B7280', 
-              cursor: 'pointer', 
-              transition: 'all 0.2s' 
-            }}
-          >
-            🤝 Preferred Guide Preference
-          </button>
-        ) : (
-          <button 
-            disabled
-            style={{ 
-              padding: '10px 16px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              background: 'none', 
-              border: 'none', 
-              borderBottom: '3px solid transparent', 
-              color: '#9CA3AF', 
-              cursor: 'not-allowed', 
-              opacity: 0.6
-            }}
-            title="Complete and save all Academic Qualifications to unlock"
-          >
-            🔒 Preferred Guide Preference
-          </button>
-        )}
-      </div>
+      {/* Main Split Layout Container */}
+      <div className="profile-layout-container">
 
-      <form onSubmit={subTab === 'academic' ? handleSaveAcademicDetails : handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* --- Tab 1: General Information --- */}
-        {subTab === 'general' && (
+        {/* Left Side: Milestones Sidebar Panel */}
+        <div className="timeline-sidebar-panel">
+          <div style={{
+            position: 'sticky',
+            top: '92px',
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '20px 16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+          }}>
+            <h4 style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: 700, marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+              Profile Progress
+            </h4>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+              {/* Stepper Vertical Track */}
+              <div style={{
+                position: 'absolute',
+                left: '15px',
+                top: '12px',
+                bottom: '12px',
+                width: '2px',
+                background: '#e2e8f0'
+              }} />
+
+              {milestoneItems.map((item) => {
+                const isActive = activeSection === item.key;
+                const isCompleted = !!thesis ||
+                  (item.key === 'personal' && isGeneralInfoComplete()) ||
+                  (item.key === 'education' && isAcademicQualificationsComplete()) ||
+                  (item.key === 'supervisor' && preferredGuideId);
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => scrollToSection(item.key)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '4px 0',
+                      outline: 'none',
+                      zIndex: 2
+                    }}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: isActive ? '#133A26' : isCompleted ? '#e6f4ea' : '#f8fafc',
+                      border: `2px solid ${isActive ? '#133A26' : isCompleted ? '#10b981' : '#cbd5e1'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: isActive ? '#ffffff' : isCompleted ? '#10b981' : '#64748b',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      transition: 'all 0.25s'
+                    }}>
+                      <item.Icon size={14} />
+                    </div>
+                    <div>
+                      <span style={{
+                        display: 'block',
+                        fontSize: '0.82rem',
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? '#133A26' : '#475569',
+                        transition: 'all 0.25s'
+                      }}>
+                        {item.label}
+                      </span>
+                      <span style={{
+                        display: 'block',
+                        fontSize: '0.7rem',
+                        color: isCompleted ? '#10b981' : '#94a3b8'
+                      }}>
+                        {isCompleted ? 'Completed' : 'Pending'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Scrollable Details Cards */}
+        <div className="profile-details-column">
+
+          <div ref={milestonePlaceholderRef} />
+
+          {/* Sticky Mobile Sub-navbar */}
+          <div className="mobile-milestones-bar" ref={mobileBarRef}>
+            {milestoneItems.map((item) => {
+              const isActive = activeSection === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  data-key={item.key}
+                  className={`mobile-milestone-link ${isActive ? 'active' : ''}`}
+                  onClick={() => scrollToSection(item.key)}
+                >
+                  <item.Icon size={16} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+      <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* --- Section 1: Personal Info --- */}
+        <div ref={sectionRefs.personal} className="card" style={{ padding: '24px', border: '1px solid #e5e7eb', borderRadius: '12px', transition: 'all 0.3s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Personal Details</h3>
@@ -7601,10 +7698,24 @@ const ProfileTab = () => {
               </>
             )}
           </div>
-        )}
+          {/* Bottom action for personal section */}
+          {!thesis && editModes.general && (
+            <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{ background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
+              >
+                {loading ? 'Saving Changes...' : '💾 Save General Info'}
+              </button>
+            </div>
+          )}
+        </div>
 
-        {/* --- Tab 2: Academic Qualifications --- */}
-        {subTab === 'academic' && (
+        {/* --- Section 2: Academic Qualifications --- */}
+        <div ref={sectionRefs.education} className="card" style={{ padding: '24px', border: '1px solid #e5e7eb', borderRadius: '12px', transition: 'all 0.3s' }}>
+          <form onSubmit={handleSaveAcademicDetails}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* Class 10 Card */}
@@ -8557,10 +8668,11 @@ const ProfileTab = () => {
               </div>
             )}
           </div>
-        )}
+          </form>
+        </div>
 
-        {/* --- Tab 3: Preferred Guide Selection --- */}
-        {subTab === 'guide' && (
+        {/* --- Section 3: Preferred Guide Selection --- */}
+        <div ref={sectionRefs.supervisor} className="card" style={{ padding: '24px', border: '1px solid #e5e7eb', borderRadius: '12px', transition: 'all 0.3s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: '0 0 8px 0' }}>Advisor & Guide Preference of {user?.department}</h3>
             <p style={{ fontSize: '0.85rem', color: '#4B5563', margin: '0 0 12px 0' }}>
@@ -8594,97 +8706,54 @@ const ProfileTab = () => {
               </div>
             )}
           </div>
-        )}
-        <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #E5E7EB' }}>
-          {/* If thesis is submitted and pending, show pending badge */}
-          {thesis && thesis.status === 'REGISTRATION_PENDING' && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 700, padding: '10px 16px' }}>
-              ⏳ Awaiting HOD Verification
-            </div>
-          )}
 
-          {/* Onboarding mode (no thesis submitted yet) */}
-          {!thesis && (
-            <>
-              {/* General Tab Bottom Buttons */}
-              {subTab === 'general' && (
-                <>
-                  {editModes.general ? (
-                    <button 
-                      type="submit" 
-                      disabled={loading} 
-                      className="btn-primary" 
-                      style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                    >
-                      {loading ? 'Saving Changes...' : '💾 Save General Info'}
-                    </button>
-                  ) : (
-                    isGeneralInfoComplete() && (
-                      <button 
-                        type="button"
-                        onClick={() => setSubTab('academic')}
-                        className="btn-primary" 
-                        style={{ flex: 1, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
-                      >
-                        Move to next step: Academic Qualifications ➔
-                      </button>
-                    )
-                  )}
-                </>
-              )}
-
-              {/* Academic Tab Bottom Buttons */}
-              {subTab === 'academic' && (
-                isAcademicQualificationsComplete() && (
-                  <button 
-                    type="button"
-                    onClick={() => setSubTab('guide')}
-                    className="btn-primary" 
-                    style={{ flex: 1, background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
-                  >
-                    Move to next step: Preferred Guide Selection ➔
-                  </button>
-                )
-              )}
-
-              {/* Guide Tab Bottom Buttons */}
-              {subTab === 'guide' && (
-                <>
-                  <button 
-                    type="submit" 
-                    disabled={loading} 
-                    className="btn-primary" 
-                    style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                  >
-                    {loading ? 'Saving Changes...' : '💾 Save Guide Preference'}
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={registering || !preferredGuideId}
-                    onClick={handleProfileRegistrationSubmit}
-                    className="btn-primary" 
-                    style={{ 
-                      flex: 1.2, 
-                      background: preferredGuideId ? '#059669' : '#9CA3AF', 
-                      color: 'white',
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      gap: '8px', 
-                      border: 'none', 
-                      cursor: preferredGuideId ? 'pointer' : 'not-allowed',
-                      boxShadow: preferredGuideId ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : 'none' 
-                    }}
-                    title={!preferredGuideId ? "Please select a preferred supervisor/guide to enable submission" : ""}
-                  >
-                    {registering ? 'Submitting...' : '🚀 Submit PhD Profile for HOD Approval'}
-                  </button>
-                </>
-              )}
-            </>
-          )}
+          {/* Guide section bottom actions */}
+          <div style={{ display: 'flex', gap: '16px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
+            {thesis && thesis.status === 'REGISTRATION_PENDING' && (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 700, padding: '10px 16px' }}>
+                ⏳ Awaiting HOD Verification
+              </div>
+            )}
+            {!thesis && (
+              <>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleUpdate}
+                  className="btn-primary"
+                  style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  {loading ? 'Saving Changes...' : '💾 Save Guide Preference'}
+                </button>
+                <button
+                  type="button"
+                  disabled={registering || !preferredGuideId}
+                  onClick={handleProfileRegistrationSubmit}
+                  className="btn-primary"
+                  style={{
+                    flex: 1.2,
+                    background: preferredGuideId ? '#059669' : '#9CA3AF',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    border: 'none',
+                    cursor: preferredGuideId ? 'pointer' : 'not-allowed',
+                    boxShadow: preferredGuideId ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : 'none'
+                  }}
+                  title={!preferredGuideId ? 'Please select a preferred supervisor/guide to enable submission' : ''}
+                >
+                  {registering ? 'Submitting...' : '🚀 Submit PhD Profile for HOD Approval'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
       </form>
+        </div>
+      </div>
     </div>
   );
 };

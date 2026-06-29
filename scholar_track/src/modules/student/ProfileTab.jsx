@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { API_BASE_URL } from '../../config';
 import { motion } from 'framer-motion';
 import useApi from '../../hooks/useApi';
@@ -852,6 +852,327 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const isSubmitted = !!thesis || !!profile?.profileCompleted;
   const isVerifiedPhD = thesis && thesis.enrollmentVerified === true;
 
+  // Active section track & timeline navigation refs
+  const [activeSection, setActiveSection] = useState('personal');
+  const sectionRefs = {
+    personal: useRef(null),
+    education: useRef(null),
+    supervisor: useRef(null)
+  };
+  const mobileBarRef = useRef(null);
+  const milestonePlaceholderRef = useRef(null);
+  const [isStuck, setIsStuck] = useState(false);
+  const isAutoScrollingRef = useRef(false);
+  const lastWheelTimeRef = useRef(0);
+
+  const milestoneItems = [
+    { key: 'personal', label: 'Personal Info', Icon: User },
+    { key: 'education', label: 'Academic Qualifications', Icon: BookOpen }
+  ];
+  if (isPhD) {
+    milestoneItems.push({ key: 'supervisor', label: 'Supervisor Preference', Icon: UserCheck });
+  }
+
+  const responsiveStyles = `
+    .profile-layout-container {
+      display: flex;
+      gap: 28px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 12px;
+      position: relative;
+    }
+
+    .card, .clay-card, .glass-transparent {
+      transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+      border: 2px solid #e5e7eb !important;
+    }
+
+    .card.active-card, .clay-card.active-card, .glass-transparent.active-card {
+      border-color: #1A5A3B !important;
+      box-shadow: 0 6px 20px rgba(26, 90, 59, 0.12) !important;
+    }
+    
+    .timeline-sidebar-panel {
+      width: 260px;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .profile-details-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      min-width: 0;
+    }
+
+    .mobile-milestones-bar {
+      display: none;
+    }
+
+    .mobile-milestone-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    .mobile-milestone-link.active {
+      color: #1A5A3B;
+      position: relative;
+    }
+
+    .mobile-milestone-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #1A5A3B;
+      border-radius: 3px;
+    }
+
+    @media (max-width: 1024px) {
+      .timeline-sidebar-panel {
+        display: none;
+      }
+      
+      .mobile-milestones-bar {
+        display: flex;
+        position: sticky;
+        top: 68px;
+        background: #ffffff;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 0 16px;
+        gap: 16px;
+        overflow-x: auto;
+        z-index: 100;
+        margin: -12px -12px 16px -12px;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .mobile-milestones-bar.is-stuck {
+        position: fixed;
+        left: 0;
+        right: 0;
+        width: 100%;
+        margin: 0;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      }
+    }
+  `;
+
+  // Dynamic Scroll Sentinel & Snap Scroll Hook
+  useEffect(() => {
+    let touchStartY = 0;
+
+    const checkSticky = () => {
+      if (milestonePlaceholderRef.current) {
+        const rect = milestonePlaceholderRef.current.getBoundingClientRect();
+        // Sticky boundary in ScholarTrack is 68px from viewport top
+        setIsStuck(rect.top <= 68);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const keys = isPhD ? ['personal', 'education', 'supervisor'] : ['personal', 'education'];
+        const currentIndex = keys.indexOf(activeSection);
+        
+        let nextIndex = currentIndex;
+        if (e.key === 'ArrowDown') {
+          nextIndex = Math.min(currentIndex + 1, keys.length - 1);
+        } else if (e.key === 'ArrowUp') {
+          nextIndex = Math.max(currentIndex - 1, 0);
+        }
+        
+        if (nextIndex !== currentIndex) {
+          const nextKey = keys[nextIndex];
+          scrollToSection(nextKey);
+        }
+      }
+    };
+
+    const handleWheel = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current < 900) {
+        e.preventDefault();
+        return;
+      }
+
+      const keys = isPhD ? ['personal', 'education', 'supervisor'] : ['personal', 'education'];
+      const currentIndex = keys.indexOf(activeSection);
+      
+      let nextIndex = currentIndex;
+      if (e.deltaY > 0) {
+        nextIndex = Math.min(currentIndex + 1, keys.length - 1);
+      } else if (e.deltaY < 0) {
+        nextIndex = Math.max(currentIndex - 1, 0);
+      }
+      
+      if (nextIndex !== currentIndex) {
+        e.preventDefault();
+        lastWheelTimeRef.current = now;
+        const nextKey = keys[nextIndex];
+        scrollToSection(nextKey);
+      }
+    };
+
+    const handleTouchStart = (e) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffY = touchStartY - touchEndY;
+      
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current < 900) {
+        return;
+      }
+      
+      if (Math.abs(diffY) > 50) {
+        const keys = isPhD ? ['personal', 'education', 'supervisor'] : ['personal', 'education'];
+        const currentIndex = keys.indexOf(activeSection);
+        
+        let nextIndex = currentIndex;
+        if (diffY > 0) {
+          nextIndex = Math.min(currentIndex + 1, keys.length - 1);
+        } else {
+          nextIndex = Math.max(currentIndex - 1, 0);
+        }
+        
+        if (nextIndex !== currentIndex) {
+          lastWheelTimeRef.current = now;
+          const nextKey = keys[nextIndex];
+          scrollToSection(nextKey);
+        }
+      }
+    };
+
+    checkSticky();
+
+    const dashboardArea = document.querySelector('.dashboard-area');
+    if (dashboardArea) {
+      dashboardArea.addEventListener('scroll', checkSticky);
+      dashboardArea.addEventListener('wheel', handleWheel, { passive: false });
+      dashboardArea.addEventListener('touchstart', handleTouchStart, { passive: true });
+      dashboardArea.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+    window.addEventListener('scroll', checkSticky);
+    window.addEventListener('resize', checkSticky);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      if (dashboardArea) {
+        dashboardArea.removeEventListener('scroll', checkSticky);
+        dashboardArea.removeEventListener('wheel', handleWheel);
+        dashboardArea.removeEventListener('touchstart', handleTouchStart);
+        dashboardArea.removeEventListener('touchend', handleTouchEnd);
+      }
+      window.removeEventListener('scroll', checkSticky);
+      window.removeEventListener('resize', checkSticky);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [activeSection, isPhD]);
+
+  // Auto-scroll mobile milestones navigation row to keep active tab centered
+  useEffect(() => {
+    if (activeSection && mobileBarRef.current) {
+      const activeEl = mobileBarRef.current.querySelector(`.mobile-milestone-link[data-key="${activeSection}"]`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeSection]);
+
+  // Synchronize active-card highlighting border on activeSection change
+  useEffect(() => {
+    Object.entries(sectionRefs).forEach(([key, ref]) => {
+      if (ref.current) {
+        if (key === activeSection) {
+          ref.current.classList.add('active-card');
+        } else {
+          ref.current.classList.remove('active-card');
+        }
+      }
+    });
+  }, [activeSection]);
+
+  // Bind click event listeners to section elements to set activeSection on click
+  useEffect(() => {
+    const clickListeners = [];
+    Object.entries(sectionRefs).forEach(([key, ref]) => {
+      if (ref.current) {
+        const handler = () => {
+          setActiveSection(key);
+        };
+        ref.current.addEventListener('click', handler);
+        clickListeners.push({ element: ref.current, handler });
+      }
+    });
+
+    return () => {
+      clickListeners.forEach(({ element, handler }) => {
+        element.removeEventListener('click', handler);
+      });
+    };
+  }, []);
+
+  const scrollToSection = (key) => {
+    setActiveSection(key);
+    isAutoScrollingRef.current = true;
+    sectionRefs[key].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => {
+      isAutoScrollingRef.current = false;
+    }, 850);
+  };
+
   const filteredDegreeTypes = isVerifiedPhD 
     ? degreeTypes.filter(t => t.code === 'PHD' || t.name?.toLowerCase().includes('phd'))
     : degreeTypes;
@@ -917,7 +1238,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const canProceedToGuide = class10Saved && class12Saved;
 
   return (
-    <div className="glass-transparent p-xl">
+    <div style={{ padding: '24px', position: 'relative' }}>
+      <style>{responsiveStyles}</style>
+
       {/* Registration/Verification Status Banner */}
       <div style={{ marginBottom: '24px' }}>
         {isPhD ? (
@@ -949,43 +1272,43 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
               <div style={{
                 background: 'rgba(245, 158, 11, 0.1)',
                 border: '1px solid rgba(245, 158, 11, 0.25)',
-                borderLeft: '4px solid var(--status-late)',
+                borderLeft: '4px solid #F59E0B',
                 padding: '16px',
                 borderRadius: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px'
               }}>
-                <RefreshCw className="spin-animation" style={{ color: 'var(--status-late)', flexShrink: 0 }} />
+                <RefreshCw className="animate-spin" style={{ color: '#F59E0B', flexShrink: 0 }} />
                 <div>
-                  <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                    Awaiting HOD Verification & Approval
+                  <strong style={{ color: '#F59E0B', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Registration Pending Approval
                   </strong>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                    Your profile dossier has been successfully submitted. Once your department HOD assigns your supervisor and approves, your portal will unlock.
+                    Your registration dossier has been submitted and is pending verification/approval by the Department HOD.
                   </p>
                 </div>
               </div>
             )}
 
-            {thesis && thesis.status !== 'REGISTRATION_PENDING' && (
+            {thesis && thesis.status === 'APPROVED' && (
               <div style={{
                 background: 'rgba(16, 185, 129, 0.1)',
                 border: '1px solid rgba(16, 185, 129, 0.25)',
-                borderLeft: '4px solid var(--status-present)',
+                borderLeft: '4px solid #10B981',
                 padding: '16px',
                 borderRadius: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px'
               }}>
-                <ShieldCheck style={{ color: 'var(--status-present)', flexShrink: 0 }} />
+                <ShieldCheck style={{ color: '#10B981', flexShrink: 0 }} />
                 <div>
-                  <strong style={{ color: 'var(--status-present)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                    Dossier Approved & Verified
+                  <strong style={{ color: '#10B981', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Registration Approved
                   </strong>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                    Institutional PhD Registration verified. Assigned Supervisor: <strong>{thesis.supervisorId?.name || 'Assigned'}</strong>.
+                    Congratulations! Your Ph.D. registration is officially approved. You can now log/track your milestones.
                   </p>
                 </div>
               </div>
@@ -993,7 +1316,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           </>
         ) : (
           <>
-            {!profile?.profileCompleted && (
+            {!profile?.profileCompleted ? (
               <div style={{
                 background: 'rgba(245, 158, 11, 0.1)',
                 border: '1px solid rgba(245, 158, 11, 0.25)',
@@ -1010,53 +1333,28 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     Profile Completion Required
                   </strong>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                    Please complete the General and Academic details sections below and click <strong>Submit Profile for HOD Verification</strong>.
+                    Please complete your profile details and submit them for HOD verification.
                   </p>
                 </div>
               </div>
-            )}
-
-            {profile?.profileCompleted && !profile?.isVerified && (
-              <div style={{
-                background: 'rgba(245, 158, 11, 0.1)',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                borderLeft: '4px solid var(--status-late)',
-                padding: '16px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <RefreshCw className="spin-animation" style={{ color: 'var(--status-late)', flexShrink: 0 }} />
-                <div>
-                  <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                    Awaiting HOD Verification
-                  </strong>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                    Your profile has been submitted for HOD verification. Once verified, your portal will unlock.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {profile?.profileCompleted && profile?.isVerified && (
+            ) : (
               <div style={{
                 background: 'rgba(16, 185, 129, 0.1)',
                 border: '1px solid rgba(16, 185, 129, 0.25)',
-                borderLeft: '4px solid var(--status-present)',
+                borderLeft: '4px solid #10B981',
                 padding: '16px',
                 borderRadius: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px'
               }}>
-                <ShieldCheck style={{ color: 'var(--status-present)', flexShrink: 0 }} />
+                <ShieldCheck style={{ color: '#10B981', flexShrink: 0 }} />
                 <div>
-                  <strong style={{ color: 'var(--status-present)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                    Profile Verified by HOD
+                  <strong style={{ color: '#10B981', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Profile Verified / Submitted
                   </strong>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                    Your profile has been successfully verified by the HOD.
+                    Your profile details have been submitted and verified.
                   </p>
                 </div>
               </div>
@@ -1065,70 +1363,135 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         )}
       </div>
 
-      {/* Header and edit/save control for Non-PhD OR PhD toggles */}
-      <div className="flex justify-between items-center mb-lg">
-        <div>
-          <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Academic Profile</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Manage your registration fields and credentials.</p>
-        </div>
+      {/* Main Split Layout Container */}
+      <div className="profile-layout-container">
         
-      </div>
+        {/* Left Side: Milestones Sidebar Panel */}
+        <div className="timeline-sidebar-panel">
+          <div style={{
+            position: 'sticky',
+            top: '92px',
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '20px 16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+          }}>
+            <h4 style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: 700, marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+              Profile Progress
+            </h4>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+              {/* Stepper Vertical Track */}
+              <div style={{
+                position: 'absolute',
+                left: '15px',
+                top: '12px',
+                bottom: '12px',
+                width: '2px',
+                background: '#e2e8f0'
+              }} />
 
-      <div>
-        <div>
-          {/* Sub Tab Header */}
-          <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--color-border-solid)', marginBottom: '24px', paddingBottom: '12px' }}>
-            <button 
-              className={`tab-btn ${subTab === 'general' ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', color: subTab === 'general' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'general' ? 'bold' : '500', cursor: 'pointer' }}
-              onClick={() => setSubTab('general')}
-            >
-              1. General Details
-            </button>
-            {(thesis || profile?.profileCompleted || isGeneralInfoComplete()) ? (
-              <button 
-                className={`tab-btn ${subTab === 'academic' ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', color: subTab === 'academic' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'academic' ? 'bold' : '500', cursor: 'pointer' }}
-                onClick={() => setSubTab('academic')}
-              >
-                2. Academic Qualifications
-              </button>
-            ) : (
-              <button 
-                disabled
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted, #9CA3AF)', fontWeight: '500', cursor: 'not-allowed', opacity: 0.6 }}
-                title="Complete and save General Details to unlock"
-              >
-                🔒 2. Academic Qualifications
-              </button>
-            )}
-            {isPhD && (
-              (thesis || guideUnlocked || (isGeneralInfoComplete() && isAcademicQualificationsComplete())) ? (
-                <button 
-                  className={`tab-btn ${subTab === 'guide' ? 'active' : ''}`}
-                  style={{ background: 'none', border: 'none', color: subTab === 'guide' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'guide' ? 'bold' : '500', cursor: 'pointer' }}
-                  onClick={() => setSubTab('guide')}
+              {milestoneItems.map((item) => {
+                const isActive = activeSection === item.key;
+                const isCompleted = isSubmitted || 
+                  (item.key === 'personal' && isGeneralInfoComplete()) ||
+                  (item.key === 'education' && isAcademicQualificationsComplete()) ||
+                  (item.key === 'supervisor' && preferredGuideId);
+                  
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => scrollToSection(item.key)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '4px 0',
+                      outline: 'none',
+                      zIndex: 2
+                    }}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: isActive ? '#1A5A3B' : isCompleted ? '#e6f4ea' : '#f8fafc',
+                      border: `2px solid ${isActive ? '#1A5A3B' : isCompleted ? '#10b981' : '#cbd5e1'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: isActive ? '#ffffff' : isCompleted ? '#10b981' : '#64748b',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      transition: 'all 0.25s'
+                    }}>
+                      <item.Icon size={14} />
+                    </div>
+                    <div>
+                      <span style={{
+                        display: 'block',
+                        fontSize: '0.82rem',
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? '#1A5A3B' : '#475569',
+                        transition: 'all 0.25s'
+                      }}>
+                        {item.label}
+                      </span>
+                      <span style={{
+                        display: 'block',
+                        fontSize: '0.7rem',
+                        color: isCompleted ? '#10b981' : '#94a3b8'
+                      }}>
+                        {isCompleted ? 'Completed' : 'Pending'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Scrollable Details Cards */}
+        <div className="profile-details-column">
+          
+          <div ref={milestonePlaceholderRef} />
+
+          {/* Sticky Mobile Sub-navbar */}
+          <div className={`mobile-milestones-bar ${isStuck ? 'is-stuck' : ''}`} ref={mobileBarRef}>
+            {milestoneItems.map((item) => {
+              const isActive = activeSection === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  data-key={item.key}
+                  className={`mobile-milestone-link ${isActive ? 'active' : ''}`}
+                  onClick={() => scrollToSection(item.key)}
                 >
-                  3. Advisor Preference
+                  <item.Icon size={16} />
+                  <span>{item.label}</span>
                 </button>
-              ) : (
-                <button 
-                  disabled
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted, #9CA3AF)', fontWeight: '500', cursor: 'not-allowed', opacity: 0.6 }}
-                  title="Complete academic qualifications to unlock"
-                >
-                  🔒 3. Advisor Preference
-                </button>
-              )
-            )}
+              );
+            })}
           </div>
 
-          <form onSubmit={e => { e.preventDefault(); saveSection(subTab); }}>
-            {/* TAB 1: General Details */}
-            {subTab === 'general' && (
-              <div>
+          <form onSubmit={e => { e.preventDefault(); }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* SECTION 1: Personal Info */}
+              <div ref={sectionRefs.personal} className="card p-lg clay-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>PhD Admission & Personal Fields</h3>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: 'var(--text-primary)', margin: 0 }}>
+                    <User style={{ color: 'var(--color-primary)' }} /> 1. Personal & Admission Info
+                  </h3>
                   {!isSubmitted && !editModes.general && (
                     <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
                       ✏️ Edit General Info
@@ -1199,9 +1562,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                           const selectedType = degreeTypes.find(t => t._id === selectedId);
                           const isSelectedPhD = selectedType ? (selectedType.code === 'PHD' || selectedType.name?.toLowerCase().includes('phd')) : false;
                           setIsPhD(isSelectedPhD);
-                          if (!isSelectedPhD && subTab === 'guide') {
-                            setSubTab('general');
-                          }
                         }}
                         disabled={isVerifiedPhD}
                       >
@@ -1380,449 +1740,468 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* TAB 2: Academic Qualifications */}
-            {subTab === 'academic' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* 10th */}
-                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ color: 'var(--text-primary)' }}>Class 10th / Secondary Details</h4>
-                    {getDocBadge('class10', profile?.profile?.qualifications?.class10?.certificateUrl)}
-                  </div>
-                  {!editModes.class10 ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <div>Roll: <strong>{class10Roll}</strong> | Board: <strong>{class10Board}</strong> | School: <strong>{class10School}</strong> | Marks: <strong>{class10Marks}/{class10Total}</strong> ({class10Percentage}%)</div>
-                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class10: true})}>Edit</button>}
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
-                        <input className="form-input" placeholder="Roll No" value={class10Roll} onChange={e => setClass10Roll(e.target.value)} />
-                        <input className="form-input" placeholder="Board" value={class10Board} onChange={e => setClass10Board(e.target.value)} />
-                        <input className="form-input" placeholder="School" value={class10School} onChange={e => setClass10School(e.target.value)} />
-                        <input className="form-input" placeholder="Marks" type="number" value={class10Marks} onChange={e => setClass10Marks(e.target.value)} />
-                        <input className="form-input" placeholder="Total Marks" type="number" value={class10Total} onChange={e => setClass10Total(e.target.value)} />
-                        <input className="form-input" placeholder="%" value={class10Percentage} onChange={e => setClass10Percentage(e.target.value)} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
-                        {getUploadButton('class10', profile?.profile?.qualifications?.class10?.certificateUrl)}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.class10?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('class10')}>Cancel</button>}
-                          <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('class10')}>Save Class 10</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 12th */}
-                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ color: 'var(--text-primary)' }}>Class 12th / Higher Secondary Details</h4>
-                    {getDocBadge('class12', profile?.profile?.qualifications?.class12?.certificateUrl)}
-                  </div>
-                  {!editModes.class12 ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <div>Roll: <strong>{class12Roll}</strong> | Board: <strong>{class12Board}</strong> | School: <strong>{class12School}</strong> | Marks: <strong>{class12Marks}/{class12Total}</strong> ({class12Percentage}%)</div>
-                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class12: true})}>Edit</button>}
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
-                        <input className="form-input" placeholder="Roll No" value={class12Roll} onChange={e => setClass12Roll(e.target.value)} />
-                        <input className="form-input" placeholder="Board" value={class12Board} onChange={e => setClass12Board(e.target.value)} />
-                        <input className="form-input" placeholder="School" value={class12School} onChange={e => setClass12School(e.target.value)} />
-                        <input className="form-input" placeholder="Marks" type="number" value={class12Marks} onChange={e => setClass12Marks(e.target.value)} />
-                        <input className="form-input" placeholder="Total Marks" type="number" value={class12Total} onChange={e => setClass12Total(e.target.value)} />
-                        <input className="form-input" placeholder="%" value={class12Percentage} onChange={e => setClass12Percentage(e.target.value)} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
-                        {getUploadButton('class12', profile?.profile?.qualifications?.class12?.certificateUrl)}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.class12?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('class12')}>Cancel</button>}
-                          <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('class12')}>Save Class 12</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Graduation */}
-                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ color: 'var(--text-primary)' }}>Graduation Details</h4>
-                    {getDocBadge('graduation', profile?.profile?.qualifications?.graduation?.certificateUrl)}
-                  </div>
-                  {!editModes.graduation ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <div>Roll: <strong>{gradRoll}</strong> | Degree: <strong>{gradDegree}</strong> | College: <strong>{gradCollege} ({gradUniversity})</strong> | Marks: <strong>{gradMarks}/{gradTotal}</strong> ({gradPercentage}%)</div>
-                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, graduation: true})}>Edit</button>}
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                        <input className="form-input" placeholder="Roll No" value={gradRoll} onChange={e => setGradRoll(e.target.value)} />
-                        <input className="form-input" placeholder="Degree (e.g. B.Tech)" value={gradDegree} onChange={e => setGradDegree(e.target.value)} />
-                        <input className="form-input" placeholder="College" value={gradCollege} onChange={e => setGradCollege(e.target.value)} />
-                        <input className="form-input" placeholder="University" value={gradUniversity} onChange={e => setGradUniversity(e.target.value)} />
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                        <input className="form-input" placeholder="Marks / CGPA" type="number" step="0.01" value={gradMarks} onChange={e => setGradMarks(e.target.value)} />
-                        <input className="form-input" placeholder="Total Max Marks" type="number" step="0.01" value={gradTotal} onChange={e => setGradTotal(e.target.value)} />
-                        <input className="form-input" placeholder="Percentage / CGPA %" value={gradPercentage} onChange={e => setGradPercentage(e.target.value)} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
-                        {getUploadButton('graduation', profile?.profile?.qualifications?.graduation?.certificateUrl)}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.graduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('graduation')}>Cancel</button>}
-                          <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('graduation')}>Save Graduation</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* PG */}
-                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ color: 'var(--text-primary)' }}>Post Graduation Details</h4>
-                    {getDocBadge('postGraduation', profile?.profile?.qualifications?.postGraduation?.certificateUrl)}
-                  </div>
-                  {!editModes.postGraduation ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <div>Roll: <strong>{pgRoll}</strong> | Degree: <strong>{pgDegree}</strong> | College: <strong>{pgCollege} ({pgUniversity})</strong> | Marks: <strong>{pgMarks}/{pgTotal}</strong> ({pgPercentage}%)</div>
-                      {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, postGraduation: true})}>Edit</button>}
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                        <input className="form-input" placeholder="Roll No" value={pgRoll} onChange={e => setPgRoll(e.target.value)} />
-                        <input className="form-input" placeholder="Degree (e.g. M.Tech)" value={pgDegree} onChange={e => setPgDegree(e.target.value)} />
-                        <input className="form-input" placeholder="College" value={pgCollege} onChange={e => setPgCollege(e.target.value)} />
-                        <input className="form-input" placeholder="University" value={pgUniversity} onChange={e => setPgUniversity(e.target.value)} />
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                        <input className="form-input" placeholder="Marks / CGPA" type="number" step="0.01" value={pgMarks} onChange={e => setPgMarks(e.target.value)} />
-                        <input className="form-input" placeholder="Total Max Marks" type="number" step="0.01" value={pgTotal} onChange={e => setPgTotal(e.target.value)} />
-                        <input className="form-input" placeholder="Percentage / CGPA %" value={pgPercentage} onChange={e => setPgPercentage(e.target.value)} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
-                        {getUploadButton('postGraduation', profile?.profile?.qualifications?.postGraduation?.certificateUrl)}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {profile?.profile?.qualifications?.postGraduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('postGraduation')}>Cancel</button>}
-                          <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('postGraduation')}>Save Post Graduation</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Other Qualifications Card */}
-                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)', marginTop: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>Other Qualifications</h4>
-                  </div>
-                  
-                  {!editModes.otherQuals ? (
-                    <div>
-                      {otherQuals.length > 0 ? otherQuals.map((o, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '16px' }}>
-                          <div>
-                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Qualification Type</span>
-                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.type === 'Other' ? o.otherType : o.type || '—'}</strong>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
-                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.rollNo || '—'}</strong>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board / University</span>
-                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.board || '—'}</strong>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Institution / School</span>
-                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.school || '—'}</strong>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
-                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.marksObtained || '0'} / {o.totalMarks || '0'}</strong>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
-                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
-                          </div>
-                          <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-                            {getDocBadge(`otherQuals_${i}`, profile?.profile?.qualifications?.otherQuals?.[i]?.certificateUrl)}
-                          </div>
-                        </div>
-                      )) : (
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '16px' }}>No other qualifications added.</div>
-                      )}
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-                        <button
-                          className="btn btn-sm btn-outline"
-                          type="button"
-                          disabled={isSubmitted}
-                          onClick={() => !isSubmitted && setEditModes(prev => ({ ...prev, otherQuals: true }))}
-                        >
-                          ✏️ Edit / Add Other Qualifications
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      {otherQuals.map((o, i) => (
-                        <div key={i} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>Qualification #{i + 1}</strong>
-                            <button className="btn btn-sm btn-danger" type="button" onClick={() => handleRemoveRow('otherQuals', i)} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}>Remove</button>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                            <div className="form-group">
-                              <label className="form-label">Qualification Type</label>
-                              <select className="form-input" value={o.type || ''} onChange={e => { const updated = [...otherQuals]; updated[i].type = e.target.value; setOtherQuals(updated); }}>
-                                <option value="">Select Option...</option>
-                                <option value="Certificate">Certificate</option>
-                                <option value="Diploma">Diploma</option>
-                                <option value="Other">Other</option>
-                              </select>
-                            </div>
-                            {o.type === 'Other' && (
-                              <div className="form-group">
-                                <label className="form-label">Please Specify Qualification</label>
-                                <input type="text" className="form-input" placeholder="Specify..." value={o.otherType || ''} onChange={e => { const updated = [...otherQuals]; updated[i].otherType = e.target.value; setOtherQuals(updated); }} />
-                              </div>
-                            )}
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                            <div className="form-group">
-                              <label className="form-label">Roll Number</label>
-                              <input type="text" className="form-input" placeholder="Roll Number" value={o.rollNo || ''} onChange={e => { const updated = [...otherQuals]; updated[i].rollNo = e.target.value; setOtherQuals(updated); }} />
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">Board / University</label>
-                              <input type="text" className="form-input" placeholder="e.g. CBSE / Delhi University" value={o.board || ''} onChange={e => { const updated = [...otherQuals]; updated[i].board = e.target.value; setOtherQuals(updated); }} />
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">Institution / School Name</label>
-                              <input type="text" className="form-input" placeholder="Institution Name" value={o.school || ''} onChange={e => { const updated = [...otherQuals]; updated[i].school = e.target.value; setOtherQuals(updated); }} />
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">Marks Obtained</label>
-                              <input type="number" step="0.01" className="form-input" placeholder="Marks" value={o.marksObtained || ''} onChange={e => { const updated = [...otherQuals]; updated[i].marksObtained = e.target.value; setOtherQuals(updated); }} />
-                            </div>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'flex-end' }}>
-                            <div className="form-group">
-                              <label className="form-label">Total Max Marks</label>
-                              <input type="number" step="0.01" className="form-input" placeholder="Total scale" value={o.totalMarks || ''} onChange={e => { const updated = [...otherQuals]; updated[i].totalMarks = e.target.value; setOtherQuals(updated); }} />
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">Percentage (%)</label>
-                              <input type="text" className="form-input" placeholder="e.g. 85%" value={o.percentage || ''} onChange={e => { const updated = [...otherQuals]; updated[i].percentage = e.target.value; setOtherQuals(updated); }} />
-                            </div>
-                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {getUploadButton(`otherQuals_${i}`, o.certificateUrl)}
-                              </div>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-primary"
-                                onClick={() => saveSectionRow('otherQuals', i)}
-                                disabled={loading}
-                                style={{ height: '38px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                💾 Save
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      <button className="btn btn-outline" type="button" onClick={() => setOtherQuals([...otherQuals, { type: '', otherType: '', rollNo: '', board: '', school: '', marksObtained: '', totalMarks: '', percentage: '' }])} style={{ width: '100%', marginBottom: '16px', borderStyle: 'dashed' }}>+ Add More Qualification</button>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          type="button"
-                          onClick={() => { setOtherQuals(profile?.profile?.qualifications?.otherQuals || []); handleCancel('otherQuals'); }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          className="btn btn-sm btn-primary"
-                          type="button"
-                          onClick={() => saveSectionList('otherQuals')}
-                          disabled={loading}
-                        >
-                          💾 Save & Close
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* NET JRF */}
-                {isPhD && (
-                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <h4 style={{ color: 'var(--text-primary)' }}>National Entrance Exams (NET / JRF / GATE)</h4>
-                      {getDocBadge('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
-                    </div>
-                    {!editModes.netJrf ? (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                        <div>Qualified: <strong>{netJrfQualified}</strong> {netJrfQualified === 'YES' && `| Cert No: ${netJrfCertNumber} | Roll: ${netJrfRoll} | AIR: ${netJrfRank} | Date: ${netJrfIssueDate}`}</div>
-                        {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, netJrf: true})}>Edit</button>}
-                      </div>
+                {!isSubmitted && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+                    {!editModes.general ? (
+                      <button className="btn btn-primary" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
+                        ✏️ Edit General Info
+                      </button>
                     ) : (
-                      <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                          <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
-                            <option value="">Qualified NET JRF?</option>
-                            <option value="YES">Yes</option>
-                            <option value="NO">No</option>
-                          </select>
-                          {netJrfQualified === 'YES' && (
-                            <>
-                              <input className="form-input" placeholder="Award Letter Number" value={netJrfCertNumber} onChange={e => setNetJrfCertNumber(e.target.value)} />
-                              <input className="form-input" placeholder="Roll No" value={netJrfRoll} onChange={e => setNetJrfRoll(e.target.value)} />
-                            </>
-                          )}
-                        </div>
-                        {netJrfQualified === 'YES' && (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                            <input className="form-input" placeholder="All India Rank" value={netJrfRank} onChange={e => setNetJrfRank(e.target.value)} />
-                            <input className="form-input" placeholder="Normalized Score" value={netJrfScore} onChange={e => setNetJrfScore(e.target.value)} />
-                            <input className="form-input" type="date" value={netJrfIssueDate} onChange={e => setNetJrfIssueDate(e.target.value)} />
-                          </div>
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
-                          {netJrfQualified === 'YES' && getUploadButton('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            {profile?.profile?.qualifications?.netJrf?.qualified !== undefined && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('netJrf')}>Cancel</button>}
-                            <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('netJrf')}>Save NET JRF</button>
-                          </div>
-                        </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button className="btn btn-secondary" type="button" onClick={() => handleCancel('general')}>Cancel</button>
+                        <button className="btn btn-primary" type="button" onClick={() => saveSection('general')} disabled={loading}>
+                          <Save size={16} /> Save General Details
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            )}
 
-            {isPhD && hasAnySavedQualification && (
-              <div style={{ marginTop: '32px', padding: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleProceedToGuide}
-                  disabled={!canProceedToGuide}
-                  style={{
-                    background: canProceedToGuide ? '#059669' : '#9CA3AF',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 24px',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    borderRadius: '8px',
-                    cursor: canProceedToGuide ? 'pointer' : 'not-allowed',
-                    boxShadow: canProceedToGuide ? '0 4px 6px -1px rgba(5, 150, 105, 0.2)' : 'none',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  {canProceedToGuide ? '🔓' : '🔒'} Save & Proceed to Supervisor Selection
-                </button>
-                {!canProceedToGuide && (
-                  <span style={{ fontSize: '0.8rem', color: '#EF4444', fontWeight: 500 }}>
-                    * Please fill and save both Class 10 and Class 12 qualifications (including certificates) to unlock supervisor selection.
-                  </span>
-                )}
-              </div>
-            )}
-            {/* TAB 3: Advisor Preference */}
-            {subTab === 'guide' && (
-              <div>
-                <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '8px' }}>Institutional Advisor & Guide Preference</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                  Please select your preferred supervisor from the registered faculty directory of {user?.department || 'your department'}.
-                </p>
+              {/* SECTION 2: Academic Qualifications */}
+              <div ref={sectionRefs.education} className="card p-lg clay-card">
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '20px' }}>
+                  <BookOpen style={{ color: 'var(--color-primary)' }} /> 2. Academic Qualifications
+                </h3>
 
-                <div className="form-group" style={{ maxWidth: '400px' }}>
-                  <label className="form-label">Preferred Supervisor / Guide</label>
-                  <select 
-                    className="form-input"
-                    value={preferredGuideId}
-                    onChange={e => setPreferredGuideId(e.target.value)}
-                    disabled={isSubmitted}
-                  >
-                    <option value="">Select Preferred Guide...</option>
-                    {faculties.map(fac => (
-                      <option key={fac._id} value={fac._id}>
-                        {fac.name} ({(fac.role === 'HOD' || fac.subRole === 'HOD') ? 'HOD' : (fac.subRole || 'Faculty')})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {preferredGuideId && (
-                  <div style={{
-                    background: 'rgba(16, 185, 129, 0.08)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                    padding: '16px',
-                    borderRadius: '8px',
-                    marginTop: '20px',
-                    color: 'var(--status-present)',
-                    fontSize: '0.88rem'
-                  }}>
-                    ✓ Selected Preference: <strong>{faculties.find(f => f._id === preferredGuideId)?.name}</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Class 10th */}
+                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>Class 10th / Secondary Details</h4>
+                      {getDocBadge('class10', profile?.profile?.qualifications?.class10?.certificateUrl)}
+                    </div>
+                    {!editModes.class10 ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <div>Roll: <strong>{class10Roll || '—'}</strong> | Board: <strong>{class10Board || '—'}</strong> | School: <strong>{class10School || '—'}</strong> | Marks: <strong>{class10Marks || '0'}/{class10Total || '0'}</strong> ({class10Percentage || '0'}%)</div>
+                        {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class10: true})}>Edit</button>}
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
+                          <input className="form-input" placeholder="Roll No" value={class10Roll} onChange={e => setClass10Roll(e.target.value)} />
+                          <input className="form-input" placeholder="Board" value={class10Board} onChange={e => setClass10Board(e.target.value)} />
+                          <input className="form-input" placeholder="School" value={class10School} onChange={e => setClass10School(e.target.value)} />
+                          <input className="form-input" placeholder="Marks" type="number" value={class10Marks} onChange={e => setClass10Marks(e.target.value)} />
+                          <input className="form-input" placeholder="Total Marks" type="number" value={class10Total} onChange={e => setClass10Total(e.target.value)} />
+                          <input className="form-input" placeholder="%" value={class10Percentage} onChange={e => setClass10Percentage(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
+                          {getUploadButton('class10', profile?.profile?.qualifications?.class10?.certificateUrl)}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {profile?.profile?.qualifications?.class10?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('class10')}>Cancel</button>}
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('class10')}>Save Class 10</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* Class 12th */}
+                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>Class 12th / Higher Secondary Details</h4>
+                      {getDocBadge('class12', profile?.profile?.qualifications?.class12?.certificateUrl)}
+                    </div>
+                    {!editModes.class12 ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <div>Roll: <strong>{class12Roll || '—'}</strong> | Board: <strong>{class12Board || '—'}</strong> | School: <strong>{class12School || '—'}</strong> | Marks: <strong>{class12Marks || '0'}/{class12Total || '0'}</strong> ({class12Percentage || '0'}%)</div>
+                        {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, class12: true})}>Edit</button>}
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
+                          <input className="form-input" placeholder="Roll No" value={class12Roll} onChange={e => setClass12Roll(e.target.value)} />
+                          <input className="form-input" placeholder="Board" value={class12Board} onChange={e => setClass12Board(e.target.value)} />
+                          <input className="form-input" placeholder="School" value={class12School} onChange={e => setClass12School(e.target.value)} />
+                          <input className="form-input" placeholder="Marks" type="number" value={class12Marks} onChange={e => setClass12Marks(e.target.value)} />
+                          <input className="form-input" placeholder="Total Marks" type="number" value={class12Total} onChange={e => setClass12Total(e.target.value)} />
+                          <input className="form-input" placeholder="%" value={class12Percentage} onChange={e => setClass12Percentage(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
+                          {getUploadButton('class12', profile?.profile?.qualifications?.class12?.certificateUrl)}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {profile?.profile?.qualifications?.class12?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('class12')}>Cancel</button>}
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('class12')}>Save Class 12</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Graduation */}
+                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>Graduation Details</h4>
+                      {getDocBadge('graduation', profile?.profile?.qualifications?.graduation?.certificateUrl)}
+                    </div>
+                    {!editModes.graduation ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <div>Roll: <strong>{gradRoll || '—'}</strong> | Degree: <strong>{gradDegree || '—'}</strong> | College: <strong>{gradCollege || '—'} ({gradUniversity || '—'})</strong> | Marks: <strong>{gradMarks || '0'}/{gradTotal || '0'}</strong> ({gradPercentage || '0'}%)</div>
+                        {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, graduation: true})}>Edit</button>}
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                          <input className="form-input" placeholder="Roll No" value={gradRoll} onChange={e => setGradRoll(e.target.value)} />
+                          <input className="form-input" placeholder="Degree (e.g. B.Tech)" value={gradDegree} onChange={e => setGradDegree(e.target.value)} />
+                          <input className="form-input" placeholder="College" value={gradCollege} onChange={e => setGradCollege(e.target.value)} />
+                          <input className="form-input" placeholder="University" value={gradUniversity} onChange={e => setGradUniversity(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                          <input className="form-input" placeholder="Marks / CGPA" type="number" step="0.01" value={gradMarks} onChange={e => setGradMarks(e.target.value)} />
+                          <input className="form-input" placeholder="Total Max Marks" type="number" step="0.01" value={gradTotal} onChange={e => setGradTotal(e.target.value)} />
+                          <input className="form-input" placeholder="Percentage / CGPA %" value={gradPercentage} onChange={e => setGradPercentage(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
+                          {getUploadButton('graduation', profile?.profile?.qualifications?.graduation?.certificateUrl)}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {profile?.profile?.qualifications?.graduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('graduation')}>Cancel</button>}
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('graduation')}>Save Graduation</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* PG */}
+                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>Post Graduation Details</h4>
+                      {getDocBadge('postGraduation', profile?.profile?.qualifications?.postGraduation?.certificateUrl)}
+                    </div>
+                    {!editModes.postGraduation ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <div>Roll: <strong>{pgRoll || '—'}</strong> | Degree: <strong>{pgDegree || '—'}</strong> | College: <strong>{pgCollege || '—'} ({pgUniversity || '—'})</strong> | Marks: <strong>{pgMarks || '0'}/{pgTotal || '0'}</strong> ({pgPercentage || '0'}%)</div>
+                        {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, postGraduation: true})}>Edit</button>}
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                          <input className="form-input" placeholder="Roll No" value={pgRoll} onChange={e => setPgRoll(e.target.value)} />
+                          <input className="form-input" placeholder="Degree (e.g. M.Tech)" value={pgDegree} onChange={e => setPgDegree(e.target.value)} />
+                          <input className="form-input" placeholder="College" value={pgCollege} onChange={e => setPgCollege(e.target.value)} />
+                          <input className="form-input" placeholder="University" value={pgUniversity} onChange={e => setPgUniversity(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                          <input className="form-input" placeholder="Marks / CGPA" type="number" step="0.01" value={pgMarks} onChange={e => setPgMarks(e.target.value)} />
+                          <input className="form-input" placeholder="Total Max Marks" type="number" step="0.01" value={pgTotal} onChange={e => setPgTotal(e.target.value)} />
+                          <input className="form-input" placeholder="Percentage / CGPA %" value={pgPercentage} onChange={e => setPgPercentage(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
+                          {getUploadButton('postGraduation', profile?.profile?.qualifications?.postGraduation?.certificateUrl)}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {profile?.profile?.qualifications?.postGraduation?.rollNo && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('postGraduation')}>Cancel</button>}
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('postGraduation')}>Save Post Graduation</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Other Qualifications */}
+                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>Other Qualifications</h4>
+                    </div>
+                    {!editModes.otherQuals ? (
+                      <div>
+                        {otherQuals.length > 0 ? otherQuals.map((o, i) => (
+                          <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Qualification Type</span>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.type === 'Other' ? o.otherType : o.type || '—'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.rollNo || '—'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board / University</span>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.board || '—'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Institution / School</span>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.school || '—'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.marksObtained || '0'} / {o.totalMarks || '0'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
+                            </div>
+                            <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+                              {getDocBadge(`otherQuals_${i}`, profile?.profile?.qualifications?.otherQuals?.[i]?.certificateUrl)}
+                            </div>
+                          </div>
+                        )) : (
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '16px' }}>No other qualifications added.</div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                          <button
+                            className="btn btn-sm btn-outline"
+                            type="button"
+                            disabled={isSubmitted}
+                            onClick={() => !isSubmitted && setEditModes(prev => ({ ...prev, otherQuals: true }))}
+                          >
+                            ✏️ Edit / Add Other Qualifications
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        {otherQuals.map((o, i) => (
+                          <div key={i} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>Qualification #{i + 1}</strong>
+                              <button className="btn btn-sm btn-danger" type="button" onClick={() => handleRemoveRow('otherQuals', i)} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}>Remove</button>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                              <div className="form-group">
+                                <label className="form-label">Qualification Type</label>
+                                <select className="form-input" value={o.type || ''} onChange={e => { const updated = [...otherQuals]; updated[i].type = e.target.value; setOtherQuals(updated); }}>
+                                  <option value="">Select Option...</option>
+                                  <option value="Certificate">Certificate</option>
+                                  <option value="Diploma">Diploma</option>
+                                  <option value="Other">Other</option>
+                                </select>
+                              </div>
+                              {o.type === 'Other' && (
+                                <div className="form-group">
+                                  <label className="form-label">Please Specify Qualification</label>
+                                  <input type="text" className="form-input" placeholder="Specify..." value={o.otherType || ''} onChange={e => { const updated = [...otherQuals]; updated[i].otherType = e.target.value; setOtherQuals(updated); }} />
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                              <div className="form-group">
+                                <label className="form-label">Roll Number</label>
+                                <input type="text" className="form-input" placeholder="Roll Number" value={o.rollNo || ''} onChange={e => { const updated = [...otherQuals]; updated[i].rollNo = e.target.value; setOtherQuals(updated); }} />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Board / University</label>
+                                <input type="text" className="form-input" placeholder="e.g. CBSE / Delhi University" value={o.board || ''} onChange={e => { const updated = [...otherQuals]; updated[i].board = e.target.value; setOtherQuals(updated); }} />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Institution / School Name</label>
+                                <input type="text" className="form-input" placeholder="Institution Name" value={o.school || ''} onChange={e => { const updated = [...otherQuals]; updated[i].school = e.target.value; setOtherQuals(updated); }} />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Marks Obtained</label>
+                                <input type="number" step="0.01" className="form-input" placeholder="Marks" value={o.marksObtained || ''} onChange={e => { const updated = [...otherQuals]; updated[i].marksObtained = e.target.value; setOtherQuals(updated); }} />
+                              </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'flex-end' }}>
+                              <div className="form-group">
+                                <label className="form-label">Total Max Marks</label>
+                                <input type="number" step="0.01" className="form-input" placeholder="Total scale" value={o.totalMarks || ''} onChange={e => { const updated = [...otherQuals]; updated[i].totalMarks = e.target.value; setOtherQuals(updated); }} />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Percentage (%)</label>
+                                <input type="text" className="form-input" placeholder="e.g. 85%" value={o.percentage || ''} onChange={e => { const updated = [...otherQuals]; updated[i].percentage = e.target.value; setOtherQuals(updated); }} />
+                              </div>
+                              <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  {getUploadButton(`otherQuals_${i}`, o.certificateUrl)}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-primary"
+                                  onClick={() => saveSectionRow('otherQuals', i)}
+                                  disabled={loading}
+                                  style={{ height: '38px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  💾 Save
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <button className="btn btn-outline" type="button" onClick={() => setOtherQuals([...otherQuals, { type: '', otherType: '', rollNo: '', board: '', school: '', marksObtained: '', totalMarks: '', percentage: '' }])} style={{ width: '100%', marginBottom: '16px', borderStyle: 'dashed' }}>+ Add More Qualification</button>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+                          <button
+                            className="btn btn-sm btn-secondary"
+                            type="button"
+                            onClick={() => { setOtherQuals(profile?.profile?.qualifications?.otherQuals || []); handleCancel('otherQuals'); }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            type="button"
+                            onClick={() => saveSectionList('otherQuals')}
+                            disabled={loading}
+                          >
+                            💾 Save & Close
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* NET JRF */}
+                  {isPhD && (
+                    <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h4 style={{ color: 'var(--text-primary)', margin: 0 }}>National Entrance Exams (NET / JRF / GATE)</h4>
+                        {getDocBadge('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
+                      </div>
+                      {!editModes.netJrf ? (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                          <div>Qualified: <strong>{netJrfQualified || '—'}</strong> {netJrfQualified === 'YES' && `| Cert No: ${netJrfCertNumber || '—'} | Roll: ${netJrfRoll || '—'} | AIR: ${netJrfRank || '—'} | Date: ${netJrfIssueDate || '—'}`}</div>
+                          {!isSubmitted && <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({...editModes, netJrf: true})}>Edit</button>}
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                            <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
+                              <option value="">Qualified NET JRF?</option>
+                              <option value="YES">Yes</option>
+                              <option value="NO">No</option>
+                            </select>
+                            {netJrfQualified === 'YES' && (
+                              <>
+                                <input className="form-input" placeholder="Award Letter Number" value={netJrfCertNumber} onChange={e => setNetJrfCertNumber(e.target.value)} />
+                                <input className="form-input" placeholder="Roll No" value={netJrfRoll} onChange={e => setNetJrfRoll(e.target.value)} />
+                              </>
+                            )}
+                          </div>
+                          {netJrfQualified === 'YES' && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                              <input className="form-input" placeholder="All India Rank" value={netJrfRank} onChange={e => setNetJrfRank(e.target.value)} />
+                              <input className="form-input" placeholder="Normalized Score" value={netJrfScore} onChange={e => setNetJrfScore(e.target.value)} />
+                              <input className="form-input" type="date" value={netJrfIssueDate} onChange={e => setNetJrfIssueDate(e.target.value)} />
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
+                            {netJrfQualified === 'YES' && getUploadButton('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              {profile?.profile?.qualifications?.netJrf?.qualified !== undefined && <button className="btn btn-sm btn-secondary" type="button" onClick={() => handleCancel('netJrf')}>Cancel</button>}
+                              <button className="btn btn-sm btn-primary" type="button" onClick={() => saveSection('netJrf')}>Save NET JRF</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
 
-            {/* Save Buttons & Dossier Submit */}
-            <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-border-solid)' }}>
-              {/* Individual tab save button (if editing and not submitted yet) */}
-              {!isSubmitted && !(subTab === 'general' && !editModes.general) && subTab !== 'academic' && (
-                <button type="submit" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} disabled={loading}>
-                  <Save size={16} /> Save Section Details
-                </button>
+              {/* SECTION 3: Advisor Preference (PhD Only) */}
+              {isPhD && (
+                <div ref={sectionRefs.supervisor} className="card p-lg clay-card">
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '16px' }}>
+                    <UserCheck style={{ color: 'var(--color-primary)' }} /> 3. Institutional Advisor & Guide Preference
+                  </h3>
+                  {!canProceedToGuide ? (
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.05)',
+                      border: '1px dashed #EF4444',
+                      padding: '20px',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                      textAlign: 'center'
+                    }}>
+                      <span style={{ fontSize: '1.5rem' }}>🔒</span>
+                      <strong style={{ color: '#EF4444', fontSize: '0.95rem' }}>Supervisor Selection Locked</strong>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '400px' }}>
+                        Please fill and save both Class 10 and Class 12 qualifications (including certificate uploads) to unlock supervisor selection.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                        Please select your preferred supervisor from the registered faculty directory of {user?.department || 'your department'}.
+                      </p>
+
+                      <div className="form-group" style={{ maxWidth: '400px' }}>
+                        <label className="form-label">Preferred Supervisor / Guide</label>
+                        <select 
+                          className="form-input"
+                          value={preferredGuideId}
+                          onChange={e => setPreferredGuideId(e.target.value)}
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select Preferred Guide...</option>
+                          {faculties.map(fac => (
+                            <option key={fac._id} value={fac._id}>
+                              {fac.name} ({(fac.role === 'HOD' || fac.subRole === 'HOD') ? 'HOD' : (fac.subRole || 'Faculty')})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {preferredGuideId && (
+                        <div style={{
+                          background: 'rgba(16, 185, 129, 0.08)',
+                          border: '1px solid rgba(16, 185, 129, 0.2)',
+                          padding: '16px',
+                          borderRadius: '8px',
+                          marginTop: '20px',
+                          color: 'var(--status-present)',
+                          fontSize: '0.88rem'
+                        }}>
+                          ✓ Selected Preference: <strong>{faculties.find(f => f._id === preferredGuideId)?.name}</strong>
+                        </div>
+                      )}
+
+                      {!isSubmitted && preferredGuideId && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+                          <button type="button" className="btn btn-primary" onClick={() => saveSection('general')} disabled={loading}>
+                            <Save size={16} /> Save Guide Preference
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
-              {/* Guide save button */}
-              {!isSubmitted && subTab === 'guide' && preferredGuideId && (
-                <button type="button" className="btn btn-secondary" onClick={() => saveSection('general')} disabled={loading}>
-                  <Save size={16} /> Save Guide Preference
-                </button>
-              )}
-
-              {/* Dossier Submit Button */}
+              {/* Dossier Submit Footer */}
               {!isSubmitted && (
-                <button 
-                  type="button" 
-                  className="btn btn-primary"
-                  style={{ 
-                    marginLeft: 'auto', 
-                    background: '#059669', 
-                    borderColor: '#059669',
-                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)'
-                  }}
-                  onClick={handleProfileRegistrationSubmit}
-                  disabled={registering}
-                >
-                  {isPhD ? '🚀 Submit PhD Profile for HOD Approval' : '🚀 Submit Profile for HOD Verification'}
-                </button>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center', 
+                  marginTop: '16px', 
+                  padding: '24px', 
+                  background: 'rgba(255,255,255,0.02)', 
+                  border: '1px solid var(--color-border)', 
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                }}>
+                  <button 
+                    type="button" 
+                    className="btn btn-primary"
+                    style={{ 
+                      background: '#059669', 
+                      borderColor: '#059669',
+                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)',
+                      padding: '12px 32px',
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      borderRadius: '8px'
+                    }}
+                    onClick={handleProfileRegistrationSubmit}
+                    disabled={registering}
+                  >
+                    {isPhD ? '🚀 Submit PhD Profile for HOD Approval' : '🚀 Submit Profile for HOD Verification'}
+                  </button>
+                </div>
               )}
+
             </div>
           </form>
+
         </div>
       </div>
     </div>
   );
 };
-
 export default ProfileTab;

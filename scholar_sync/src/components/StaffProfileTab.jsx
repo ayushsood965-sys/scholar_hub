@@ -6,7 +6,7 @@ import {
   User, Lightbulb, Briefcase, GraduationCap, Award, FileText, 
   Users, Bookmark, Folder, BookOpen, Settings, Plus, Edit, 
   Trash2, Upload, ExternalLink, ShieldCheck, ShieldAlert, 
-  RefreshCw, Camera, Eye, Trash, Check, X, EyeOff
+  RefreshCw, Camera, Eye, Trash, Check, X, EyeOff, Copyright
 } from 'lucide-react';
 
 const StaffProfileTab = () => {
@@ -32,6 +32,7 @@ const StaffProfileTab = () => {
     committees: useRef(null),
     projects: useRef(null),
     publications: useRef(null),
+    ipr: useRef(null),
     settings: useRef(null)
   };
 
@@ -314,6 +315,7 @@ const StaffProfileTab = () => {
   const committeesList = profile.committees || [];
   const projectsList = profile.projects || [];
   const publicationsList = profile.publications || [];
+  const iprList = profile.ipr || [];
   const privacySettings = profile.privacySettings || { profileVisibility: 'public', documentVisibility: 'public' };
 
   // Milestone list items definitions
@@ -328,6 +330,7 @@ const StaffProfileTab = () => {
     { key: 'committees', label: 'Committees', Icon: Bookmark },
     { key: 'projects', label: 'Projects', Icon: Folder },
     { key: 'publications', label: 'Publications', Icon: BookOpen },
+    { key: 'ipr', label: 'Intellectual Property Rights', Icon: Copyright },
     { key: 'settings', label: 'Privacy Settings', Icon: Settings }
   ];
 
@@ -379,6 +382,22 @@ const StaffProfileTab = () => {
   const [pubForm, setPubForm] = useState({ title: '', journalName: '', authors: '', year: '', doi: '' });
   const [editingPubIndex, setEditingPubIndex] = useState(-1);
   const [showPubForm, setShowPubForm] = useState(false);
+
+  const [iprForm, setIprForm] = useState({
+    iprType: '',
+    itemStatus: '',
+    title: '',
+    journalName: '',
+    volume: '',
+    issn: '',
+    issue: '',
+    pages: '',
+    publicationDate: '',
+    doiUrl: '',
+    paperLink: ''
+  });
+  const [editingIprIndex, setEditingIprIndex] = useState(-1);
+  const [showIprForm, setShowIprForm] = useState(false);
 
   const [privacyForm, setPrivacyForm] = useState({
     profileVisibility: 'public',
@@ -888,6 +907,43 @@ const StaffProfileTab = () => {
 
   const clearAllPublications = async () => {
     await triggerProfileUpdate({ publications: [] }, 'All research publications cleared');
+  };
+
+  // Add/Edit Intellectual Property Rights (IPR)
+  const saveIpr = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingIprIndex === -1) {
+      updated = [...iprList, iprForm];
+    } else {
+      updated = [...iprList];
+      updated[editingIprIndex] = iprForm;
+    }
+    await triggerProfileUpdate({ ipr: updated }, 'Intellectual Property Rights details saved');
+    setShowIprForm(false);
+    setEditingIprIndex(-1);
+    setIprForm({
+      iprType: '',
+      itemStatus: '',
+      title: '',
+      journalName: '',
+      volume: '',
+      issn: '',
+      issue: '',
+      pages: '',
+      publicationDate: '',
+      doiUrl: '',
+      paperLink: ''
+    });
+  };
+
+  const deleteIpr = async (index) => {
+    const updated = iprList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ ipr: updated }, 'Intellectual Property Rights details deleted');
+  };
+
+  const clearAllIprs = async () => {
+    await triggerProfileUpdate({ ipr: [] }, 'All Intellectual Property Rights cleared');
   };
 
   // Save Privacy Settings
@@ -2478,7 +2534,160 @@ const StaffProfileTab = () => {
           </div>
         </section>
 
-        {/* 11. PRIVACY & SETTINGS */}
+        {/* 11. INTELLECTUAL PROPERTY RIGHTS */}
+        <section ref={sectionRefs.ipr} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="section-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Copyright size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Intellectual Property Rights (IPR)</h3>
+            </div>
+            <div className="section-header-buttons">
+              {iprList.length > 0 && (
+                <button onClick={clearAllIprs} style={btnDangerStyle}>
+                  <Trash2 size={14} /> Clear All
+                </button>
+              )}
+              {!showIprForm && (
+                <button onClick={() => { setShowIprForm(true); setEditingIprIndex(-1); }} style={btnPrimaryStyle}>
+                  <Plus size={14} /> Add Entry
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Form */}
+          {showIprForm && (
+            <form onSubmit={saveIpr} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingIprIndex === -1 ? 'Add IPR Log' : 'Edit IPR Log'}</h4>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label">IPR Type *</label>
+                  <select className="form-input" required value={iprForm.iprType} onChange={e => setIprForm({ ...iprForm, iprType: e.target.value })} style={{ width: '100%' }}>
+                    <option value="">-- Select IPR Type --</option>
+                    <option value="Patent">Patent</option>
+                    <option value="Copyright">Copyright</option>
+                    <option value="Trademark">Trademark</option>
+                    <option value="Design Registration">Design Registration</option>
+                    <option value="Geographical Indication">Geographical Indication</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">IPR Status *</label>
+                  <select className="form-input" required value={iprForm.itemStatus} onChange={e => setIprForm({ ...iprForm, itemStatus: e.target.value })} style={{ width: '100%' }}>
+                    <option value="">-- Select Status --</option>
+                    <option value="Filed / Application Submitted">Filed / Application Submitted</option>
+                    <option value="Published (in Gazette/Journal)">Published (in Gazette/Journal)</option>
+                    <option value="Granted / Issued / Registered">Granted / Issued / Registered</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label">IPR / Patent Title *</label>
+                  <input type="text" className="form-input" required value={iprForm.title} onChange={e => setIprForm({ ...iprForm, title: e.target.value })} placeholder="e.g. System and Method for Adaptive Threat Detection" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">IPR Office / Issuing Organization *</label>
+                  <input type="text" className="form-input" required value={iprForm.journalName} onChange={e => setIprForm({ ...iprForm, journalName: e.target.value })} placeholder="e.g. Indian Patent Office (IPO)" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label">Inventors / Applicants *</label>
+                  <input type="text" className="form-input" required value={iprForm.volume} onChange={e => setIprForm({ ...iprForm, volume: e.target.value })} placeholder="e.g. Dr. Ayush Sood, Prof. M. Roy" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Application / Registration Number *</label>
+                  <input type="text" className="form-input" required value={iprForm.issn} onChange={e => setIprForm({ ...iprForm, issn: e.target.value })} placeholder="e.g. 202611012345" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label">App/Grant ID *</label>
+                  <input type="text" className="form-input" required value={iprForm.issue} onChange={e => setIprForm({ ...iprForm, issue: e.target.value })} placeholder="e.g. PAT/2026/7890" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Country / Region *</label>
+                  <input type="text" className="form-input" required value={iprForm.pages} onChange={e => setIprForm({ ...iprForm, pages: e.target.value })} placeholder="e.g. India" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label">Date of Filing / Award *</label>
+                  <input type="date" className="form-input" required value={iprForm.publicationDate} onChange={e => setIprForm({ ...iprForm, publicationDate: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">IPR ID / Reference Number (Optional)</label>
+                  <input type="text" className="form-input" value={iprForm.doiUrl} onChange={e => setIprForm({ ...iprForm, doiUrl: e.target.value })} placeholder="e.g. Ref/IPO/4567" />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">IPR URL / Registry Link (Optional)</label>
+                <input type="text" className="form-input" value={iprForm.paperLink} onChange={e => setIprForm({ ...iprForm, paperLink: e.target.value })} placeholder="e.g. https://ipindiaservices.gov.in/..." />
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowIprForm(false)} style={btnSecondaryStyle}>Cancel</button>
+                <button type="submit" disabled={loading} style={btnPrimaryStyle}>Save Entry</button>
+              </div>
+            </form>
+          )}
+
+          {/* List items */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {iprList.length === 0 ? (
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No Intellectual Property Rights logged yet.</span>
+            ) : (
+              iprList.map((ip, i) => (
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div>
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType} | Status: {ip.itemStatus} ({ip.journalName})</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
+                    {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
+                    {ip.paperLink && (
+                      <a 
+                        href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                      >
+                        <ExternalLink size={12} /> Registry Link
+                      </a>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                    <button 
+                      onClick={() => {
+                        setEditingIprIndex(i);
+                        setIprForm(ip);
+                        setShowIprForm(true);
+                      }} 
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button 
+                      onClick={() => deleteIpr(i)} 
+                      style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        {/* 12. PRIVACY & SETTINGS */}
         <section ref={sectionRefs.settings} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
             <Settings size={20} style={{ color: '#1A5A3B' }} />
