@@ -139,8 +139,6 @@ const TimetableTab = () => {
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  if (initLoading) return <SkeletonLoader count={1} height={400} />;
-
   // Filter degree names based on degree type
   const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === filters.degreeTypeId);
 
@@ -152,6 +150,8 @@ const TimetableTab = () => {
       .filter(Boolean);
     return semesters.filter(s => s && mappedIds.includes(s._id));
   }, [filters.degreeNameId, semesters, semesterDegreeMappings]);
+
+  if (initLoading) return <SkeletonLoader count={1} height={400} />;
 
   return (
     <div className="glass-panel p-xl">

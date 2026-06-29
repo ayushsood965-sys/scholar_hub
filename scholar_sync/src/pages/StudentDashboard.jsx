@@ -484,7 +484,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
         })}
       </div>
       <div className="sidebar-bottom">
-        <button className="nav-item" onClick={() => { logout(); navigate('/'); }}
+        <button className="nav-item" onClick={() => { window.location.href = "/logout-bridge?toast=Logged%20out%20successfully"; }}
           style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', color: '#F87171' }}>
           <LogOut className="nav-icon" /> Logout
         </button>

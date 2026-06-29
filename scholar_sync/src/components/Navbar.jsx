@@ -20,8 +20,7 @@ const Navbar = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    window.location.href = "/logout-bridge?toast=Logged%20out%20successfully";
   };
 
   const goToDashboard = () => {

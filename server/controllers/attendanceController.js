@@ -2587,6 +2587,7 @@ exports.getStudentDashboardStats = async (req, res) => {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const upcomingClasses = [];
     if (dt && dt.code !== 'PHD') {
+      const today = new Date();
       for (let i = 1; i <= 7; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);

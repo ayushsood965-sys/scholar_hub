@@ -117,8 +117,6 @@ const DashboardShell = ({
 
   const handleLogout = () => {
     const origin = localStorage.getItem("login_origin") || "track";
-    logout();
-    localStorage.removeItem("login_origin");
     if (origin === "sync") {
       window.location.href = `${SCHOLAR_SYNC_URL}/logout-bridge?toast=Logged%20out%20successfully`;
     } else {
