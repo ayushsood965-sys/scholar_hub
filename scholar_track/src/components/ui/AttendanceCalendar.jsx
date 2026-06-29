@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const AttendanceCalendar = ({ calendarMonths = [] }) => {
+const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWeek }) => {
   const [currentMonthIdx, setCurrentMonthIdx] = useState(calendarMonths.length - 1); // Default to current/latest month
 
   if (!calendarMonths || calendarMonths.length === 0) {
@@ -14,15 +14,91 @@ const AttendanceCalendar = ({ calendarMonths = [] }) => {
   }
 
   const activeMonth = calendarMonths[currentMonthIdx] || calendarMonths[0];
-  const { year, monthName, days } = activeMonth;
+  const { year, month, monthName, days: backendDays = [] } = activeMonth;
+
+  // Resolve 0-indexed month number for correct calendar construction
+  const resolvedMonth = typeof month === 'number' 
+    ? month 
+    : new Date(Date.parse(monthName + " 1, " + year)).getMonth();
+
+  // Resolve day of week number
+  const dayOfWeekNumberMap = {
+    'Sunday': 0,
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6
+  };
+  const scheduledDayNum = dayOfWeek ? dayOfWeekNumberMap[dayOfWeek] : null;
+
+  // Calculate start padding (empty cells to align first day under correct weekday column)
+  const firstDayDate = new Date(year, resolvedMonth, 1);
+  const firstDayOfWeek = firstDayDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const startPadding = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+
+  // Get total days in this month
+  const totalDaysInMonth = new Date(year, resolvedMonth + 1, 0).getDate();
+
+  // Create a map of backend days by day number for fast lookup
+  const backendDaysMap = {};
+  backendDays.forEach(d => {
+    if (d && d.date) {
+      const dayNum = new Date(d.date).getDate();
+      backendDaysMap[dayNum] = d;
+    }
+  });
+
+  // Reconstruct all days of the month to show a full calendar
+  const allDays = [];
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  for (let dNum = 1; dNum <= totalDaysInMonth; dNum++) {
+    const currentDate = new Date(year, resolvedMonth, dNum);
+    const dayOfWeekNum = currentDate.getDay();
+    const isWeekend = dayOfWeekNum === 0 || dayOfWeekNum === 6;
+    const isPast = currentDate < today;
+    const isScheduledClassDay = scheduledDayNum !== null && dayOfWeekNum === scheduledDayNum;
+
+    // Check if we have an attendance status for this date from backend
+    const mappedDay = backendDaysMap[dNum];
+
+    let status = 'FUTURE';
+    let holidayTitle = null;
+    let isClassDay = false;
+    let classes = [];
+
+    if (mappedDay) {
+      status = mappedDay.status;
+      holidayTitle = mappedDay.holidayTitle;
+      isClassDay = true;
+      classes = mappedDay.classes || [];
+    } else {
+      if (isWeekend) {
+        status = 'WEEKEND';
+      } else if (isPast) {
+        status = 'NO_CLASS';
+      } else {
+        status = 'FUTURE';
+      }
+    }
+
+    allDays.push({
+      date: currentDate.toISOString(),
+      dayOfMonth: dNum,
+      dayOfWeek: dayOfWeekNum,
+      status,
+      isClassDay,
+      isScheduledClassDay,
+      holidayTitle,
+      classes
+    });
+  }
 
   // Week days headers (Monday to Sunday)
   const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-  // Calculate start padding (empty cells to align first day under correct weekday column)
-  const firstDay = days[0];
-  // dayOfWeek: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  const startPadding = firstDay ? (firstDay.dayOfWeek === 0 ? 6 : firstDay.dayOfWeek - 1) : 0;
 
   const handlePrev = () => {
     if (currentMonthIdx > 0) {
@@ -61,7 +137,16 @@ const AttendanceCalendar = ({ calendarMonths = [] }) => {
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
+    <div 
+      className={variant === 'flat' ? '' : 'glass-panel'} 
+      style={{ 
+        padding: '24px', 
+        borderRadius: 'var(--radius-lg)',
+        background: variant === 'flat' ? 'rgba(255,255,255,0.02)' : undefined,
+        border: variant === 'flat' ? '1px solid var(--color-border, rgba(0,0,0,0.05))' : undefined,
+        boxShadow: variant === 'flat' ? 'none' : undefined
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
           <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: '600' }}>
@@ -105,11 +190,10 @@ const AttendanceCalendar = ({ calendarMonths = [] }) => {
         ))}
 
         {/* Real day cells */}
-        {days.map((day, idx) => {
+        {allDays.map((day, idx) => {
           const cellColor = getCellColor(day.status);
-          const isWeekendCell = day.status === 'WEEKEND';
-          const isFutureCell = day.status === 'FUTURE';
           const holidayTitle = day.holidayTitle;
+          const hasSolidBg = ['PRESENT', 'ABSENT', 'ON_LEAVE', 'HOLIDAY'].includes(day.status);
           
           return (
             <motion.div
@@ -122,13 +206,16 @@ const AttendanceCalendar = ({ calendarMonths = [] }) => {
                 borderRadius: '8px',
                 background: cellColor,
                 border: getBorderColor(day.status),
+                borderTop: day.isScheduledClassDay 
+                  ? '4px solid var(--color-text-primary, #000000)' 
+                  : getBorderColor(day.status),
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
                 cursor: (day.status !== 'FUTURE' && day.status !== 'WEEKEND') ? 'pointer' : 'default',
-                color: (day.status === 'PRESENT' || day.status === 'ABSENT' || day.status === 'ON_LEAVE' || day.status === 'HOLIDAY') ? '#fff' : 'var(--text-secondary)',
+                color: hasSolidBg ? '#fff' : 'var(--text-secondary)',
                 fontWeight: (day.status !== 'FUTURE' && day.status !== 'WEEKEND') ? '600' : '400',
                 fontSize: '0.85rem'
               }}
@@ -149,6 +236,12 @@ const AttendanceCalendar = ({ calendarMonths = [] }) => {
 
       {/* Legend */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {dayOfWeek && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'transparent', borderTop: '3px solid var(--color-text-primary, #000)' }} />
+            Scheduled Day
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--status-present)' }} />
           Present
@@ -164,10 +257,6 @@ const AttendanceCalendar = ({ calendarMonths = [] }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--status-info)' }} />
           Holiday
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
-          Weekend
         </div>
       </div>
     </div>

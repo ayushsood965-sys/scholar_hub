@@ -704,6 +704,21 @@ exports.markAttendanceBulk = async (req, res) => {
     const dt = await DegreeTypeMaster.findById(degreeTypeId);
     const isPhD = dt && dt.code === 'PHD';
 
+    // Validate that all students being marked belong to the selected degree type/name
+    const studentIds = records.map(r => r.studentId);
+    const invalidStudents = await User.find({
+      _id: { $in: studentIds },
+      $or: [
+        { 'profile.degreeTypeId': { $ne: new mongoose.Types.ObjectId(degreeTypeId) } },
+        ...(!isPhD ? [{ 'profile.degreeNameId': { $ne: new mongoose.Types.ObjectId(degreeNameId) } }] : [])
+      ]
+    });
+    if (invalidStudents.length > 0) {
+      return res.status(400).json({
+        message: `Validation failed: Some students being marked do not belong to the selected degree type/name.`
+      });
+    }
+
     // Get policy lock duration
     let policy = await AttendancePolicyMaster.findOne({ departmentId, programType: dt?.code || 'PG' });
     if (!policy) {
@@ -1348,7 +1363,7 @@ exports.getMyAbsences = async (req, res) => {
     // Standard student flow
     const query = {
       studentId: req.user._id,
-      status: 'ABSENT'
+      classes: { $elemMatch: { selected: { $ne: true } } }
     };
     if (semesterId) {
       query.semesterId = semesterId;
@@ -1396,7 +1411,7 @@ exports.getMyAbsences = async (req, res) => {
       }
 
       const absentClasses = (record.classes || []).filter(c => {
-        return c.selected === true;
+        return c.selected !== true;
       }).map(c => ({
         timetableSlotId: c.timetableSlotId?._id || c.timetableSlotId,
         subjectName: c.subjectName || c.timetableSlotId?.subjectName || 'Unknown',
@@ -2397,7 +2412,30 @@ exports.getStudentDashboardStats = async (req, res) => {
     const records = await AttendanceRecord.find({ studentId: student._id, date: { $gte: session.startDate, $lte: session.endDate } });
     const holidays = await HolidayCalendar.find({ isActive: true });
     const dt = student.profile?.degreeTypeId ? await DegreeTypeMaster.findById(student.profile.degreeTypeId) : null;
-    const timetables = dt && dt.code !== 'PHD' ? await TimetableMaster.find({ sessionId: session._id, semesterId: student.profile?.semesterId, isActive: true }) : [];
+    let timetables = [];
+    let populatedTimetables = [];
+    if (dt && dt.code !== 'PHD') {
+      const studentMapping = await StudentSemesterMapping.findOne({
+        studentId: student._id,
+        sessionId: session._id,
+        semesterId: student.profile?.semesterId
+      });
+      if (studentMapping && studentMapping.mappedSubjects?.length > 0) {
+        const slotIds = studentMapping.mappedSubjects.map(ms => ms.timetableSlotId).filter(Boolean);
+        timetables = await TimetableMaster.find({ _id: { $in: slotIds }, isActive: true });
+        populatedTimetables = await TimetableMaster.find({ _id: { $in: slotIds }, isActive: true }).populate('facultyId', 'name');
+      } else {
+        const queryParams = {
+          sessionId: session._id,
+          degreeTypeId: student.profile?.degreeTypeId,
+          degreeNameId: student.profile?.degreeNameId,
+          semesterId: student.profile?.semesterId,
+          isActive: true
+        };
+        timetables = await TimetableMaster.find(queryParams);
+        populatedTimetables = await TimetableMaster.find(queryParams).populate('facultyId', 'name');
+      }
+    }
     const stats = await calculateStudentStats(student, session, records, holidays, timetables);
 
     // 1. Fetch last 5 leave requests
@@ -2405,11 +2443,6 @@ exports.getStudentDashboardStats = async (req, res) => {
       .select('leaveType startDate endDate totalDays status createdAt')
       .sort({ createdAt: -1 })
       .limit(5);
-
-    // 2. Fetch timetables with populated faculty details for subjects mapping
-    const populatedTimetables = dt && dt.code !== 'PHD' 
-      ? await TimetableMaster.find({ sessionId: session._id, semesterId: student.profile?.semesterId, isActive: true }).populate('facultyId', 'name')
-      : [];
 
     // 3. Compute week-over-week trends for subjects
     const now = new Date();

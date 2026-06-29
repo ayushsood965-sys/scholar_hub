@@ -279,7 +279,8 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         total: totalForSubject,
         attended: subjectPresent,
         percentage: percentageForSubject,
-        totalClassesInSemester: slot.totalClassesInSemester || 90
+        totalClassesInSemester: slot.totalClassesInSemester || 90,
+        dayOfWeek: slot.dayOfWeek
       });
     });
   }

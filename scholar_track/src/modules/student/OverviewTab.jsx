@@ -55,6 +55,7 @@ const OverviewTab = () => {
     name: 'Student',
     semesterName: 'N/A',
     degreeName: 'N/A',
+    percentage: 0,
     overallPercentage: 0,
     presentDays: 0,
     totalExpectedClasses: 0,
@@ -100,23 +101,62 @@ const OverviewTab = () => {
 
       {/* Top Rollup Section */}
       <div className="grid-3">
-        {/* Overall Progress Ring Card */}
+        {/* Academic Guidelines Card */}
         <motion.div 
           className="clay-card" 
           initial={{ opacity: 0, y: 15 }} 
           animate={{ opacity: 1, y: 0 }}
-          style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}
+          style={{ 
+            padding: '24px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '16px',
+            background: 'var(--color-surface, #ffffff)',
+            border: '1px solid var(--color-border-solid, #e5e7eb)',
+            borderRadius: 'var(--radius-xl)',
+            boxShadow: 'var(--shadow-sm)'
+          }}
         >
-          <ProgressRing 
-            percentage={safeStats.overallPercentage} 
-            size={120} 
-            strokeWidth={8} 
-            label="Overall" 
-          />
-          <div style={{ textAlign: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Classes: <strong>{safeStats.presentDays}</strong> attended / {safeStats.totalExpectedClasses} held
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-solid, #e5e7eb)', paddingBottom: '10px' }}>
+            <AlertCircle size={18} style={{ color: 'var(--color-primary)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Outfit' }}>
+              Academic Portal Guidelines
             </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Item 1 */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(26,90,59,0.08)', color: 'var(--color-primary)', flexShrink: 0, marginTop: '2px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>1</span>
+              </div>
+              <div style={{ fontSize: '0.78rem', lineHeight: '1.4', color: 'var(--text-secondary)' }}>
+                <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '1px' }}>Minimum Attendance</strong>
+                Maintain at least <strong style={{ color: 'var(--color-primary)' }}>{safeStats.minRequiredPercentage}%</strong> overall attendance to remain eligible for examinations.
+              </div>
+            </div>
+
+            {/* Item 2 */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(26,90,59,0.08)', color: 'var(--color-primary)', flexShrink: 0, marginTop: '2px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>2</span>
+              </div>
+              <div style={{ fontSize: '0.78rem', lineHeight: '1.4', color: 'var(--text-secondary)' }}>
+                <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '1px' }}>Correction Appeals</strong>
+                File corrections under the <strong>Corrections</strong> tab within 7 days of an absence. Maximum of 2 attempts are permitted per class slot.
+              </div>
+            </div>
+
+            {/* Item 3 */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(26,90,59,0.08)', color: 'var(--color-primary)', flexShrink: 0, marginTop: '2px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>3</span>
+              </div>
+              <div style={{ fontSize: '0.78rem', lineHeight: '1.4', color: 'var(--text-secondary)' }}>
+                <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '1px' }}>Medical & Duty Leaves</strong>
+                Approved leaves override absences and count as present days. Track status under the <strong>Leave Management</strong> tab.
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -226,7 +266,7 @@ const OverviewTab = () => {
                       <div>
                         <strong style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{cls.subjectName}</strong>
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                          {cls.subjectCode} • {cls.facultyName}
+                          {cls.subjectCode} • {cls.facultyName} • {cls.date ? new Date(cls.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : cls.dayOfWeek}
                         </span>
                       </div>
                       <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--color-primary)', background: 'rgba(26,90,59,0.1)', padding: '2px 8px', borderRadius: '4px' }}>

@@ -412,24 +412,70 @@ const CorrectionsTab = () => {
                 {/* Step 2: Select Subject (only if not PhD) */}
                 {!isPhD && selectedDate && (
                   <div className="form-group" style={{ marginTop: 16 }}>
-                    <label className="form-label">
-                      <BookOpen size={14} /> Select Class / Subject
+                    <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>
+                      <BookOpen size={14} /> Select Subject for Appeal
                     </label>
-                    <select 
-                      className="form-input" 
-                      value={selectedSubject} 
-                      onChange={e => setSelectedSubject(e.target.value)} 
-                      required
-                    >
-                      <option value="">Choose subject class...</option>
-                      {currentAbsentSubjects.map(sub => (
-                        <option key={sub.timetableSlotId} value={sub.timetableSlotId} disabled={sub.locked}>
-                          {sub.subjectName} ({sub.subjectCode})
-                          {sub.locked ? ' — Locked (Max attempts reached)' : ''}
-                          {!sub.eligible && !sub.locked && sub.latestStatus ? ` — Pending Status: ${sub.latestStatus}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {currentAbsentSubjects.map(sub => {
+                        const isPending = !sub.eligible && !sub.locked && sub.latestStatus;
+                        const isDisabled = sub.locked || isPending;
+                        return (
+                          <label 
+                            key={sub.timetableSlotId} 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '12px', 
+                              padding: '12px 16px', 
+                              borderRadius: 'var(--radius-md)', 
+                              border: selectedSubject === sub.timetableSlotId 
+                                ? '1.5px solid var(--color-primary)' 
+                                : '1.5px solid var(--color-border-solid)',
+                              background: selectedSubject === sub.timetableSlotId 
+                                ? 'rgba(26, 90, 59, 0.05)' 
+                                : 'rgba(255, 255, 255, 0.01)',
+                              cursor: isDisabled ? 'not-allowed' : 'pointer',
+                              opacity: isDisabled ? 0.6 : 1,
+                              transition: 'all 0.2s ease',
+                              boxShadow: selectedSubject === sub.timetableSlotId ? '0 2px 8px rgba(26,90,59,0.1)' : 'none'
+                            }}
+                          >
+                            <input 
+                              type="radio" 
+                              name="appealSubject" 
+                              value={sub.timetableSlotId} 
+                              checked={selectedSubject === sub.timetableSlotId}
+                              disabled={isDisabled}
+                              onChange={() => setSelectedSubject(sub.timetableSlotId)}
+                              style={{ 
+                                width: '18px', 
+                                height: '18px', 
+                                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                accentColor: 'var(--color-primary)'
+                              }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                                {sub.subjectName}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                Code: {sub.subjectCode}
+                              </div>
+                            </div>
+                            {sub.locked && (
+                              <span style={{ fontSize: '0.72rem', color: 'var(--status-absent)', fontWeight: 600, background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                                Locked (Max 2 requests)
+                              </span>
+                            )}
+                            {isPending && (
+                              <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, background: 'rgba(26,90,59,0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                                Pending: {sub.latestStatus}
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 

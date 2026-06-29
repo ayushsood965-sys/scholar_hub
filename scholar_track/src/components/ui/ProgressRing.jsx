@@ -40,10 +40,10 @@ const ProgressRing = ({ percentage = 0, size = 140, strokeWidth = 10, color, lab
         />
       </svg>
       <div className="progress-ring-label">
-        <span className="progress-ring-value" style={{ color: getColor() }}>
+        <span className="progress-ring-value" style={{ color: getColor(), fontSize: size <= 80 ? '0.85rem' : '1.5rem', fontWeight: size <= 80 ? '700' : '800' }}>
           {percentage?.toFixed(1) ?? '0'}%
         </span>
-        <span className="progress-ring-subtitle">{label}</span>
+        {label && size > 80 && <span className="progress-ring-subtitle">{label}</span>}
       </div>
     </motion.div>
   );

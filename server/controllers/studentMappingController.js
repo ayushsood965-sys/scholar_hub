@@ -67,6 +67,7 @@ exports.getPreview = async (req, res) => {
       role: 'STUDENT',
       department: req.user.department,
       isActive: true,
+      isVerified: true,
       'profile.degreeTypeId': degreeTypeId,
       'profile.degreeNameId': degreeNameId,
       // Note: semesterId not on student profile yet - that's what we're mapping!
@@ -175,6 +176,22 @@ exports.saveMapping = async (req, res) => {
     if (subjects.length !== subjectIds.length) {
       return res.status(400).json({ 
         message: 'One or more selected subjects are invalid or not assigned to you for this criteria.' 
+      });
+    }
+
+    // Validate that all students belong to the selected degree type and degree name and are verified
+    const invalidStudents = await User.find({
+      _id: { $in: studentIds },
+      $or: [
+        { 'profile.degreeTypeId': { $ne: new mongoose.Types.ObjectId(degreeTypeId) } },
+        { 'profile.degreeNameId': { $ne: new mongoose.Types.ObjectId(degreeNameId) } },
+        { isVerified: { $ne: true } }
+      ]
+    });
+
+    if (invalidStudents.length > 0) {
+      return res.status(400).json({
+        message: `Validation failed: Some selected students are either not verified or do not belong to the selected degree type/name.`
       });
     }
 
