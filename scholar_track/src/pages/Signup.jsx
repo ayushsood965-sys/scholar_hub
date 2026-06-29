@@ -221,6 +221,10 @@ const Signup = () => {
 
     // Student-specific validations
     if (role === 'STUDENT') {
+      if (!name) {
+        setError('Please enter your full name.');
+        return;
+      }
       if (!academicSession || !degreeTypeId || !degreeNameId || !gender || !category) {
         setError('Please fill in all required fields (Session, Degree Type, Degree Name, Gender, Category).');
         return;
@@ -251,6 +255,7 @@ const Signup = () => {
     if (role === 'STUDENT') {
       const selectedType = degreeTypeOptions.find(t => t.value === degreeTypeId);
       const selectedName = degreeNameOptions.find(n => n.value === degreeNameId);
+      userData.name = name;
       userData.academicSession = academicSession;
       userData.degreeTypeId = degreeTypeId;
       userData.degreeTypeName = selectedType?.label || '';
@@ -348,6 +353,7 @@ const Signup = () => {
                   setAcademicSession('');
                   setGender('');
                   setCategory('');
+                  setName('');
                 }}
                 required
               >
@@ -361,6 +367,18 @@ const Signup = () => {
             {/* STUDENT FIELDS */}
             {role === 'STUDENT' && (
               <>
+                <div className="form-group">
+                  <label className="form-label">Full Name <span className="required">*</span></label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                  />
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Department <span className="required">*</span></label>
                   <div className="searchable-dropdown-container" ref={dropdownRef}>

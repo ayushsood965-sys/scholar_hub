@@ -188,6 +188,10 @@ const Signup = () => {
 
     // Student-specific validations (PhD only)
     if (role === 'STUDENT') {
+      if (!name) {
+        setError('Please enter your full name.');
+        return;
+      }
       if (!academicSession) {
         setError('Please select an academic session.');
         return;
@@ -229,6 +233,7 @@ const Signup = () => {
     };
 
     if (role === 'STUDENT') {
+      userData.name = name;
       userData.academicSession = academicSession;
       userData.degreeTypeId = phdDegreeTypeId;
       userData.degreeTypeName = phdDegreeTypeName;
@@ -293,6 +298,7 @@ const Signup = () => {
                   setAcademicSession('');
                   setGender('');
                   setCategory('');
+                  setName('');
                 }}
                 required
                 style={{
@@ -319,6 +325,18 @@ const Signup = () => {
             {/* STUDENT FIELDS (PhD only) */}
             {role === 'STUDENT' && (
               <>
+                <div className="form-group">
+                  <label className="form-label">Full Name <span style={{ color: theme.error }}>*</span></label>
+                  <input
+                    className="form-input"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                    style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
+                  />
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Department <span style={{ color: theme.error }}>*</span></label>
                   <div className="searchable-dropdown-container" ref={dropdownRef}>
