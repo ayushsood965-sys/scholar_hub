@@ -5945,6 +5945,10 @@ const ProfileTab = () => {
   const [preferredGuideId, setPreferredGuideId] = useState(user?.profile?.preferredGuideId || '');
   const [faculties, setFaculties] = useState([]);
 
+  // Gender & Category from master data
+  const [genders, setGenders] = useState([]);
+  const [categories, setCategories] = useState([]);
+
   useEffect(() => {
     if (user?.profile) {
       setDob(user.profile.dob ? user.profile.dob.split('T')[0] : '');
@@ -6093,7 +6097,7 @@ const ProfileTab = () => {
 
   // Fetch category and gender masters
   useEffect(() => {
-    axios.get(`${API_URL}/attendance/masters/category-gender`)
+    axios.get(`${API_URL}/attendance/public/masters/category-gender`)
       .then(res => {
         const data = res.data;
         setCategories(data.filter(d => d.type === 'CATEGORY'));

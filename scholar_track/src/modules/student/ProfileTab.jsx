@@ -242,11 +242,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     const fetchMastersData = async () => {
       try {
         const [nameRes, typeRes, sessRes, facRes, cgRes] = await Promise.all([
-          api.get('/attendance/masters/degree-names').catch(() => ({ data: [] })),
-          api.get('/attendance/masters/degree-types').catch(() => ({ data: [] })),
-          api.get('/attendance/sessions').catch(() => ({ data: [] })),
+          api.get('/attendance/public/masters/degree-names').catch(() => ({ data: [] })),
+          api.get('/attendance/public/masters/degree-types').catch(() => ({ data: [] })),
+          api.get('/attendance/public/sessions').catch(() => ({ data: [] })),
           api.get('/auth/faculty').catch(() => ({ data: [] })),
-          api.get('/attendance/masters/category-gender').catch(() => ({ data: [] }))
+          api.get('/attendance/public/masters/category-gender').catch(() => ({ data: [] }))
         ]);
         setDegreeNames(nameRes.data);
         setDegreeTypes(typeRes.data);
