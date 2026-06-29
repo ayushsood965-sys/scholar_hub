@@ -82,6 +82,21 @@ const userSchema = new mongoose.Schema(
       subject: { type: String, default: '' },
       academicSession: { type: String, default: '' },
       qualifications: { type: mongoose.Schema.Types.Mixed, default: {} },
+      expertise: { type: [String], default: [] },
+      experience: { type: mongoose.Schema.Types.Mixed, default: [] },
+      awards: { type: mongoose.Schema.Types.Mixed, default: [] },
+      thesesSupervised: { type: mongoose.Schema.Types.Mixed, default: [] },
+      professionalBodies: { type: mongoose.Schema.Types.Mixed, default: [] },
+      committees: { type: mongoose.Schema.Types.Mixed, default: [] },
+      projects: { type: mongoose.Schema.Types.Mixed, default: [] },
+      publications: { type: mongoose.Schema.Types.Mixed, default: [] },
+      privacySettings: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {
+          profileVisibility: 'public',
+          documentVisibility: 'public'
+        }
+      },
     },
   },
   {

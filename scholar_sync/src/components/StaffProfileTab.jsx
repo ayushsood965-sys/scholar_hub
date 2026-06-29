@@ -1,12 +1,12 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../../config';
-import { AuthContext } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
+import { API_BASE_URL } from '../config';
+import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { 
   User, Lightbulb, Briefcase, GraduationCap, Award, FileText, 
   Users, Bookmark, Folder, BookOpen, Settings, Plus, Edit, 
   Trash2, Upload, ExternalLink, ShieldCheck, ShieldAlert, 
-  RefreshCw, Camera, Eye, Trash, Check, X, Lock, EyeOff
+  RefreshCw, Camera, Eye, Trash, Check, X, EyeOff
 } from 'lucide-react';
 
 const StaffProfileTab = () => {
@@ -176,7 +176,7 @@ const StaffProfileTab = () => {
     .mobile-milestones-bar {
       display: none;
       position: sticky;
-      top: 64px;
+      top: 0;
       background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
@@ -248,7 +248,7 @@ const StaffProfileTab = () => {
 
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
-        top: 68px !important;
+        top: 64px !important;
         left: 0 !important;
         width: 100% !important;
         height: 50px !important;
@@ -423,8 +423,8 @@ const StaffProfileTab = () => {
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
-        // Sticky boundary in ScholarTrack is 68px from viewport top
-        setIsStuck(rect.top <= 68);
+        // Sticky boundary in ScholarSync is 64px from viewport top
+        setIsStuck(rect.top <= 64);
       }
     };
 
@@ -531,6 +531,13 @@ const StaffProfileTab = () => {
 
     checkSticky();
 
+    const dashboardArea = document.querySelector('.dashboard-area');
+    if (dashboardArea) {
+      dashboardArea.addEventListener('scroll', checkSticky);
+      dashboardArea.addEventListener('wheel', handleWheel, { passive: false });
+      dashboardArea.addEventListener('touchstart', handleTouchStart, { passive: true });
+      dashboardArea.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
     window.addEventListener('scroll', checkSticky);
     window.addEventListener('resize', checkSticky);
     window.addEventListener('keydown', handleKeyDown);
@@ -539,6 +546,12 @@ const StaffProfileTab = () => {
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
+      if (dashboardArea) {
+        dashboardArea.removeEventListener('scroll', checkSticky);
+        dashboardArea.removeEventListener('wheel', handleWheel);
+        dashboardArea.removeEventListener('touchstart', handleTouchStart);
+        dashboardArea.removeEventListener('touchend', handleTouchEnd);
+      }
       window.removeEventListener('scroll', checkSticky);
       window.removeEventListener('resize', checkSticky);
       window.removeEventListener('keydown', handleKeyDown);
@@ -604,8 +617,12 @@ const StaffProfileTab = () => {
   const triggerProfileUpdate = async (updatedFields, successMessage) => {
     try {
       setLoading(true);
-      await updateProfile(updatedFields);
-      toast.success(successMessage || 'Profile updated successfully');
+      const res = await updateProfile(updatedFields);
+      if (res && res.success === false) {
+        toast.error(res.message || 'Failed to update profile');
+      } else {
+        toast.success(successMessage || 'Profile updated successfully');
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
@@ -1024,7 +1041,7 @@ const StaffProfileTab = () => {
       
       {/* LEFT: Sticky Timeline Side Panel */}
       <div className="timeline-sidebar-panel">
-        <h4 style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase', paddingLeft: '12px', marginBottom: '8px', letterSpacing: '0.05em' }}>
+        <h4 style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 800, textTransform: 'uppercase', paddingLeft: '12px', marginBottom: '8px', letterSpacing: '0.05em' }}>
           Profile Timeline
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -1035,7 +1052,7 @@ const StaffProfileTab = () => {
             top: '20px',
             bottom: '20px',
             width: '2px',
-            background: 'var(--color-border-solid, #e5e7eb)',
+            background: '#e5e7eb',
             zIndex: 0
           }} />
 
@@ -1059,7 +1076,7 @@ const StaffProfileTab = () => {
                   cursor: 'pointer',
                   zIndex: 1,
                   transition: 'all 0.2s',
-                  color: isActive ? 'var(--color-primary, #1A5A3B)' : 'var(--text-secondary, #64748b)',
+                  color: isActive ? '#1A5A3B' : '#64748b',
                   fontWeight: isActive ? 700 : 500
                 }}
               >
@@ -1070,7 +1087,7 @@ const StaffProfileTab = () => {
                   width: '14px',
                   height: '14px',
                   borderRadius: '50%',
-                  background: isActive ? 'var(--color-primary, #1A5A3B)' : 'var(--color-border-solid, #e5e7eb)',
+                  background: isActive ? '#1A5A3B' : '#e5e7eb',
                   boxShadow: isActive ? '0 0 0 4px rgba(26,90,59,0.15)' : 'none',
                   transition: 'all 0.2s'
                 }} />
@@ -1119,17 +1136,17 @@ const StaffProfileTab = () => {
           <div style={{
             background: 'rgba(245, 158, 11, 0.08)',
             border: '1px solid rgba(245, 158, 11, 0.2)',
-            borderLeft: '4px solid var(--status-late, #d97706)',
+            borderLeft: '4px solid #d97706',
             padding: '16px 20px',
-            borderRadius: 'var(--radius-xl, 12px)',
+            borderRadius: '12px',
           }} className="verification-banner">
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <ShieldAlert style={{ color: 'var(--status-late, #d97706)', flexShrink: 0, marginTop: '2px' }} />
+              <ShieldAlert style={{ color: '#d97706', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <strong style={{ color: 'var(--status-late, #d97706)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                <strong style={{ color: '#d97706', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
                   Account Verification Pending
                 </strong>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: 0 }}>
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0 }}>
                   Access to dashboard options is currently locked. Full permissions will unlock upon verification from the {user?.role === 'HOD' ? 'Super Admin' : 'Head of Department'}.
                 </p>
               </div>
@@ -1149,16 +1166,16 @@ const StaffProfileTab = () => {
           <div style={{
             background: 'rgba(16, 185, 129, 0.08)',
             border: '1px solid rgba(16, 185, 129, 0.2)',
-            borderLeft: '4px solid var(--status-present, #10b981)',
+            borderLeft: '4px solid #10b981',
             padding: '16px 20px',
-            borderRadius: 'var(--radius-xl, 12px)',
+            borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px'
           }}>
-            <ShieldCheck style={{ color: 'var(--status-present, #10b981)' }} />
+            <ShieldCheck style={{ color: '#10b981' }} />
             <div>
-              <strong style={{ color: 'var(--status-present, #10b981)', display: 'block', fontSize: '0.95rem' }}>
+              <strong style={{ color: '#10b981', display: 'block', fontSize: '0.95rem' }}>
                 Account Verified
               </strong>
             </div>
@@ -1166,11 +1183,11 @@ const StaffProfileTab = () => {
         )}
 
         {/* 1. PERSONAL INFORMATION */}
-        <section ref={sectionRefs.personal} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <section ref={sectionRefs.personal} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Personal Information</h3>
+              <User size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Personal Information</h3>
             </div>
             {!isEditingPersonal && (
               <button onClick={() => setIsEditingPersonal(true)} style={btnSecondaryStyle}>
@@ -1187,21 +1204,21 @@ const StaffProfileTab = () => {
                   <img 
                     src={`${API_BASE_URL}${user.avatarUrl}`} 
                     alt="Avatar" 
-                    style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-primary)' }} 
+                    style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #1A5A3B' }} 
                   />
                 ) : (
                   <div style={{ 
                     width: '100px', 
                     height: '100px', 
                     borderRadius: '50%', 
-                    background: 'linear-gradient(135deg, var(--color-primary-light, #1A5A3B), var(--color-primary, #0f4028))', 
+                    background: 'linear-gradient(135deg, #1A5A3B, #0f4028)', 
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '2.5rem',
                     fontWeight: 700,
-                    border: '3px solid var(--color-primary)'
+                    border: '3px solid #1A5A3B'
                   }}>
                     {user?.name?.[0]?.toUpperCase()}
                   </div>
@@ -1210,7 +1227,7 @@ const StaffProfileTab = () => {
                   position: 'absolute',
                   bottom: '2px',
                   right: '2px',
-                  background: 'var(--color-primary, #1A5A3B)',
+                  background: '#1A5A3B',
                   color: 'white',
                   width: '28px',
                   height: '28px',
@@ -1399,72 +1416,72 @@ const StaffProfileTab = () => {
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Faculty Name</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{user?.name}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Faculty Name</span>
+                    <strong style={{ color: '#1F2937' }}>{user?.name}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Designation</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.designation || 'Supervisor'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Designation</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.designation || 'Supervisor'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Department</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{user?.department}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Department</span>
+                    <strong style={{ color: '#1F2937' }}>{user?.department}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Specialization</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.specialization || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Specialization</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.specialization || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Email ID</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.email || user?.username}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Email ID</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.email || user?.username}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Contact Phone</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.phoneNumber || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Contact Phone</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.phoneNumber || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Date of Birth</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.dob || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Date of Birth</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.dob || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Gender</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.gender || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Gender</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.gender || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Category</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.category || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Category</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.category || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Nationality</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.nationality || 'Indian'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Nationality</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.nationality || 'Indian'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Father's Name</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.fatherName || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Father's Name</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.fatherName || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Mother's Name</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.motherName || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Mother's Name</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.motherName || 'N/A'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Office Room</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.officeRoom || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Office Room</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.officeRoom || 'N/A'}</strong>
                   </div>
                   {user?.role === 'HOD' && (
                     <>
                       <div>
-                        <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Years of Service</span>
-                        <strong style={{ color: 'var(--text-primary)' }}>{profile.yearsOfService || 'N/A'}</strong>
+                        <span style={{ color: '#64748B', display: 'block' }}>Years of Service</span>
+                        <strong style={{ color: '#1F2937' }}>{profile.yearsOfService || 'N/A'}</strong>
                       </div>
                       <div>
-                        <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Additional Responsibilities</span>
-                        <strong style={{ color: 'var(--text-primary)' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
+                        <span style={{ color: '#64748B', display: 'block' }}>Additional Responsibilities</span>
+                        <strong style={{ color: '#1F2937' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
                       </div>
                     </>
                   )}
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Residential Address</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{profile.address || 'N/A'}</strong>
+                    <span style={{ color: '#64748B', display: 'block' }}>Residential Address</span>
+                    <strong style={{ color: '#1F2937' }}>{profile.address || 'N/A'}</strong>
                   </div>
                 </div>
               )}
@@ -1473,11 +1490,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 2. AREA OF EXPERTISE */}
-        <section ref={sectionRefs.expertise} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.expertise} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Lightbulb size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Area of Expertise</h3>
+              <Lightbulb size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Area of Expertise</h3>
             </div>
             {expertiseList.length > 0 && (
               <button type="button" onClick={clearAllExpertise} style={btnDangerStyle}>
@@ -1502,7 +1519,7 @@ const StaffProfileTab = () => {
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
             {expertiseList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No expertise tags logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No expertise tags logged yet.</span>
             ) : (
               expertiseList.map((tag, i) => (
                 <div 
@@ -1514,7 +1531,7 @@ const StaffProfileTab = () => {
                     padding: '4px 10px',
                     borderRadius: '20px',
                     background: 'rgba(26,90,59,0.08)',
-                    color: 'var(--color-primary)',
+                    color: '#1A5A3B',
                     fontSize: '0.78rem',
                     fontWeight: 600,
                     border: '1px solid rgba(26,90,59,0.15)'
@@ -1524,7 +1541,7 @@ const StaffProfileTab = () => {
                   <button 
                     type="button" 
                     onClick={() => handleDeleteExpertise(tag)} 
-                    style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', display: 'flex', padding: 0 }}
+                    style={{ background: 'none', border: 'none', color: '#1A5A3B', cursor: 'pointer', display: 'flex', padding: 0 }}
                   >
                     <X size={12} />
                   </button>
@@ -1535,11 +1552,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 3. EXPERIENCE DETAILS */}
-        <section ref={sectionRefs.experience} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.experience} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Briefcase size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Work Experience</h3>
+              <Briefcase size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Work Experience</h3>
             </div>
             <div className="section-header-buttons">
               {experienceList.length > 0 && (
@@ -1557,7 +1574,7 @@ const StaffProfileTab = () => {
 
           {/* Form */}
           {showExpForm && (
-            <form onSubmit={saveExperience} style={{ padding: '16px', border: '1px dashed var(--color-border-solid)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-elevated)' }}>
+            <form onSubmit={saveExperience} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingExpIndex === -1 ? 'Add Experience' : 'Edit Experience'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -1594,17 +1611,17 @@ const StaffProfileTab = () => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {experienceList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No employment history logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No employment history logged yet.</span>
             ) : (
               experienceList.map((exp, i) => (
-                <div key={i} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{exp.designation}</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', margin: '2px 0' }}>{exp.organization}</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{exp.designation}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{exp.organization}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
                       {new Date(exp.startDate).toLocaleDateString()} – {exp.isPresent ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'N/A'}
                     </span>
-                    {exp.description && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '8px 0 0 0', lineHeight: 1.4 }}>{exp.description}</p>}
+                    {exp.description && <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '8px 0 0 0', lineHeight: 1.4 }}>{exp.description}</p>}
                   </div>
                   <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                     <button 
@@ -1613,7 +1630,7 @@ const StaffProfileTab = () => {
                         setExpForm(exp);
                         setShowExpForm(true);
                       }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                     >
                       <Edit size={14} />
                     </button>
@@ -1631,11 +1648,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 4. EDUCATIONAL QUALIFICATIONS */}
-        <section ref={sectionRefs.education} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <section ref={sectionRefs.education} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <GraduationCap size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Educational Qualifications</h3>
+              <GraduationCap size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Educational Qualifications</h3>
             </div>
             {(Object.keys(qualifications).length > 0 || otherQualsDraft.length > 0) && (
               <button onClick={clearAllQualifications} style={btnDangerStyle}>
@@ -1649,9 +1666,9 @@ const StaffProfileTab = () => {
               const info = eduDrafts[key] || {};
               const originalInfo = qualifications[key] || {};
               return (
-                <div key={key} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={key} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div className="edu-card-header">
-                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>{label}</strong>
+                    <strong style={{ fontSize: '0.88rem', color: '#1F2937' }}>{label}</strong>
                     
                     {/* Document status or upload controls */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1692,7 +1709,7 @@ const StaffProfileTab = () => {
                   {/* Details forms inside */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                     <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Board / University</label>
+                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
                       <input 
                         type="text" 
                         className="form-input" 
@@ -1703,7 +1720,7 @@ const StaffProfileTab = () => {
                       />
                     </div>
                     <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
+                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
                       <input 
                         type="text" 
                         className="form-input" 
@@ -1714,7 +1731,7 @@ const StaffProfileTab = () => {
                       />
                     </div>
                     <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
+                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
                       <input 
                         type="text" 
                         className="form-input" 
@@ -1725,7 +1742,7 @@ const StaffProfileTab = () => {
                       />
                     </div>
                     <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
+                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
                       <input 
                         type="text" 
                         className="form-input" 
@@ -1758,9 +1775,9 @@ const StaffProfileTab = () => {
             })}
 
             {/* Other Qualifications Header */}
-            <div style={{ borderTop: '1px solid var(--color-border-solid)', paddingTop: '20px', marginTop: '10px' }}>
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px', marginTop: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }} className="section-header">
-                <h4 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: 'var(--color-primary)' }}>Other Qualifications</h4>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: '#1A5A3B' }}>Other Qualifications</h4>
                 <button 
                   type="button" 
                   onClick={addOtherQualRow} 
@@ -1774,7 +1791,7 @@ const StaffProfileTab = () => {
                 {otherQualsDraft.map((qual, index) => {
                   const originalQual = (qualifications.otherQuals && qualifications.otherQuals[index]) || {};
                   return (
-                    <div key={index} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', background: 'var(--color-surface-elevated, #F8FAFC)' }}>
+                    <div key={index} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: '#F8FAFC' }}>
                       <div className="edu-card-header">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, width: '100%' }}>
                           <input 
@@ -1826,7 +1843,7 @@ const StaffProfileTab = () => {
                       {/* Fields */}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                         <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Board / University</label>
+                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
                           <input 
                             type="text" 
                             className="form-input" 
@@ -1837,7 +1854,7 @@ const StaffProfileTab = () => {
                           />
                         </div>
                         <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
+                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
                           <input 
                             type="text" 
                             className="form-input" 
@@ -1848,7 +1865,7 @@ const StaffProfileTab = () => {
                           />
                         </div>
                         <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
+                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
                           <input 
                             type="text" 
                             className="form-input" 
@@ -1859,7 +1876,7 @@ const StaffProfileTab = () => {
                           />
                         </div>
                         <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
+                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
                           <input 
                             type="text" 
                             className="form-input" 
@@ -1898,11 +1915,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 5. HONOURS & AWARDS */}
-        <section ref={sectionRefs.awards} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.awards} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Award size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Honours & Awards</h3>
+              <Award size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Honours & Awards</h3>
             </div>
             <div className="section-header-buttons">
               {awardsList.length > 0 && (
@@ -1920,7 +1937,7 @@ const StaffProfileTab = () => {
 
           {/* Form */}
           {showAwardForm && (
-            <form onSubmit={saveAward} style={{ padding: '16px', border: '1px dashed var(--color-border-solid)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-elevated)' }}>
+            <form onSubmit={saveAward} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingAwardIndex === -1 ? 'Add Award' : 'Edit Award'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -1950,15 +1967,15 @@ const StaffProfileTab = () => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {awardsList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No honours or awards logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No honours or awards logged yet.</span>
             ) : (
               awardsList.map((aw, i) => (
-                <div key={i} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{aw.awardName}</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', margin: '2px 0' }}>{aw.awardingBody}</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>Year: {aw.year}</span>
-                    {aw.description && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '8px 0 0 0', lineHeight: 1.4 }}>{aw.description}</p>}
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{aw.awardName}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{aw.awardingBody}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Year: {aw.year}</span>
+                    {aw.description && <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '8px 0 0 0', lineHeight: 1.4 }}>{aw.description}</p>}
                   </div>
                   <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                     <button 
@@ -1967,7 +1984,7 @@ const StaffProfileTab = () => {
                         setAwardForm(aw);
                         setShowAwardForm(true);
                       }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                     >
                       <Edit size={14} />
                     </button>
@@ -1985,11 +2002,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 6. DOCTORAL THESES */}
-        <section ref={sectionRefs.theses} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.theses} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Doctoral Theses Supervised</h3>
+              <FileText size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Doctoral Theses Supervised</h3>
             </div>
             <div className="section-header-buttons">
               {thesesList.length > 0 && (
@@ -2007,7 +2024,7 @@ const StaffProfileTab = () => {
 
           {/* Form */}
           {showThesisForm && (
-            <form onSubmit={saveThesis} style={{ padding: '16px', border: '1px dashed var(--color-border-solid)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-elevated)' }}>
+            <form onSubmit={saveThesis} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingThesisIndex === -1 ? 'Add Thesis Record' : 'Edit Thesis Record'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2040,14 +2057,14 @@ const StaffProfileTab = () => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {thesesList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No theses guidance logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No theses guidance logged yet.</span>
             ) : (
               thesesList.map((th, i) => (
-                <div key={i} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{th.thesisTitle}</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', margin: '2px 0' }}>Scholar: {th.scholarName}</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'inline-flex', gap: '12px' }}>
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{th.thesisTitle}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Scholar: {th.scholarName}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
                       <span>Year: {th.yearOfAward}</span>
                       <span className="badge badge-neutral" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{th.status}</span>
                     </span>
@@ -2059,7 +2076,7 @@ const StaffProfileTab = () => {
                         setThesisForm(th);
                         setShowThesisForm(true);
                       }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                     >
                       <Edit size={14} />
                     </button>
@@ -2077,11 +2094,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 7. PROFESSIONAL BODIES */}
-        <section ref={sectionRefs.memberships} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.memberships} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Users size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Professional Bodies</h3>
+              <Users size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Professional Bodies</h3>
             </div>
             <div className="section-header-buttons">
               {membershipsList.length > 0 && (
@@ -2099,7 +2116,7 @@ const StaffProfileTab = () => {
 
           {/* Form */}
           {showMemberForm && (
-            <form onSubmit={saveMember} style={{ padding: '16px', border: '1px dashed var(--color-border-solid)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-elevated)' }}>
+            <form onSubmit={saveMember} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingMemberIndex === -1 ? 'Add Membership' : 'Edit Membership'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2134,14 +2151,14 @@ const StaffProfileTab = () => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {membershipsList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No professional memberships logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No professional memberships logged yet.</span>
             ) : (
               membershipsList.map((mb, i) => (
-                <div key={i} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{mb.membershipName}</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', margin: '2px 0' }}>{mb.organization}</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'inline-flex', gap: '12px' }}>
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{mb.membershipName}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{mb.organization}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
                       <span>Joined: {mb.year}</span>
                       <span className="badge badge-neutral" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{mb.membershipType}</span>
                     </span>
@@ -2153,7 +2170,7 @@ const StaffProfileTab = () => {
                         setMemberForm(mb);
                         setShowMemberForm(true);
                       }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                     >
                       <Edit size={14} />
                     </button>
@@ -2171,11 +2188,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 8. MEMBERSHIP IN COMMITTEE */}
-        <section ref={sectionRefs.committees} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.committees} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Bookmark size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Membership in Committee</h3>
+              <Bookmark size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Membership in Committee</h3>
             </div>
             <div className="section-header-buttons">
               {committeesList.length > 0 && (
@@ -2193,7 +2210,7 @@ const StaffProfileTab = () => {
 
           {/* Form */}
           {showCommitteeForm && (
-            <form onSubmit={saveCommittee} style={{ padding: '16px', border: '1px dashed var(--color-border-solid)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-elevated)' }}>
+            <form onSubmit={saveCommittee} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingCommitteeIndex === -1 ? 'Add Committee Seat' : 'Edit Committee Seat'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2223,14 +2240,14 @@ const StaffProfileTab = () => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {committeesList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No committee seats logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No committee seats logged yet.</span>
             ) : (
               committeesList.map((ct, i) => (
-                <div key={i} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{ct.committeeName}</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', margin: '2px 0' }}>Role: {ct.role} ({ct.organization})</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>Duration: {ct.duration}</span>
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ct.committeeName}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Role: {ct.role} ({ct.organization})</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {ct.duration}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                     <button 
@@ -2239,7 +2256,7 @@ const StaffProfileTab = () => {
                         setCommitteeForm(ct);
                         setShowCommitteeForm(true);
                       }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                     >
                       <Edit size={14} />
                     </button>
@@ -2257,11 +2274,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 9. RESEARCH PROJECTS */}
-        <section ref={sectionRefs.projects} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.projects} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Folder size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Research Projects</h3>
+              <Folder size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Research Projects</h3>
             </div>
             <div className="section-header-buttons">
               {projectsList.length > 0 && (
@@ -2279,7 +2296,7 @@ const StaffProfileTab = () => {
 
           {/* Form */}
           {showProjectForm && (
-            <form onSubmit={saveProject} style={{ padding: '16px', border: '1px dashed var(--color-border-solid)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-elevated)' }}>
+            <form onSubmit={saveProject} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingProjectIndex === -1 ? 'Add Project' : 'Edit Project'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2324,14 +2341,14 @@ const StaffProfileTab = () => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {projectsList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No research projects logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No research projects logged yet.</span>
             ) : (
               projectsList.map((pr, i) => (
-                <div key={i} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{pr.projectTitle}</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', margin: '2px 0' }}>Agency: {pr.fundingAgency} | Grant: ₹{pr.amount}</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'inline-flex', gap: '12px' }}>
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pr.projectTitle}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Agency: {pr.fundingAgency} | Grant: ₹{pr.amount}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
                       <span>Duration: {pr.duration}</span>
                       <span className="badge badge-neutral" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{pr.role}</span>
                       <span className="badge badge-present" style={{ fontSize: '0.65rem', padding: '2px 6px', background: pr.status === 'Completed' ? '#E8F5E9' : '#FFF3E0', color: pr.status === 'Completed' ? '#2E7D32' : '#E65100' }}>{pr.status}</span>
@@ -2344,7 +2361,7 @@ const StaffProfileTab = () => {
                         setProjectForm(pr);
                         setShowProjectForm(true);
                       }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                     >
                       <Edit size={14} />
                     </button>
@@ -2362,11 +2379,11 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 10. PUBLICATIONS */}
-        <section ref={sectionRefs.publications} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.publications} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BookOpen size={20} style={{ color: 'var(--color-primary)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Research Publications</h3>
+              <BookOpen size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Research Publications</h3>
             </div>
             <div className="section-header-buttons">
               {publicationsList.length > 0 && (
@@ -2384,7 +2401,7 @@ const StaffProfileTab = () => {
 
           {/* Form */}
           {showPubForm && (
-            <form onSubmit={savePub} style={{ padding: '16px', border: '1px dashed var(--color-border-solid)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface-elevated)' }}>
+            <form onSubmit={savePub} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingPubIndex === -1 ? 'Add Publication' : 'Edit Publication'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -2418,20 +2435,20 @@ const StaffProfileTab = () => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {publicationsList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No publications logged yet.</span>
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publications logged yet.</span>
             ) : (
               publicationsList.map((pb, i) => (
-                <div key={i} style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{pb.title}</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
+                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pb.title}</strong>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
                     {pb.doi && (
                       <a 
                         href={pb.doi.startsWith('http') ? pb.doi : `https://${pb.doi}`} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        style={{ fontSize: '0.75rem', color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
                       >
                         <ExternalLink size={12} /> Paper Link / DOI
                       </a>
@@ -2444,7 +2461,7 @@ const StaffProfileTab = () => {
                         setPubForm(pb);
                         setShowPubForm(true);
                       }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                     >
                       <Edit size={14} />
                     </button>
@@ -2462,24 +2479,24 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 11. PRIVACY & SETTINGS */}
-        <section ref={sectionRefs.settings} className="clay-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-solid)', paddingBottom: '12px' }}>
-            <Settings size={20} style={{ color: 'var(--color-primary)' }} />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '800', fontFamily: 'Outfit', margin: 0 }}>Privacy & Settings</h3>
+        <section ref={sectionRefs.settings} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+            <Settings size={20} style={{ color: '#1A5A3B' }} />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Privacy & Settings</h3>
           </div>
 
           <form onSubmit={savePrivacy} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
               
-              <div style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <strong style={{ fontSize: '0.88rem', color: '#1F2937', display: 'block', marginBottom: '8px' }}>
                   Profile Visibility
                 </strong>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.35 }}>
+                <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: '14px', lineHeight: 1.35 }}>
                   Decide whether your academic credentials and publications are discoverable on the public portal.
                 </p>
                 <div style={{ display: 'flex', gap: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#1F2937', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="profileVisibility" 
@@ -2489,7 +2506,7 @@ const StaffProfileTab = () => {
                     />
                     <Eye size={14} style={{ color: '#10b981' }} /> Public
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#1F2937', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="profileVisibility" 
@@ -2502,15 +2519,15 @@ const StaffProfileTab = () => {
                 </div>
               </div>
 
-              <div style={{ border: '1px solid var(--color-border-solid)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <strong style={{ fontSize: '0.88rem', color: '#1F2937', display: 'block', marginBottom: '8px' }}>
                   Document Visibility
                 </strong>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.35 }}>
+                <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: '14px', lineHeight: 1.35 }}>
                   Decide whether uploaded certificates and research briefs are viewable by public query guests.
                 </p>
                 <div style={{ display: 'flex', gap: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#1F2937', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="documentVisibility" 
@@ -2520,7 +2537,7 @@ const StaffProfileTab = () => {
                     />
                     <Eye size={14} style={{ color: '#10b981' }} /> Public
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '#1F2937', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="documentVisibility" 
