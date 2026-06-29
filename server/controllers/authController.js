@@ -509,6 +509,16 @@ const getStudentsFiltered = async (req, res) => {
       query['profile.subject'] = { $regex: new RegExp(subject, 'i') };
     }
 
+    if (req.query.profileCompleted !== undefined) {
+      query.profileCompleted = req.query.profileCompleted === 'true';
+    }
+    if (req.query.isVerified !== undefined) {
+      query.isVerified = req.query.isVerified === 'true';
+    }
+    if (req.query.isPhD !== undefined) {
+      query['profile.isPhD'] = req.query.isPhD === 'true';
+    }
+
     const students = await User.find(query).select('name username department profile isVerified profileCompleted');
     res.json(students);
   } catch (error) {

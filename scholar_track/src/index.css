@@ -392,7 +392,8 @@ img {
 /* ─── Dashboard Layout ─── */
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   position: relative;
 }
 
@@ -558,9 +559,10 @@ img {
 .main-content {
   flex: 1;
   margin-left: var(--sidebar-width);
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   transition: margin-left 0.3s var(--ease-smooth);
 }
 
