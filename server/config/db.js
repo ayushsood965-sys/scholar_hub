@@ -56,6 +56,7 @@ const backfillPhdStatus = async () => {
       const phdResult = await User.updateMany(
         {
           role: 'STUDENT',
+          'profile.isPhD': { $nin: [true, false] },
           $or: [
             { 'profile.degreeTypeId': phdType._id },
             { 'profile.degreeType': { $regex: /phd/i } }
@@ -68,12 +69,11 @@ const backfillPhdStatus = async () => {
       }
     }
 
-    // Set isPhD = false for all students who don't have isPhD explicitly set to true
-    // This catches: isPhD missing, isPhD: false, or isPhD incorrectly set
+    // Set isPhD = false for all students who don't have isPhD explicitly set
     const nonPhdResult = await User.updateMany(
       {
         role: 'STUDENT',
-        'profile.isPhD': { $ne: true }
+        'profile.isPhD': { $nin: [true, false] }
       },
       { $set: { 'profile.isPhD': false } }
     );
