@@ -129,7 +129,7 @@ const register = async (req, res) => {
 
       // Set isPhD based on degree type
       const degreeTypeStr = (degreeTypeName || degreeType || '').toUpperCase();
-      profileData.isPhD = degreeTypeStr.includes('PHD');
+      profileData.isPhD = degreeTypeStr.replace(/[^A-Z]/g, '').includes('PHD');
     }
 
     // For students, name may not be provided — derive from email prefix
@@ -212,7 +212,7 @@ const updateProfile = async (req, res) => {
     // Recalculate isPhD if degree type was updated
     if (profileData.degreeType || profileData.degreeTypeName) {
       const degreeTypeStr = (profileData.degreeTypeName || profileData.degreeType || user.profile.degreeType || user.profile.degreeTypeName || '').toUpperCase();
-      user.profile.isPhD = degreeTypeStr.includes('PHD');
+      user.profile.isPhD = degreeTypeStr.replace(/[^A-Z]/g, '').includes('PHD');
     }
 
     if (req.body.profileCompleted === true) {
@@ -516,7 +516,12 @@ const getStudentsFiltered = async (req, res) => {
       query.isVerified = req.query.isVerified === 'true';
     }
     if (req.query.isPhD !== undefined) {
-      query['profile.isPhD'] = req.query.isPhD === 'true';
+      if (req.query.isPhD === 'false') {
+        query['profile.isPhD'] = { $ne: true };
+        query['profile.degreeType'] = { $not: /PH\.?D/i };
+      } else {
+        query['profile.isPhD'] = true;
+      }
     }
 
     const students = await User.find(query).select('name username department profile isVerified profileCompleted');
