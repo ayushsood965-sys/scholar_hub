@@ -57,6 +57,12 @@ const Signup = () => {
   const [degreeTypeDropdownOpen, setDegreeTypeDropdownOpen] = useState(false);
   const [degreeTypeSearch, setDegreeTypeSearch] = useState('');
 
+  // Gender and Category from master data
+  const [gender, setGender] = useState('');
+  const [category, setCategory] = useState('');
+  const [genderOptions, setGenderOptions] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -83,8 +89,21 @@ const Signup = () => {
         if (Array.isArray(data)) setSessionOptions(data);
       } catch (err) { /* silent */ }
     };
+    const fetchGenderCategory = async () => {
+      try {
+        const [genderRes, categoryRes] = await Promise.all([
+          fetch(`${API_URL}/attendance/public/masters/category-gender?type=GENDER`),
+          fetch(`${API_URL}/attendance/public/masters/category-gender?type=CATEGORY`)
+        ]);
+        const genderData = await genderRes.json();
+        const categoryData = await categoryRes.json();
+        if (Array.isArray(genderData)) setGenderOptions(genderData);
+        if (Array.isArray(categoryData)) setCategoryOptions(categoryData);
+      } catch (err) { /* silent */ }
+    };
     fetchDegreeNames();
     fetchSessions();
+    fetchGenderCategory();
   }, []);
 
   // When department changes, filter degree types from degree names belonging to that department
@@ -202,8 +221,8 @@ const Signup = () => {
 
     // Student-specific validations
     if (role === 'STUDENT') {
-      if (!academicSession || !degreeTypeId || !degreeNameId) {
-        setError('Please fill in all required fields (Session, Degree Type, Degree Name).');
+      if (!academicSession || !degreeTypeId || !degreeNameId || !gender || !category) {
+        setError('Please fill in all required fields (Session, Degree Type, Degree Name, Gender, Category).');
         return;
       }
     }
@@ -237,6 +256,8 @@ const Signup = () => {
       userData.degreeTypeName = selectedType?.label || '';
       userData.degreeNameId = degreeNameId;
       userData.degreeNameLabel = selectedName?.label || '';
+      userData.gender = gender;
+      userData.category = category;
     } else {
       userData.name = name;
     }
@@ -325,6 +346,8 @@ const Signup = () => {
                   setDegreeTypeOptions([]);
                   setDegreeNameOptions([]);
                   setAcademicSession('');
+                  setGender('');
+                  setCategory('');
                 }}
                 required
               >
@@ -412,6 +435,38 @@ const Signup = () => {
                     <option value="">-- Select Session --</option>
                     {sessionOptions.map(s => (
                       <option key={s._id} value={s.sessionName}>{s.sessionName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Gender Dropdown */}
+                <div className="form-group">
+                  <label className="form-label">Gender <span className="required">*</span></label>
+                  <select
+                    className="form-input"
+                    value={gender}
+                    onChange={e => setGender(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Select Gender --</option>
+                    {genderOptions.map(g => (
+                      <option key={g._id} value={g.value}>{g.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Category Dropdown */}
+                <div className="form-group">
+                  <label className="form-label">Category <span className="required">*</span></label>
+                  <select
+                    className="form-input"
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Select Category --</option>
+                    {categoryOptions.map(c => (
+                      <option key={c._id} value={c.value}>{c.label}</option>
                     ))}
                   </select>
                 </div>

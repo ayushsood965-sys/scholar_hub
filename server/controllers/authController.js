@@ -84,7 +84,7 @@ const login = async (req, res) => {
 
 // POST /api/auth/register
 const register = async (req, res) => {
-  const { name, username, password, role, department, phoneNumber, academicSession, degreeType, degreeName, degreeTypeId, degreeTypeName, degreeNameId, degreeNameLabel } = req.body;
+  const { name, username, password, role, department, phoneNumber, academicSession, degreeType, degreeName, degreeTypeId, degreeTypeName, degreeNameId, degreeNameLabel, gender, category } = req.body;
   try {
     if (await User.findOne({ username })) {
       return res.status(400).json({ 
@@ -116,19 +116,21 @@ const register = async (req, res) => {
     }
 
      const profileData = { phoneNumber: formattedPhone };
-     if (role === 'STUDENT') {
-       if (academicSession) profileData.academicSession = academicSession;
-       if (degreeType) profileData.degreeType = degreeType;
-       if (degreeName) profileData.degreeName = degreeName;
-       if (degreeTypeId) profileData.degreeTypeId = degreeTypeId;
-       if (degreeTypeName) profileData.degreeTypeName = degreeTypeName;
-       if (degreeNameId) profileData.degreeNameId = degreeNameId;
-       if (degreeNameLabel) profileData.degreeNameLabel = degreeNameLabel;
+    if (role === 'STUDENT') {
+      if (academicSession) profileData.academicSession = academicSession;
+      if (degreeType) profileData.degreeType = degreeType;
+      if (degreeName) profileData.degreeName = degreeName;
+      if (degreeTypeId) profileData.degreeTypeId = degreeTypeId;
+      if (degreeTypeName) profileData.degreeTypeName = degreeTypeName;
+      if (degreeNameId) profileData.degreeNameId = degreeNameId;
+      if (degreeNameLabel) profileData.degreeNameLabel = degreeNameLabel;
+      if (gender) profileData.gender = gender;
+      if (category) profileData.category = category;
 
-       // Set isPhD based on degree type
-       const degreeTypeStr = (degreeTypeName || degreeType || '').toUpperCase();
-       profileData.isPhD = degreeTypeStr.includes('PHD');
-     }
+      // Set isPhD based on degree type
+      const degreeTypeStr = (degreeTypeName || degreeType || '').toUpperCase();
+      profileData.isPhD = degreeTypeStr.includes('PHD');
+    }
 
     // For students, name may not be provided — derive from email prefix
     const finalName = name || (username ? username.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '');

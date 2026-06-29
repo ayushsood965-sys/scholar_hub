@@ -50,6 +50,12 @@ const Signup = () => {
   const [hasPhdForDept, setHasPhdForDept] = useState(false);
   const [phdDegreeNames, setPhdDegreeNames] = useState([]);
 
+  // Gender and Category from master data
+  const [gender, setGender] = useState('');
+  const [category, setCategory] = useState('');
+  const [genderOptions, setGenderOptions] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -74,8 +80,21 @@ const Signup = () => {
         if (Array.isArray(data)) setSessionOptions(data);
       } catch (err) { /* silent */ }
     };
+    const fetchGenderCategory = async () => {
+      try {
+        const [genderRes, categoryRes] = await Promise.all([
+          fetch(`${API_URL}/attendance/public/masters/category-gender?type=GENDER`),
+          fetch(`${API_URL}/attendance/public/masters/category-gender?type=CATEGORY`)
+        ]);
+        const genderData = await genderRes.json();
+        const categoryData = await categoryRes.json();
+        if (Array.isArray(genderData)) setGenderOptions(genderData);
+        if (Array.isArray(categoryData)) setCategoryOptions(categoryData);
+      } catch (err) { /* silent */ }
+    };
     fetchDegreeNames();
     fetchSessions();
+    fetchGenderCategory();
   }, []);
 
   // Fetch departments
@@ -173,6 +192,14 @@ const Signup = () => {
         setError('Please select an academic session.');
         return;
       }
+      if (!gender) {
+        setError('Please select a gender.');
+        return;
+      }
+      if (!category) {
+        setError('Please select a category.');
+        return;
+      }
       if (!hasPhdForDept) {
         setError('No PhD programme is mapped under the selected department. Please choose a department that offers PhD, or contact your department administrator.');
         return;
@@ -210,6 +237,8 @@ const Signup = () => {
         userData.degreeNameId = phdDegreeNames[0]._id;
         userData.degreeNameLabel = phdDegreeNames[0].name;
       }
+      userData.gender = gender;
+      userData.category = category;
     } else {
       userData.name = name;
     }
@@ -262,6 +291,8 @@ const Signup = () => {
                   setRole(e.target.value);
                   setError('');
                   setAcademicSession('');
+                  setGender('');
+                  setCategory('');
                 }}
                 required
                 style={{
@@ -456,6 +487,64 @@ const Signup = () => {
                     <option value="" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>-- Select Session --</option>
                     {sessionOptions.map(s => (
                       <option key={s._id} value={s.sessionName} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{s.sessionName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Gender Dropdown */}
+                <div className="form-group">
+                  <label className="form-label">Gender <span style={{ color: theme.error }}>*</span></label>
+                  <select
+                    className="form-input"
+                    value={gender}
+                    onChange={e => setGender(e.target.value)}
+                    required
+                    style={{
+                      backgroundColor: theme.inputBg,
+                      color: theme.inputText,
+                      borderColor: theme.inputBorder,
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23${theme.isDark ? '88898b' : '6B7280'}' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '14px',
+                      paddingRight: '36px',
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>-- Select Gender --</option>
+                    {genderOptions.map(g => (
+                      <option key={g._id} value={g.value} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{g.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Category Dropdown */}
+                <div className="form-group">
+                  <label className="form-label">Category <span style={{ color: theme.error }}>*</span></label>
+                  <select
+                    className="form-input"
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    required
+                    style={{
+                      backgroundColor: theme.inputBg,
+                      color: theme.inputText,
+                      borderColor: theme.inputBorder,
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23${theme.isDark ? '88898b' : '6B7280'}' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '14px',
+                      paddingRight: '36px',
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>-- Select Category --</option>
+                    {categoryOptions.map(c => (
+                      <option key={c._id} value={c.value} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{c.label}</option>
                     ))}
                   </select>
                 </div>
