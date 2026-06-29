@@ -62,11 +62,14 @@ const createThesis = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Ensure the student has completed their profile details first!
-    if (!user.profileCompleted || !user.profile?.enrollmentNumber || !user.department || !user.profile?.thesisTitle || !user.profile?.thesisSummary || !user.profile?.thesisKeywords) {
+    if (!user.profile?.enrollmentNumber || !user.department || !user.profile?.thesisTitle || !user.profile?.thesisSummary || !user.profile?.thesisKeywords) {
       return res.status(400).json({ 
         message: 'Please complete all required fields (General Info, Qualifications, and Preferred Guide) in your Profile tab first and click Save Profile before submitting for approval.' 
       });
     }
+
+    user.profileCompleted = true;
+    await user.save();
 
     const thesis = await Thesis.create({
       scholarId: req.user._id,

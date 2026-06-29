@@ -7,7 +7,7 @@ import { AuthContext } from '../../context/AuthContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { 
   User, BookOpen, UserCheck, ShieldAlert, ShieldCheck, 
-  Upload, FileText, CheckCircle, Save, Camera, HelpCircle, RefreshCw 
+  Upload, FileText, CheckCircle, Save, Camera, HelpCircle, RefreshCw, Lock
 } from 'lucide-react';
 
 const ProfileTab = ({ thesis, onRefreshThesis }) => {
@@ -268,7 +268,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
   useEffect(() => {
     if (isPhD && degreeTypes.length > 0 && !degreeTypeId) {
-      const phdType = degreeTypes.find(t => t.code === 'PHD' || t.name?.toLowerCase().includes('phd'));
+      const phdType = degreeTypes.find(t => t.code === 'PHD' || t.name?.toLowerCase()?.includes('phd'));
       if (phdType) {
         setDegreeTypeId(phdType._id);
       }
@@ -451,14 +451,32 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     // --- STEP 4: Format Payload & Send Update ---
     let sectionData = {};
     if (sectionKey === 'general') {
-      if (phoneNumber) {
-        const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
-        const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
-        if (!indianPhoneRegex.test(cleanedPhone)) {
-          toast.error('Please enter a valid 10-digit Indian phone number.');
-          setLoading(false);
-          return;
-        }
+      if (!dob) { toast.error('Date of Birth is required.'); setLoading(false); return; }
+      if (!fatherName || !fatherName.trim()) { toast.error("Father's Name is required."); setLoading(false); return; }
+      if (!motherName || !motherName.trim()) { toast.error("Mother's Name is required."); setLoading(false); return; }
+      if (!nationality || !nationality.trim()) { toast.error('Nationality is required.'); setLoading(false); return; }
+      if (!phoneNumber || !phoneNumber.trim()) { toast.error('Phone Number is required.'); setLoading(false); return; }
+      if (!address || !address.trim()) { toast.error('Residential Address is required.'); setLoading(false); return; }
+      if (!academicSession) { toast.error('Academic Session is required.'); setLoading(false); return; }
+      if (!degreeTypeId) { toast.error('Degree Type is required.'); setLoading(false); return; }
+      if (!degreeNameId) { toast.error('Degree Name is required.'); setLoading(false); return; }
+
+      const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
+      const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
+      if (!indianPhoneRegex.test(cleanedPhone)) {
+        toast.error('Please enter a valid 10-digit Indian phone number.');
+        setLoading(false);
+        return;
+      }
+
+      if (isPhD) {
+        if (!admissionDate) { toast.error('Date of Admission is required.'); setLoading(false); return; }
+        if (!phdMode) { toast.error('Mode of Ph.D. is required.'); setLoading(false); return; }
+        if (!specialization || !specialization.trim()) { toast.error('Area of Specialization is required.'); setLoading(false); return; }
+        if (!areaOfInterest || !areaOfInterest.trim()) { toast.error('Area of Research Interest is required.'); setLoading(false); return; }
+        if (!thesisTitle || !thesisTitle.trim()) { toast.error('Thesis Title is required.'); setLoading(false); return; }
+        if (!thesisSummary || !thesisSummary.trim()) { toast.error('Thesis Summary is required.'); setLoading(false); return; }
+        if (!thesisKeywords || !thesisKeywords.trim()) { toast.error('Thesis Keywords are required.'); setLoading(false); return; }
       }
       sectionData = {
         dob, gender, category, fatherName, motherName, nationality,
@@ -532,7 +550,19 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         };
       }
       await updateProfile(payload);
-      toast.success('Section saved successfully');
+      if (sectionKey === 'general') {
+        setIsPersonalInfoSavedState(true);
+        if (!isPersonalInfoSavedState) {
+          toast.success('Personal details saved successfully! Proceeding to Academic Qualifications.');
+          setTimeout(() => {
+            scrollToSection('education', true);
+          }, 100);
+        } else {
+          toast.success('Personal details updated successfully!');
+        }
+      } else {
+        toast.success('Section saved successfully');
+      }
       setEditModes(prev => ({ ...prev, [sectionKey]: false }));
       fetchProfile();
     } catch (err) {
@@ -740,11 +770,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       const q = profile?.profile?.qualifications || {};
       if (
         !class10Roll || !q.class10?.certificateUrl ||
-        !class12Roll || !q.class12?.certificateUrl ||
-        !gradRoll || !q.graduation?.certificateUrl ||
-        !q.postGraduation?.certificateUrl || !pgRoll
+        !class12Roll || !q.class12?.certificateUrl
       ) {
-        toast.error('Please fill in all qualifications and upload their certificates (PDF) first.');
+        toast.error('Please fill in Class 10th and Class 12th details and upload their certificates (PDF) first.');
         return;
       }
 
@@ -775,10 +803,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       const q = profile?.profile?.qualifications || {};
       if (
         !class10Roll || !q.class10?.certificateUrl ||
-        !class12Roll || !q.class12?.certificateUrl ||
-        !gradRoll || !q.graduation?.certificateUrl
+        !class12Roll || !q.class12?.certificateUrl
       ) {
-        toast.error('Please fill in 10th, 12th, and Graduation qualifications and upload their certificates (PDF) first.');
+        toast.error('Please fill in Class 10th and Class 12th details and upload their certificates (PDF) first.');
         return;
       }
     }
@@ -847,10 +874,18 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     );
   };
 
-  if (loading) return <SkeletonLoader count={1} height={400} />;
+
+  const [isPersonalInfoSavedState, setIsPersonalInfoSavedState] = useState(false);
+  useEffect(() => {
+    if (profile?.profile) {
+      const saved = isPhD ? !!profile.profile.dob : (!!profile.profile.phoneNumber && !!profile.profile.address);
+      setIsPersonalInfoSavedState(saved);
+    }
+  }, [profile, isPhD]);
 
   const isSubmitted = !!thesis || !!profile?.profileCompleted;
   const isVerifiedPhD = thesis && thesis.enrollmentVerified === true;
+  const isPersonalInfoSaved = isPhD ? !!profile?.profile?.dob : (!!profile?.profile?.phoneNumber && !!profile?.profile?.address);
 
   // Active section track & timeline navigation refs
   const [activeSection, setActiveSection] = useState('personal');
@@ -976,10 +1011,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }
   `;
 
-  // Dynamic Scroll Sentinel & Snap Scroll Hook
+  // Dynamic Scroll Sentinel
   useEffect(() => {
-    let touchStartY = 0;
-
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
@@ -988,138 +1021,23 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       }
     };
 
-    const handleKeyDown = (e) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && (
-        activeEl.tagName === 'INPUT' || 
-        activeEl.tagName === 'TEXTAREA' || 
-        activeEl.isContentEditable
-      );
-      if (isInput) return;
-
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const keys = isPhD ? ['personal', 'education', 'supervisor'] : ['personal', 'education'];
-        const currentIndex = keys.indexOf(activeSection);
-        
-        let nextIndex = currentIndex;
-        if (e.key === 'ArrowDown') {
-          nextIndex = Math.min(currentIndex + 1, keys.length - 1);
-        } else if (e.key === 'ArrowUp') {
-          nextIndex = Math.max(currentIndex - 1, 0);
-        }
-        
-        if (nextIndex !== currentIndex) {
-          const nextKey = keys[nextIndex];
-          scrollToSection(nextKey);
-        }
-      }
-    };
-
-    const handleWheel = (e) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && (
-        activeEl.tagName === 'INPUT' || 
-        activeEl.tagName === 'TEXTAREA' || 
-        activeEl.isContentEditable
-      );
-      if (isInput) return;
-
-      const now = Date.now();
-      if (now - lastWheelTimeRef.current < 900) {
-        e.preventDefault();
-        return;
-      }
-
-      const keys = isPhD ? ['personal', 'education', 'supervisor'] : ['personal', 'education'];
-      const currentIndex = keys.indexOf(activeSection);
-      
-      let nextIndex = currentIndex;
-      if (e.deltaY > 0) {
-        nextIndex = Math.min(currentIndex + 1, keys.length - 1);
-      } else if (e.deltaY < 0) {
-        nextIndex = Math.max(currentIndex - 1, 0);
-      }
-      
-      if (nextIndex !== currentIndex) {
-        e.preventDefault();
-        lastWheelTimeRef.current = now;
-        const nextKey = keys[nextIndex];
-        scrollToSection(nextKey);
-      }
-    };
-
-    const handleTouchStart = (e) => {
-      touchStartY = e.touches[0].clientY;
-    };
-
-    const handleTouchEnd = (e) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && (
-        activeEl.tagName === 'INPUT' || 
-        activeEl.tagName === 'TEXTAREA' || 
-        activeEl.isContentEditable
-      );
-      if (isInput) return;
-
-      const touchEndY = e.changedTouches[0].clientY;
-      const diffY = touchStartY - touchEndY;
-      
-      const now = Date.now();
-      if (now - lastWheelTimeRef.current < 900) {
-        return;
-      }
-      
-      if (Math.abs(diffY) > 50) {
-        const keys = isPhD ? ['personal', 'education', 'supervisor'] : ['personal', 'education'];
-        const currentIndex = keys.indexOf(activeSection);
-        
-        let nextIndex = currentIndex;
-        if (diffY > 0) {
-          nextIndex = Math.min(currentIndex + 1, keys.length - 1);
-        } else {
-          nextIndex = Math.max(currentIndex - 1, 0);
-        }
-        
-        if (nextIndex !== currentIndex) {
-          lastWheelTimeRef.current = now;
-          const nextKey = keys[nextIndex];
-          scrollToSection(nextKey);
-        }
-      }
-    };
-
-    checkSticky();
-
     const dashboardArea = document.querySelector('.dashboard-area');
     if (dashboardArea) {
       dashboardArea.addEventListener('scroll', checkSticky);
-      dashboardArea.addEventListener('wheel', handleWheel, { passive: false });
-      dashboardArea.addEventListener('touchstart', handleTouchStart, { passive: true });
-      dashboardArea.addEventListener('touchend', handleTouchEnd, { passive: true });
     }
     window.addEventListener('scroll', checkSticky);
     window.addEventListener('resize', checkSticky);
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    checkSticky();
 
     return () => {
       if (dashboardArea) {
         dashboardArea.removeEventListener('scroll', checkSticky);
-        dashboardArea.removeEventListener('wheel', handleWheel);
-        dashboardArea.removeEventListener('touchstart', handleTouchStart);
-        dashboardArea.removeEventListener('touchend', handleTouchEnd);
       }
       window.removeEventListener('scroll', checkSticky);
       window.removeEventListener('resize', checkSticky);
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSection, isPhD]);
+  }, []);
 
   // Auto-scroll mobile milestones navigation row to keep active tab centered
   useEffect(() => {
@@ -1150,6 +1068,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     Object.entries(sectionRefs).forEach(([key, ref]) => {
       if (ref.current) {
         const handler = () => {
+          if (key === 'education' && !isPersonalInfoSavedState) return;
+          if (key === 'supervisor' && !guideUnlocked) return;
           setActiveSection(key);
         };
         ref.current.addEventListener('click', handler);
@@ -1162,9 +1082,17 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         element.removeEventListener('click', handler);
       });
     };
-  }, []);
+  }, [isPersonalInfoSavedState, guideUnlocked]);
 
-  const scrollToSection = (key) => {
+  const scrollToSection = (key, force = false) => {
+    if (!force) {
+      if (key === 'education' && !isPersonalInfoSavedState) {
+        return;
+      }
+      if (key === 'supervisor' && !guideUnlocked) {
+        return;
+      }
+    }
     setActiveSection(key);
     isAutoScrollingRef.current = true;
     sectionRefs[key].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1174,7 +1102,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   };
 
   const filteredDegreeTypes = isVerifiedPhD 
-    ? degreeTypes.filter(t => t.code === 'PHD' || t.name?.toLowerCase().includes('phd'))
+    ? degreeTypes.filter(t => t.code === 'PHD' || t.name?.toLowerCase()?.includes('phd'))
     : degreeTypes;
 
   const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === degreeTypeId || d.degreeTypeId === degreeTypeId);
@@ -1186,15 +1114,17 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   };
 
   const isGeneralInfoComplete = () => {
+    const baseFields = !!(
+      dob && gender && category && fatherName && motherName && nationality &&
+      phoneNumber && address && academicSession && degreeTypeId && degreeNameId
+    );
     if (!isPhD) {
-      return !!(academicSession && degreeTypeId && phoneNumber && address);
+      return baseFields;
     }
     return !!(
-      dob && gender && category && fatherName && motherName && nationality &&
+      baseFields &&
       admissionDate && phdMode && specialization &&
-      phoneNumber && address && areaOfInterest &&
-      thesisTitle && thesisSummary && thesisKeywords && academicSession &&
-      degreeTypeId
+      areaOfInterest && thesisTitle && thesisSummary && thesisKeywords
     );
   };
 
@@ -1204,19 +1134,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
     const class10Ok = !!(class10Roll && class10Board && class10School && class10Marks && class10Total && class10Percentage && q?.class10?.certificateUrl);
     const class12Ok = !!(class12Roll && class12Board && class12School && class12Marks && class12Total && class12Percentage && q?.class12?.certificateUrl);
-    const gradOk = !!(gradRoll && gradDegree && gradCollege && gradUniversity && gradMarks && gradTotal && gradPercentage && q?.graduation?.certificateUrl);
-    const pgOk = !!(pgRoll && pgDegree && pgCollege && pgUniversity && pgMarks && pgTotal && pgPercentage && q?.postGraduation?.certificateUrl);
 
-    if (!class10Ok || !class12Ok || !gradOk || !pgOk) return false;
-
-    if (isPhD) {
-      if (netJrfQualified === 'YES') {
-        const netJrfOk = !!(netJrfCertNumber && netJrfRoll && netJrfRank && netJrfScore && netJrfIssueDate && q?.netJrf?.certificateUrl);
-        if (!netJrfOk) return false;
-      }
-    }
-
-    return true;
+    return class10Ok && class12Ok;
   };
 
   const hasAnySavedQualification = !!(
@@ -1236,6 +1155,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     profile?.profile?.qualifications?.class12?.certificateUrl
   );
   const canProceedToGuide = class10Saved && class12Saved;
+  const canSubmit = isPersonalInfoSavedState && class10Saved && class12Saved && (!isPhD || !!preferredGuideId);
+
+  if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
     <div style={{ padding: '24px', position: 'relative' }}>
@@ -1337,7 +1259,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </p>
                 </div>
               </div>
-            ) : (
+            ) : profile?.isVerified ? (
               <div style={{
                 background: 'rgba(16, 185, 129, 0.1)',
                 border: '1px solid rgba(16, 185, 129, 0.25)',
@@ -1351,10 +1273,31 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                 <ShieldCheck style={{ color: '#10B981', flexShrink: 0 }} />
                 <div>
                   <strong style={{ color: '#10B981', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                    Profile Verified / Submitted
+                    Profile Verified by HOD
                   </strong>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                    Your profile details have been submitted and verified.
+                    Your profile has been verified and approved by the HOD. No further action is needed.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderLeft: '4px solid #F59E0B',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <RefreshCw className="animate-spin" style={{ color: '#F59E0B', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: '#F59E0B', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                    Profile Submitted — Pending HOD Verification
+                  </strong>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Your profile has been submitted and is awaiting verification by the Department HOD. You will be notified once it is approved.
                   </p>
                 </div>
               </div>
@@ -1394,10 +1337,10 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
               {milestoneItems.map((item) => {
                 const isActive = activeSection === item.key;
-                const isCompleted = isSubmitted || 
-                  (item.key === 'personal' && isGeneralInfoComplete()) ||
+                const isCompleted = 
+                  (item.key === 'personal' && isGeneralInfoComplete() && isPersonalInfoSavedState) ||
                   (item.key === 'education' && isAcademicQualificationsComplete()) ||
-                  (item.key === 'supervisor' && preferredGuideId);
+                  (item.key === 'supervisor' && !!preferredGuideId);
                   
                 return (
                   <button
@@ -1560,7 +1503,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                           setDegreeTypeId(selectedId);
                           setDegreeNameId('');
                           const selectedType = degreeTypes.find(t => t._id === selectedId);
-                          const isSelectedPhD = selectedType ? (selectedType.code === 'PHD' || selectedType.name?.toLowerCase().includes('phd')) : false;
+                          const isSelectedPhD = selectedType ? (selectedType.code === 'PHD' || selectedType.name?.toLowerCase()?.includes('phd')) : false;
                           setIsPhD(isSelectedPhD);
                         }}
                         disabled={isVerifiedPhD}
@@ -1623,25 +1566,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Gender</label>
-                    {editModes.general && !isSubmitted ? (
-                      <select className="form-input" value={gender} onChange={e => setGender(e.target.value)}>
-                        <option value="">Select...</option>
-                        {genders.map(g => <option key={g._id} value={g.value}>{g.label}</option>)}
-                      </select>
-                    ) : (
-                      <input className="form-input" disabled value={gender || 'N/A'} />
-                    )}
+                    <input className="form-input" disabled value={gender || 'N/A'} style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Category</label>
-                    {editModes.general && !isSubmitted ? (
-                      <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
-                        <option value="">Select Category...</option>
-                        {categories.map(c => <option key={c._id} value={c.value}>{c.label}</option>)}
-                      </select>
-                    ) : (
-                      <input className="form-input" disabled value={category || 'N/A'} />
-                    )}
+                    <input className="form-input" disabled value={category || 'N/A'} style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                 </div>
 
@@ -1751,7 +1680,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <div style={{ display: 'flex', gap: '10px' }}>
                         <button className="btn btn-secondary" type="button" onClick={() => handleCancel('general')}>Cancel</button>
                         <button className="btn btn-primary" type="button" onClick={() => saveSection('general')} disabled={loading}>
-                          <Save size={16} /> Save General Details
+                          <Save size={16} /> {!isPersonalInfoSavedState ? 'Save Personal Info & Proceed to Academic Qualifications' : 'Save General Details'}
                         </button>
                       </div>
                     )}
@@ -1760,10 +1689,38 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
               </div>
 
               {/* SECTION 2: Academic Qualifications */}
-              <div ref={sectionRefs.education} className="card p-lg clay-card">
+              <div 
+                ref={sectionRefs.education} 
+                className="card p-lg clay-card" 
+                style={{ 
+                  position: 'relative',
+                  opacity: (isPersonalInfoSavedState || isSubmitted) ? 1 : 0.5,
+                  pointerEvents: (isPersonalInfoSavedState || isSubmitted) ? 'auto' : 'none'
+                }}
+              >
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '20px' }}>
                   <BookOpen style={{ color: 'var(--color-primary)' }} /> 2. Academic Qualifications
                 </h3>
+
+                {/* LOCK OVERLAY */}
+                {!isPersonalInfoSavedState && !isSubmitted && (
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(4px)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 10, borderRadius: '12px', textAlign: 'center', padding: '20px'
+                  }}>
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.08)', color: '#EF4444',
+                      width: '56px', height: '56px', borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px'
+                    }}>
+                      <Lock size={24} />
+                    </div>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1rem' }}>Academic Qualifications Locked</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '4px' }}>Please complete and save Personal Info first.</span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {/* Class 10th */}
@@ -2096,7 +2053,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '16px' }}>
                     <UserCheck style={{ color: 'var(--color-primary)' }} /> 3. Institutional Advisor & Guide Preference
                   </h3>
-                  {!canProceedToGuide ? (
+                  {!canProceedToGuide && !isSubmitted ? (
                     <div style={{
                       background: 'rgba(239, 68, 68, 0.05)',
                       border: '1px dashed #EF4444',
@@ -2180,16 +2137,17 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     type="button" 
                     className="btn btn-primary"
                     style={{ 
-                      background: '#059669', 
-                      borderColor: '#059669',
-                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)',
+                      background: canSubmit ? '#059669' : '#9CA3AF', 
+                      borderColor: canSubmit ? '#059669' : '#9CA3AF',
+                      boxShadow: canSubmit ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none',
+                      cursor: canSubmit ? 'pointer' : 'not-allowed',
                       padding: '12px 32px',
                       fontSize: '1rem',
                       fontWeight: 700,
                       borderRadius: '8px'
                     }}
                     onClick={handleProfileRegistrationSubmit}
-                    disabled={registering}
+                    disabled={registering || !canSubmit}
                   >
                     {isPhD ? '🚀 Submit PhD Profile for HOD Approval' : '🚀 Submit Profile for HOD Verification'}
                   </button>

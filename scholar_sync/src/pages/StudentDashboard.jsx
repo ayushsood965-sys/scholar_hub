@@ -5763,6 +5763,7 @@ const ProfileTab = () => {
   const [subTab, setSubTab] = useState('general'); // general | academic | guide
   const [loading, setLoading] = useState(false);
   const [guideUnlocked, setGuideUnlocked] = useState(false);
+  const [isStuck, setIsStuck] = useState(false);
   const theme = useThemeStyles();
 
   // ── Milestone sidebar state & refs ──
@@ -5785,24 +5786,141 @@ const ProfileTab = () => {
   const profileLayoutCSS = `
     .profile-layout-container { display:flex; gap:28px; max-width:1280px; margin:0 auto; padding:12px; position:relative; }
     .card.active-card { border-color:#133A26 !important; box-shadow:0 6px 20px rgba(19,58,38,0.12) !important; }
-    .timeline-sidebar-panel { width:260px; flex-shrink:0; display:block; }
+    .timeline-sidebar-panel {
+      width: 260px;
+      position: sticky;
+      top: 90px;
+      height: fit-content;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
     .profile-details-column { flex:1; display:flex; flex-direction:column; gap:24px; min-width:0; }
-    .mobile-milestones-bar { display:none; }
-    .mobile-milestone-link { display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 12px; background:none; border:none; color:#64748b; font-size:0.72rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.2s; flex-shrink:0; }
-    .mobile-milestone-link.active { color:#133A26; position:relative; }
-    .mobile-milestone-link.active::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:#133A26; border-radius:3px; }
-    @media (max-width:1024px) {
-      .timeline-sidebar-panel { display:none; }
-      .mobile-milestones-bar { display:flex; position:sticky; top:64px; background:#fff; border-bottom:1px solid #e5e7eb; padding:0 16px; gap:16px; overflow-x:auto; z-index:100; margin:-12px -12px 16px -12px; scroll-behavior:smooth; }
+    .mobile-milestones-bar {
+      display: none;
+      position: sticky;
+      top: 0;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 12px;
+      padding: 8px 12px;
+      z-index: 99;
+      overflow-x: auto;
+      white-space: nowrap;
+      gap: 8px;
+      -webkit-overflow-scrolling: touch;
+      margin: 8px 0 16px 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+      scrollbar-width: none;
+    }
+    .mobile-milestones-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .mobile-milestone-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #475569;
+      background: transparent;
+      border: 1px solid transparent;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .mobile-milestone-link:hover {
+      background: rgba(19, 58, 38, 0.05);
+      color: #133A26;
+    }
+    .mobile-milestone-link.active {
+      color: #ffffff !important;
+      background: #133A26 !important;
+      border-color: #133A26 !important;
+      box-shadow: 0 4px 10px rgba(19, 58, 38, 0.25);
+    }
+    @media (max-width: 992px) {
+      .timeline-sidebar-panel {
+        width: 200px;
+      }
+    }
+    @media (max-width: 768px) {
+      .profile-layout-container {
+        flex-direction: column;
+        gap: 16px;
+        padding: 8px;
+      }
+      .timeline-sidebar-panel {
+        display: none !important;
+      }
+      .mobile-milestones-bar {
+        display: flex !important;
+      }
+      .mobile-milestones-bar.is-stuck {
+        position: fixed !important;
+        top: 64px !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 50px !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: none !important;
+        margin: 0 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        background: #ffffff !important;
+        z-index: 999 !important;
+      }
     }
   `;
 
-  const scrollToSection = (key) => {
+  const scrollToSection = (key, force = false) => {
+    if (!force) {
+      if (key === 'education' && !isPersonalInfoSavedState) {
+        return;
+      }
+      if (key === 'supervisor' && !guideUnlocked) {
+        return;
+      }
+    }
     setActiveSection(key);
     isAutoScrollingRef.current = true;
     sectionRefs[key].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(() => { isAutoScrollingRef.current = false; }, 850);
   };
+
+  // Sticking milestones bar scroll listener
+  useEffect(() => {
+    const checkSticky = () => {
+      if (milestonePlaceholderRef.current) {
+        const rect = milestonePlaceholderRef.current.getBoundingClientRect();
+        // Sticky boundary in ScholarSync is 64px from viewport top
+        setIsStuck(rect.top <= 64);
+      }
+    };
+
+    checkSticky();
+
+    const dashboardArea = document.querySelector('.dashboard-area');
+    if (dashboardArea) {
+      dashboardArea.addEventListener('scroll', checkSticky);
+    }
+    window.addEventListener('scroll', checkSticky);
+    window.addEventListener('resize', checkSticky);
+
+    return () => {
+      if (dashboardArea) {
+        dashboardArea.removeEventListener('scroll', checkSticky);
+      }
+      window.removeEventListener('scroll', checkSticky);
+      window.removeEventListener('resize', checkSticky);
+    };
+  }, []);
 
   // Highlight active card border
   useEffect(() => {
@@ -5818,13 +5936,17 @@ const ProfileTab = () => {
     const listeners = [];
     Object.entries(sectionRefs).forEach(([key, ref]) => {
       if (ref.current) {
-        const h = () => setActiveSection(key);
+        const h = () => {
+          if (key === 'education' && !user?.profile?.dob) return;
+          if (key === 'supervisor' && !guideUnlocked) return;
+          setActiveSection(key);
+        };
         ref.current.addEventListener('click', h);
         listeners.push({ el: ref.current, h });
       }
     });
     return () => listeners.forEach(({ el, h }) => el.removeEventListener('click', h));
-  }, []);
+  }, [isPersonalInfoSavedState, guideUnlocked]);
 
   // Auto-scroll mobile bar
   useEffect(() => {
@@ -5948,6 +6070,13 @@ const ProfileTab = () => {
   // Gender & Category from master data
   const [genders, setGenders] = useState([]);
   const [categories, setCategories] = useState([]);
+
+  const [isPersonalInfoSavedState, setIsPersonalInfoSavedState] = useState(false);
+  useEffect(() => {
+    if (user?.profile?.dob) {
+      setIsPersonalInfoSavedState(true);
+    }
+  }, [user?.profile?.dob]);
 
   useEffect(() => {
     if (user?.profile) {
@@ -6165,6 +6294,61 @@ const ProfileTab = () => {
     return true;
   };
 
+  const validatePersonalInfo = () => {
+    if (!dob) return 'Date of Birth is required.';
+    if (!gender) return 'Gender is required.';
+    if (!category) return 'Social Category is required.';
+    if (!nationality || !nationality.trim()) return 'Nationality is required.';
+    if (!fatherName || !fatherName.trim()) return 'Father\'s Name is required.';
+    if (!motherName || !motherName.trim()) return 'Mother\'s Name is required.';
+    if (!phoneNumber || !phoneNumber.trim()) return 'Phone Number is required.';
+    const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
+    const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
+    if (!indianPhoneRegex.test(cleanedPhone)) {
+      return 'Please enter a valid 10-digit Indian phone number (starts with 6-9).';
+    }
+    if (!address || !address.trim()) return 'Residential Address is required.';
+    if (!academicSession) return 'Academic Session is required.';
+    if (!enrollmentNumber || !enrollmentNumber.trim()) return 'Enrollment Number is required.';
+    if (!admissionDate) return 'Date of Admission is required.';
+    if (!phdMode) return 'Mode of Ph.D. is required.';
+    if (!specialization || !specialization.trim()) return 'Area of Specialization is required.';
+    if (!areaOfInterest || !areaOfInterest.trim()) return 'Area of Research Interest is required.';
+    if (!thesisTitle || !thesisTitle.trim()) return 'Thesis Title is required.';
+    if (!thesisSummary || !thesisSummary.trim()) return 'Thesis Summary / Abstract is required.';
+    if (!thesisKeywords || !thesisKeywords.trim()) return 'Keywords are required.';
+    return null;
+  };
+
+  const validateAcademicQualifications = () => {
+    const q = user?.profile?.qualifications;
+    if (!q) return 'No academic qualifications record found. Please enter and save Class 10, Class 12, Graduation, and Post Graduation details.';
+
+    if (!class10Roll || !class10Board || !class10School || !class10Marks || !class10Total || !class10Percentage || !q?.class10?.certificateUrl) {
+      return 'Please complete and save Class 10 Details including certificate upload.';
+    }
+    if (!class12Roll || !class12Board || !class12School || !class12Marks || !class12Total || !class12Percentage || !q?.class12?.certificateUrl) {
+      return 'Please complete and save Class 12 Details including certificate upload.';
+    }
+    if (!gradRoll || !gradDegree || !gradCollege || !gradUniversity || !gradMarks || !gradTotal || !gradPercentage || !q?.graduation?.certificateUrl) {
+      return 'Please complete and save Graduation Details including certificate upload.';
+    }
+    if (!pgRoll || !pgDegree || !pgCollege || !pgUniversity || !pgMarks || !pgTotal || !pgPercentage || !q?.postGraduation?.certificateUrl) {
+      return 'Please complete and save Post Graduation Details including certificate upload.';
+    }
+    if (mphilDone === 'YES') {
+      if (!mphilUniversity || !mphilPassingYear || !mphilTotalMarks || !mphilMarksObtained || !mphilPercentage || !q?.mphil?.certificateUrl) {
+        return 'Please complete and save M.Phil Details including certificate upload.';
+      }
+    }
+    if (netJrfQualified === 'YES') {
+      if (!netJrfCertNumber || !netJrfRoll || !netJrfRank || !netJrfScore || !netJrfIssueDate || !q?.netJrf?.certificateUrl) {
+        return 'Please complete and save NET JRF Details including certificate upload.';
+      }
+    }
+    return null;
+  };
+
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -6251,6 +6435,12 @@ const ProfileTab = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    const validationError = validatePersonalInfo();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setLoading(true);
 
     const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
@@ -6353,10 +6543,15 @@ const ProfileTab = () => {
     const res = await updateProfile(payload);
     setLoading(false);
     if (res.success) {
+      setIsPersonalInfoSavedState(true);
       let msg = 'PhD Scholar profile details updated successfully!';
-      if (subTab === 'general') {
-        msg = 'General Information saved successfully!';
+      const isFirstTimeGeneral = !user?.profile?.dob;
+      if (subTab === 'general' || isFirstTimeGeneral) {
+        msg = 'Personal details saved successfully! Proceeding to Academic Qualifications.';
         setEditModes(prev => ({ ...prev, general: false }));
+        setTimeout(() => {
+          scrollToSection('education', true);
+        }, 100);
       } else if (subTab === 'academic') {
         msg = 'Academic details saved successfully!';
       } else if (subTab === 'guide') {
@@ -7030,6 +7225,7 @@ const ProfileTab = () => {
       }
 
       const payload = {
+        profileCompleted: true,
         dob,
         gender,
         category,
@@ -7135,10 +7331,96 @@ const ProfileTab = () => {
     }
   };
 
-  const handleProceedToGuide = () => {
-    setGuideUnlocked(true);
-    setSubTab('guide');
-    toast.success('Qualifications verified! Proceeding to Supervisor Selection.');
+  const handleProceedToGuide = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const errorMsg = validateAcademicQualifications();
+    if (errorMsg) {
+      toast.error(errorMsg);
+      return;
+    }
+
+    setLoading(true);
+
+    const payload = {
+      qualifications: {
+        class10: {
+          rollNo: class10Roll,
+          board: class10Board,
+          school: class10School,
+          marksObtained: class10Marks,
+          totalMarks: class10Total,
+          percentage: class10Percentage,
+          certificateUrl: user?.profile?.qualifications?.class10?.certificateUrl
+        },
+        class12: {
+          rollNo: class12Roll,
+          board: class12Board,
+          school: class12School,
+          marksObtained: class12Marks,
+          totalMarks: class12Total,
+          percentage: class12Percentage,
+          certificateUrl: user?.profile?.qualifications?.class12?.certificateUrl
+        },
+        graduation: {
+          rollNo: gradRoll,
+          degree: gradDegree,
+          college: gradCollege,
+          university: gradUniversity,
+          marksObtained: gradMarks,
+          totalMarks: gradTotal,
+          percentage: gradPercentage,
+          certificateUrl: user?.profile?.qualifications?.graduation?.certificateUrl
+        },
+        postGraduation: {
+          rollNo: pgRoll,
+          degree: pgDegree,
+          college: pgCollege,
+          university: pgUniversity,
+          marksObtained: pgMarks,
+          totalMarks: pgTotal,
+          percentage: pgPercentage,
+          certificateUrl: user?.profile?.qualifications?.postGraduation?.certificateUrl
+        },
+        mphil: {
+          done: mphilDone === 'YES',
+          university: mphilUniversity,
+          passingYear: mphilPassingYear,
+          totalMarks: mphilTotalMarks,
+          marksObtained: mphilMarksObtained,
+          percentage: mphilPercentage,
+          certificateUrl: user?.profile?.qualifications?.mphil?.certificateUrl
+        },
+        netJrf: {
+          qualified: netJrfQualified === 'YES',
+          certNumber: netJrfCertNumber,
+          rollNo: netJrfRoll,
+          rank: netJrfRank,
+          score: netJrfScore,
+          issueDate: netJrfIssueDate,
+          certificateUrl: user?.profile?.qualifications?.netJrf?.certificateUrl
+        },
+        fellowships: fellowships.map((f, i) => ({
+          ...f,
+          certificateUrl: user?.profile?.qualifications?.fellowships?.[i]?.certificateUrl || f.certificateUrl || ''
+        })),
+        otherQuals: otherQuals.map((o, i) => ({
+          ...o,
+          certificateUrl: user?.profile?.qualifications?.otherQuals?.[i]?.certificateUrl || o.certificateUrl || ''
+        }))
+      }
+    };
+
+    const res = await updateProfile(payload);
+    setLoading(false);
+    if (res.success) {
+      setGuideUnlocked(true);
+      toast.success('Academic qualifications saved successfully! Proceeding to Supervisor Selection.');
+      setTimeout(() => {
+        scrollToSection('supervisor', true);
+      }, 100);
+    } else {
+      toast.error('Failed to save academic qualifications: ' + res.message);
+    }
   };
 
   const hasAnySavedQualification = !!(
@@ -7158,6 +7440,7 @@ const ProfileTab = () => {
     user?.profile?.qualifications?.class12?.certificateUrl
   );
   const canProceedToGuide = class10Saved && class12Saved;
+  const canSubmit = isGeneralInfoComplete() && isAcademicQualificationsComplete() && !!preferredGuideId;
 
   return (
     <div style={{ padding: '24px', position: 'relative' }}>
@@ -7293,110 +7576,94 @@ const ProfileTab = () => {
           </label>
         </div>
       </div>
-
       {/* Main Split Layout Container */}
       <div className="profile-layout-container">
 
         {/* Left Side: Milestones Sidebar Panel */}
         <div className="timeline-sidebar-panel">
-          <div style={{
-            position: 'sticky',
-            top: '92px',
-            background: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '20px 16px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-          }}>
-            <h4 style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: 700, marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-              Profile Progress
-            </h4>
+          <h4 style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 800, textTransform: 'uppercase', paddingLeft: '12px', marginBottom: '8px', letterSpacing: '0.05em' }}>
+            Profile Timeline
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            {/* Vertical Connective Line */}
+            <div style={{
+              position: 'absolute',
+              left: '20px',
+              top: '20px',
+              bottom: '20px',
+              width: '2px',
+              background: '#e5e7eb',
+              zIndex: 0
+            }} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-              {/* Stepper Vertical Track */}
-              <div style={{
-                position: 'absolute',
-                left: '15px',
-                top: '12px',
-                bottom: '12px',
-                width: '2px',
-                background: '#e2e8f0'
-              }} />
+            {/* Timeline Nodes */}
+            {milestoneItems.map((item) => {
+              const isActive = activeSection === item.key;
+              const isCompleted = 
+                (item.key === 'personal' && isGeneralInfoComplete() && isPersonalInfoSavedState) ||
+                (item.key === 'education' && isAcademicQualificationsComplete()) ||
+                (item.key === 'supervisor' && !!preferredGuideId);
 
-              {milestoneItems.map((item) => {
-                const isActive = activeSection === item.key;
-                const isCompleted = !!thesis ||
-                  (item.key === 'personal' && isGeneralInfoComplete()) ||
-                  (item.key === 'education' && isAcademicQualificationsComplete()) ||
-                  (item.key === 'supervisor' && preferredGuideId);
-
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => scrollToSection(item.key)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      cursor: 'pointer',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '4px 0',
-                      outline: 'none',
-                      zIndex: 2
-                    }}
-                  >
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      background: isActive ? '#133A26' : isCompleted ? '#e6f4ea' : '#f8fafc',
-                      border: `2px solid ${isActive ? '#133A26' : isCompleted ? '#10b981' : '#cbd5e1'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: isActive ? '#ffffff' : isCompleted ? '#10b981' : '#64748b',
-                      fontWeight: 700,
-                      fontSize: '0.9rem',
-                      transition: 'all 0.25s'
-                    }}>
-                      <item.Icon size={14} />
-                    </div>
-                    <div>
-                      <span style={{
-                        display: 'block',
-                        fontSize: '0.82rem',
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? '#133A26' : '#475569',
-                        transition: 'all 0.25s'
-                      }}>
-                        {item.label}
-                      </span>
-                      <span style={{
-                        display: 'block',
-                        fontSize: '0.7rem',
-                        color: isCompleted ? '#10b981' : '#94a3b8'
-                      }}>
-                        {isCompleted ? 'Completed' : 'Pending'}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => scrollToSection(item.key)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 14px',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: '8px',
+                    width: '100%',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    zIndex: 1,
+                    transition: 'all 0.2s',
+                    color: isActive ? '#133A26' : '#64748b',
+                    fontWeight: isActive ? 700 : 500
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '50%',
+                    background: isActive ? '#133A26' : isCompleted ? '#10b981' : '#e5e7eb',
+                    boxShadow: isActive ? '0 0 0 4px rgba(19,58,38,0.15)' : 'none',
+                    transition: 'all 0.2s'
+                  }} />
+                  <item.Icon size={16} />
+                  <span style={{ fontSize: '0.85rem', flex: 1 }}>{item.label}</span>
+                  {isCompleted && (
+                    <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 700 }}>✓</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Right Side: Scrollable Details Cards */}
         <div className="profile-details-column">
 
-          <div ref={milestonePlaceholderRef} />
+          {/* Placeholder Sentinel to detect when milestones bar should stick */}
+          <div 
+            ref={milestonePlaceholderRef} 
+            style={{ 
+              height: isStuck ? '50px' : '0px', 
+              margin: '0', 
+              padding: '0', 
+              visibility: 'hidden' 
+            }} 
+          />
 
           {/* Sticky Mobile Sub-navbar */}
-          <div className="mobile-milestones-bar" ref={mobileBarRef}>
+          <div className={`mobile-milestones-bar ${isStuck ? 'is-stuck' : ''}`} ref={mobileBarRef}>
             {milestoneItems.map((item) => {
               const isActive = activeSection === item.key;
               return (
@@ -7551,7 +7818,7 @@ const ProfileTab = () => {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Gender <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required>
+                    <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required disabled style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }}>
                       <option value="">Select...</option>
                       {genders.map(g => <option key={g._id} value={g.value}>{g.label}</option>)}
                     </select>
@@ -7561,7 +7828,7 @@ const ProfileTab = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Social Category <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={category} onChange={e => setCategory(e.target.value)} required>
+                    <select className="form-input" value={category} onChange={e => setCategory(e.target.value)} required disabled style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }}>
                       <option value="">Select Category...</option>
                       {categories.map(c => <option key={c._id} value={c.value}>{c.label}</option>)}
                     </select>
@@ -7612,7 +7879,7 @@ const ProfileTab = () => {
                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Academic Session <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)} required>
+                    <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)} required disabled style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }}>
                       <option value="">Select Session...</option>
                       {sessions.map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
                     </select>
@@ -7711,14 +7978,49 @@ const ProfileTab = () => {
                 className="btn-primary"
                 style={{ background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
               >
-                {loading ? 'Saving Changes...' : '💾 Save General Info'}
+                {loading ? 'Saving Changes...' : (user?.profile?.dob ? '💾 Save General Info' : '💾 Save Personal Info & Proceed to Academic Qualifications')}
               </button>
             </div>
           )}
         </div>
 
         {/* --- Section 2: Academic Qualifications --- */}
-        <div ref={sectionRefs.education} className="card" style={{ padding: '24px', border: '1px solid #e5e7eb', borderRadius: '12px', transition: 'all 0.3s' }}>
+        <div 
+          ref={sectionRefs.education} 
+          className="card" 
+          style={{ 
+            padding: '24px', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '12px', 
+            transition: 'all 0.3s',
+            opacity: (isPersonalInfoSavedState || !!thesis) ? 1 : 0.5,
+            pointerEvents: (isPersonalInfoSavedState || !!thesis) ? 'auto' : 'none',
+            position: 'relative'
+          }}
+        >
+          {!isPersonalInfoSavedState && !thesis && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(2px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+              borderRadius: '12px',
+              textAlign: 'center',
+              padding: '20px'
+            }}>
+              <Lock size={36} style={{ color: '#64748B', marginBottom: '12px' }} />
+              <span style={{ fontSize: '1rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Section Locked</span>
+              <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Please save your Personal Info & Thesis Details first to unlock.</span>
+            </div>
+          )}
           <form onSubmit={handleSaveAcademicDetails}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
@@ -8129,6 +8431,14 @@ const ProfileTab = () => {
                         Cancel
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => saveSection('postGraduation')}
+                      disabled={loading}
+                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
+                    >
+                      💾 Save Post Graduation Details
+                    </button>
                   </div>
                 </>
               )}
@@ -8640,35 +8950,29 @@ const ProfileTab = () => {
                 </>
               )}
             </div>
-            {hasAnySavedQualification && (
+            {user?.profile?.dob && (
               <div style={{ marginTop: '32px', padding: '16px', borderTop: '2px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={handleProceedToGuide}
-                  disabled={!canProceedToGuide}
                   style={{
-                    background: canProceedToGuide ? '#059669' : '#9CA3AF',
+                    background: '#059669',
                     color: 'white',
                     border: 'none',
                     padding: '12px 24px',
                     fontSize: '0.95rem',
                     fontWeight: 700,
                     borderRadius: '8px',
-                    cursor: canProceedToGuide ? 'pointer' : 'not-allowed',
-                    boxShadow: canProceedToGuide ? '0 4px 6px -1px rgba(5, 150, 105, 0.2)' : 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.2)',
                     transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}
                 >
-                  {canProceedToGuide ? '🔓' : '🔒'} Save & Proceed to Supervisor Selection
+                  {guideUnlocked ? '🔓' : '🔒'} Save Academic Qualifications & Move to Preferred Supervisor
                 </button>
-                {!canProceedToGuide && (
-                  <span style={{ fontSize: '0.8rem', color: '#EF4444', fontWeight: 500 }}>
-                    * Please fill and save both Class 10 and Class 12 qualifications (including certificates) to unlock supervisor selection.
-                  </span>
-                )}
               </div>
             )}
           </div>
@@ -8676,7 +8980,42 @@ const ProfileTab = () => {
         </div>
 
         {/* --- Section 3: Preferred Guide Selection --- */}
-        <div ref={sectionRefs.supervisor} className="card" style={{ padding: '24px', border: '1px solid #e5e7eb', borderRadius: '12px', transition: 'all 0.3s' }}>
+        <div 
+          ref={sectionRefs.supervisor} 
+          className="card" 
+          style={{ 
+            padding: '24px', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '12px', 
+            transition: 'all 0.3s',
+            opacity: (guideUnlocked || !!thesis) ? 1 : 0.5,
+            pointerEvents: (guideUnlocked || !!thesis) ? 'auto' : 'none',
+            position: 'relative'
+          }}
+        >
+          {!guideUnlocked && !thesis && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(2px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+              borderRadius: '12px',
+              textAlign: 'center',
+              padding: '20px'
+            }}>
+              <Lock size={36} style={{ color: '#64748B', marginBottom: '12px' }} />
+              <span style={{ fontSize: '1rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Section Locked</span>
+              <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Please save all your Academic Qualifications first to unlock.</span>
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: '0 0 8px 0' }}>Advisor & Guide Preference of {user?.department}</h3>
             <p style={{ fontSize: '0.85rem', color: '#4B5563', margin: '0 0 12px 0' }}>
@@ -8731,22 +9070,22 @@ const ProfileTab = () => {
                 </button>
                 <button
                   type="button"
-                  disabled={registering || !preferredGuideId}
+                  disabled={registering || !canSubmit}
                   onClick={handleProfileRegistrationSubmit}
                   className="btn-primary"
                   style={{
                     flex: 1.2,
-                    background: preferredGuideId ? '#059669' : '#9CA3AF',
+                    background: canSubmit ? '#059669' : '#9CA3AF',
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
                     border: 'none',
-                    cursor: preferredGuideId ? 'pointer' : 'not-allowed',
-                    boxShadow: preferredGuideId ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : 'none'
+                    cursor: canSubmit ? 'pointer' : 'not-allowed',
+                    boxShadow: canSubmit ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : 'none'
                   }}
-                  title={!preferredGuideId ? 'Please select a preferred supervisor/guide to enable submission' : ''}
+                  title={!canSubmit ? 'Please complete all required profile sections to submit' : ''}
                 >
                   {registering ? 'Submitting...' : '🚀 Submit PhD Profile for HOD Approval'}
                 </button>

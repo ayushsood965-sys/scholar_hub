@@ -215,7 +215,9 @@ const updateProfile = async (req, res) => {
       user.profile.isPhD = degreeTypeStr.includes('PHD');
     }
 
-    user.profileCompleted = true;
+    if (req.body.profileCompleted === true) {
+      user.profileCompleted = true;
+    }
     user.markModified('profile');
     user.markModified('profile.qualifications');
     user.markModified('profile.ipr');

@@ -43,13 +43,17 @@ const StudentDashboard = () => {
   useEffect(() => {
     if (!user) {
       navigate('/login');
-    } else {
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (user) {
       fetchThesis();
       if (!user.profileCompleted) {
         setShowOnboarding(true);
       }
     }
-  }, [user, navigate]);
+  }, []);
 
   if (!user) return null;
 
