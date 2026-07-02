@@ -5766,6 +5766,13 @@ const ProfileTab = () => {
   const [isStuck, setIsStuck] = useState(false);
   const theme = useThemeStyles();
 
+  const [isPersonalInfoSavedState, setIsPersonalInfoSavedState] = useState(false);
+  useEffect(() => {
+    if (user?.profile?.dob) {
+      setIsPersonalInfoSavedState(true);
+    }
+  }, [user?.profile?.dob]);
+
   // ── Milestone sidebar state & refs ──
   const [activeSection, setActiveSection] = useState('personal');
   const sectionRefs = {
@@ -6070,13 +6077,6 @@ const ProfileTab = () => {
   // Gender & Category from master data
   const [genders, setGenders] = useState([]);
   const [categories, setCategories] = useState([]);
-
-  const [isPersonalInfoSavedState, setIsPersonalInfoSavedState] = useState(false);
-  useEffect(() => {
-    if (user?.profile?.dob) {
-      setIsPersonalInfoSavedState(true);
-    }
-  }, [user?.profile?.dob]);
 
   useEffect(() => {
     if (user?.profile) {
