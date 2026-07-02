@@ -248,14 +248,16 @@ app.use(helmet({
   contentSecurityPolicy: false // Allowed inline scripts/styles in /clear-all and /seed templates
 }));
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'https://scholar-track-ayush.vercel.app',
-  'https://scholar-sync-ayush.vercel.app'
-];
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+      'https://scholar-track-ayush.vercel.app',
+      'https://scholar-sync-ayush.vercel.app'
+    ];
 
 app.use(cors({
   origin: (origin, callback) => {
