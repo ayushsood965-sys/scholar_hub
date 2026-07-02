@@ -84,6 +84,26 @@ const ApprovalsTab = () => {
       };
       fetchPendingNonPhd();
 
+      // Fetch approved registrations (ONLY non-PhD)
+      const fetchApprovedNonPhd = async () => {
+        try {
+          const approvedNonPhdRes = await api.get('/auth/students?profileCompleted=true&isVerified=true&isPhD=false');
+          const approvedNonPhdRegs = (approvedNonPhdRes.data || []).map(u => ({
+            _id: u._id,
+            isNonPhD: true,
+            scholarId: u,
+            enrollmentNumber: u.profile?.enrollmentNumber || '—',
+            status: 'APPROVED',
+            title: `${u.profile?.degreeType || 'Non-PhD'} Registration`,
+            approvedAt: u.updatedAt
+          }));
+          setApprovedRegistrations(approvedNonPhdRegs);
+        } catch (err) {
+          console.error('Failed to fetch approved registrations', err);
+        }
+      };
+      fetchApprovedNonPhd();
+
     } catch (err) {
       toast.error('Failed to load pending approvals');
       setLoading(false);
@@ -499,59 +519,125 @@ const ApprovalsTab = () => {
       {activeSubTab === 'corrections' && <DataTable columns={correctionColumns} data={corrections} />}
       
       {activeSubTab === 'registrations' && (
-        <div>
-          <h3 style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
-            Pending Verification Requests
-          </h3>
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Scholar Name</th>
-                  <th>Degree / Program</th>
-                  <th>Enrollment Number</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {registrations.map(reg => {
-                  return (
-                    <tr key={reg._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                      <td>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{reg.scholarId?.name || 'Pending Profile'}</div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{reg.scholarId?.username}</div>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                          {reg.scholarId?.profile?.degreeType || (reg.isNonPhD ? 'Non-PhD' : 'Ph.D.')}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ background: 'var(--color-surface-elevated)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid var(--color-border-solid)' }}>
-                          {reg.enrollmentNumber || '—'}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button 
-                          className="btn btn-sm btn-outline"
-                          style={{ padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                          onClick={() => setSelectedRegForModal(reg)}
-                        >
-                          <FileText size={14} /> View & Approve
-                        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+          {/* Pending Registrations Grid */}
+          <div>
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
+              Pending Verification Requests
+            </h3>
+            <div className="data-table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Scholar Name</th>
+                    <th>Degree / Program</th>
+                    <th>Enrollment Number</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {registrations.map(reg => {
+                    return (
+                      <tr key={reg._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{reg.scholarId?.name || 'Pending Profile'}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{reg.scholarId?.username}</div>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            {reg.scholarId?.profile?.degreeType || (reg.isNonPhD ? 'Non-PhD' : 'Ph.D.')}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ background: 'var(--color-surface-elevated)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid var(--color-border-solid)' }}>
+                            {reg.enrollmentNumber || '—'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button 
+                            className="btn btn-sm btn-outline"
+                            style={{ padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                            onClick={() => setSelectedRegForModal(reg)}
+                          >
+                            <FileText size={14} /> View & Approve
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {registrations.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="text-center" style={{ padding: '32px', color: 'var(--text-secondary)' }}>
+                        No pending registration verification requests.
                       </td>
                     </tr>
-                  );
-                })}
-                {registrations.length === 0 && (
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Approved Registrations Grid */}
+          <div>
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
+              Approved / Verified Registrations
+            </h3>
+            <div className="data-table-wrapper">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan="4" className="text-center" style={{ padding: '32px', color: 'var(--text-secondary)' }}>
-                      No pending registration verification requests.
-                    </td>
+                    <th>Scholar Name</th>
+                    <th>Degree / Program</th>
+                    <th>Enrollment Number</th>
+                    <th>Approved Timestamp</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {approvedRegistrations.map(reg => {
+                    return (
+                      <tr key={reg._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{reg.scholarId?.name || 'Approved Scholar'}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{reg.scholarId?.username}</div>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            {reg.scholarId?.profile?.degreeType || (reg.isNonPhD ? 'Non-PhD' : 'Ph.D.')}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ background: 'var(--color-surface-elevated)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid var(--color-border-solid)' }}>
+                            {reg.enrollmentNumber || '—'}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                            {reg.approvedAt ? new Date(reg.approvedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button 
+                            className="btn btn-sm btn-outline"
+                            style={{ padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                            onClick={() => setSelectedRegForModal({ ...reg, isApprovedView: true })}
+                          >
+                            <FileText size={14} /> View Details
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {approvedRegistrations.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="text-center" style={{ padding: '32px', color: 'var(--text-secondary)' }}>
+                        No approved registrations found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
