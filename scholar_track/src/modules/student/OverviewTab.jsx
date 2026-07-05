@@ -12,11 +12,13 @@ import TargetWidget from '../../components/ui/TargetWidget';
 import AttendanceCalendar from '../../components/ui/AttendanceCalendar';
 import CourseDetailView from './CourseDetailView';
 import ProgressRing from '../../components/ui/ProgressRing';
+import SafeAbsencesModal from '../../components/ui/SafeAbsencesModal';
 
 const OverviewTab = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isSafeAbsencesOpen, setIsSafeAbsencesOpen] = useState(false);
   const api = useApi();
   const toast = useToast();
 
@@ -166,7 +168,10 @@ const OverviewTab = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <TargetWidget targetWidget={safeStats.targetWidget} subjectWiseAttendance={safeStats.subjectWiseAttendance || []} />
+          <TargetWidget 
+            targetWidget={safeStats.targetWidget} 
+            onViewSafeAbsences={() => setIsSafeAbsencesOpen(true)} 
+          />
         </motion.div>
 
         {/* Warning Indicator Card */}
@@ -321,6 +326,17 @@ const OverviewTab = () => {
             course={selectedCourse} 
             calendarMonths={safeStats.calendarMonths} 
             onClose={() => setSelectedCourse(null)} 
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Safe Absences Detail Modal */}
+      <AnimatePresence>
+        {isSafeAbsencesOpen && (
+          <SafeAbsencesModal 
+            requiredPercentage={safeStats.targetWidget?.requiredPercentage || 75}
+            subjectWiseAttendance={safeStats.subjectWiseAttendance || []}
+            onClose={() => setIsSafeAbsencesOpen(false)}
           />
         )}
       </AnimatePresence>

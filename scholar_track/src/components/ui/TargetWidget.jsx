@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
-import { ShieldCheck, ShieldAlert, AlertOctagon, HelpCircle, X, Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { ShieldCheck, ShieldAlert, AlertOctagon, HelpCircle } from 'lucide-react';
 
-const TargetWidget = ({ targetWidget, subjectWiseAttendance = [] }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+const TargetWidget = ({ targetWidget, onViewSafeAbsences }) => {
   if (!targetWidget) return null;
 
   const {
@@ -92,7 +89,7 @@ const TargetWidget = ({ targetWidget, subjectWiseAttendance = [] }) => {
           {!isPhD && (
             <button 
               type="button"
-              onClick={() => setIsModalOpen(true)}
+              onClick={onViewSafeAbsences}
               style={{
                 background: 'none',
                 border: 'none',
@@ -120,163 +117,6 @@ const TargetWidget = ({ targetWidget, subjectWiseAttendance = [] }) => {
           </strong>
         </div>
       </div>
-
-      {/* Subject-Wise Safe Absences Modal Popup */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100000,
-            padding: '16px'
-          }}>
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              style={{
-                width: '100%',
-                maxWidth: '520px',
-                maxHeight: '85vh',
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: 'var(--radius-xl)',
-                boxShadow: 'var(--shadow-lg)',
-                background: 'var(--color-surface, #ffffff)',
-                border: '1px solid var(--color-border-solid, #e5e7eb)',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Header */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                padding: '16px 20px', 
-                borderBottom: '1px solid var(--color-border-solid, #e5e7eb)',
-                background: 'rgba(255, 255, 255, 0.01)'
-              }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', fontFamily: 'Outfit', color: 'var(--color-text-primary)' }}>
-                  Subject-Wise Safe Absences
-                </h3>
-                <button 
-                  onClick={() => setIsModalOpen(false)} 
-                  style={{
-                    background: 'var(--color-bg, rgba(0,0,0,0.05))',
-                    border: 'none',
-                    color: 'var(--color-text-primary, #1f2937)',
-                    cursor: 'pointer',
-                    borderRadius: '50%',
-                    padding: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{
-                  background: 'rgba(26, 90, 59, 0.05)',
-                  border: '1px solid rgba(26, 90, 59, 0.1)',
-                  borderRadius: '12px',
-                  padding: '14px',
-                  display: 'flex',
-                  gap: '10px',
-                  alignItems: 'flex-start'
-                }}>
-                  <Info size={18} style={{ color: 'var(--color-primary)', marginTop: '2px', flexShrink: 0 }} />
-                  <div style={{ fontSize: '0.8rem', lineHeight: '1.4', color: 'var(--text-secondary)' }}>
-                    <strong>What are Safe Absences?</strong> Safe absences indicate the maximum number of classes you can miss for a specific subject without your attendance falling below the required minimum threshold of <strong>{requiredPercentage}%</strong>. If your current attendance is below {requiredPercentage}%, safe absences will be 0, and you will see how many consecutive classes you must attend to recover.
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {subjectWiseAttendance.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                      No subjects mapped.
-                    </div>
-                  ) : (
-                    subjectWiseAttendance.map((sub, idx) => {
-                      const hasConducted = sub.total > 0;
-                      const isSubSafe = sub.percentage >= requiredPercentage;
-                      
-                      return (
-                        <div 
-                          key={sub.timetableSlotId || idx}
-                          style={{
-                            padding: '14px',
-                            borderRadius: '10px',
-                            border: '1px solid var(--color-border-solid, #e5e7eb)',
-                            background: 'var(--color-bg, rgba(0,0,0,0.01))',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            gap: '16px'
-                          }}
-                        >
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 'bold', background: 'rgba(26,90,59,0.1)', padding: '1px 6px', borderRadius: '3px' }}>
-                                {sub.subjectCode}
-                              </span>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
-                                Attendance: <strong style={{ color: isSubSafe ? 'var(--status-present)' : 'var(--status-absent)' }}>{sub.percentage}%</strong>
-                              </span>
-                            </div>
-                            <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {sub.subjectName}
-                            </h4>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                              Conducted: {sub.total} classes | Attended: {sub.attended}
-                            </span>
-                          </div>
-
-                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            {hasConducted ? (
-                              isSubSafe ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 'bold' }}>Safe Absences</span>
-                                  <strong style={{ fontSize: '1rem', color: 'var(--status-present)' }}>
-                                    +{sub.safeAbsences} class(es)
-                                  </strong>
-                                </div>
-                              ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                  <span style={{ fontSize: '0.65rem', color: 'var(--status-absent)', textTransform: 'uppercase', fontWeight: 'bold' }}>Needs Recovery</span>
-                                  <strong style={{ fontSize: '0.85rem', color: 'var(--status-absent)' }}>
-                                    Attend next {sub.classesToRecover} class(es)
-                                  </strong>
-                                </div>
-                              )
-                            ) : (
-                              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                                No classes conducted
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
