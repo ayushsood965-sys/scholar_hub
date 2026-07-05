@@ -82,7 +82,9 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   let programType = preResolvedDegreeCode || 'PG';
   let isPhD = programType === 'PHD';
   if (!preResolvedDegreeCode && student.profile?.degreeTypeId) {
-    const dt = await DegreeTypeMaster.findById(student.profile.degreeTypeId);
+    const dtId = student.profile.degreeTypeId.toString();
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(dtId);
+    const dt = isValidObjectId ? await DegreeTypeMaster.findById(dtId) : null;
     if (dt) {
       programType = dt.code;
       if (dt.code === 'PHD') isPhD = true;

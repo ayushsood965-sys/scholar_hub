@@ -15,15 +15,38 @@ const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMappin
 exports.getFilterData = async (req, res) => {
   try {
     const sessions = await AcademicSessionMaster.find({}).sort({ startDate: -1 });
-    const degreeTypes = await DegreeTypeMaster.find({ isActive: true });
+    
     const degreeNameQuery = { isActive: true };
-    // Filter degree names by faculty/HOD's own department
     if ((req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {
       degreeNameQuery.departmentId = req.user.departmentId;
     }
     const degreeNames = await DegreeNameMaster.find(degreeNameQuery).populate('degreeTypeId').populate('departmentId');
-    const semesters = await SemesterMaster.find({ isActive: true }).sort({ number: 1 });
-    const semesterDegreeMappings = await SemesterDegreeMapping.find({ isActive: true });
+    
+    // Filter degree types by department
+    let degreeTypeQuery = { isActive: true };
+    if ((req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {
+      const degreeTypeIds = degreeNames.map(dn => dn.degreeTypeId?._id || dn.degreeTypeId).filter(Boolean);
+      degreeTypeQuery._id = { $in: degreeTypeIds };
+    }
+    const degreeTypes = await DegreeTypeMaster.find(degreeTypeQuery);
+
+    // Filter semesters and mappings by department
+    let semesterDegreeMappingQuery = { isActive: true };
+    let semesterQuery = { isActive: true };
+    if ((req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {
+      const degreeNameIds = degreeNames.map(dn => dn._id);
+      semesterDegreeMappingQuery.degreeNameId = { $in: degreeNameIds };
+      
+      const mappings = await SemesterDegreeMapping.find({ degreeNameId: { $in: degreeNameIds }, isActive: true });
+      const semesterIds = mappings.map(m => m.semesterId).filter(Boolean);
+      semesterQuery._id = { $in: semesterIds };
+    }
+    
+    const semesters = await SemesterMaster.find(semesterQuery).sort({ number: 1 });
+    const semesterDegreeMappings = await SemesterDegreeMapping.find(semesterDegreeMappingQuery)
+      .populate('degreeNameId')
+      .populate('semesterId');
+
     res.status(200).json({ sessions, degreeTypes, degreeNames, semesters, semesterDegreeMappings });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -43,16 +66,19 @@ exports.getPreview = async (req, res) => {
       return res.status(400).json({ message: 'Please select all filter criteria.' });
     }
 
-    // 1. Get subjects mapped to this faculty in TimetableMaster
-    const subjects = await TimetableMaster.find({
+    // 1. Get subjects mapped in TimetableMaster (restrict by facultyId only for regular faculty)
+    const subjectQuery = {
       sessionId,
       degreeTypeId,
       degreeNameId,
       semesterId,
-      facultyId,
       departmentId,
       isActive: true
-    }).populate('facultyId', 'name');
+    };
+    if (req.user.role === 'FACULTY') {
+      subjectQuery.facultyId = facultyId;
+    }
+    const subjects = await TimetableMaster.find(subjectQuery).populate('facultyId', 'name');
 
     // 1a. Validate timetable exists for these criteria
     if (!subjects || subjects.length === 0) {
@@ -167,15 +193,21 @@ exports.saveMapping = async (req, res) => {
     }
 
     // Get the timetable subjects for validation
-    const subjects = await TimetableMaster.find({
+    const subjectQuery = {
       _id: { $in: subjectIds },
       sessionId, degreeTypeId, degreeNameId, semesterId,
-      facultyId, departmentId, isActive: true
-    });
+      departmentId, isActive: true
+    };
+    if (req.user.role === 'FACULTY') {
+      subjectQuery.facultyId = facultyId;
+    }
+    const subjects = await TimetableMaster.find(subjectQuery);
 
     if (subjects.length !== subjectIds.length) {
       return res.status(400).json({ 
-        message: 'One or more selected subjects are invalid or not assigned to you for this criteria.' 
+        message: req.user.role === 'FACULTY'
+          ? 'One or more selected subjects are invalid or not assigned to you for this criteria.'
+          : 'One or more selected subjects are invalid for this criteria.'
       });
     }
 
@@ -322,17 +354,26 @@ exports.getMappedRecords = async (req, res) => {
       return res.status(400).json({ message: 'Please select all filter criteria.' });
     }
 
-    // 1. Get mapped subjects for this faculty from TimetableMaster
-    const facultySubjects = await TimetableMaster.find({
+    // 1. Get subjects mapped in TimetableMaster (restrict by facultyId only for regular faculty)
+    const timetableQuery = {
       sessionId, degreeTypeId, degreeNameId, semesterId,
-      facultyId, departmentId, isActive: true
-    }).populate('facultyId', 'name');
+      departmentId, isActive: true
+    };
+    if (req.user.role === 'FACULTY') {
+      timetableQuery.facultyId = facultyId;
+    }
+    const facultySubjects = await TimetableMaster.find(timetableQuery).populate('facultyId', 'name');
+    const subjectSlotIds = facultySubjects.map(s => s._id);
 
-    // 2. Get all mappings for this criteria created by this faculty
-    const mappings = await StudentSemesterMapping.find({
+    // 2. Get all mappings for this criteria
+    const mappingQuery = {
       sessionId, degreeTypeId, degreeNameId, semesterId,
-      departmentId, facultyId
-    }).populate('studentId', 'name username profile');
+      departmentId
+    };
+    if (req.user.role === 'FACULTY') {
+      mappingQuery['mappedSubjects.timetableSlotId'] = { $in: subjectSlotIds };
+    }
+    const mappings = await StudentSemesterMapping.find(mappingQuery).populate('studentId', 'name username profile');
 
     // 3. Format response
     const records = mappings.map(mapping => ({
@@ -368,9 +409,19 @@ exports.deleteMappedRecord = async (req, res) => {
       return res.status(404).json({ message: 'Mapping record not found.' });
     }
 
-    // Only the same faculty or HOD can delete
-    if (mapping.facultyId.toString() !== req.user._id.toString() && 
-        req.user.role !== 'HOD' && req.user.subRole !== 'HOD') {
+    // Only HOD, mapping creator, or the teacher of the deleted subject can delete
+    const isHOD = req.user.role === 'HOD' || req.user.subRole === 'HOD';
+    const isCreator = mapping.mappedBy?.toString() === req.user._id.toString() || mapping.facultyId?.toString() === req.user._id.toString();
+    
+    let isAuthorized = isHOD || isCreator;
+    if (!isAuthorized && timetableSlotId) {
+      const slot = await TimetableMaster.findById(timetableSlotId);
+      if (slot && slot.facultyId?.toString() === req.user._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'You are not authorized to delete this mapping.' });
     }
 

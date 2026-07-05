@@ -20,7 +20,7 @@ const upload = multer({ storage });
 // ==========================================
 // 1. MASTER ROUTES (SUPER ADMIN)
 // ==========================================
-router.get('/masters/degree-types', protect, attendanceController.getDegreeTypes);
+router.get('/masters/degree-types', protect, requireDepartment, attendanceController.getDegreeTypes);
 router.post('/masters/degree-types', protect, authorize('SUPER_ADMIN'), attendanceController.createDegreeType);
 router.post('/masters/seed-all', protect, authorize('SUPER_ADMIN'), attendanceController.seedAllMasters);
 router.put('/masters/degree-types/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateDegreeType);
@@ -31,7 +31,7 @@ router.post('/masters/degree-names', protect, authorize('SUPER_ADMIN'), attendan
 router.put('/masters/degree-names/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateDegreeName);
 router.delete('/masters/degree-names/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteDegreeName);
 
-router.get('/masters/semesters', protect, attendanceController.getSemesters);
+router.get('/masters/semesters', protect, requireDepartment, attendanceController.getSemesters);
 router.post('/masters/semesters', protect, authorize('SUPER_ADMIN'), attendanceController.createSemester);
 router.put('/masters/semesters/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateSemester);
 router.delete('/masters/semesters/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSemester);
@@ -43,7 +43,7 @@ router.put('/sessions/:id', protect, authorize('SUPER_ADMIN'), attendanceControl
 router.delete('/sessions/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteSession);
 router.put('/sessions/:id/current', protect, authorize('SUPER_ADMIN'), attendanceController.setCurrentSession);
 
-router.get('/masters/semester-degree-mappings', protect, attendanceController.getSemesterDegreeMappings);
+router.get('/masters/semester-degree-mappings', protect, requireDepartment, attendanceController.getSemesterDegreeMappings);
 router.post('/masters/semester-degree-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.createSemesterDegreeMapping);
 router.post('/masters/seed-mappings', protect, authorize('SUPER_ADMIN'), attendanceController.seedSemesterDegreeMappings);
 router.put('/masters/semester-degree-mappings/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateSemesterDegreeMapping);

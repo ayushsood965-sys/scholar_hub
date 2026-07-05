@@ -50,7 +50,13 @@ const toLocalDateString = (date) => {
 // ==========================================
 exports.getDegreeTypes = async (req, res) => {
   try {
-    const data = await DegreeTypeMaster.find({ isActive: true });
+    const query = { isActive: true };
+    if (req.user && (req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {
+      const deptDegreeNames = await DegreeNameMaster.find({ departmentId: req.user.departmentId, isActive: true });
+      const degreeTypeIds = deptDegreeNames.map(dn => dn.degreeTypeId).filter(Boolean);
+      query._id = { $in: degreeTypeIds };
+    }
+    const data = await DegreeTypeMaster.find(query);
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -184,7 +190,15 @@ exports.deleteDegreeName = async (req, res) => {
 
 exports.getSemesters = async (req, res) => {
   try {
-    const data = await SemesterMaster.find({ isActive: true }).sort({ number: 1 });
+    const query = { isActive: true };
+    if (req.user && (req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {
+      const deptDegreeNames = await DegreeNameMaster.find({ departmentId: req.user.departmentId, isActive: true });
+      const degreeNameIds = deptDegreeNames.map(dn => dn._id);
+      const mappings = await SemesterDegreeMapping.find({ degreeNameId: { $in: degreeNameIds }, isActive: true });
+      const semesterIds = mappings.map(m => m.semesterId).filter(Boolean);
+      query._id = { $in: semesterIds };
+    }
+    const data = await SemesterMaster.find(query).sort({ number: 1 });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -215,7 +229,13 @@ exports.updateSemester = async (req, res) => {
 
 exports.getSemesterDegreeMappings = async (req, res) => {
   try {
-    const data = await SemesterDegreeMapping.find({ isActive: true })
+    const query = { isActive: true };
+    if (req.user && (req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {
+      const deptDegreeNames = await DegreeNameMaster.find({ departmentId: req.user.departmentId, isActive: true });
+      const degreeNameIds = deptDegreeNames.map(dn => dn._id);
+      query.degreeNameId = { $in: degreeNameIds };
+    }
+    const data = await SemesterDegreeMapping.find(query)
       .populate('degreeNameId')
       .populate('semesterId');
     res.status(200).json(data);
@@ -2411,7 +2431,8 @@ exports.getStudentDashboardStats = async (req, res) => {
     const student = req.user;
     const records = await AttendanceRecord.find({ studentId: student._id, date: { $gte: session.startDate, $lte: session.endDate } });
     const holidays = await HolidayCalendar.find({ isActive: true });
-    const dt = student.profile?.degreeTypeId ? await DegreeTypeMaster.findById(student.profile.degreeTypeId) : null;
+    const isValidDtId = student.profile?.degreeTypeId && /^[0-9a-fA-F]{24}$/.test(student.profile.degreeTypeId.toString());
+    const dt = isValidDtId ? await DegreeTypeMaster.findById(student.profile.degreeTypeId) : null;
     let timetables = [];
     let populatedTimetables = [];
     if (dt && dt.code !== 'PHD') {
