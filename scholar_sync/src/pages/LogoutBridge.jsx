@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Preloader from '../components/ui/Preloader';
+import UrlNotConfigured from './UrlNotConfigured';
+import { GATEWAY_URL } from '../config';
 
 export default function LogoutBridge() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [showUnconfigured, setShowUnconfigured] = useState(false);
 
   useEffect(() => {
     const performLogout = () => {
@@ -13,16 +15,27 @@ export default function LogoutBridge() {
       localStorage.removeItem('login_origin');
       sessionStorage.clear();
 
+      if (!GATEWAY_URL) {
+        setShowUnconfigured(true);
+        return;
+      }
+
       const toastMsg = searchParams.get('toast');
-      const redirectPath = toastMsg ? `/?toast=${encodeURIComponent(toastMsg)}` : '/';
+      const redirectUrl = toastMsg
+        ? `${GATEWAY_URL}?toast=${encodeURIComponent(toastMsg)}`
+        : GATEWAY_URL;
       
       setTimeout(() => {
-        navigate(redirectPath, { replace: true });
+        window.location.href = redirectUrl;
       }, 600);
     };
 
     performLogout();
-  }, [navigate, searchParams]);
+  }, [searchParams]);
+
+  if (showUnconfigured) {
+    return <UrlNotConfigured variableName="VITE_GATEWAY_URL" />;
+  }
 
   return (
     <div style={{

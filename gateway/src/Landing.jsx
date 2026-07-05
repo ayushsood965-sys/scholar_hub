@@ -18,9 +18,9 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
-// Portal URLs — deployed Vercel links
-const SCHOLAR_SYNC_URL = import.meta.env.VITE_SCHOLAR_SYNC_URL || 'https://scholar-sync-ayush.vercel.app';
-const SCHOLAR_TRACK_URL = import.meta.env.VITE_SCHOLAR_TRACK_URL || 'https://scholar-track-ayush.vercel.app';
+// Portal URLs — read from environment variables, no hardcoded fallbacks
+const SCHOLAR_SYNC_URL = import.meta.env.VITE_SCHOLAR_SYNC_URL;
+const SCHOLAR_TRACK_URL = import.meta.env.VITE_SCHOLAR_TRACK_URL;
 
 const Landing = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -213,7 +213,8 @@ const Landing = () => {
             {/* ScholarSync Card */}
             <div 
               className="clay-card project-launch-card"
-              onClick={() => window.location.href = SCHOLAR_SYNC_URL}
+              onClick={() => SCHOLAR_SYNC_URL && (window.location.href = SCHOLAR_SYNC_URL)}
+              style={!SCHOLAR_SYNC_URL ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
             >
               <div className="project-icon-wrapper" style={{ background: 'rgba(26, 90, 59, 0.08)' }}>
                 <GraduationCap size={32} color="#133A26" />
@@ -233,15 +234,22 @@ const Landing = () => {
                 <span className="project-tag">FACULTY Reviews</span>
                 <span className="project-tag">Publications</span>
               </div>
-              <a href={SCHOLAR_SYNC_URL} className="btn-primary" style={{ width: '100%', marginTop: 'auto' }}>
-                Launch ScholarSync Portal <ArrowUpRight size={16} />
-              </a>
+              {SCHOLAR_SYNC_URL ? (
+                <a href={SCHOLAR_SYNC_URL} className="btn-primary" style={{ width: '100%', marginTop: 'auto' }}>
+                  Launch ScholarSync Portal <ArrowUpRight size={16} />
+                </a>
+              ) : (
+                <div style={{ width: '100%', marginTop: 'auto', padding: '12px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', textAlign: 'center', fontSize: '0.85rem', color: '#f87171', fontWeight: 600 }}>
+                  ⚠️ VITE_SCHOLAR_SYNC_URL not configured in .env
+                </div>
+              )}
             </div>
 
             {/* ScholarTrack Card */}
             <div 
               className="clay-card project-launch-card"
-              onClick={() => window.location.href = SCHOLAR_TRACK_URL}
+              onClick={() => SCHOLAR_TRACK_URL && (window.location.href = SCHOLAR_TRACK_URL)}
+              style={!SCHOLAR_TRACK_URL ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
             >
               <div className="project-icon-wrapper" style={{ background: 'rgba(2, 132, 199, 0.08)' }}>
                 <CalendarRange size={32} color="#0284c7" />
@@ -261,9 +269,15 @@ const Landing = () => {
                 <span className="project-tag" style={{ background: 'rgba(2, 132, 199, 0.06)', color: '#0284c7' }}>HOD Approvals</span>
                 <span className="project-tag" style={{ background: 'rgba(2, 132, 199, 0.06)', color: '#0284c7' }}>Defalcation Alerts</span>
               </div>
-              <a href={SCHOLAR_TRACK_URL} className="btn-primary" style={{ width: '100%', marginTop: 'auto', background: 'linear-gradient(135deg, #075985 0%, #0284c7 100%)', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.2)' }}>
-                Launch ScholarTrack Portal <ArrowUpRight size={16} />
-              </a>
+              {SCHOLAR_TRACK_URL ? (
+                <a href={SCHOLAR_TRACK_URL} className="btn-primary" style={{ width: '100%', marginTop: 'auto', background: 'linear-gradient(135deg, #075985 0%, #0284c7 100%)', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.2)' }}>
+                  Launch ScholarTrack Portal <ArrowUpRight size={16} />
+                </a>
+              ) : (
+                <div style={{ width: '100%', marginTop: 'auto', padding: '12px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', textAlign: 'center', fontSize: '0.85rem', color: '#f87171', fontWeight: 600 }}>
+                  ⚠️ VITE_SCHOLAR_TRACK_URL not configured in .env
+                </div>
+              )}
             </div>
           </div>
         </section>

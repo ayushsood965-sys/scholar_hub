@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useApi from '../../hooks/useApi';
+import { API_BASE_URL } from '../../config';
 import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import {
@@ -262,7 +263,7 @@ const CorrectionsTab = () => {
                       <FileText size={12} style={{ display: 'inline', marginRight: 4 }} /> Document
                     </p>
                     <a
-                      href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${selectedCorrection.documentUrl}`}
+                      href={`${API_BASE_URL}${selectedCorrection.documentUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}
