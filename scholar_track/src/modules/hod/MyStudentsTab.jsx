@@ -26,7 +26,7 @@ const MyStudentsTab = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/auth/students');
+      const res = await api.get('/auth/students?isPhD=false');
       setStudents(res.data);
     } catch (err) {
       toast.error('Failed to fetch department students.');
@@ -53,6 +53,10 @@ const MyStudentsTab = () => {
 
   // Filter students locally
   const filteredStudents = students.filter(student => {
+    // Hide PhDs explicitly
+    const isPhD = student.profile?.isPhD === true || student.profile?.degreeType?.toUpperCase().includes('PHD');
+    if (isPhD) return false;
+
     const matchesSearch = student.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           student.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           student.profile?.enrollmentNumber?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -75,10 +79,10 @@ const MyStudentsTab = () => {
         <div>
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Users size={24} style={{ color: 'var(--color-primary)' }} />
-            Department Students Directory
+            Department Students Directory (Non-PhD)
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            List of all students enrolled in the Department of {user?.department || 'your department'}.
+            List of all undergraduate and postgraduate students enrolled in the Department of {user?.department || 'your department'}.
           </p>
         </div>
         <div style={{
@@ -148,7 +152,7 @@ const MyStudentsTab = () => {
         </div>
       </div>
 
-      {/* Student List Grid */}
+      {/* Student List Table */}
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', gap: '16px' }}>
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(26, 90, 59, 0.1)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
@@ -163,117 +167,74 @@ const MyStudentsTab = () => {
           </p>
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '20px'
-        }}>
-          {filteredStudents.map(student => {
-            const initial = student.name?.[0]?.toUpperCase() || 'S';
-            const profile = student.profile || {};
-            return (
-              <div 
-                key={student._id} 
-                className="clay-card" 
-                style={{ 
-                  padding: '20px', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  justifyContent: 'space-between',
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                <div>
-                  {/* Top info and status badge */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: 'linear-gradient(135deg, rgba(165,214,167,0.3), rgba(46,158,91,0.3))',
-                      color: 'var(--color-primary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold'
-                    }}>
-                      {initial}
-                    </div>
-                    {student.isVerified ? (
-                      <span style={{ 
-                        fontSize: '0.72rem', 
-                        background: 'rgba(16, 185, 129, 0.1)', 
-                        color: '#10B981', 
-                        padding: '4px 10px', 
-                        borderRadius: '20px', 
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px'
-                      }}>
-                        <ShieldCheck size={12} /> Verified
-                      </span>
-                    ) : (
-                      <span style={{ 
-                        fontSize: '0.72rem', 
-                        background: 'rgba(245, 158, 11, 0.1)', 
-                        color: '#F59E0B', 
-                        padding: '4px 10px', 
-                        borderRadius: '20px', 
-                        fontWeight: 600 
-                      }}>
-                        ⏳ Pending
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Name and enrollment */}
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text-primary)' }}>
-                    {student.name}
-                  </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
-                    Roll No: <strong>{profile.enrollmentNumber || 'Not Filled'}</strong>
-                  </p>
-
-                  {/* Academic metadata */}
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '6px', 
-                    fontSize: '0.82rem', 
-                    borderTop: '1px solid var(--color-border)', 
-                    paddingTop: '12px',
-                    marginBottom: '16px' 
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
-                      <GraduationCap size={14} />
-                      <span>{profile.degreeName || 'Degree Details Pending'}</span>
-                    </div>
-                    {profile.academicSession && (
-                      <div style={{ color: 'var(--text-secondary)' }}>
-                        Session: <strong>{profile.academicSession}</strong>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* View Details CTA */}
-                <button 
-                  className="btn btn-sm btn-outline" 
-                  style={{ width: '100%', justifyContent: 'center' }}
-                  onClick={() => {
-                    setSelectedStudent(student);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  Open Profile
-                </button>
-              </div>
-            );
-          })}
+        <div className="data-table-wrapper">
+          <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.08)' }}>
+                <th style={{ width: '60px', textAlign: 'left', padding: '12px 16px' }}>Sr. No.</th>
+                <th style={{ textAlign: 'left', padding: '12px 16px' }}>Name</th>
+                <th style={{ textAlign: 'left', padding: '12px 16px' }}>Father's Name</th>
+                <th style={{ textAlign: 'left', padding: '12px 16px' }}>Sh. No.</th>
+                <th style={{ textAlign: 'left', padding: '12px 16px' }}>Course</th>
+                <th style={{ textAlign: 'left', padding: '12px 16px' }}>Status</th>
+                <th style={{ width: '100px', textAlign: 'center', padding: '12px 16px' }}>View</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredStudents.map((student, index) => {
+                const profile = student.profile || {};
+                return (
+                  <tr key={student._id} style={{ borderBottom: '1px solid var(--color-border-solid, rgba(255,255,255,0.05))' }}>
+                    <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{index + 1}</td>
+                    <td style={{ padding: '14px 16px', fontWeight: '600', color: 'var(--text-primary)' }}>{student.name}</td>
+                    <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{profile.fatherName || '—'}</td>
+                    <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontWeight: '500' }}>{profile.enrollmentNumber || '—'}</td>
+                    <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{profile.degreeName || '—'}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      {student.isVerified ? (
+                        <span style={{ 
+                          fontSize: '0.72rem', 
+                          background: 'rgba(16, 185, 129, 0.1)', 
+                          color: '#10B981', 
+                          padding: '4px 10px', 
+                          borderRadius: '20px', 
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}>
+                          <ShieldCheck size={12} /> Verified
+                        </span>
+                      ) : (
+                        <span style={{ 
+                          fontSize: '0.72rem', 
+                          background: 'rgba(245, 158, 11, 0.1)', 
+                          color: '#F59E0B', 
+                          padding: '4px 10px', 
+                          borderRadius: '20px', 
+                          fontWeight: 600 
+                        }}>
+                          ⏳ Pending
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                      <button 
+                        className="btn btn-sm btn-outline" 
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setIsModalOpen(true);
+                        }}
+                        style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
