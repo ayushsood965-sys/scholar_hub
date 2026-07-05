@@ -93,5 +93,45 @@ Application Specific Secrets:
 - ScholarSync Portal Secret:  GRpCd5JRURXhlKtvaBrqbN7xyf5xiU8nl7PGjOM8
 - ScholarTrack Portal Secret: OhXdF3gPE3CZAe4lyaRAlulDN4ZmV4Cbkb8avt3t
 ================================================================================
+7. VERCEL & RENDER PRODUCTION ENVIRONMENT CONFIGURATION
+================================================================================
+If you migrate to Vercel (Frontends) and Render (Backend Server), use these
+environment configurations:
 
-updated secret
+--------------------------------------------------------------------------------
+A. ScholarSync Frontend (Vercel Project: scholar-hub-1yxi)
+--------------------------------------------------------------------------------
+Domain: https://scholar-sync.vercel.app
+Environment Variables to set:
+- VITE_API_URL:      https://scholar-hub.onrender.com
+- VITE_TRACK_URL:    https://scholar-track.vercel.app
+- VITE_GATEWAY_URL:  https://scholar-hub-ayush.vercel.app
+
+--------------------------------------------------------------------------------
+B. ScholarTrack Frontend (Vercel Project: scholar-hub-4pjy)
+--------------------------------------------------------------------------------
+Domain: https://scholar-track.vercel.app
+Environment Variables to set:
+- VITE_API_URL:      https://scholar-hub.onrender.com
+- VITE_SYNC_URL:     https://scholar-sync.vercel.app
+- VITE_GATEWAY_URL:  https://scholar-hub-ayush.vercel.app
+
+--------------------------------------------------------------------------------
+C. Gateway Frontend (Vercel Project: scholar-hub)
+--------------------------------------------------------------------------------
+Domain: https://scholar-hub-ayush.vercel.app
+Environment Variables to set:
+- VITE_SCHOLAR_SYNC_URL:   https://scholar-sync.vercel.app
+- VITE_SCHOLAR_TRACK_URL:  https://scholar-track.vercel.app
+
+--------------------------------------------------------------------------------
+D. Backend Server (Render Web Service: scholar_hub)
+--------------------------------------------------------------------------------
+Domain: https://scholar-hub.onrender.com
+Environment Variables to set:
+- MONGO_URI:        [Your production MongoDB connection string (e.g., MongoDB Atlas)]
+- JWT_SECRET:       [A strong random secret key]
+- ADMIN_PASSWORD:   [Your admin panel password]
+- UTILITY_PASSWORD: [Your utility endpoints password]
+- CORS_ORIGIN:      https://scholar-sync.vercel.app,https://scholar-track.vercel.app,https://scholar-hub-ayush.vercel.app
+================================================================================
