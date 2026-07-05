@@ -313,7 +313,6 @@ const OverviewTab = () => {
           </div>
         </div>
       </div>
-      </div>
 
       {/* Course Detail Modal */}
       <AnimatePresence>
