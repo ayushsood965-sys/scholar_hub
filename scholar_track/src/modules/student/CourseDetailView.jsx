@@ -1,12 +1,12 @@
 import React from 'react';
-import { X, Calendar, User, FileText, CheckCircle } from 'lucide-react';
+import { X, Calendar, User, FileText, CheckCircle, ShieldCheck, ShieldAlert } from 'lucide-react';
 import AttendanceCalendar from '../../components/ui/AttendanceCalendar';
 import ProgressRing from '../../components/ui/ProgressRing';
 
 const CourseDetailView = ({ course, calendarMonths = [], onClose }) => {
   if (!course) return null;
 
-  const { subjectCode, subjectName, facultyName, percentage, attended, total, timetableSlotId, dayOfWeek } = course;
+  const { subjectCode, subjectName, facultyName, percentage, attended, total, timetableSlotId, dayOfWeek, safeAbsences, classesToRecover } = course;
 
   // Filter calendar logs specifically for this course
   const filteredMonths = calendarMonths.map(month => ({
@@ -116,6 +116,19 @@ const CourseDetailView = ({ course, calendarMonths = [], onClose }) => {
                   <CheckCircle size={14} style={{ color: 'var(--status-present)' }} />
                   Classes attended: <strong>{attended}</strong> / {total} held
                 </span>
+                {total > 0 && (
+                  classesToRecover > 0 ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--status-absent, #EF4444)', marginTop: '2px' }}>
+                      <ShieldAlert size={14} />
+                      Needs Recovery: <strong>Attend next {classesToRecover} class(es)</strong>
+                    </span>
+                  ) : (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--status-present, #10B981)', marginTop: '2px' }}>
+                      <ShieldCheck size={14} />
+                      Safe Absences: <strong>+{safeAbsences || 0} class(es)</strong>
+                    </span>
+                  )
+                )}
               </div>
             </div>
             
