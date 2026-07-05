@@ -1,6 +1,10 @@
 # Coolify Auto-Deploy Pipeline
 # Triggers redeployment of all 4 Coolify applications when code is pushed to main.
 # Uses Coolify's deploy API endpoint with Bearer token authentication.
+#
+# REQUIRED GitHub Secrets:
+#   COOLIFY_BASE_URL - Your Coolify URL (use http://103.235.106.147 on port 80, NOT port 8000)
+#   COOLIFY_TOKEN    - Your Coolify API token
 
 name: Deploy to Coolify
 
@@ -16,28 +20,33 @@ jobs:
     steps:
       - name: Deploy ScholarSync (scholarsync.mooo.com)
         run: |
-          curl -s -X GET \
+          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
             "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=pi31rfjt4l7lxcu00jknq3ih&force=false" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json")
+          echo "ScholarSync: $response"
 
       - name: Deploy ScholarServer (scholarserver.mooo.com)
         run: |
-          curl -s -X GET \
+          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
             "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=r2nng4qhlqrdbiu92y0vhx3v&force=false" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json")
+          echo "ScholarServer: $response"
 
       - name: Deploy ScholarSync Portal (scholarsync-portal.mooo.com)
         run: |
-          curl -s -X GET \
+          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
             "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=ihy1xgml2cr2jifejljfb4qq&force=false" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json")
+          echo "ScholarSync Portal: $response"
 
       - name: Deploy ScholarTrack Portal (scholartrack-portal.mooo.com)
         run: |
-          curl -s -X GET \
+          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
             "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=my6tl6m9l380q8rc1vi5xy0f&force=false" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json")
+          echo "ScholarTrack Portal: $response"
+

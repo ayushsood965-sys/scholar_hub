@@ -5,7 +5,7 @@ This file acts as a historical record and instruction sheet of the automatic CI/
 pipeline configuration. If you reinstall Coolify or migrate to another server,
 you can use this as a reference guide.
 
-STATUS: Pushed to GitHub. Awaiting Secrets configuration on your GitHub repository.
+STATUS: ACTIVE — GitHub Actions pipeline is configured and working.
 
 --------------------------------------------------------------------------------
 1. AUDITED SYSTEM & APPLICATIONS
@@ -19,7 +19,9 @@ The repository has four applications deployed on Coolify. Their UUIDs are:
 --------------------------------------------------------------------------------
 2. COOLIFY DASHBOARD & CONSOLE ACCESS
 --------------------------------------------------------------------------------
-- Coolify URL: http://103.235.106.147:8000/
+- Coolify Dashboard URL: http://103.235.106.147/
+  (NOTE: Coolify is reverse-proxied to port 80. Port 8000 is only accessible
+   from the local network, NOT from external IPs like GitHub Action runners.)
 - Owner Email: ayushsood965@gmail.com
 - Owner Password: [Configured utility password]
 
@@ -30,14 +32,15 @@ To trigger deployments programmatically, the Coolify API was configured:
 1. Enabled API Access:
    - Navigated to Settings > Advanced.
    - Turned ON the "API Access" setting.
-   - Cleared the "Allowed IPs for API Access" list so that GitHub Action runner IPs can connect.
+   - Cleared the "Allowed IPs for API Access" list so that GitHub Action
+     runner IPs can connect.
 2. Created API Token:
    - Navigated to Keys & Tokens > API Tokens.
    - Generated a token named "test-token" with root/deploy permissions.
    - Token value: 2|2iq9vP0PzkJqJXZhv95vFlJAP5A8qBErfdvn9C0q39bd8432
 3. Verified API Endpoint:
    - Run a test request to queue a deployment using:
-     curl -s -X GET "http://103.235.106.147:8000/api/v1/deploy?uuid=pi31rfjt4l7lxcu00jknq3ih&force=false" \
+     curl -s -X GET "http://103.235.106.147/api/v1/deploy?uuid=pi31rfjt4l7lxcu00jknq3ih&force=false" \
        -H "Authorization: Bearer 2|2iq9vP0PzkJqJXZhv95vFlJAP5A8qBErfdvn9C0q39bd8432" \
        -H "Content-Type: application/json"
 
@@ -51,7 +54,9 @@ repository settings under:
 
 Add these two secrets:
 1. Secret Name:  COOLIFY_BASE_URL
-   Secret Value: http://103.235.106.147:8000
+   Secret Value: http://103.235.106.147
+   *** IMPORTANT: Use port 80 (no port number), NOT port 8000! ***
+   *** Port 8000 is blocked for external IPs (GitHub runners). ***
 
 2. Secret Name:  COOLIFY_TOKEN
    Secret Value: 2|2iq9vP0PzkJqJXZhv95vFlJAP5A8qBErfdvn9C0q39bd8432
@@ -60,12 +65,24 @@ Once these are set, pushing to the `main` branch will automatically redeploy all
 4 applications on Coolify.
 
 --------------------------------------------------------------------------------
-5. BACKUP PIPELINE: NATIVE GITHUB WEBHOOKS (Option 2)
+5. TROUBLESHOOTING HISTORY
+--------------------------------------------------------------------------------
+Issue:  First 3 workflow runs failed with connection timeout (~2 min each).
+Cause:  COOLIFY_BASE_URL was set to http://103.235.106.147:8000 but port 8000
+        is firewalled and only accessible from the local network. GitHub Action
+        runners (external IPs) cannot reach port 8000.
+Fix:    Changed COOLIFY_BASE_URL to http://103.235.106.147 (port 80), which is
+        publicly accessible via a reverse proxy. Also added --fail,
+        --connect-timeout 15, and --max-time 30 to curl commands in the workflow
+        to fail fast instead of hanging for 2 minutes.
+
+--------------------------------------------------------------------------------
+6. BACKUP PIPELINE: NATIVE GITHUB WEBHOOKS (Option 2)
 --------------------------------------------------------------------------------
 If you ever want to trigger deployments directly without GitHub Actions, add these
 webhooks to your GitHub Repository Settings (Settings > Webhooks > Add webhook):
 
-Common Payload URL: http://103.235.106.147:8000/webhooks/source/github/events/manual
+Common Payload URL: http://103.235.106.147/webhooks/source/github/events/manual
 Content Type:       application/json
 Events:             Just the 'push' event
 SSL Verification:   Disabled
@@ -76,4 +93,3 @@ Application Specific Secrets:
 - ScholarSync Portal Secret:  GRpCd5JRURXhlKtvaBrqbN7xyf5xiU8nl7PGjOM8
 - ScholarTrack Portal Secret: OhXdF3gPE3CZAe4lyaRAlulDN4ZmV4Cbkb8avt3t
 ================================================================================
-updated
