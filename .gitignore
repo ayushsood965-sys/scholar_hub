@@ -49,3 +49,5 @@ server/inspect_other.js
 server/delete_research_outputs.js
 server/update_pubs.js
 scholar_track/test_*.cjs
+.vercel
+.env*
