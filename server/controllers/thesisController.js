@@ -106,7 +106,18 @@ const getMyThesis = async (req, res) => {
     const milestones = await Milestone.find({ thesisId: thesis._id })
       .populate('forwardedTo', 'name email role subRole')
       .sort('sequence createdAt');
-    res.json({ thesis, milestones });
+
+    const DRCMeeting = require('../models/DRCMeeting');
+    const drcMeeting = await DRCMeeting.findOne({
+      scholarId: req.user._id,
+      isSynopsisApproval: true,
+      status: 'APPROVED'
+    });
+
+    const thesisObj = thesis.toObject();
+    thesisObj.synopsisApprovedDate = drcMeeting ? drcMeeting.scheduledDate : null;
+
+    res.json({ thesis: thesisObj, milestones });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

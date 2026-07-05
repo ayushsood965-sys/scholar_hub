@@ -38,10 +38,11 @@ const OverviewTab = ({ thesis }) => {
   const toast = useToast();
 
   const getResearchPeriodStats = () => {
-    const admissionDateStr = user?.profile?.admissionDate || thesis?.createdAt || null;
-    if (!admissionDateStr) return null;
+    const hasSynopsisApproved = !!thesis?.synopsisApprovedDate;
+    const startDateStr = thesis?.synopsisApprovedDate || user?.profile?.admissionDate || thesis?.createdAt || null;
+    if (!startDateStr) return null;
     
-    const start = new Date(admissionDateStr);
+    const start = new Date(startDateStr);
     const today = new Date();
     
     const diffTime = Math.abs(today - start);
@@ -63,7 +64,8 @@ const OverviewTab = ({ thesis }) => {
       monthsLeft: monthsLeft,
       daysLeft: Math.round(daysLeft),
       isExtension: monthsPassed >= minRequiredMonths,
-      percentComplete: Math.min(100, Math.round((monthsPassed / minRequiredMonths) * 100))
+      percentComplete: Math.min(100, Math.round((monthsPassed / minRequiredMonths) * 100)),
+      hasSynopsisApproved
     };
   };
 
@@ -231,13 +233,13 @@ const OverviewTab = ({ thesis }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-solid, #e5e7eb)', paddingBottom: '10px' }}>
                 <Clock3 size={18} style={{ color: 'var(--color-primary)' }} />
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Outfit' }}>
-                  Active Research Progress
+                  {researchStats?.hasSynopsisApproved ? 'Active Research Progress' : 'Time since Admission'}
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <ProgressRing 
-                  percentage={researchStats?.percentComplete || 0} 
+                  percentage={researchStats?.hasSynopsisApproved ? (researchStats?.percentComplete || 0) : 0} 
                   size={70} 
                   strokeWidth={7} 
                   color="var(--color-primary)" 
@@ -247,13 +249,13 @@ const OverviewTab = ({ thesis }) => {
                     {researchStats?.monthsPassed || 0} Months
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {researchStats?.daysPassed || 0} days passed since registration
+                    {researchStats?.daysPassed || 0} days passed since {researchStats?.hasSynopsisApproved ? 'synopsis approval' : 'admission'}
                   </div>
                 </div>
               </div>
 
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                Admission Date: <strong>{researchStats?.startDate || 'Awaiting Registration'}</strong>
+                {researchStats?.hasSynopsisApproved ? 'DRC Synopsis Approval:' : 'Admission Date:'} <strong>{researchStats?.startDate || 'Awaiting Registration'}</strong>
               </div>
             </motion.div>
 
@@ -277,19 +279,25 @@ const OverviewTab = ({ thesis }) => {
             >
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Research Timeline Target
+                  {researchStats?.hasSynopsisApproved ? 'Research Timeline Target' : 'Pre-Research Phase'}
                 </span>
                 <h3 style={{ margin: '8px 0', fontSize: '1.5rem', fontWeight: '800', color: 'var(--color-primary)', fontFamily: 'Outfit' }}>
-                  {researchStats?.isExtension 
-                    ? 'Standard Residency Completed' 
-                    : `${researchStats?.monthsLeft || 0} Months Left`
-                  }
+                  {researchStats?.hasSynopsisApproved ? (
+                    researchStats?.isExtension 
+                      ? 'Standard Residency Completed' 
+                      : `${researchStats?.monthsLeft || 0} Months Left`
+                  ) : (
+                    'DRC Approval Pending'
+                  )}
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                  {researchStats?.isExtension
-                    ? 'You have completed the standard 3-year (36 months) research residency period and are currently in the thesis compilation/extension phase.'
-                    : `You have completed ${researchStats?.monthsPassed || 0} months of your active research. The remaining period to meet the standard 3-year minimum residency is ${researchStats?.monthsLeft || 0} months (${researchStats?.daysLeft || 0} days).`
-                  }
+                  {researchStats?.hasSynopsisApproved ? (
+                    researchStats?.isExtension
+                      ? 'You have completed the standard 3-year (36 months) research residency period and are currently in the thesis compilation/extension phase.'
+                      : `You have completed ${researchStats?.monthsPassed || 0} months of your active research since synopsis approval. The remaining period to meet the standard 3-year minimum active research timeline is ${researchStats?.monthsLeft || 0} months (${researchStats?.daysLeft || 0} days).`
+                  ) : (
+                    `Your synopsis is awaiting DRC approval. Once approved, your active research period will commence. Currently, ${researchStats?.monthsPassed || 0} months have elapsed since your admission on ${user?.profile?.admissionDate ? new Date(user.profile.admissionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}.`
+                  )}
                 </p>
               </div>
 
