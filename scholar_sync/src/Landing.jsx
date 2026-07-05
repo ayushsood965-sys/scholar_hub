@@ -28,9 +28,15 @@ const Landing = () => {
     const fetchProjects = async () => {
       try {
         const res = await axios.get(`${API_URL}/public/projects`);
-        setProjects(res.data);
+        if (Array.isArray(res.data)) {
+          setProjects(res.data);
+        } else {
+          console.error('Expected array of projects but got:', res.data);
+          setProjects([]);
+        }
       } catch (err) {
         console.error('Error fetching doctoral projects:', err);
+        setProjects([]);
       } finally {
         setLoading(false);
       }
