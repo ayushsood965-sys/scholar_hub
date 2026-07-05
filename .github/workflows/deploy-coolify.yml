@@ -1,9 +1,9 @@
 # Coolify Auto-Deploy Pipeline
 # Triggers redeployment of all 4 Coolify applications when code is pushed to main.
-# Uses Coolify's deploy API endpoint with Bearer token authentication.
+# Cancels any existing queued or in-progress deployments for the same application before triggering a new one.
 #
 # REQUIRED GitHub Secrets:
-#   COOLIFY_BASE_URL - Your Coolify URL (use http://103.235.106.147 on port 80, NOT port 8000)
+#   COOLIFY_BASE_URL - Your Coolify URL (e.g., http://103.235.106.147 on port 80)
 #   COOLIFY_TOKEN    - Your Coolify API token
 
 name: Deploy to Coolify
@@ -13,40 +13,66 @@ on:
     branches:
       - main
 
+concurrency:
+  group: deploy-coolify
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Trigger Coolify Redeployment
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy ScholarSync (scholarsync.mooo.com)
+      - name: Deploy Coolify Applications
         run: |
-          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
-            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=pi31rfjt4l7lxcu00jknq3ih&force=false" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json")
-          echo "ScholarSync: $response"
+          cancel_and_deploy() {
+            local app_name="$1"
+            local app_uuid="$2"
+            
+            echo "============================================="
+            echo "Managing deployments for $app_name ($app_uuid)"
+            echo "============================================="
+            
+            # Fetch active/queued deployments for this application
+            echo "Fetching current deployments from Coolify..."
+            deployments=$(curl -s -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deployments/applications/$app_uuid" || echo "[]")
+              
+            if [ -n "$deployments" ] && [ "$deployments" != "[]" ] && [[ "$deployments" == \[*\] ]]; then
+              # Parse queued or in_progress deployment UUIDs using jq
+              pending_uuids=$(echo "$deployments" | jq -r '.[] | select(.status == "queued" or .status == "in_progress") | .deployment_uuid')
+              
+              for uuid in $pending_uuids; do
+                if [ -n "$uuid" ] && [ "$uuid" != "null" ]; then
+                  echo "Found pending/active deployment $uuid for $app_name. Canceling..."
+                  cancel_resp=$(curl -s -X POST -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+                    -H "Content-Type: application/json" \
+                    "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deployments/$uuid/cancel")
+                  echo "Cancel response: $cancel_resp"
+                fi
+              done
+            else
+              echo "No active/queued deployments found for $app_name."
+            fi
+            
+            # Trigger new deployment
+            echo "Triggering new deployment for $app_name..."
+            response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
+              "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=$app_uuid&force=false" \
+              -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+              -H "Content-Type: application/json")
+            echo "Deployment trigger response: $response"
+            echo ""
+          }
 
-      - name: Deploy ScholarServer (scholarserver.mooo.com)
-        run: |
-          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
-            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=r2nng4qhlqrdbiu92y0vhx3v&force=false" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json")
-          echo "ScholarServer: $response"
+          # 1. ScholarSync
+          cancel_and_deploy "ScholarSync" "pi31rfjt4l7lxcu00jknq3ih"
 
-      - name: Deploy ScholarSync Portal (scholarsync-portal.mooo.com)
-        run: |
-          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
-            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=ihy1xgml2cr2jifejljfb4qq&force=false" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json")
-          echo "ScholarSync Portal: $response"
+          # 2. ScholarServer
+          cancel_and_deploy "ScholarServer" "r2nng4qhlqrdbiu92y0vhx3v"
 
-      - name: Deploy ScholarTrack Portal (scholartrack-portal.mooo.com)
-        run: |
-          response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
-            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=my6tl6m9l380q8rc1vi5xy0f&force=false" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json")
-          echo "ScholarTrack Portal: $response"
+          # 3. ScholarSync Portal
+          cancel_and_deploy "ScholarSync Portal" "ihy1xgml2cr2jifejljfb4qq"
 
+          # 4. ScholarTrack Portal
+          cancel_and_deploy "ScholarTrack Portal" "my6tl6m9l380q8rc1vi5xy0f"
