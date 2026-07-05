@@ -2935,7 +2935,11 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
     }
 
     // Batch fetch: all degree types
-    const degreeTypeIds = [...new Set(students.map(s => s.profile?.degreeTypeId).filter(Boolean))];
+    const degreeTypeIds = [...new Set(
+      students
+        .map(s => s.profile?.degreeTypeId?.toString())
+        .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id))
+    )];
     const degreeTypes = degreeTypeIds.length > 0
       ? await DegreeTypeMaster.find({ _id: { $in: degreeTypeIds } }).select('code')
       : [];
