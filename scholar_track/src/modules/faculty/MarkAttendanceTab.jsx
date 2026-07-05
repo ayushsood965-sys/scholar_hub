@@ -78,6 +78,12 @@ const MarkAttendanceTab = () => {
     return semesters.filter(s => s && mappedIds.includes(s._id));
   }, [filters.degreeNameId, semesters, semesterDegreeMappings]);
 
+  const getDayOfWeek = (dateStr) => {
+    if (!dateStr) return -1;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day).getDay();
+  };
+
   const checkHoliday = (selectedDate) => {
     if (!selectedDate) return null;
     const target = new Date(selectedDate).toISOString().split('T')[0];
@@ -92,6 +98,10 @@ const MarkAttendanceTab = () => {
     e.preventDefault();
     if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || (!isPhD && !filters.semesterId) || !filters.date) {
       return toast.error('Please select all filters first');
+    }
+    const isSunday = getDayOfWeek(filters.date) === 0;
+    if (isSunday) {
+      return toast.error('Cannot mark attendance. Selected date falls on a Sunday (Holiday).');
     }
     const holiday = checkHoliday(filters.date);
     if (holiday) {
@@ -160,7 +170,7 @@ const MarkAttendanceTab = () => {
             initialLeaveRequestId = existingRecord.leaveRequestId || leaveInfo?._id || null;
             initialLeaveStatus = leaveInfo?.status || 'APPROVED';
           } else {
-            initialStatus = '';
+            initialStatus = isPhD ? existingRecord.status : '';
           }
         } else if (leaveInfo) {
           if (['APPROVED', 'PENDING_HOD', 'PENDING_SUPERVISOR'].includes(leaveInfo.status)) {
@@ -477,6 +487,11 @@ const MarkAttendanceTab = () => {
             <div className="form-group mb-sm">
               <label className="form-label">Date</label>
               <input type="date" className="form-input" required value={filters.date} onChange={e => setFilters({...filters, date: e.target.value})} max={new Date().toISOString().split('T')[0]} />
+              {getDayOfWeek(filters.date) === 0 && (
+                <div style={{ color: '#EF4444', fontSize: '0.8rem', marginTop: '4px', fontWeight: '500' }}>
+                  ⚠️ Selected date is a Sunday (Holiday)
+                </div>
+              )}
               {checkHoliday(filters.date) && (
                 <div style={{ color: '#EF4444', fontSize: '0.8rem', marginTop: '4px', fontWeight: '500' }}>
                   ⚠️ Selected date is a holiday: {checkHoliday(filters.date).title}

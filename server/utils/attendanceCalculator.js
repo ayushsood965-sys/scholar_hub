@@ -121,7 +121,7 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   let totalExpectedClasses = 0;
 
   if (isPhD) {
-    expectedDates = getWorkingDays(session.startDate, session.endDate, holidays, true); // PhD has Sat working
+    expectedDates = getWorkingDays(session.startDate, session.endDate, holidays, false); // PhD has Sat working
     totalWorkingDays = expectedDates.length;
     totalExpectedClasses = totalWorkingDays;
   } else {

@@ -560,6 +560,11 @@ exports.getAttendanceMatrix = async (req, res) => {
     const departmentId = req.user.departmentId;
     const targetDate = new Date(date);
     
+    // Check if targetDate falls on a Sunday (Holiday)
+    if (targetDate.getDay() === 0) {
+      return res.status(400).json({ message: 'Cannot mark attendance. Selected date falls on a Sunday (Holiday).' });
+    }
+
     // Check if targetDate falls on a holiday
     const holiday = await HolidayCalendar.findOne({
       isActive: true,
@@ -587,9 +592,12 @@ exports.getAttendanceMatrix = async (req, res) => {
     }
 
     // ── Fetch StudentSemesterMapping to determine which students are mapped to which subjects ──
-    const mappings = await StudentSemesterMapping.find({
-      sessionId, degreeTypeId, degreeNameId, semesterId, departmentId
-    });
+    let mappings = [];
+    if (!isPhD) {
+      const mappingQuery = { sessionId, degreeTypeId, degreeNameId, departmentId };
+      if (semesterId) mappingQuery.semesterId = semesterId;
+      mappings = await StudentSemesterMapping.find(mappingQuery);
+    }
 
     // Build map: subjectId (timetableSlotId) → Set of studentIds explicitly mapped to it
     const subjectStudentMap = {};
@@ -622,6 +630,7 @@ exports.getAttendanceMatrix = async (req, res) => {
         if (degreeNameId) studentQuery['profile.degreeNameId'] = degreeNameId;
       } else {
         if (degreeTypeId) studentQuery['profile.degreeTypeId'] = degreeTypeId;
+        if (degreeNameId) studentQuery['profile.degreeNameId'] = degreeNameId;
       }
       students = await User.find(studentQuery).select('name username profile');
     }
@@ -711,6 +720,12 @@ exports.markAttendanceBulk = async (req, res) => {
     const departmentId = req.user.departmentId;
     
     const targetDate = new Date(date);
+
+    // Check if targetDate falls on a Sunday (Holiday)
+    if (targetDate.getDay() === 0) {
+      return res.status(400).json({ message: 'Cannot save attendance. Selected date falls on a Sunday (Holiday).' });
+    }
+
     const holiday = await HolidayCalendar.findOne({
       isActive: true,
       startDate: { $lte: targetDate },
@@ -2523,7 +2538,7 @@ exports.getStudentDashboardStats = async (req, res) => {
         today > session.startDate ? today : session.startDate,
         session.endDate,
         holidays,
-        true
+        false
       );
       totalRemainingClasses = remainingDays.length;
     } else {
