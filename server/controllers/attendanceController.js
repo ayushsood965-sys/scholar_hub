@@ -20,7 +20,7 @@ const SemesterMaster = require('../models/attendance/SemesterMaster');
 const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 const CategoryGenderMaster = require('../models/CategoryGenderMaster');
 
-const { calculateStudentStats, getTimetableLectures } = require('../utils/attendanceCalculator');
+const { calculateStudentStats, getTimetableLectures, getWorkingDays } = require('../utils/attendanceCalculator');
 const { createNotification } = require('./notificationController');
 
 const createSystemNotification = async (recipientId, title, message, type = 'INFO', link = '') => {
@@ -2448,9 +2448,10 @@ exports.getStudentDashboardStats = async (req, res) => {
     const holidays = await HolidayCalendar.find({ isActive: true });
     const isValidDtId = student.profile?.degreeTypeId && /^[0-9a-fA-F]{24}$/.test(student.profile.degreeTypeId.toString());
     const dt = isValidDtId ? await DegreeTypeMaster.findById(student.profile.degreeTypeId) : null;
+    const isPhD = student.profile?.isPhD || (dt && dt.code === 'PHD');
     let timetables = [];
     let populatedTimetables = [];
-    if (dt && dt.code !== 'PHD') {
+    if (!isPhD) {
       const studentMapping = await StudentSemesterMapping.findOne({
         studentId: student._id,
         sessionId: session._id,
@@ -2534,7 +2535,7 @@ exports.getStudentDashboardStats = async (req, res) => {
     if (stats.isPhD) {
       const today = new Date();
       today.setHours(0,0,0,0);
-      const remainingDays = attendanceCalculator.getWorkingDays(
+      const remainingDays = getWorkingDays(
         today > session.startDate ? today : session.startDate,
         session.endDate,
         holidays,
@@ -2674,7 +2675,7 @@ exports.getStudentDashboardStats = async (req, res) => {
     // 7. Upcoming classes (next 7 days)
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const upcomingClasses = [];
-    if (dt && dt.code !== 'PHD') {
+    if (!isPhD) {
       const today = new Date();
       for (let i = 1; i <= 7; i++) {
         const d = new Date(today);

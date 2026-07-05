@@ -1,9 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Clock, AlertCircle, Calendar, MessageSquare, Plus, ExternalLink, CalendarRange, Clock3 } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { useToast } from '../../context/ToastContext';
+import { AuthContext } from '../../context/AuthContext';
+
+const statusTitles = {
+  REGISTRATION_PENDING: 'Registration Pending HOD Approval',
+  COURSEWORK: 'Coursework Phase',
+  SYNOPSIS_PENDING: 'Synopsis Submission Pending',
+  ACTIVE_RESEARCH: 'Active Research Phase',
+  PRE_SUBMISSION: 'Pre-Submission Seminar Phase',
+  THESIS_SUBMITTED: 'Thesis Submitted to Supervisor',
+  PENDING_SUPERVISOR: 'Pending Supervisor Review',
+  PENDING_HOD: 'Pending HOD Action',
+  SUBMITTED: 'Thesis Dispatched for External Review',
+  AWARDED: 'Ph.D. Degree Awarded'
+};
 
 // Primitives & Modules
 import TrendLineChart from '../../components/ui/TrendLineChart';
@@ -14,13 +28,46 @@ import CourseDetailView from './CourseDetailView';
 import ProgressRing from '../../components/ui/ProgressRing';
 import SafeAbsencesModal from '../../components/ui/SafeAbsencesModal';
 
-const OverviewTab = () => {
+const OverviewTab = ({ thesis }) => {
+  const { user } = useContext(AuthContext);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isSafeAbsencesOpen, setIsSafeAbsencesOpen] = useState(false);
   const api = useApi();
   const toast = useToast();
+
+  const getResearchPeriodStats = () => {
+    const admissionDateStr = user?.profile?.admissionDate || thesis?.createdAt || null;
+    if (!admissionDateStr) return null;
+    
+    const start = new Date(admissionDateStr);
+    const today = new Date();
+    
+    const diffTime = Math.abs(today - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let monthsPassed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+    if (today.getDate() < start.getDate()) {
+      monthsPassed--;
+    }
+    
+    const minRequiredMonths = 36;
+    const monthsLeft = Math.max(0, minRequiredMonths - monthsPassed);
+    const daysLeft = Math.max(0, (minRequiredMonths * 30.43) - diffDays);
+    
+    return {
+      startDate: start.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
+      daysPassed: diffDays,
+      monthsPassed: monthsPassed,
+      monthsLeft: monthsLeft,
+      daysLeft: Math.round(daysLeft),
+      isExtension: monthsPassed >= minRequiredMonths,
+      percentComplete: Math.min(100, Math.round((monthsPassed / minRequiredMonths) * 100))
+    };
+  };
+
+  const researchStats = getResearchPeriodStats();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -162,50 +209,153 @@ const OverviewTab = () => {
           </div>
         </motion.div>
 
-        {/* Target Projections Widget */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <TargetWidget 
-            targetWidget={safeStats.targetWidget} 
-            onViewSafeAbsences={() => setIsSafeAbsencesOpen(true)} 
-          />
-        </motion.div>
+        {isPhD ? (
+          <>
+            {/* PhD Research Period Widget */}
+            <motion.div 
+              className="clay-card" 
+              initial={{ opacity: 0, y: 15 }} 
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              style={{ 
+                padding: '24px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '16px',
+                background: 'var(--color-surface, #ffffff)',
+                border: '1px solid var(--color-border-solid, #e5e7eb)',
+                borderRadius: 'var(--radius-xl)',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-solid, #e5e7eb)', paddingBottom: '10px' }}>
+                <Clock3 size={18} style={{ color: 'var(--color-primary)' }} />
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Outfit' }}>
+                  Active Research Progress
+                </span>
+              </div>
 
-        {/* Warning Indicator Card */}
-        <motion.div 
-          className="clay-card" 
-          initial={{ opacity: 0, y: 15 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.2 }}
-          style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderLeft: `6px solid ${getStatusColor()}` }}
-        >
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Academic Standing
-            </span>
-            <h3 style={{ margin: '8px 0', fontSize: '1.8rem', fontWeight: '800', color: getStatusColor(), fontFamily: 'Outfit' }}>
-              {safeStats.isDefaulter ? 'DEFAULTER' : safeStats.isWarning ? 'WARNING' : 'GOOD'}
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              {safeStats.isDefaulter 
-                ? `Your attendance is below the mandatory minimum of ${safeStats.minRequiredPercentage}%. Action is required immediately.` 
-                : safeStats.isWarning 
-                  ? `You are approaching the attendance limit. Attend regular classes to stay safe.` 
-                  : `Keep it up! Your attendance is well within the required institutional guidelines.`
-              }
-            </p>
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <ProgressRing 
+                  percentage={researchStats?.percentComplete || 0} 
+                  size={70} 
+                  strokeWidth={7} 
+                  color="var(--color-primary)" 
+                />
+                <div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>
+                    {researchStats?.monthsPassed || 0} Months
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    {researchStats?.daysPassed || 0} days passed since registration
+                  </div>
+                </div>
+              </div>
 
-          <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-            <div style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Clock size={14} style={{ color: 'var(--color-primary)' }} />
-              Required: {safeStats.minRequiredPercentage}%
-            </div>
-          </div>
-        </motion.div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                Admission Date: <strong>{researchStats?.startDate || 'Awaiting Registration'}</strong>
+              </div>
+            </motion.div>
+
+            {/* PhD Target/Remaining Time Widget */}
+            <motion.div 
+              className="clay-card" 
+              initial={{ opacity: 0, y: 15 }} 
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              style={{ 
+                padding: '24px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'space-between',
+                background: 'var(--color-surface, #ffffff)',
+                border: '1px solid var(--color-border-solid, #e5e7eb)',
+                borderRadius: 'var(--radius-xl)',
+                boxShadow: 'var(--shadow-sm)',
+                borderLeft: '6px solid var(--color-primary)'
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Research Timeline Target
+                </span>
+                <h3 style={{ margin: '8px 0', fontSize: '1.5rem', fontWeight: '800', color: 'var(--color-primary)', fontFamily: 'Outfit' }}>
+                  {researchStats?.isExtension 
+                    ? 'Standard Residency Completed' 
+                    : `${researchStats?.monthsLeft || 0} Months Left`
+                  }
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  {researchStats?.isExtension
+                    ? 'You have completed the standard 3-year (36 months) research residency period and are currently in the thesis compilation/extension phase.'
+                    : `You have completed ${researchStats?.monthsPassed || 0} months of your active research. The remaining period to meet the standard 3-year minimum residency is ${researchStats?.monthsLeft || 0} months (${researchStats?.daysLeft || 0} days).`
+                  }
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                <span style={{ 
+                  fontSize: '0.75rem', 
+                  padding: '4px 10px', 
+                  borderRadius: '20px', 
+                  background: 'rgba(26,90,59,0.08)', 
+                  color: 'var(--color-primary)', 
+                  fontWeight: '700',
+                  fontFamily: 'Outfit'
+                }}>
+                  STATUS: {thesis?.status ? statusTitles[thesis.status] || thesis.status : 'Awaiting Thesis Record'}
+                </span>
+              </div>
+            </motion.div>
+          </>
+        ) : (
+          <>
+            {/* Target Projections Widget */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <TargetWidget 
+                targetWidget={safeStats.targetWidget} 
+                onViewSafeAbsences={() => setIsSafeAbsencesOpen(true)} 
+              />
+            </motion.div>
+
+            {/* Warning Indicator Card */}
+            <motion.div 
+              className="clay-card" 
+              initial={{ opacity: 0, y: 15 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.2 }}
+              style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderLeft: `6px solid ${getStatusColor()}` }}
+            >
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Academic Standing
+                </span>
+                <h3 style={{ margin: '8px 0', fontSize: '1.8rem', fontWeight: '800', color: getStatusColor(), fontFamily: 'Outfit' }}>
+                  {safeStats.isDefaulter ? 'DEFAULTER' : safeStats.isWarning ? 'WARNING' : 'GOOD'}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  {safeStats.isDefaulter 
+                    ? `Your attendance is below the mandatory minimum of ${safeStats.minRequiredPercentage}%. Action is required immediately.` 
+                    : safeStats.isWarning 
+                      ? `You are approaching the attendance limit. Attend regular classes to stay safe.` 
+                      : `Keep it up! Your attendance is well within the required institutional guidelines.`
+                  }
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                <div style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Clock size={14} style={{ color: 'var(--color-primary)' }} />
+                  Required: {safeStats.minRequiredPercentage}%
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
       </div>
 
       {/* Main Body Grid */}

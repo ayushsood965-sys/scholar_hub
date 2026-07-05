@@ -79,8 +79,8 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   const deptQuery = student.departmentId || null; // Might need to resolve actual dept ID from user if needed, but fallback to global
   
   // Resolve programType from degreeTypeId
-  let programType = preResolvedDegreeCode || 'PG';
-  let isPhD = programType === 'PHD';
+  let isPhD = student.profile?.isPhD || preResolvedDegreeCode === 'PHD';
+  let programType = preResolvedDegreeCode || (isPhD ? 'PHD' : 'PG');
   if (!preResolvedDegreeCode && student.profile?.degreeTypeId) {
     const dtId = student.profile.degreeTypeId.toString();
     const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(dtId);

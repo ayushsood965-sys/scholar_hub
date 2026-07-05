@@ -95,7 +95,7 @@ const StudentDashboard = () => {
         headerTitle={tabTitles[activeTab]}
         isLocked={isLocked}
       >
-        {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'overview' && <OverviewTab thesis={thesis} />}
         {activeTab === 'attendance' && <AttendanceTab />}
         {activeTab === 'leave' && <LeaveTab />}
         {activeTab === 'corrections' && <CorrectionsTab />}
