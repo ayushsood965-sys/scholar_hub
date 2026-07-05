@@ -80,32 +80,44 @@ const CourseStatsCard = ({ course, onViewDefaulters }) => {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '4px' }}>
           <span style={{ color: 'var(--text-secondary)' }}>Average Attendance</span>
-          <strong style={{ color: avgAttendancePercentage >= 75 ? 'var(--status-present)' : 'var(--status-absent)' }}>
-            {avgAttendancePercentage}%
-          </strong>
+          {totalStudents === 0 ? (
+            <strong style={{ color: 'var(--text-secondary)' }}>
+              No students mapped
+            </strong>
+          ) : classesHeld === 0 ? (
+            <strong style={{ color: 'var(--text-secondary)' }}>
+              No classes conducted
+            </strong>
+          ) : (
+            <strong style={{ color: avgAttendancePercentage >= 75 ? 'var(--status-present)' : 'var(--status-absent)' }}>
+              {avgAttendancePercentage}%
+            </strong>
+          )}
         </div>
         <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
           <div style={{
             height: '100%',
-            width: `${avgAttendancePercentage}%`,
-            background: avgAttendancePercentage >= 75 ? 'var(--status-present)' : 'var(--status-absent)',
+            width: (totalStudents === 0 || classesHeld === 0) ? '0%' : `${avgAttendancePercentage}%`,
+            background: (totalStudents === 0 || classesHeld === 0) ? '#6B7280' : (avgAttendancePercentage >= 75 ? 'var(--status-present)' : 'var(--status-absent)'),
             borderRadius: '3px'
           }} />
         </div>
       </div>
 
       {/* Expand/Collapse Trend button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-        <button 
-          className="btn btn-outline" 
-          style={{ width: '100%', padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-          onClick={() => setExpanded(!expanded)}
-        >
-          <BarChart3 size={14} />
-          {expanded ? 'Hide Weekly Trend' : 'Show Weekly Trend'}
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-      </div>
+      {totalStudents > 0 && classesHeld > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+          <button 
+            className="btn btn-outline" 
+            style={{ width: '100%', padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            onClick={() => setExpanded(!expanded)}
+          >
+            <BarChart3 size={14} />
+            {expanded ? 'Hide Weekly Trend' : 'Show Weekly Trend'}
+            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
+      )}
 
       <AnimatePresence>
         {expanded && (
