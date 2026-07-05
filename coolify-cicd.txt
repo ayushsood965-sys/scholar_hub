@@ -1,0 +1,70 @@
+================================================================================
+COOLIFY CI/CD CONFIGURATION & HISTORY SHEET
+================================================================================
+This file acts as a historical record and instruction sheet of the automatic CI/CD
+pipeline configuration done on 2026-07-05. Keep this file safe. It contains all the
+steps, API tokens, and webhook configurations. If you reinstall Coolify or migrate
+to another server, you can use this as a reference guide.
+
+--------------------------------------------------------------------------------
+1. AUDITED SYSTEM & APPLICATIONS
+--------------------------------------------------------------------------------
+The repository has four applications deployed on Coolify. Their UUIDs are:
+- ScholarSync:         pi31rfjt4l7lxcu00jknq3ih
+- ScholarServer:       r2nng4qhlqrdbiu92y0vhx3v
+- ScholarSync Portal:  ihy1xgml2cr2jifejljfb4qq
+- ScholarTrack Portal: my6tl6m9l380q8rc1vi5xy0f
+
+--------------------------------------------------------------------------------
+2. COOLIFY DASHBOARD & CONSOLE ACCESS
+--------------------------------------------------------------------------------
+- Coolify URL: http://103.235.106.147:8000/
+- Owner Email: ayushsood965@gmail.com
+- Owner Password: [Configured utility password]
+
+--------------------------------------------------------------------------------
+3. COOLIFY API CONFIGURATION (For GitHub Actions deployment)
+--------------------------------------------------------------------------------
+To trigger deployments programmatically (e.g., using GitHub Actions), the Coolify
+API must be enabled and an API token must be created:
+1. Enabled API Access:
+   - Navigated to Settings > Advanced.
+   - Turned ON the "API Access" setting.
+   - Cleared the "Allowed IPs for API Access" list (set it to empty) so that dynamic GitHub Action runner IPs can hit the API.
+2. Created API Token:
+   - Navigated to Keys & Tokens > API Tokens.
+   - Generated a token named "test-token" with root/deploy permissions.
+   - Token value: 2|2iq9vP0PzkJqJXZhv95vFlJAP5A8qBErfdvn9C0q39bd8432
+3. Verified API Endpoint:
+   - Run a test request to queue a deployment using:
+     curl -s -X GET "http://103.235.106.147:8000/api/v1/deploy?uuid=pi31rfjt4l7lxcu00jknq3ih&force=false" \
+       -H "Authorization: Bearer 2|2iq9vP0PzkJqJXZhv95vFlJAP5A8qBErfdvn9C0q39bd8432" \
+       -H "Content-Type: application/json"
+
+--------------------------------------------------------------------------------
+4. NATIVE GITHUB WEBHOOKS CONFIGURATION (Option 1)
+--------------------------------------------------------------------------------
+To deploy directly on git push WITHOUT using GitHub Actions (saving build minutes),
+add these webhooks to your GitHub Repository Settings (Settings > Webhooks > Add webhook):
+
+Common Payload URL: http://103.235.106.147:8000/webhooks/source/github/events/manual
+Content Type:       application/json
+Events:             Just the 'push' event
+SSL Verification:   Disabled (if using plain HTTP)
+
+Application Specific Secrets:
+- ScholarSync Secret:         xvPRjlQyTvcBFzO1BnXUdSTT5Zpjk9NSdmOQ0SOv
+- ScholarServer Secret:       bK06E2skA4ABlnTaQ9kJ6XDPiYxyF3jW3SIPBeeA
+- ScholarSync Portal Secret:  GRpCd5JRURXhlKtvaBrqbN7xyf5xiU8nl7PGjOM8
+- ScholarTrack Portal Secret: OhXdF3gPE3CZAe4lyaRAlulDN4ZmV4Cbkb8avt3t
+
+--------------------------------------------------------------------------------
+5. GITHUB ACTIONS SECRET CONFIGURATION (Option 2)
+--------------------------------------------------------------------------------
+To use the pre-configured workflow file in `.github/workflows/deploy-coolify.yml`,
+add the following two secrets under GitHub Repository Settings -> Secrets and variables -> Actions:
+1. Secret Name: COOLIFY_BASE_URL
+   Secret Value: http://103.235.106.147:8000
+2. Secret Name: COOLIFY_TOKEN
+   Secret Value: 2|2iq9vP0PzkJqJXZhv95vFlJAP5A8qBErfdvn9C0q39bd8432
+================================================================================

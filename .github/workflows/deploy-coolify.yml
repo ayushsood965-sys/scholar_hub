@@ -1,0 +1,43 @@
+# Coolify Auto-Deploy Pipeline
+# Triggers redeployment of all 4 Coolify applications when code is pushed to main.
+# Uses Coolify's deploy API endpoint with Bearer token authentication.
+
+name: Deploy to Coolify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Trigger Coolify Redeployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy ScholarSync (scholarsync.mooo.com)
+        run: |
+          curl -s -X GET \
+            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=pi31rfjt4l7lxcu00jknq3ih&force=false" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            -H "Content-Type: application/json"
+
+      - name: Deploy ScholarServer (scholarserver.mooo.com)
+        run: |
+          curl -s -X GET \
+            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=r2nng4qhlqrdbiu92y0vhx3v&force=false" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            -H "Content-Type: application/json"
+
+      - name: Deploy ScholarSync Portal (scholarsync-portal.mooo.com)
+        run: |
+          curl -s -X GET \
+            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=ihy1xgml2cr2jifejljfb4qq&force=false" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            -H "Content-Type: application/json"
+
+      - name: Deploy ScholarTrack Portal (scholartrack-portal.mooo.com)
+        run: |
+          curl -s -X GET \
+            "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=my6tl6m9l380q8rc1vi5xy0f&force=false" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            -H "Content-Type: application/json"
