@@ -56,15 +56,21 @@ const CourseCard = ({ course, onClick }) => {
           {subjectName}
         </h4>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-          Attended: <strong>{attended}</strong> / {total} classes held
+          {total > 0 ? (
+            <>Attended: <strong>{attended}</strong> / {total} classes held</>
+          ) : (
+            "No classes conducted"
+          )}
         </span>
       </div>
 
       <ProgressRing 
-        percentage={percentage} 
+        percentage={total > 0 ? percentage : 0} 
         size={70} 
         strokeWidth={6} 
         label="" 
+        color={total > 0 ? undefined : '#94a3b8'}
+        valueLabel={total > 0 ? undefined : 'N/A'}
       />
     </motion.div>
   );

@@ -113,11 +113,17 @@ const MarkAttendanceTab = () => {
       const initialSavedClasses = {};
       const firstStudentRec = res.data.students[0]?.record;
       res.data.classes.forEach(c => {
-        const isSaved = res.data.students.some(st =>
+        const hasMarkedClass = res.data.students.some(st =>
           st.record && (st.record.classes || []).some(cc =>
-            cc.timetableSlotId === c._id && cc.selected
+            cc.timetableSlotId === c._id && (cc.selected || cc.isCancelled)
           )
         );
+        const hasCancelledClass = res.data.students.some(st =>
+          st.record && (st.record.classes || []).some(cc =>
+            cc.timetableSlotId === c._id && cc.isCancelled
+          )
+        );
+        const isSaved = hasMarkedClass ? (hasCancelledClass ? 'CANCELLED' : 'MARKED') : false;
         initialSavedClasses[c._id] = isSaved;
         if (isSaved) {
           initialSelectedSubjects[c._id] = false;
@@ -272,7 +278,60 @@ const MarkAttendanceTab = () => {
   };
 
   const isClassSaved = (classId) => {
-    return !!savedClasses[classId];
+    return savedClasses[classId] === 'MARKED' || savedClasses[classId] === 'CANCELLED';
+  };
+
+  const handleCancelClass = async (timetableSlotId) => {
+    if (!matrix || matrix.isLocked) return;
+    if (!window.confirm("Are you sure you want to mark this class as Not Conducted (Cancelled)? This will treat it as a holiday and exclude it from attendance calculations.")) {
+      return;
+    }
+    setLoadingMatrix(true);
+    try {
+      await api.post('/attendance/faculty/cancel-class', {
+        sessionId: filters.sessionId,
+        degreeTypeId: filters.degreeTypeId,
+        degreeNameId: filters.degreeNameId,
+        semesterId: isPhD ? null : filters.semesterId,
+        date: filters.date,
+        timetableSlotId
+      });
+      toast.success('Class marked as Not Conducted successfully.');
+      
+      const queryParams = new URLSearchParams({
+        sessionId: filters.sessionId,
+        degreeTypeId: filters.degreeTypeId,
+        degreeNameId: filters.degreeNameId,
+        semesterId: isPhD ? '' : filters.semesterId,
+        date: filters.date
+      });
+      const res = await api.get(`/attendance/faculty/matrix?${queryParams.toString()}`);
+      setMatrix(res.data);
+      const initialSelectedSubjects = {};
+      const initialSavedClasses = {};
+      const firstStudentRec = res.data.students[0]?.record;
+      res.data.classes.forEach(c => {
+        const hasMarkedClass = res.data.students.some(st =>
+          st.record && (st.record.classes || []).some(cc =>
+            cc.timetableSlotId === c._id && (cc.selected || cc.isCancelled)
+          )
+        );
+        const hasCancelledClass = res.data.students.some(st =>
+          st.record && (st.record.classes || []).some(cc =>
+            cc.timetableSlotId === c._id && cc.isCancelled
+          )
+        );
+        const isSaved = hasMarkedClass ? (hasCancelledClass ? 'CANCELLED' : 'MARKED') : false;
+        initialSavedClasses[c._id] = isSaved;
+        initialSelectedSubjects[c._id] = false;
+      });
+      setSelectedSubjects(initialSelectedSubjects);
+      setSavedClasses(initialSavedClasses);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error cancelling class');
+    } finally {
+      setLoadingMatrix(false);
+    }
   };
 
   const handleSave = async () => {
@@ -484,15 +543,19 @@ const MarkAttendanceTab = () => {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
                 {matrix.classes.map((c, idx) => {
-                  const isSaved = isClassSaved(c._id);
+                  const savedStatus = savedClasses[c._id];
+                  const isSaved = savedStatus === 'MARKED' || savedStatus === 'CANCELLED';
+                  const isCancelled = savedStatus === 'CANCELLED';
                   const isChecked = !isSaved && !!selectedSubjects[c._id];
                   return (
                     <motion.div key={c._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.4) }}
-                      onClick={() => handleSubjectToggle(c._id)}
+                      onClick={() => !isSaved && handleSubjectToggle(c._id)}
                       className="glass-card" style={{ padding: '14px 16px', cursor: (matrix.isLocked || isSaved) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '12px', opacity: isSaved ? 0.6 : 1, border: isChecked ? '2px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.2)' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', border: isChecked ? 'none' : '2px solid var(--color-border-solid)', background: isChecked ? 'var(--color-primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {isChecked && <Check size={14} color="#fff" strokeWidth={3} />}
-                      </div>
+                      {!isSaved && (
+                        <div style={{ width: '22px', height: '22px', borderRadius: '6px', border: isChecked ? 'none' : '2px solid var(--color-border-solid)', background: isChecked ? 'var(--color-primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {isChecked && <Check size={14} color="#fff" strokeWidth={3} />}
+                        </div>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>{c.subjectName}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Code: {c.subjectCode}</div>
@@ -505,7 +568,29 @@ const MarkAttendanceTab = () => {
                           </div>
                         )}
                       </div>
-                      {isSaved && <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>Marked</span>}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', flexShrink: 0 }}>
+                        {isSaved ? (
+                          isCancelled ? (
+                            <span className="badge badge-danger" style={{ fontSize: '0.65rem' }}>Cancelled</span>
+                          ) : (
+                            <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>Marked</span>
+                          )
+                        ) : (
+                          !matrix.isLocked && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline"
+                              style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '3px 8px', fontSize: '0.65rem', height: 'auto', minWidth: 'auto' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelClass(c._id);
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          )
+                        )}
+                      </div>
                     </motion.div>
                   );
                 })}

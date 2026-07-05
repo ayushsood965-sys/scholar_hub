@@ -13,10 +13,14 @@ const CourseDetailView = ({ course, calendarMonths = [], onClose }) => {
     ...month,
     days: month.days.map(day => {
       let status = day.status;
-      if (day.status === 'PRESENT' || day.status === 'ABSENT') {
+      if (day.status === 'PRESENT' || day.status === 'ABSENT' || day.status === 'NOT_APPLICABLE') {
         const classItem = (day.classes || []).find(c => c.timetableSlotId?.toString() === timetableSlotId?.toString());
         if (classItem) {
-          status = classItem.selected ? 'PRESENT' : 'ABSENT';
+          if (classItem.isCancelled) {
+            status = 'HOLIDAY'; // Treated as holiday type!
+          } else {
+            status = classItem.selected ? 'PRESENT' : 'ABSENT';
+          }
         } else {
           status = 'NO_CLASS';
         }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
-const ProgressRing = ({ percentage = 0, size = 140, strokeWidth = 10, color, label = 'Attendance' }) => {
+const ProgressRing = ({ percentage = 0, size = 140, strokeWidth = 10, color, label = 'Attendance', valueLabel }) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -40,8 +40,8 @@ const ProgressRing = ({ percentage = 0, size = 140, strokeWidth = 10, color, lab
         />
       </svg>
       <div className="progress-ring-label">
-        <span className="progress-ring-value" style={{ color: getColor(), fontSize: size <= 80 ? '0.85rem' : '1.5rem', fontWeight: size <= 80 ? '700' : '800' }}>
-          {percentage?.toFixed(1) ?? '0'}%
+        <span className="progress-ring-value" style={{ color: getColor(), fontSize: size <= 80 ? (valueLabel ? '0.7rem' : '0.85rem') : '1.5rem', fontWeight: size <= 80 ? '700' : '800' }}>
+          {valueLabel !== undefined ? valueLabel : `${percentage?.toFixed(1) ?? '0'}%`}
         </span>
         {label && size > 80 && <span className="progress-ring-subtitle">{label}</span>}
       </div>

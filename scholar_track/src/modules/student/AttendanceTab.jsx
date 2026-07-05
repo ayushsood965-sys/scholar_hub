@@ -41,19 +41,56 @@ const AttendanceTab = () => {
     }
   ];
 
+  const phdColumns = [
+    { 
+      header: 'Date', 
+      accessor: (row) => new Date(row.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'short' }) 
+    },
+    { 
+      header: 'Status', 
+      accessor: (row) => {
+        let color = '#10B981';
+        if (row.status === 'ABSENT') color = '#EF4444';
+        else if (row.status === 'ON_LEAVE') color = '#3B82F6';
+        else if (row.status === 'HOLIDAY') color = '#8B5CF6';
+        return <span style={{ color, fontWeight: 'bold' }}>{row.status}</span>;
+      }
+    },
+    { header: 'Remarks', accessor: (row) => row.remarks || '—' }
+  ];
+
   if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
     <div className="glass-panel p-xl">
       <div className="mb-lg">
         <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>My Attendance</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Subject-wise attendance breakdown.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          {data?.isPhD ? 'Daily check-in logs and biometric history.' : 'Subject-wise attendance breakdown.'}
+        </p>
       </div>
 
       {data?.isPhD ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-          <p>PhD Scholars do not have subject-wise attendance. You are tracked via daily check-ins.</p>
-          <h3>Overall Check-in %: {data.overallPercentage}%</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overall Check-in Percentage</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.8rem', color: 'var(--color-primary)', fontWeight: '800', fontFamily: 'Outfit' }}>
+                {data.percentage}%
+              </h3>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Checked-in Days</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.4rem', color: 'var(--text-primary)', fontWeight: '700' }}>
+                {data.presentDays} / {data.totalExpectedClasses} Days
+              </h3>
+            </div>
+          </div>
+          
+          <div>
+            <h3 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: '600' }}>Biometric Attendance History</h3>
+            <DataTable columns={phdColumns} data={data?.logs || []} />
+          </div>
         </div>
       ) : (
         <DataTable columns={subjectColumns} data={data?.subjectWiseAttendance || []} />

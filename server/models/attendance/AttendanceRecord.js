@@ -45,7 +45,8 @@ const attendanceRecordSchema = new mongoose.Schema(
       {
         timetableSlotId: { type: mongoose.Schema.Types.ObjectId, ref: 'TimetableMaster' },
         subjectName: String,
-        selected: { type: Boolean, default: false }
+        selected: { type: Boolean, default: false },
+        isCancelled: { type: Boolean, default: false }
       }
     ],
     isLeaveOverride: {

@@ -2514,12 +2514,24 @@ exports.getStudentDashboardStats = async (req, res) => {
       };
     });
 
-    // 4. Calculate total projected remaining classes & target widget status
+    // 4. Calculate total projected remaining classes/days & target widget status
     let totalRemainingClasses = 0;
-    subjectsWithTrend.forEach(sub => {
-      const remaining = Math.max(0, (sub.totalClassesInSemester || 90) - sub.total);
-      totalRemainingClasses += remaining;
-    });
+    if (stats.isPhD) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const remainingDays = attendanceCalculator.getWorkingDays(
+        today > session.startDate ? today : session.startDate,
+        session.endDate,
+        holidays,
+        true
+      );
+      totalRemainingClasses = remainingDays.length;
+    } else {
+      subjectsWithTrend.forEach(sub => {
+        const remaining = Math.max(0, (sub.totalClassesInSemester || 90) - sub.total);
+        totalRemainingClasses += remaining;
+      });
+    }
 
     const currentPercentage = stats.percentage;
     const requiredPercentage = stats.minRequiredPercentage;
@@ -2529,11 +2541,17 @@ exports.getStudentDashboardStats = async (req, res) => {
     const isRecoverable = (currentPercentage >= requiredPercentage) || 
       (stats.presentDays + totalRemainingClasses >= Math.ceil(requiredPercentage * (stats.totalExpectedClasses + totalRemainingClasses) / 100));
 
-    const formula = currentPercentage >= requiredPercentage 
-      ? `You can miss up to ${safeAbsencesRemaining} more class(es) while maintaining at least ${requiredPercentage}% attendance.`
-      : isRecoverable 
-        ? `You must attend the next ${classesToRecover} consecutive class(es) to restore your attendance to ${requiredPercentage}%.`
-        : `Warning: It is mathematically impossible to reach ${requiredPercentage}% attendance this semester.`;
+    const formula = stats.isPhD
+      ? (currentPercentage >= requiredPercentage
+          ? `You can miss up to ${safeAbsencesRemaining} more day(s) while maintaining at least ${requiredPercentage}% attendance.`
+          : isRecoverable
+            ? `You must check in for the next ${classesToRecover} consecutive day(s) to restore your attendance to ${requiredPercentage}%.`
+            : `Warning: It is mathematically impossible to reach ${requiredPercentage}% attendance this semester.`)
+      : (currentPercentage >= requiredPercentage 
+          ? `You can miss up to ${safeAbsencesRemaining} more class(es) while maintaining at least ${requiredPercentage}% attendance.`
+          : isRecoverable 
+            ? `You must attend the next ${classesToRecover} consecutive class(es) to restore your attendance to ${requiredPercentage}%.`
+            : `Warning: It is mathematically impossible to reach ${requiredPercentage}% attendance this semester.`);
 
     const targetWidget = {
       currentPercentage,
@@ -2542,7 +2560,8 @@ exports.getStudentDashboardStats = async (req, res) => {
       classesToRecover,
       totalRemainingClasses,
       isRecoverable,
-      formula
+      formula,
+      isPhD: stats.isPhD
     };
 
     // 5. Populate calendar data grouped by months
@@ -2910,9 +2929,13 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
       return res.status(200).json([]);
     }
 
-    // Fetch all department students
-    const students = await User.find({ department: deptId, role: 'STUDENT', isActive: true })
-      .select('name profile email username department');
+    const [students, allTimetables, activePolicies, holidays] = await Promise.all([
+      User.find({ department: deptId, role: 'STUDENT', isActive: true })
+        .select('name profile email username department'),
+      TimetableMaster.find({ isActive: true }).select('sessionId semesterId dayOfWeek'),
+      AttendancePolicyMaster.find({ isActive: true }),
+      HolidayCalendar.find({ isActive: true })
+    ]);
 
     if (students.length === 0) {
       return res.status(200).json([]);
@@ -2920,11 +2943,21 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
 
     const studentIds = students.map(s => s._id);
 
-    // Batch fetch: all attendance records for all students in this session
-    const allRecords = await AttendanceRecord.find({
-      studentId: { $in: studentIds },
-      date: { $gte: session.startDate, $lte: session.endDate }
-    }).select('studentId date status classes isLeaveOverride timetableSlotId');
+    const degreeTypeIds = [...new Set(
+      students
+        .map(s => s.profile?.degreeTypeId?.toString())
+        .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id))
+    )];
+
+    const [allRecords, degreeTypes] = await Promise.all([
+      AttendanceRecord.find({
+        studentId: { $in: studentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      }).select('studentId date status classes isLeaveOverride timetableSlotId'),
+      degreeTypeIds.length > 0
+        ? DegreeTypeMaster.find({ _id: { $in: degreeTypeIds } }).select('code')
+        : Promise.resolve([])
+    ]);
 
     // Group records by studentId
     const recordsByStudent = {};
@@ -2934,28 +2967,11 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
       recordsByStudent[sid].push(rec);
     }
 
-    // Batch fetch: all degree types
-    const degreeTypeIds = [...new Set(
-      students
-        .map(s => s.profile?.degreeTypeId?.toString())
-        .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id))
-    )];
-    const degreeTypes = degreeTypeIds.length > 0
-      ? await DegreeTypeMaster.find({ _id: { $in: degreeTypeIds } }).select('code')
-      : [];
     const degreeTypeMap = {};
     for (const dt of degreeTypes) degreeTypeMap[dt._id.toString()] = dt.code;
 
-    // Batch fetch: all active timetables
-    const allTimetables = await TimetableMaster.find({ isActive: true })
-      .select('sessionId semesterId dayOfWeek');
-
-    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
     const policyMap = {};
     activePolicies.forEach(p => { policyMap[p.programType] = p; });
-
-    // Batch fetch: holidays
-    const holidays = await HolidayCalendar.find({ isActive: true });
 
     const studentSemesterMap = {};
     for (const s of students) {
@@ -3023,26 +3039,32 @@ exports.getHodDashboardStats = async (req, res) => {
     const deptName = req.user.department;
     const deptId = req.user.departmentId;
 
-    const students = await User.find({ department: deptName, role: 'STUDENT', isActive: true })
-      .select('name profile email username department');
+    const [students, holidays, allTimetables, allMappings] = await Promise.all([
+      User.find({ department: deptName, role: 'STUDENT', isActive: true })
+        .select('name profile email username department'),
+      HolidayCalendar.find({ isActive: true }),
+      TimetableMaster.find({ sessionId: session._id, isActive: true })
+        .populate('facultyId', 'name')
+        .populate('degreeNameId', 'name')
+        .populate('semesterId', 'name'),
+      StudentSemesterMapping.find({ sessionId: session._id })
+    ]);
+
     const studentIds = students.map(s => s._id);
 
-    const holidays = await HolidayCalendar.find({ isActive: true });
-    const allTimetables = await TimetableMaster.find({ sessionId: session._id, isActive: true })
-      .populate('facultyId', 'name')
-      .populate('degreeNameId', 'name')
-      .populate('semesterId', 'name');
-
-    const allMappings = await StudentSemesterMapping.find({ sessionId: session._id });
     const studentSlotsMap = {};
     allMappings.forEach(m => {
       studentSlotsMap[m.studentId.toString()] = m.mappedSubjects || [];
     });
 
-    const allRecords = await AttendanceRecord.find({
-      studentId: { $in: studentIds },
-      date: { $gte: session.startDate, $lte: session.endDate }
-    });
+    const [allRecords, degreeTypes, activePolicies] = await Promise.all([
+      AttendanceRecord.find({
+        studentId: { $in: studentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      }).select('studentId date status classes isLeaveOverride remarks isLocked'),
+      DegreeTypeMaster.find().select('code'),
+      AttendancePolicyMaster.find({ isActive: true })
+    ]);
 
     const recordsByStudent = {};
     allRecords.forEach(rec => {
@@ -3051,11 +3073,9 @@ exports.getHodDashboardStats = async (req, res) => {
       recordsByStudent[sid].push(rec);
     });
 
-    const degreeTypes = await DegreeTypeMaster.find().select('code');
     const degreeTypeMap = {};
     degreeTypes.forEach(dt => { degreeTypeMap[dt._id.toString()] = dt.code; });
 
-    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
     const policyMap = {};
     activePolicies.forEach(p => { policyMap[p.programType] = p; });
 
@@ -3341,6 +3361,85 @@ exports.deleteAttendanceEntry = async (req, res) => {
       await record.save();
       return res.status(200).json({ message: 'Class attendance deleted.', deleted: false });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.cancelClass = async (req, res) => {
+  try {
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, date, timetableSlotId } = req.body;
+    const facultyId = req.user._id;
+    const departmentId = req.user.departmentId;
+    const targetDate = new Date(date);
+
+    const slot = await TimetableMaster.findById(timetableSlotId);
+    if (!slot) {
+      return res.status(404).json({ message: 'Timetable slot not found.' });
+    }
+    const subjectName = slot.subjectName;
+
+    const mappings = await StudentSemesterMapping.find({
+      sessionId,
+      degreeTypeId,
+      degreeNameId,
+      semesterId,
+      departmentId
+    });
+
+    const mappedStudentIds = [];
+    mappings.forEach(m => {
+      const isMapped = m.mappedSubjects.some(sub => sub.timetableSlotId.toString() === timetableSlotId.toString());
+      if (isMapped) {
+        mappedStudentIds.push(m.studentId);
+      }
+    });
+
+    if (mappedStudentIds.length === 0) {
+      return res.status(400).json({ message: 'No students are mapped to this course. Cannot cancel a course with no students.' });
+    }
+
+    for (const studentId of mappedStudentIds) {
+      const query = { studentId, date: targetDate };
+      const existing = await AttendanceRecord.findOne(query);
+
+      if (existing) {
+        const classIdx = existing.classes.findIndex(cc => cc.timetableSlotId.toString() === timetableSlotId.toString());
+        if (classIdx > -1) {
+          existing.classes[classIdx].isCancelled = true;
+          existing.classes[classIdx].selected = false;
+        } else {
+          existing.classes.push({ timetableSlotId, subjectName, selected: false, isCancelled: true });
+        }
+        
+        const allCancelled = existing.classes.every(cc => cc.isCancelled);
+        if (allCancelled) {
+          existing.status = 'NOT_APPLICABLE';
+        }
+        
+        existing.lastEditedBy = facultyId;
+        existing.lastEditedAt = new Date();
+        await existing.save();
+      } else {
+        const record = new AttendanceRecord({
+          studentId,
+          sessionId,
+          degreeTypeId,
+          degreeNameId,
+          semesterId,
+          facultyId,
+          departmentId,
+          date: targetDate,
+          status: 'NOT_APPLICABLE',
+          classes: [{ timetableSlotId, subjectName, selected: false, isCancelled: true }],
+          markedBy: facultyId,
+          markedAt: new Date()
+        });
+        await record.save();
+      }
+    }
+
+    res.status(200).json({ message: 'Class successfully marked as not conducted (cancelled).' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

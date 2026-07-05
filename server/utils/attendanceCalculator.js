@@ -110,6 +110,12 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   // Assuming student.departmentId is populated or we rely on string matching if rawHolidays has department ref
   const holidays = rawHolidays.filter(h => !h.departmentId || (student.departmentId && h.departmentId.toString() === student.departmentId.toString()));
 
+  const recordMap = {};
+  records.forEach(rec => {
+    const dStr = new Date(rec.date).toDateString();
+    recordMap[dStr] = rec;
+  });
+
   let totalWorkingDays = 0;
   let expectedDates = [];
   let totalExpectedClasses = 0;
@@ -126,19 +132,19 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         ? preResolvedLectureDatesCache[slot.dayOfWeek]
         : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
       dates.forEach(dt => {
-        datesSet.add(dt.toDateString());
-        totalExpectedClasses++;
+        const dStr = dt.toDateString();
+        const existingRecord = recordMap[dStr];
+        const classItem = existingRecord && existingRecord.classes && existingRecord.classes.find(c => c.timetableSlotId?.toString() === slot._id.toString());
+        const isConducted = classItem && !classItem.isCancelled;
+        if (isConducted) {
+          datesSet.add(dStr);
+          totalExpectedClasses++;
+        }
       });
     });
     expectedDates = Array.from(datesSet).map(ds => new Date(ds)).sort((a,b) => a-b);
     totalWorkingDays = expectedDates.length;
   }
-
-  const recordMap = {};
-  records.forEach(rec => {
-    const dStr = new Date(rec.date).toDateString();
-    recordMap[dStr] = rec;
-  });
 
   let presentCount = 0;
   let absentCount = 0;
@@ -167,14 +173,23 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         else if (status === 'ABSENT' || status === 'NOT_MARKED') absentCount++;
       } else {
         if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
-          // Leave override acts as present for all scheduled classes that day
-          const scheduledClassesToday = rawTimetables.filter(t => t.dayOfWeek === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]).length;
+          // Leave override acts as present for all scheduled classes that day that are not cancelled
+          const scheduledClassesToday = rawTimetables.filter(t => {
+            if (t.dayOfWeek !== ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]) return false;
+            const isSlotCancelled = existingRecord && existingRecord.classes && existingRecord.classes.some(c => c.timetableSlotId?.toString() === t._id.toString() && c.isCancelled);
+            return !isSlotCancelled;
+          }).length;
           presentCount += scheduledClassesToday;
         } else {
-          // Count class level checkboxes
+          // Count class level checkboxes (excluding cancelled classes)
           classes.forEach(c => {
-            if (c.selected) presentCount++;
-            else absentCount++;
+            if (c.isCancelled) {
+              // Ignore
+            } else if (c.selected) {
+              presentCount++;
+            } else {
+              absentCount++;
+            }
           });
         }
       }
@@ -242,29 +257,19 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
       dates.forEach(date => {
         const dStr = date.toDateString();
         const existingRecord = recordMap[dStr];
-        if (existingRecord) {
-          if (existingRecord.status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
+
+        const classItem = existingRecord && existingRecord.classes && existingRecord.classes.find(c => c.timetableSlotId?.toString() === slot._id.toString());
+        const isConducted = classItem && !classItem.isCancelled;
+        if (!isConducted) {
+          return;
+        }
+
+        if (existingRecord.status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
+          subjectPresent++;
+        } else {
+          if (classItem.selected) {
             subjectPresent++;
           } else {
-            const classItem = existingRecord.classes.find(c => c.timetableSlotId?.toString() === slot._id.toString());
-            if (classItem) {
-              if (classItem.selected) {
-                subjectPresent++;
-              } else {
-                subjectAbsent++;
-              }
-            } else {
-              const today = new Date();
-              today.setHours(0,0,0,0);
-              if (date < today) {
-                subjectAbsent++;
-              }
-            }
-          }
-        } else {
-          const today = new Date();
-          today.setHours(0,0,0,0);
-          if (date < today) {
             subjectAbsent++;
           }
         }
@@ -272,6 +277,25 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
       
       const totalForSubject = subjectPresent + subjectAbsent;
       const percentageForSubject = totalForSubject > 0 ? parseFloat(((subjectPresent / totalForSubject) * 100).toFixed(2)) : 100;
+      
+      let subjectSafeAbsences = 0;
+      let subjectRecoverClasses = 0;
+      
+      if (totalForSubject > 0) {
+        if (percentageForSubject >= minRequired) {
+          if (minRequired > 0) {
+            subjectSafeAbsences = Math.floor((subjectPresent * 100 / minRequired) - totalForSubject);
+            if (subjectSafeAbsences < 0) subjectSafeAbsences = 0;
+          }
+        } else {
+          if (minRequired < 100) {
+            subjectRecoverClasses = Math.ceil((minRequired * totalForSubject - 100 * subjectPresent) / (100 - minRequired));
+            if (subjectRecoverClasses < 0) subjectRecoverClasses = 0;
+          } else {
+            subjectRecoverClasses = totalForSubject - subjectPresent;
+          }
+        }
+      }
       
       subjectWiseAttendance.push({
         timetableSlotId: slot._id,
@@ -282,7 +306,9 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         attended: subjectPresent,
         percentage: percentageForSubject,
         totalClassesInSemester: slot.totalClassesInSemester || 90,
-        dayOfWeek: slot.dayOfWeek
+        dayOfWeek: slot.dayOfWeek,
+        safeAbsences: subjectSafeAbsences,
+        classesToRecover: subjectRecoverClasses
       });
     });
   }

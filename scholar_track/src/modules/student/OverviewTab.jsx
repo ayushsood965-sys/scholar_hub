@@ -166,7 +166,7 @@ const OverviewTab = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <TargetWidget targetWidget={safeStats.targetWidget} />
+          <TargetWidget targetWidget={safeStats.targetWidget} subjectWiseAttendance={safeStats.subjectWiseAttendance || []} />
         </motion.div>
 
         {/* Warning Indicator Card */}
@@ -204,7 +204,7 @@ const OverviewTab = () => {
       </div>
 
       {/* Main Body Grid */}
-      <div className="grid-2" style={{ gridTemplateColumns: isPhD ? '1fr' : '1.3fr 0.7fr', gap: '24px' }}>
+      <div className="grid-2" style={{ gridTemplateColumns: '1.3fr 0.7fr', gap: '24px' }}>
         {/* Left Hand: Course Cards or PhD Calendar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {isPhD ? (
@@ -246,10 +246,10 @@ const OverviewTab = () => {
           </div>
         </div>
 
-        {/* Right Hand Sidebar (For non-PhD, displays Leaves & Upcoming) */}
-        {!isPhD && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Upcoming Classes */}
+        {/* Right Hand Sidebar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Upcoming Classes (Only for non-PhD) */}
+          {!isPhD && (
             <div className="glass-panel" style={{ padding: '20px' }}>
               <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Clock3 size={18} style={{ color: 'var(--color-primary)' }} />
@@ -277,41 +277,42 @@ const OverviewTab = () => {
                 )}
               </div>
             </div>
+          )}
 
-            {/* Leave Tracker */}
-            <div className="glass-panel" style={{ padding: '20px' }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CalendarRange size={18} style={{ color: 'var(--color-primary)' }} />
-                Recent Leaves
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {safeStats.leaveRequests.length === 0 ? (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '20px 0' }}>
-                    No leaves applied recently.
-                  </span>
-                ) : (
-                  safeStats.leaveRequests.map(leave => {
-                    const badgeClass = leave.status === 'APPROVED' ? 'badge-success' : leave.status === 'REJECTED' ? 'badge-danger' : 'badge-warning';
-                    return (
-                      <div key={leave._id} style={{ padding: '10px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{leave.leaveType}</strong>
-                          <span className={`badge ${badgeClass}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
-                            {leave.status?.replace('PENDING_', '')}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                          <span>{new Date(leave.startDate).toLocaleDateString()} to {new Date(leave.endDate).toLocaleDateString()}</span>
-                          <span>{leave.totalDays} Day(s)</span>
-                        </div>
+          {/* Leave Tracker */}
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarRange size={18} style={{ color: 'var(--color-primary)' }} />
+              Recent Leaves
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {safeStats.leaveRequests.length === 0 ? (
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '20px 0' }}>
+                  No leaves applied recently.
+                </span>
+              ) : (
+                safeStats.leaveRequests.map(leave => {
+                  const badgeClass = leave.status === 'APPROVED' ? 'badge-success' : leave.status === 'REJECTED' ? 'badge-danger' : 'badge-warning';
+                  return (
+                    <div key={leave._id} style={{ padding: '10px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{leave.leaveType}</strong>
+                        <span className={`badge ${badgeClass}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                          {leave.status?.replace('PENDING_', '')}
+                        </span>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                        <span>{new Date(leave.startDate).toLocaleDateString()} to {new Date(leave.endDate).toLocaleDateString()}</span>
+                        <span>{leave.totalDays} Day(s)</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
-        )}
+        </div>
+      </div>
       </div>
 
       {/* Course Detail Modal */}
