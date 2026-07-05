@@ -4,7 +4,7 @@ import { ArrowUpRight, ArrowDownRight, Minus, BookOpen } from 'lucide-react';
 import ProgressRing from './ProgressRing';
 
 const CourseCard = ({ course, onClick }) => {
-  const { subjectCode, subjectName, attended, total, percentage, trend } = course;
+  const { subjectCode, subjectName, attended, total, percentage, trend, safeAbsences, classesToRecover } = course;
 
   const renderTrendIcon = () => {
     if (!trend) return null;
@@ -27,6 +27,30 @@ const CourseCard = ({ course, onClick }) => {
         <Minus size={14} /> stable
       </span>
     );
+  };
+
+  const renderSafeAbsences = () => {
+    if (total === 0) return null;
+    const needsRecovery = classesToRecover > 0;
+    if (needsRecovery) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', marginTop: '2px' }}>
+          <span style={{ color: 'var(--text-secondary)' }}>Needs Recovery:</span>
+          <strong style={{ color: 'var(--status-absent, #EF4444)', fontWeight: 'bold' }}>
+            Attend next {classesToRecover} class(es)
+          </strong>
+        </div>
+      );
+    } else {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', marginTop: '2px' }}>
+          <span style={{ color: 'var(--text-secondary)' }}>Safe Absences:</span>
+          <strong style={{ color: 'var(--status-present, #10B981)', fontWeight: 'bold' }}>
+            +{safeAbsences || 0} class(es)
+          </strong>
+        </div>
+      );
+    }
   };
 
   return (
@@ -62,6 +86,7 @@ const CourseCard = ({ course, onClick }) => {
             "No classes conducted"
           )}
         </span>
+        {renderSafeAbsences()}
       </div>
 
       <ProgressRing 
