@@ -194,6 +194,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                   <div style={{ padding: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
                     <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Basic Info</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#334155' }}>
+                      <div><strong style={{ color: '#475569' }}>Full Name:</strong> {student.name || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Date of Birth:</strong> {profile.dob || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Gender:</strong> {profile.gender || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Category:</strong> {profile.category || '—'}</div>
@@ -206,7 +207,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                       <div><strong style={{ color: '#475569' }}>Father's Name:</strong> {profile.fatherName || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Mother's Name:</strong> {profile.motherName || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Phone Number:</strong> {profile.phoneNumber || '—'}</div>
-                      <div><strong style={{ color: '#475569' }}>Address:</strong> {profile.address || '—'}</div>
+                      <div><strong style={{ color: '#475569' }}>Contact Address:</strong> {profile.address || '—'}</div>
                     </div>
                   </div>
                 </div>
@@ -217,10 +218,14 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                   <div style={{ padding: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
                     <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Admission Details</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', color: '#334155' }}>
-                      <div><strong style={{ color: '#475569' }}>Academic Session:</strong> {profile.academicSession || '—'}</div>
+                      <div><strong style={{ color: '#475569' }}>Login Username:</strong> {student.username || '—'}</div>
+                      <div><strong style={{ color: '#475569' }}>Department:</strong> {student.department || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Degree Type:</strong> {profile.degreeType || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Degree Name:</strong> {profile.degreeName || '—'}</div>
+                      <div><strong style={{ color: '#475569' }}>Academic Session:</strong> {profile.academicSession || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Enrollment Number:</strong> {profile.enrollmentNumber || '—'}</div>
+                      <div><strong style={{ color: '#475569' }}>HPU ERP Admission No.:</strong> {profile.erpAdmissionNo || '—'}</div>
+                      <div><strong style={{ color: '#475569' }}>Scholar Number:</strong> {profile.shNo || '—'}</div>
                       <div><strong style={{ color: '#475569' }}>Admission Date:</strong> {profile.admissionDate || '—'}</div>
                     </div>
                   </div>
