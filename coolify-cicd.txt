@@ -93,3 +93,5 @@ Application Specific Secrets:
 - ScholarSync Portal Secret:  GRpCd5JRURXhlKtvaBrqbN7xyf5xiU8nl7PGjOM8
 - ScholarTrack Portal Secret: OhXdF3gPE3CZAe4lyaRAlulDN4ZmV4Cbkb8avt3t
 ================================================================================
+
+updated secret
