@@ -58,6 +58,7 @@ const roleNavConfig = {
     { key: "cloneTimetable", icon: CalendarRange, label: "Clone Timetable" },
     { key: "approvals", icon: Gavel, label: "Approvals" },
     { key: "verifyAttendance", icon: ClipboardCheck, label: "Verify Attendance" },
+    { key: "records", icon: Clock, label: "Attendance Records" },
     { key: "defaulters", icon: AlertTriangle, label: "Defaulters" },
     { key: "students", icon: Users, label: "My Students" },
     { key: "mapping", icon: Layers, label: "Student Mapping" },

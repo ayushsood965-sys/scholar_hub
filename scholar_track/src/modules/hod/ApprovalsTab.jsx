@@ -30,6 +30,8 @@ const ApprovalsTab = () => {
   const [corrections, setCorrections] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [approvedRegistrations, setApprovedRegistrations] = useState([]);
+  const [leaveHistory, setLeaveHistory] = useState([]);
+  const [correctionHistory, setCorrectionHistory] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [assignedSupervisors, setAssignedSupervisors] = useState({});
   const [selectedRegForModal, setSelectedRegForModal] = useState(null);
@@ -121,6 +123,16 @@ const ApprovalsTab = () => {
         }
       };
       fetchApprovedNonPhd();
+
+      // Fetch Leave history logs
+      api.get('/attendance/leave/hod/history')
+        .then(res => setLeaveHistory(res.data || []))
+        .catch(err => console.error('Failed to load leave history', err));
+
+      // Fetch Correction history logs
+      api.get('/attendance/corrections/hod/history')
+        .then(res => setCorrectionHistory(res.data || []))
+        .catch(err => console.error('Failed to load correction history', err));
 
     } catch (err) {
       toast.error('Failed to load pending approvals');
@@ -405,6 +417,120 @@ const ApprovalsTab = () => {
     }
   ];
 
+  const leaveHistoryColumns = [
+    {
+      header: 'Student',
+      accessor: (row) => (
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>
+            {row.studentId?.name || 'Unknown'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+            {row.studentId?.username || ''}
+          </div>
+        </div>
+      )
+    },
+    { header: 'Leave Type', accessor: (row) => <span style={{ fontSize: '0.85rem' }}>{row.leaveType || 'N/A'}</span> },
+    {
+      header: 'Duration',
+      accessor: (row) => (
+        <div style={{ fontSize: '0.82rem' }}>
+          <div>{new Date(row.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} — {new Date(row.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem' }}>
+            <Calendar size={10} style={{ display: 'inline', marginRight: 2 }} />
+            {row.totalDays} day{row.totalDays > 1 ? 's' : ''}
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Status',
+      accessor: (row) => {
+        const map = {
+          APPROVED: { cls: 'badge-success', label: 'Approved' },
+          REJECTED: { cls: 'badge-danger', label: 'Rejected' }
+        };
+        const s = map[row.status] || { cls: 'badge-neutral', label: row.status };
+        return <span className={`badge ${s.cls}`}>{s.label}</span>;
+      }
+    },
+    {
+      header: 'Action Trail & Remarks',
+      accessor: (row) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.78rem' }}>
+          {(row.auditLog || []).map((log, idx) => (
+            <div key={idx} style={{ color: 'var(--color-text-secondary)', lineHeight: '1.3' }}>
+              <strong>{log.action}:</strong> {log.actorName} {log.remarks ? `— "${log.remarks}"` : ''}
+            </div>
+          ))}
+        </div>
+      )
+    }
+  ];
+
+  const correctionHistoryColumns = [
+    {
+      header: 'Student',
+      accessor: (row) => (
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>
+            {row.studentId?.name || 'Unknown'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+            {row.studentId?.username || ''}
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Date',
+      accessor: (row) => (
+        <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+          <Calendar size={10} style={{ display: 'inline', marginRight: 3 }} />
+          {row.recordId?.date
+            ? new Date(row.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+            : 'N/A'}
+        </span>
+      )
+    },
+    {
+      header: 'Correction Type',
+      accessor: (row) => (
+        <span className="badge" style={{
+          background: row.correctionType === 'ON_LEAVE' ? '#FEF3C7' : '#D1FAE5',
+          color: row.correctionType === 'ON_LEAVE' ? '#92400E' : '#065F46',
+          fontSize: '0.72rem'
+        }}>
+          {row.correctionType === 'ON_LEAVE' ? `Leave (${row.leaveType || ''})` : 'Present'}
+        </span>
+      )
+    },
+    {
+      header: 'Status',
+      accessor: (row) => {
+        const map = {
+          APPROVED: { cls: 'badge-success', label: 'Approved' },
+          REJECTED: { cls: 'badge-danger', label: 'Rejected' }
+        };
+        const s = map[row.status] || { cls: 'badge-neutral', label: row.status };
+        return <span className={`badge ${s.cls}`}>{s.label}</span>;
+      }
+    },
+    {
+      header: 'Action Trail & Remarks',
+      accessor: (row) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.78rem' }}>
+          {(row.auditLog || []).map((log, idx) => (
+            <div key={idx} style={{ color: 'var(--color-text-secondary)', lineHeight: '1.3' }}>
+              <strong>{log.action}:</strong> {log.actorName} {log.remarks ? `— "${log.remarks}"` : ''}
+            </div>
+          ))}
+        </div>
+      )
+    }
+  ];
+
   const renderRegistrationDetails = (reg) => {
     const profile = reg.scholarId?.profile || {};
     const q = profile.qualifications || {};
@@ -578,20 +704,69 @@ const ApprovalsTab = () => {
       </div>
 
       {activeSubTab === 'leaves' && (
-        leaves.length === 0 ? (
-          <div className="glass-panel p-xl" style={{ textAlign: 'center' }}>
-            <div style={{ color: 'var(--color-text-muted)', marginBottom: '12px' }}>
-              <CheckCircle size={48} style={{ margin: '0 auto', opacity: 0.3 }} />
-            </div>
-            <p style={{ color: 'var(--color-text-secondary)' }}>
-              No pending leave requests assigned to you.
-            </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+          <div>
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
+              Pending Leave Requests
+            </h3>
+            {leaves.length === 0 ? (
+              <div className="glass-panel p-xl" style={{ textAlign: 'center' }}>
+                <div style={{ color: 'var(--color-text-muted)', marginBottom: '12px' }}>
+                  <CheckCircle size={48} style={{ margin: '0 auto', opacity: 0.3 }} />
+                </div>
+                <p style={{ color: 'var(--color-text-secondary)' }}>
+                  No pending leave requests assigned to you.
+                </p>
+              </div>
+            ) : (
+              <DataTable columns={leaveColumns} data={leaves} />
+            )}
           </div>
-        ) : (
-          <DataTable columns={leaveColumns} data={leaves} />
-        )
+
+          <div>
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
+              Approved / Rejected Leaves Log
+            </h3>
+            {leaveHistory.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '24px', background: 'var(--color-surface-elevated)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                No processed leave requests found.
+              </p>
+            ) : (
+              <DataTable columns={leaveHistoryColumns} data={leaveHistory} />
+            )}
+          </div>
+        </div>
       )}
-      {activeSubTab === 'corrections' && <DataTable columns={correctionColumns} data={corrections} />}
+
+      {activeSubTab === 'corrections' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+          <div>
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
+              Pending Corrections Requests
+            </h3>
+            {corrections.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '24px', background: 'var(--color-surface-elevated)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                No pending correction requests found.
+              </p>
+            ) : (
+              <DataTable columns={correctionColumns} data={corrections} />
+            )}
+          </div>
+
+          <div>
+            <h3 style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
+              Approved / Rejected Corrections Log
+            </h3>
+            {correctionHistory.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '24px', background: 'var(--color-surface-elevated)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                No processed correction requests found.
+              </p>
+            ) : (
+              <DataTable columns={correctionHistoryColumns} data={correctionHistory} />
+            )}
+          </div>
+        </div>
+      )}
       
       {activeSubTab === 'registrations' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>

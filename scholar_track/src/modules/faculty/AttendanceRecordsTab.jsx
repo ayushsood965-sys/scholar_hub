@@ -364,13 +364,34 @@ const AttendanceRecordsTab = () => {
                 <th style={{ width: '110px' }}>Sh. No.</th>
                 <th>Student Name</th>
                 <th>Father's Name</th>
-                <th style={{ width: '360px' }}>Attendance Status</th>
-                <th style={{ width: '140px' }}>Actions</th>
+                <th style={{ width: '180px' }}>Attendance Status</th>
+                <th style={{ width: '220px' }}>Status</th>
+                <th style={{ width: '380px' }}>Verification Logs</th>
               </tr>
             </thead>
             <tbody>
               {historyList.map((record, hIdx) => {
-                const isEditing = editingStudentId === record.studentId?._id;
+                const formatTimestamp = (ts) => {
+                  if (!ts) return 'N/A';
+                  return new Date(ts).toLocaleString('en-IN', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: true
+                  });
+                };
+
+                const facultyName = record.markedBy?.name || 'Faculty';
+                const facultyDesignation = record.markedBy?.profile?.designation || 'Faculty';
+                const markedTime = formatTimestamp(record.markedAt || record.createdAt);
+
+                const hodName = record.hodApprovedBy?.name || record.lastEditedBy?.name || record.departmentHod?.name || 'HOD';
+                const hodDesignation = record.hodApprovedBy?.profile?.designation || record.lastEditedBy?.profile?.designation || record.departmentHod?.profile?.designation || 'Professor & Head';
+                const hodTime = formatTimestamp(record.hodApprovedAt || record.lastEditedAt || record.updatedAt);
+
+                const editorName = record.lastEditedBy?.name;
+                const editorDesignation = record.lastEditedBy?.profile?.designation || 'HOD';
+                const editTime = formatTimestamp(record.lastEditedAt);
+                const isEditedByHod = record.lastEditedBy && record.lastEditedBy.role === 'HOD';
+
                 return (
                   <motion.tr
                     key={record._id}
@@ -388,128 +409,57 @@ const AttendanceRecordsTab = () => {
                     </td>
                     <td style={{ color: 'var(--color-text-secondary)' }}>{record.studentId?.profile?.fatherName || '—'}</td>
                     <td>
-                      {isEditing ? (
-                        <div className="flex gap-xs flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => setEditingStatus({ ...editingStatus, status: 'PRESENT', leaveType: '', leaveRequestId: null })}
-                            className={`status-toggle-btn ${editingStatus.status === 'PRESENT' ? 'selected-present' : ''}`}
-                          >
-                            Present
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingStatus({ ...editingStatus, status: 'ABSENT', leaveType: '', leaveRequestId: null })}
-                            className={`status-toggle-btn ${editingStatus.status === 'ABSENT' ? 'selected-absent' : ''}`}
-                          >
-                            Absent
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingStatus({ ...editingStatus, status: 'NOT_APPLICABLE', leaveType: '', leaveRequestId: null })}
-                            className={`status-toggle-btn ${editingStatus.status === 'NOT_APPLICABLE' ? 'selected-na' : ''}`}
-                            style={{ background: editingStatus.status === 'NOT_APPLICABLE' ? 'var(--color-text-muted)' : 'transparent', color: editingStatus.status === 'NOT_APPLICABLE' ? '#fff' : 'inherit' }}
-                          >
-                            N/A
-                          </button>
-
-                          {editingStatus.status === 'ON_LEAVE' ? (
-                            <div style={{ position: 'relative', display: 'inline-block' }}>
-                              <button
-                                type="button"
-                                onClick={() => setOpenHistoryLeaveDropdownStudentId(openHistoryLeaveDropdownStudentId === record.studentId?._id ? null : record.studentId?._id)}
-                                className="badge badge-leave"
-                              >
-                                Leave - {editingStatus.leaveType || finalLeaveTypes[0]}
-                                <ChevronDown size={12} />
-                              </button>
-                              {openHistoryLeaveDropdownStudentId === record.studentId?._id && (
-                                <>
-                                  <div
-                                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 105 }}
-                                    onClick={() => setOpenHistoryLeaveDropdownStudentId(null)}
-                                  />
-                                  <div className="glass-card" style={{
-                                    position: 'absolute', top: '100%', left: 0, marginTop: '4px',
-                                    minWidth: '180px', zIndex: 110, padding: '8px',
-                                    display: 'flex', flexDirection: 'column', gap: '2px'
-                                  }}>
-                                    {finalLeaveTypes.map(ltName => (
-                                      <button
-                                        key={ltName}
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingStatus({ ...editingStatus, status: 'ON_LEAVE', leaveType: ltName, leaveRequestId: null });
-                                          setOpenHistoryLeaveDropdownStudentId(null);
-                                        }}
-                                        className="text-sm"
-                                        style={{
-                                          padding: '8px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'left',
-                                          color: editingStatus.leaveType === ltName ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                                          background: editingStatus.leaveType === ltName ? 'rgba(var(--color-primary-rgb), 0.06)' : 'transparent',
-                                          fontWeight: editingStatus.leaveType === ltName ? 600 : 400
-                                        }}
-                                      >
-                                        {ltName}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setEditingStatus({ status: 'ON_LEAVE', leaveType: finalLeaveTypes[0], leaveRequestId: null })}
-                              className={`status-toggle-btn ${editingStatus.status === 'ON_LEAVE' ? 'selected-leave' : ''}`}
-                            >
-                              Leave
-                            </button>
-                          )}
-                        </div>
+                      <span className={`badge ${
+                        record.status === 'PRESENT' ? 'badge-present' :
+                        record.status === 'ABSENT' ? 'badge-absent' :
+                        record.status === 'ON_LEAVE' ? 'badge-leave' : 'badge-neutral'
+                      }`}>
+                        {record.status === 'ON_LEAVE' ? `Leave - ${record.leaveType}` : record.status}
+                      </span>
+                    </td>
+                    <td>
+                      {record.forwardedToHOD ? (
+                        record.approvalStatus === 'PENDING_HOD' ? (
+                          <span className="badge badge-pending">
+                            Forwarded to HOD / Pending at HOD
+                          </span>
+                        ) : (
+                          <span className="badge badge-approved">
+                            Approved
+                          </span>
+                        )
                       ) : (
-                        <span className={`badge ${
-                          record.status === 'PRESENT' ? 'badge-present' :
-                          record.status === 'ABSENT' ? 'badge-absent' :
-                          record.status === 'ON_LEAVE' ? 'badge-leave' : 'badge-neutral'
-                        }`}>
-                          {record.status === 'ON_LEAVE' ? `Leave - ${record.leaveType}` : record.status}
+                        <span className="badge badge-approved">
+                          Approved
                         </span>
                       )}
                     </td>
                     <td>
-                      {isEditing ? (
-                        <div className="flex gap-xs">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleUpdateHistoryEntry(record)}
-                          >
-                            <Save size={13} /> Update
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-danger"
-                            onClick={() => setEditingStudentId(null)}
-                          >
-                            <X size={13} /> Cancel
-                          </button>
-                        </div>
+                      {record.forwardedToHOD ? (
+                        record.approvalStatus === 'PENDING_HOD' ? (
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                            <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+                            {isEditedByHod && (
+                              <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+                            )}
+                            <div><strong>Forwarded To:</strong> HOD {hodName} ({hodDesignation})</div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                            <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+                            {isEditedByHod && (
+                              <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+                            )}
+                            <div><strong>Approved By HOD:</strong> {hodName} ({hodDesignation}) at {hodTime}</div>
+                          </div>
+                        )
                       ) : (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline"
-                          onClick={() => {
-                            setEditingStudentId(record.studentId?._id);
-                            setEditingStatus({
-                              status: record.status,
-                              leaveType: record.leaveType || '',
-                              leaveRequestId: record.leaveRequestId || null
-                            });
-                          }}
-                        >
-                          <Edit3 size={13} /> Edit
-                        </button>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                          <div><strong>Approved By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+                          {isEditedByHod && (
+                            <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+                          )}
+                        </div>
                       )}
                     </td>
                   </motion.tr>

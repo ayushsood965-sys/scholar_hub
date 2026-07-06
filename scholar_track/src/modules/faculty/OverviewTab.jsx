@@ -14,6 +14,7 @@ import {
   GraduationCap,
   AlertCircle,
   BookOpen,
+  BarChart3,
 } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -21,6 +22,7 @@ import { useToast } from '../../context/ToastContext';
 import { progressiveFetch } from '../../utils/progressiveFetch';
 import CourseStatsCard from './CourseStatsCard';
 import DefaulterDrillDown from './DefaulterDrillDown';
+import HorizontalBarChart from '../../components/ui/HorizontalBarChart';
 import './OverviewTab.css';
 
 const OverviewTab = () => {
@@ -372,6 +374,29 @@ const OverviewTab = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* ─── Course Attendance Distribution ─── */}
+      <motion.div 
+        className="glass-panel" 
+        style={{ padding: '24px', marginBottom: '32px' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.4 }}
+      >
+        <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)', fontWeight: '600', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <BarChart3 size={18} style={{ color: 'var(--color-primary)' }} />
+          Course Attendance Distribution
+        </h3>
+        <HorizontalBarChart 
+          data={safeStats.courseStats ? safeStats.courseStats.map(c => ({ 
+            ...c, 
+            name: c.subjectName, 
+            avgPercentage: c.avgAttendancePercentage 
+          })) : []} 
+          dataKey="avgPercentage"
+          height={260}
+        />
+      </motion.div>
 
       {/* ─── Course-wise Stats Grid ─── */}
       <div style={{ marginBottom: '32px' }}>

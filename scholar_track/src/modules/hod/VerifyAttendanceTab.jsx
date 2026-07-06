@@ -4,7 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { AuthContext } from '../../context/AuthContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { Check, Search, ClipboardList, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Check, Search, ClipboardList, ShieldAlert, CheckCircle, Save, X, Edit3, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const VerifyAttendanceTab = () => {
@@ -30,9 +30,156 @@ const VerifyAttendanceTab = () => {
   const [approving, setApproving] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [editingStatus, setEditingStatus] = useState({ status: '', leaveType: '', leaveRequestId: null });
+  const [openHistoryLeaveDropdownStudentId, setOpenHistoryLeaveDropdownStudentId] = useState(null);
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [filteringSubject, setFilteringSubject] = useState(false);
+
   const api = useApi();
   const toast = useToast();
   const { user } = useContext(AuthContext);
+
+  // Reset subject filter when query results change
+  useEffect(() => {
+    setSelectedSubjectId('');
+    setFilteringSubject(false);
+  }, [records]);
+
+  const handleSubjectChange = (subjectId) => {
+    setFilteringSubject(true);
+    setSelectedSubjectId(subjectId);
+    setTimeout(() => {
+      setFilteringSubject(false);
+    }, 300);
+  };
+
+  // Calculate subject-wise pending counts
+  const subjectStats = useMemo(() => {
+    const stats = {};
+    records.forEach(r => {
+      if (r.approvalStatus === 'PENDING_HOD') {
+        (r.classes || []).forEach(c => {
+          const slotId = c.timetableSlotId?._id || c.timetableSlotId;
+          if (slotId) {
+            const slotIdStr = slotId.toString();
+            if (!stats[slotIdStr]) {
+              stats[slotIdStr] = {
+                id: slotIdStr,
+                name: c.subjectName || 'Unknown Subject',
+                pendingCount: 0
+              };
+            }
+            stats[slotIdStr].pendingCount++;
+          }
+        });
+      }
+    });
+    return Object.values(stats);
+  }, [records]);
+
+  // Construct flatRows: each class slot gets its own row
+  const flatRows = useMemo(() => {
+    const rows = [];
+    records.forEach(r => {
+      (r.classes || []).forEach(c => {
+        const slotId = c.timetableSlotId?._id || c.timetableSlotId;
+        rows.push({
+          _id: `${r._id}_${slotId}`,
+          recordId: r._id,
+          studentId: r.studentId,
+          facultyId: r.facultyId,
+          date: r.date,
+          sessionId: r.sessionId,
+          degreeTypeId: r.degreeTypeId,
+          degreeNameId: r.degreeNameId,
+          semesterId: r.semesterId,
+          approvalStatus: r.approvalStatus,
+          forwardedToHOD: r.forwardedToHOD,
+          markedBy: r.markedBy,
+          markedAt: r.markedAt,
+          lastEditedBy: r.lastEditedBy,
+          lastEditedAt: r.lastEditedAt,
+          hodApprovedBy: r.hodApprovedBy,
+          hodApprovedAt: r.hodApprovedAt,
+          departmentHod: r.departmentHod,
+          
+          timetableSlotId: slotId,
+          subjectName: c.subjectName,
+          status: c.isCancelled ? 'CANCELLED' : (c.selected ? 'PRESENT' : 'ABSENT'),
+          isCancelled: c.isCancelled,
+          rawClass: c,
+          originalRecord: r
+        });
+      });
+    });
+    return rows;
+  }, [records]);
+
+  // Filter rows by selected subject
+  const filteredRows = useMemo(() => {
+    if (!selectedSubjectId) return flatRows;
+    return flatRows.filter(row => 
+      row.timetableSlotId && row.timetableSlotId.toString() === selectedSubjectId
+    );
+  }, [flatRows, selectedSubjectId]);
+
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      try {
+        const res = await api.get('/attendance/leave-types');
+        setLeaveTypes(res.data || []);
+      } catch (err) {
+        console.error('Failed to load leave types', err);
+      }
+    };
+    fetchLeaveTypes();
+  }, [api]);
+
+  const finalLeaveTypes = leaveTypes.length > 0
+    ? leaveTypes.map(lt => lt.leaveName)
+    : ['Casual Leave', 'Medical Leave', 'Duty Leave', 'Earned Leave', 'Maternity Leave', 'Special Leave'];
+
+  const handleUpdateRecord = async (rowItem) => {
+    try {
+      const record = rowItem.originalRecord;
+      const updatedClasses = (record.classes || []).map(c => {
+        const cSlotId = c.timetableSlotId?._id || c.timetableSlotId;
+        const rowSlotId = rowItem.timetableSlotId;
+        if (cSlotId && rowSlotId && cSlotId.toString() === rowSlotId.toString()) {
+          return {
+            ...c,
+            selected: editingStatus.status === 'PRESENT'
+          };
+        }
+        return c;
+      });
+
+      const updatedRecordPayload = {
+        studentId: record.studentId?._id,
+        status: editingStatus.status,
+        leaveType: editingStatus.leaveType || '',
+        leaveRequestId: editingStatus.leaveRequestId || null,
+        classes: updatedClasses
+      };
+
+      await api.post(`/attendance/faculty/mark-bulk`, {
+        sessionId: record.sessionId || filters.sessionId,
+        degreeTypeId: record.degreeTypeId || filters.degreeTypeId,
+        degreeNameId: record.degreeNameId || filters.degreeNameId,
+        semesterId: record.semesterId || filters.semesterId,
+        date: filters.date,
+        records: [updatedRecordPayload]
+      });
+
+      toast.success('Attendance updated successfully');
+      setEditingStudentId(null);
+      handleSearch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update attendance');
+    }
+  };
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -108,7 +255,7 @@ const VerifyAttendanceTab = () => {
     const checked = e.target.checked;
     const updated = {};
     if (checked) {
-      records.forEach(r => {
+      filteredRows.forEach(r => {
         if (r.approvalStatus === 'PENDING_HOD') {
           updated[r._id] = true;
         }
@@ -125,17 +272,25 @@ const VerifyAttendanceTab = () => {
   };
 
   const handleApproveSelected = async () => {
-    const idsToApprove = Object.entries(selectedRecordIds)
-      .filter(([, val]) => val)
-      .map(([id]) => id);
+    const recordIdsToApprove = [
+      ...new Set(
+        Object.entries(selectedRecordIds)
+          .filter(([, val]) => val)
+          .map(([id]) => {
+            const row = filteredRows.find(fr => fr._id === id);
+            return row ? row.recordId : null;
+          })
+          .filter(Boolean)
+      )
+    ];
 
-    if (idsToApprove.length === 0) {
+    if (recordIdsToApprove.length === 0) {
       return toast.error('Please select at least one record to approve');
     }
 
     setApproving(true);
     try {
-      await api.post('/attendance/hod/approve', { recordIds: idsToApprove });
+      await api.post('/attendance/hod/approve', { recordIds: recordIdsToApprove });
       toast.success('Selected attendance records approved successfully');
       handleSearch();
     } catch (err) {
@@ -170,9 +325,9 @@ const VerifyAttendanceTab = () => {
     }).join(', ');
   };
 
-  const pendingRecords = records.filter(r => r.approvalStatus === 'PENDING_HOD');
+  const filteredPendingRecords = filteredRows.filter(r => r.approvalStatus === 'PENDING_HOD');
   const selectedCount = Object.values(selectedRecordIds).filter(Boolean).length;
-  const allSelected = pendingRecords.length > 0 && selectedCount === pendingRecords.length;
+  const allSelected = filteredPendingRecords.length > 0 && selectedCount === filteredPendingRecords.length;
 
   if (loadingFilters) return <SkeletonLoader count={1} height={200} />;
 
@@ -236,11 +391,70 @@ const VerifyAttendanceTab = () => {
             </div>
           </div>
         </form>
+
+        {records.length > 0 && (
+          <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '20px', paddingTop: '20px' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)' }}>
+              Filter & Summary by Subject
+            </h4>
+            <div className="grid-3 mb-md" style={{ alignItems: 'end' }}>
+              <div className="form-group">
+                <label className="form-label">Subject</label>
+                <select 
+                  className="form-input" 
+                  value={selectedSubjectId} 
+                  onChange={e => handleSubjectChange(e.target.value)}
+                >
+                  <option value="">All Subjects (Show All)</option>
+                  {subjectStats.map(sub => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name} ({sub.pendingCount} pending)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {subjectStats.length > 0 && (
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {subjectStats.map(sub => {
+                  const isActive = selectedSubjectId === sub.id;
+                  return (
+                    <div 
+                      key={sub.id} 
+                      onClick={() => handleSubjectChange(isActive ? '' : sub.id)}
+                      style={{
+                        background: isActive ? 'rgba(var(--color-primary-rgb), 0.12)' : 'var(--color-surface)',
+                        border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        padding: '10px 16px',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        transition: 'all 0.2s ease',
+                        boxShadow: 'var(--shadow-sm)',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: isActive ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
+                        {sub.name}
+                      </span>
+                      <span className="badge badge-pending" style={{ fontSize: '0.75rem', padding: '3px 8px' }}>
+                        {sub.pendingCount} pending
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Roster list */}
       <AnimatePresence mode="wait">
-        {loadingRecords ? (
+        {loadingRecords || filteringSubject ? (
           <SkeletonLoader count={3} height={80} />
         ) : hasSearched ? (
           <motion.div
@@ -253,10 +467,10 @@ const VerifyAttendanceTab = () => {
               <div>
                 <h3 style={{ margin: 0, color: 'var(--color-text-primary)' }}>Forwarded Candidates Register</h3>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                  Found {records.length} forwarded attendance logs ({pendingRecords.length} pending approval).
+                  Found {filteredRows.length} forwarded attendance logs ({filteredPendingRecords.length} pending approval){selectedSubjectId && ' for selected subject'}.
                 </p>
               </div>
-              {pendingRecords.length > 0 && (
+              {filteredPendingRecords.length > 0 && (
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -269,13 +483,13 @@ const VerifyAttendanceTab = () => {
               )}
             </div>
 
-            {records.length > 0 ? (
+            {filteredRows.length > 0 ? (
               <div className="data-table-wrapper">
                 <table className="data-table">
                   <thead>
                     <tr>
                       <th style={{ width: '40px', textAlign: 'center' }}>
-                        {pendingRecords.length > 0 && (
+                        {filteredPendingRecords.length > 0 && (
                           <input
                             type="checkbox"
                             checked={allSelected}
@@ -296,7 +510,7 @@ const VerifyAttendanceTab = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {records.map((r, index) => {
+                    {filteredRows.map((r, index) => {
                       const isPending = r.approvalStatus === 'PENDING_HOD';
                       return (
                         <tr key={r._id} className={isPending ? '' : 'row-dimmed'} style={{ opacity: isPending ? 1 : 0.65 }}>
@@ -319,29 +533,148 @@ const VerifyAttendanceTab = () => {
                           <td>{r.studentId?.profile?.degreeNameId?.name || 'N/A'}</td>
                           <td>
                             <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', maxWidth: '250px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                              {formatClasses(r)}
+                              {r.subjectName}
                             </div>
                           </td>
                           <td>{r.facultyId?.name || 'N/A'}</td>
                           <td>
-                            <StatusBadge status={r.status} />
+                            {editingStudentId === r._id ? (
+                              <div className="flex gap-xs flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingStatus({ ...editingStatus, status: 'PRESENT', leaveType: '', leaveRequestId: null })}
+                                  className={`status-toggle-btn ${editingStatus.status === 'PRESENT' ? 'selected-present' : ''}`}
+                                >
+                                  Present
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingStatus({ ...editingStatus, status: 'ABSENT', leaveType: '', leaveRequestId: null })}
+                                  className={`status-toggle-btn ${editingStatus.status === 'ABSENT' ? 'selected-absent' : ''}`}
+                                >
+                                  Absent
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingStatus({ ...editingStatus, status: 'NOT_APPLICABLE', leaveType: '', leaveRequestId: null })}
+                                  className={`status-toggle-btn ${editingStatus.status === 'NOT_APPLICABLE' ? 'selected-na' : ''}`}
+                                  style={{ background: editingStatus.status === 'NOT_APPLICABLE' ? 'var(--color-text-muted)' : 'transparent', color: editingStatus.status === 'NOT_APPLICABLE' ? '#fff' : 'inherit' }}
+                                >
+                                  N/A
+                                </button>
+
+                                {editingStatus.status === 'ON_LEAVE' ? (
+                                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setOpenHistoryLeaveDropdownStudentId(openHistoryLeaveDropdownStudentId === r._id ? null : r._id)}
+                                      className="badge badge-leave"
+                                    >
+                                      Leave - {editingStatus.leaveType || finalLeaveTypes[0]}
+                                      <ChevronDown size={12} />
+                                    </button>
+                                    {openHistoryLeaveDropdownStudentId === r._id && (
+                                      <>
+                                        <div
+                                          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 105 }}
+                                          onClick={() => setOpenHistoryLeaveDropdownStudentId(null)}
+                                        />
+                                        <div className="glass-card" style={{
+                                          position: 'absolute', top: '100%', left: 0, marginTop: '4px',
+                                          minWidth: '180px', zIndex: 110, padding: '8px',
+                                          display: 'flex', flexDirection: 'column', gap: '2px'
+                                        }}>
+                                          {finalLeaveTypes.map(ltName => (
+                                            <button
+                                              key={ltName}
+                                              type="button"
+                                              onClick={() => {
+                                                setEditingStatus({ ...editingStatus, status: 'ON_LEAVE', leaveType: ltName, leaveRequestId: null });
+                                                setOpenHistoryLeaveDropdownStudentId(null);
+                                              }}
+                                              className="text-sm"
+                                              style={{
+                                                padding: '8px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'left',
+                                                color: editingStatus.leaveType === ltName ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                                                background: editingStatus.leaveType === ltName ? 'rgba(var(--color-primary-rgb), 0.06)' : 'transparent',
+                                                fontWeight: editingStatus.leaveType === ltName ? 600 : 400
+                                              }}
+                                            >
+                                              {ltName}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingStatus({ status: 'ON_LEAVE', leaveType: finalLeaveTypes[0], leaveRequestId: null })}
+                                    className={`status-toggle-btn ${editingStatus.status === 'ON_LEAVE' ? 'selected-leave' : ''}`}
+                                  >
+                                    Leave
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <StatusBadge status={r.status} />
+                            )}
                           </td>
                           <td>
                             <StatusBadge status={r.approvalStatus} />
                           </td>
                           <td style={{ textAlign: 'center' }}>
-                            {isPending ? (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-success"
-                                onClick={() => handleApproveSingle(r._id)}
-                                disabled={approving}
-                                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                              >
-                                Approve
-                              </button>
+                            {editingStudentId === r._id ? (
+                              <div className="flex gap-xs justify-center">
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-success"
+                                  onClick={() => handleUpdateRecord(r)}
+                                >
+                                  <Save size={13} /> Update
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => setEditingStudentId(null)}
+                                >
+                                  <X size={13} /> Cancel
+                                </button>
+                              </div>
                             ) : (
-                              <span style={{ color: 'var(--color-success)', fontSize: '0.85rem', fontWeight: 500 }}>Approved</span>
+                              <div className="flex gap-xs justify-center" style={{ alignItems: 'center' }}>
+                                {isPending ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-success"
+                                      onClick={() => handleApproveSingle(r.recordId)}
+                                      disabled={approving}
+                                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-outline"
+                                      onClick={() => {
+                                        setEditingStudentId(r._id);
+                                        setEditingStatus({
+                                          status: r.status,
+                                          leaveType: r.leaveType || '',
+                                          leaveRequestId: r.leaveRequestId || null
+                                        });
+                                      }}
+                                      style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                    >
+                                      <Edit3 size={12} /> Edit
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span style={{ color: 'var(--color-success)', fontSize: '0.85rem', fontWeight: 500 }}>Approved</span>
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>

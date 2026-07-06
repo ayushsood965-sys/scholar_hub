@@ -136,6 +136,8 @@ router.get('/dashboard/hod', protect, authorize('HOD'), requireDepartment, atten
 router.get('/dashboard/hod/drill-down', protect, authorize('HOD'), requireDepartment, attendanceController.getHodDrillDown);
 router.get('/hod/forwarded', protect, authorize('HOD'), requireDepartment, attendanceController.getHodForwardedAttendance);
 router.post('/hod/approve', protect, authorize('HOD'), requireDepartment, attendanceController.approveHodAttendance);
+router.get('/leave/hod/history', protect, authorize('HOD'), attendanceController.getHodLeaveHistory);
+router.get('/corrections/hod/history', protect, authorize('HOD'), attendanceController.getHodCorrectionHistory);
 router.get('/dashboard/super', protect, authorize('SUPER_ADMIN'), attendanceController.getSuperAdminDashboardStats);
 
 // Student absences for corrections selection

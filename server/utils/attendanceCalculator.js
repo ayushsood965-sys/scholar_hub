@@ -193,7 +193,11 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
             presentCount += scheduledClassesToday;
           } else {
             // Count class level checkboxes (excluding cancelled classes)
+            const allowedSlotIds = rawTimetables.map(t => t._id.toString());
             classes.forEach(c => {
+              if (!allowedSlotIds.includes(c.timetableSlotId?.toString())) {
+                return;
+              }
               if (c.isCancelled) {
                 // Ignore
               } else if (c.selected) {

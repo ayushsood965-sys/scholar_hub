@@ -584,11 +584,14 @@ exports.getAttendanceMatrix = async (req, res) => {
 
     let classes = [];
     if (!isPhD) {
-      classes = await TimetableMaster.find({
+      const timetableQuery = {
         sessionId, degreeTypeId, degreeNameId, semesterId,
-        facultyId: req.user._id,
         departmentId, dayOfWeek, isActive: true
-      }).populate('facultyId', 'name');
+      };
+      if (req.user.role !== 'HOD') {
+        timetableQuery.facultyId = req.user._id;
+      }
+      classes = await TimetableMaster.find(timetableQuery).populate('facultyId', 'name');
     }
 
     // ── Fetch StudentSemesterMapping to determine which students are mapped to which subjects ──
@@ -775,6 +778,14 @@ exports.markAttendanceBulk = async (req, res) => {
       }
     }
 
+    // Check if any of the target students' records are already approved
+    for (const rec of records) {
+      const existing = existingRecords.find(er => er.studentId.toString() === rec.studentId.toString());
+      if (existing && existing.approvalStatus === 'APPROVED') {
+        return res.status(400).json({ message: 'Cannot modify attendance. The record has already been approved.' });
+      }
+    }
+
     const operations = records.map(rec => {
       const existing = existingRecords.find(er => er.studentId.toString() === rec.studentId.toString());
       if (existing && (existing.isLeaveOverride || existing.lockReason === 'Approved Leave')) {
@@ -814,10 +825,14 @@ exports.markAttendanceBulk = async (req, res) => {
               leaveType: rec.leaveType || '',
               leaveRequestId: rec.leaveRequestId || null,
               classes: rec.classes || [],
+              lastEditedBy: facultyId,
+              lastEditedAt: new Date(),
+              approvalStatus: req.user.role === 'HOD' ? 'PENDING_HOD' : (forwardToHOD ? 'PENDING_HOD' : 'APPROVED'),
+              forwardedToHOD: req.user.role === 'HOD' ? true : !!forwardToHOD
+            },
+            $setOnInsert: {
               markedBy: facultyId,
-              markedAt: new Date(),
-              approvalStatus: forwardToHOD ? 'PENDING_HOD' : 'APPROVED',
-              forwardedToHOD: !!forwardToHOD
+              markedAt: new Date()
             }
           },
           upsert: true
@@ -2837,7 +2852,8 @@ exports.getFacultyDashboardStats = async (req, res) => {
       const cid = course._id.toString();
       const sids = courseStudentsMap[cid] || [];
       
-      let totalPercentageSum = 0;
+      let totalAttendedSum = 0;
+      let totalHeldSum = 0;
       let courseDefaulterCount = 0;
       let activeStudentsCount = 0;
       const weeklyLogs = {};
@@ -2852,7 +2868,17 @@ exports.getFacultyDashboardStats = async (req, res) => {
         const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
         const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy, preResolvedLectureDatesCache);
         
-        totalPercentageSum += stats.percentage;
+        let studentAttended = 0;
+        let studentHeld = 0;
+        if (stats.subjectWiseAttendance && stats.subjectWiseAttendance.length > 0) {
+          studentAttended = stats.subjectWiseAttendance[0].attended;
+          studentHeld = stats.subjectWiseAttendance[0].total;
+        } else {
+          studentAttended = stats.presentDays;
+          studentHeld = stats.totalExpectedClasses;
+        }
+        totalAttendedSum += studentAttended;
+        totalHeldSum += studentHeld;
         activeStudentsCount++;
         
         if (stats.isDefaulter) {
@@ -2875,7 +2901,7 @@ exports.getFacultyDashboardStats = async (req, res) => {
         });
       }
       
-      const avgPercentage = activeStudentsCount > 0 ? parseFloat((totalPercentageSum / activeStudentsCount).toFixed(2)) : 100;
+      const avgPercentage = totalHeldSum > 0 ? parseFloat(((totalAttendedSum / totalHeldSum) * 100).toFixed(2)) : 100;
       
       const trendArray = Object.entries(weeklyLogs).map(([label, data]) => ({
         weekLabel: label,
@@ -3351,13 +3377,25 @@ exports.getMarkedAttendance = async (req, res) => {
       sessionId,
       classes: {
         $elemMatch: {
-          timetableSlotId,
-          selected: true
+          timetableSlotId
         }
       }
-    }).populate('studentId', 'name username profile');
+    })
+    .populate('studentId', 'name username profile')
+    .populate('markedBy', 'name username role profile')
+    .populate('lastEditedBy', 'name username role profile')
+    .populate('hodApprovedBy', 'name username role profile');
 
-    res.status(200).json(records);
+    const hod = await User.findOne({ department: req.user.department, role: 'HOD', isActive: true })
+      .select('name username profile');
+
+    const recordsWithHod = records.map(r => {
+      const doc = r.toObject();
+      doc.departmentHod = hod;
+      return doc;
+    });
+
+    res.status(200).json(recordsWithHod);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -3377,6 +3415,10 @@ exports.deleteAttendanceEntry = async (req, res) => {
 
     if (!record) {
       return res.status(404).json({ message: 'Attendance record not found.' });
+    }
+
+    if (record.approvalStatus === 'APPROVED') {
+      return res.status(400).json({ message: 'Cannot modify attendance. The record has already been approved.' });
     }
 
     // Update the specific class selection to false
@@ -3726,7 +3768,8 @@ exports.getHodForwardedAttendance = async (req, res) => {
       degreeTypeId,
       degreeNameId,
       date: new Date(date),
-      forwardedToHOD: true
+      forwardedToHOD: true,
+      approvalStatus: 'PENDING_HOD'
     };
 
     if (semesterId) {
@@ -3745,10 +3788,23 @@ exports.getHodForwardedAttendance = async (req, res) => {
         }
       })
       .populate('facultyId', 'name')
+      .populate('markedBy', 'name username role profile')
+      .populate('lastEditedBy', 'name username role profile')
+      .populate('hodApprovedBy', 'name username role profile')
       .sort({ markedAt: -1 });
 
     const approvedCandidatesRecords = records.filter(r => r.studentId && r.studentId.isVerified);
-    res.status(200).json(approvedCandidatesRecords);
+
+    const hod = await User.findOne({ department: req.user.department, role: 'HOD', isActive: true })
+      .select('name username profile');
+
+    const recordsWithHod = approvedCandidatesRecords.map(r => {
+      const doc = r.toObject();
+      doc.departmentHod = hod;
+      return doc;
+    });
+
+    res.status(200).json(recordsWithHod);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -3763,10 +3819,56 @@ exports.approveHodAttendance = async (req, res) => {
 
     await AttendanceRecord.updateMany(
       { _id: { $in: recordIds }, departmentId: req.user.departmentId },
-      { $set: { approvalStatus: 'APPROVED', lastEditedBy: req.user._id, lastEditedAt: new Date() } }
+      { 
+        $set: { 
+          approvalStatus: 'APPROVED', 
+          lastEditedBy: req.user._id, 
+          lastEditedAt: new Date(),
+          hodApprovedBy: req.user._id,
+          hodApprovedAt: new Date()
+        } 
+      }
     );
 
     res.status(200).json({ message: 'Attendance records approved successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getHodLeaveHistory = async (req, res) => {
+  try {
+    const user = req.user;
+    const leaves = await LeaveRequest.find({
+      status: { $in: ['APPROVED', 'REJECTED'] },
+      department: user.department
+    })
+    .populate('studentId', 'name username profile')
+    .populate('currentAssigneeId', 'name')
+    .sort({ updatedAt: -1 });
+
+    res.status(200).json(leaves);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getHodCorrectionHistory = async (req, res) => {
+  try {
+    const user = req.user;
+    const students = await User.find({ role: 'STUDENT', department: user.department });
+    const studentIds = students.map(s => s._id);
+
+    const corrections = await AttendanceCorrection.find({
+      status: { $in: ['APPROVED', 'REJECTED'] },
+      studentId: { $in: studentIds }
+    })
+    .populate('studentId', 'name username profile')
+    .populate('recordId')
+    .populate('facultyId', 'name')
+    .sort({ updatedAt: -1 });
+
+    res.status(200).json(corrections);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

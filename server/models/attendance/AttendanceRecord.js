@@ -131,6 +131,15 @@ const attendanceRecordSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    hodApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    hodApprovedAt: {
+      type: Date,
+      default: null
+    },
     auditHistory: [
       {
         editedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
