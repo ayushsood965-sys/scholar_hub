@@ -51,14 +51,17 @@ const MyStudentsTab = () => {
     );
   };
 
+  const isStudentPhD = (student) => {
+    return student.profile?.isPhD === true || 
+           student.profile?.degreeType?.toUpperCase().includes('PHD') ||
+           student.name?.toUpperCase().includes('PHD') ||
+           student.username?.toUpperCase().includes('PHD');
+  };
+
   // Filter students locally
   const filteredStudents = students.filter(student => {
     // Hide PhDs explicitly
-    const isPhD = student.profile?.isPhD === true || 
-                  student.profile?.degreeType?.toUpperCase().includes('PHD') ||
-                  student.name?.toUpperCase().includes('PHD') ||
-                  student.username?.toUpperCase().includes('PHD');
-    if (isPhD) return false;
+    if (isStudentPhD(student)) return false;
 
     const matchesSearch = student.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           student.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -105,14 +108,14 @@ const MyStudentsTab = () => {
           style={{ background: 'none', border: 'none', color: subTab === 'pending' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'pending' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '0.95rem' }}
           onClick={() => setSubTab('pending')}
         >
-          Pending Verification ({students.filter(s => !s.isVerified && !(s.profile?.isPhD || s.profile?.degreeType?.toUpperCase().includes('PHD'))).length})
+          Pending Verification ({students.filter(s => !s.isVerified && !isStudentPhD(s)).length})
         </button>
         <button 
           className={`tab-btn ${subTab === 'verified' ? 'active' : ''}`} 
           style={{ background: 'none', border: 'none', color: subTab === 'verified' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'verified' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '0.95rem' }}
           onClick={() => setSubTab('verified')}
         >
-          Verified Registrations Log ({students.filter(s => s.isVerified && !(s.profile?.isPhD || s.profile?.degreeType?.toUpperCase().includes('PHD'))).length})
+          Verified Registrations Log ({students.filter(s => s.isVerified && !isStudentPhD(s)).length})
         </button>
       </div>
 
