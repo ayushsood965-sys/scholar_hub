@@ -22,7 +22,11 @@ export const NotificationProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await axios.get(`${API}/notifications?source=SCHOLAR_TRACK`, header);
-      setNotifications(res.data);
+      if (Array.isArray(res.data)) {
+        setNotifications(res.data);
+      } else {
+        console.error('Fetched notifications data is not an array:', res.data);
+      }
     } catch (err) {
       console.error('Failed to fetch notifications from database:', err);
     } finally {
@@ -86,7 +90,13 @@ export const NotificationProvider = ({ children }) => {
       const header = getAuthHeader();
       if (header) {
         axios.get(`${API}/notifications?source=SCHOLAR_TRACK`, header)
-          .then(res => setNotifications(res.data))
+          .then(res => {
+            if (Array.isArray(res.data)) {
+              setNotifications(res.data);
+            } else {
+              console.error('Polled notifications data is not an array:', res.data);
+            }
+          })
           .catch(err => console.error('Error in background notification polling:', err));
       }
     }, 10000);
@@ -96,9 +106,9 @@ export const NotificationProvider = ({ children }) => {
 
   return (
     <NotificationContext.Provider value={{
-      notifications,
+      notifications: Array.isArray(notifications) ? notifications : [],
       loading,
-      unreadCount: notifications.filter(n => !n.read).length,
+      unreadCount: Array.isArray(notifications) ? notifications.filter(n => !n.read).length : 0,
       fetchNotifications,
       addNotification,
       markAsRead,

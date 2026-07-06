@@ -164,7 +164,7 @@ exports.getPreview = async (req, res) => {
 
     res.status(200).json({
       subjects: subjectsWithMappingInfo,
-      students: eligibleStudents,
+      students: allStudents,
       existingMappingsCount: existingMappings.length
     });
   } catch (error) {

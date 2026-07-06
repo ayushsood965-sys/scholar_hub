@@ -109,9 +109,21 @@ const StudentSubjectMappingTab = () => {
     }
   };
 
+  // ── Compute mapped student IDs for currently selected subjects ──
+  const mappedStudentIdsForSelected = useMemo(() => {
+    const ids = new Set();
+    const selectedSubIds = Object.entries(selectedSubjects)
+      .filter(([, val]) => val)
+      .map(([id]) => id);
+
+    const selectedSubs = subjects.filter(s => selectedSubIds.includes(s._id));
+    selectedSubs.forEach(sub => {
+      (sub.mappedStudentIds || []).forEach(stId => ids.add(stId));
+    });
+    return ids;
+  }, [selectedSubjects, subjects]);
+
   // ── Compute displayed students based on selected subjects ──
-  // If a partially-mapped subject is selected, only show students NOT mapped to it.
-  // Otherwise, show all eligible students.
   const displayedStudents = useMemo(() => {
     if (!previewData) return [];
 
@@ -121,35 +133,39 @@ const StudentSubjectMappingTab = () => {
 
     if (selectedSubIds.length === 0) return [];
 
-    // Check if any selected subject is partially mapped
-    const partiallyMappedSelected = subjects.filter(
-      s => selectedSubIds.includes(s._id) && s.isPartiallyMapped
-    );
-
-    if (partiallyMappedSelected.length > 0) {
-      // Get all studentIds already mapped to the selected partially-mapped subject
-      const mappedStudentIds = new Set();
-      partiallyMappedSelected.forEach(sub => {
-        (sub.mappedStudentIds || []).forEach(stId => mappedStudentIds.add(stId));
-      });
-      // Show only students NOT in the mapped list
-      return allStudents.filter(st => !mappedStudentIds.has(st._id));
-    }
-
     return allStudents;
-  }, [selectedSubjects, subjects, allStudents, previewData]);
+  }, [selectedSubjects, allStudents, previewData]);
 
-  // When displayed students changes, clear selection if needed
+  // When displayed students changes, synchronize selection state
   useEffect(() => {
-    const currentSelectedCount = Object.values(selectedStudents).filter(v => v).length;
-    if (currentSelectedCount > 0) {
-      const validIds = new Set(displayedStudents.map(s => s._id));
-      const updated = {};
-      displayedStudents.forEach(s => { updated[s._id] = !!selectedStudents[s._id]; });
+    const updated = {};
+    let changed = false;
+
+    displayedStudents.forEach(s => {
+      const wasSelected = !!selectedStudents[s._id];
+      const shouldBeSelected = wasSelected && !mappedStudentIdsForSelected.has(s._id);
+      updated[s._id] = shouldBeSelected;
+      if (wasSelected !== shouldBeSelected || selectedStudents[s._id] === undefined) {
+        changed = true;
+      }
+    });
+
+    Object.keys(selectedStudents).forEach(key => {
+      if (updated[key] === undefined) {
+        changed = true;
+      }
+    });
+
+    if (changed) {
       setSelectedStudents(updated);
-      setSelectAllStudents(displayedStudents.length > 0 && displayedStudents.every(s => updated[s._id]));
     }
-  }, [displayedStudents]);
+
+    const unmappedStudents = displayedStudents.filter(st => !mappedStudentIdsForSelected.has(st._id));
+    setSelectAllStudents(
+      unmappedStudents.length > 0 &&
+      unmappedStudents.every(s => updated[s._id])
+    );
+  }, [displayedStudents, mappedStudentIdsForSelected]);
 
   // ── Subject toggle: enforce single-select for partially-mapped subjects ──
   const handleSubjectToggle = (subjectId) => {
@@ -210,24 +226,29 @@ const StudentSubjectMappingTab = () => {
   };
 
   const handleStudentToggle = (studentId) => {
+    if (mappedStudentIdsForSelected.has(studentId)) return;
     setSelectedStudents(prev => {
       const updated = { ...prev, [studentId]: !prev[studentId] };
-      // Auto-update selectAll
-      const allChecked = displayedStudents.every(s => updated[s._id]);
+      const unmappedStudents = displayedStudents.filter(st => !mappedStudentIdsForSelected.has(st._id));
+      const allChecked = unmappedStudents.length > 0 && unmappedStudents.every(s => updated[s._id]);
       setSelectAllStudents(allChecked);
       return updated;
     });
   };
 
   const handleSelectAllStudentsChange = () => {
-    const newVal = !selectAllStudents;
+    const unmappedStudents = displayedStudents.filter(st => !mappedStudentIdsForSelected.has(st._id));
+    const allUnmappedSelected = unmappedStudents.length > 0 && unmappedStudents.every(st => !!selectedStudents[st._id]);
+    const newVal = !allUnmappedSelected;
     setSelectAllStudents(newVal);
-    const updated = {};
-    displayedStudents.forEach(st => { updated[st._id] = newVal; });
+    const updated = { ...selectedStudents };
+    unmappedStudents.forEach(st => {
+      updated[st._id] = newVal;
+    });
     setSelectedStudents(updated);
   };
 
-  const selectedStudentCount = Object.values(selectedStudents).filter(v => v).length;
+  const selectedStudentCount = Object.entries(selectedStudents).filter(([id, val]) => val && !mappedStudentIdsForSelected.has(id)).length;
   const selectedSubjectCount = Object.values(selectedSubjects).filter(v => v).length;
   const hasPartiallyMappedSubjects = subjects.some(s => s.isPartiallyMapped);
   const hasSelectedPartial = Object.entries(selectedSubjects)
@@ -514,10 +535,12 @@ const StudentSubjectMappingTab = () => {
                 <div className="flex justify-between items-center flex-wrap gap-md">
                   <div className="flex items-center gap-sm" style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
                     <Users size={18} style={{ color: 'var(--color-primary)' }} />
-                    {hasSelectedPartial
-                      ? 'Unmapped Candidates (for selected subject):'
-                      : 'Eligible Candidates:'}
-                    {' '}<strong style={{ color: 'var(--color-text-primary)' }}>{displayedStudents.length}</strong>
+                    Candidates: <strong style={{ color: 'var(--color-text-primary)' }}>{displayedStudents.length}</strong>
+                    {hasSelectedPartial && (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginLeft: 4 }}>
+                        ({displayedStudents.length - mappedStudentIdsForSelected.size} unmapped remaining)
+                      </span>
+                    )}
                     {selectedStudentCount > 0 && (
                       <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--color-primary)' }}>
                         ({selectedStudentCount} selected)
@@ -531,7 +554,7 @@ const StudentSubjectMappingTab = () => {
                       onChange={handleSelectAllStudentsChange}
                       style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                     />
-                    Select All
+                    Select All Unmapped
                   </label>
                 </div>
               </div>
@@ -559,28 +582,45 @@ const StudentSubjectMappingTab = () => {
                   <tbody>
                     {displayedStudents.map((st, sIdx) => {
                       const stId = st._id;
-                      const isChecked = !!selectedStudents[stId];
+                      const isAlreadyMapped = mappedStudentIdsForSelected.has(stId);
+                      const isChecked = isAlreadyMapped || !!selectedStudents[stId];
                       return (
                         <motion.tr
                           key={stId}
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(sIdx * 0.015, 0.3) }}
-                          onClick={() => handleStudentToggle(stId)}
-                          style={{ cursor: 'pointer', background: isChecked ? 'rgba(99, 102, 241, 0.04)' : 'transparent' }}
+                          onClick={() => !isAlreadyMapped && handleStudentToggle(stId)}
+                          style={{
+                            cursor: isAlreadyMapped ? 'not-allowed' : 'pointer',
+                            background: isAlreadyMapped
+                              ? 'rgba(16, 185, 129, 0.04)'
+                              : isChecked
+                                ? 'rgba(99, 102, 241, 0.04)'
+                                : 'transparent',
+                            opacity: isAlreadyMapped ? 0.85 : 1
+                          }}
                         >
                           <td style={{ textAlign: 'center' }}>
                             <input
                               type="checkbox"
                               checked={isChecked}
-                              onChange={() => handleStudentToggle(stId)}
+                              disabled={isAlreadyMapped}
+                              onChange={() => !isAlreadyMapped && handleStudentToggle(stId)}
                               onClick={e => e.stopPropagation()}
-                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                              style={{ width: '16px', height: '16px', cursor: isAlreadyMapped ? 'not-allowed' : 'pointer' }}
                             />
                           </td>
                           <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{st.profile?.shNo || 'N/A'}</td>
                           <td>
-                            <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{st.name}</div>
+                            <div className="flex items-center gap-sm">
+                              <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{st.name}</div>
+                              {isAlreadyMapped && (
+                                <span className="badge badge-success" style={{ fontSize: '0.65rem', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                                  Already Mapped
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td style={{ color: 'var(--color-text-secondary)' }}>{st.profile?.fatherName || '—'}</td>
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>{st.username}</td>
