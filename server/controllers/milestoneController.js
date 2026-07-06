@@ -477,11 +477,72 @@ const getDefaulters = async (req, res) => {
   }
 };
 
+// POST /api/milestones/:id/fee-details — Scholar saves fee payment metadata and files receipt
+const updateFeeDetails = async (req, res) => {
+  try {
+    const milestone = await Milestone.findById(req.params.id);
+    if (!milestone) return res.status(404).json({ message: 'Milestone not found' });
+
+    const thesis = await Thesis.findById(milestone.thesisId);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+    
+    // Authorization check: only own scholar can update
+    if (thesis.scholarId.toString() !== req.user._id.toString() && req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ message: 'Not authorized.' });
+    }
+
+    const { periodFrom, periodTo, totalFeeDeposited, remarks } = req.body;
+    if (!remarks) {
+      return res.status(400).json({ message: 'Remarks are mandatory.' });
+    }
+
+    let feeReceiptUrl = milestone.feeDetails?.feeReceiptUrl || null;
+    if (req.file) {
+      feeReceiptUrl = `/uploads/${req.file.filename}`;
+    }
+
+    if (!feeReceiptUrl) {
+      return res.status(400).json({ message: 'Fee receipt upload is mandatory.' });
+    }
+
+    // Parse dates and calculate months/days duration
+    const fromDate = new Date(periodFrom);
+    const toDate = new Date(periodTo);
+    let durationMonths = 0;
+    let durationDays = 0;
+
+    if (!isNaN(fromDate.getTime()) && !isNaN(toDate.getTime())) {
+      const diffTime = Math.abs(toDate - fromDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      durationMonths = Math.floor(diffDays / 30);
+      durationDays = diffDays % 30;
+    }
+
+    milestone.feeDetails = {
+      periodFrom: isNaN(fromDate.getTime()) ? null : fromDate,
+      periodTo: isNaN(toDate.getTime()) ? null : toDate,
+      durationMonths,
+      durationDays,
+      totalFeeDeposited: totalFeeDeposited || '',
+      remarks,
+      feeReceiptUrl
+    };
+
+    milestone.markModified('feeDetails');
+    await milestone.save();
+
+    res.json(milestone);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getMilestones,
   submitDocument,
   reviewMilestone,
   createMilestone,
   getDefaulters,
-  generateMilestonesIfNeeded
+  generateMilestonesIfNeeded,
+  updateFeeDetails
 };

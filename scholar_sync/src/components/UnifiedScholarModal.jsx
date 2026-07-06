@@ -314,6 +314,23 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
                 <div><strong>Type:</strong> {doc.type === 'IPR' && doc.iprType ? `IPR: ${doc.iprType}` : doc.type === 'PATENT' ? 'IPR: Patent' : doc.type || doc.docType}</div>
                 {doc.thesisTitle && <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><strong>Thesis:</strong> {doc.thesisTitle}</div>}
                 
+                {doc.feeDetails?.periodFrom && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ fontWeight: 700, color: '#059669', marginBottom: 2 }}>💰 Fee Payment Details</div>
+                    <div><strong>Fee Period:</strong> {new Date(doc.feeDetails.periodFrom).toLocaleDateString()} to {new Date(doc.feeDetails.periodTo).toLocaleDateString()} ({doc.feeDetails.durationMonths}m, {doc.feeDetails.durationDays}d)</div>
+                    <div><strong>Total Deposited:</strong> INR {doc.feeDetails.totalFeeDeposited || 'N/A'}</div>
+                    <div><strong>Remarks:</strong> {doc.feeDetails.remarks}</div>
+                    {doc.feeDetails.feeReceiptUrl && (
+                      <div style={{ marginTop: 2 }}>
+                        <strong>Receipt:</strong>{' '}
+                        <a href={`${API_BASE_URL}${doc.feeDetails.feeReceiptUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'underline' }}>
+                          View Receipt PDF 📄
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {doc.docType === 'PUBLICATION' && (
                   <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div><strong>{doc.type === 'PATENT' || doc.type === 'IPR' ? 'IPR Office/Org:' : doc.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {doc.journalName}</div>

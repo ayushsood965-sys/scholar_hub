@@ -30,6 +30,15 @@ const milestoneSchema = new mongoose.Schema(
     ],
     forwardedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     forwardedRole: { type: String, enum: ['SUPERVISOR', 'HOD'], default: null },
+    feeDetails: {
+      periodFrom: { type: Date, default: null },
+      periodTo: { type: Date, default: null },
+      durationMonths: { type: Number, default: 0 },
+      durationDays: { type: Number, default: 0 },
+      totalFeeDeposited: { type: String, default: '' },
+      remarks: { type: String, default: '' },
+      feeReceiptUrl: { type: String, default: null }
+    }
   },
   { timestamps: true }
 );

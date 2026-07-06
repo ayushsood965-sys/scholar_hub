@@ -5402,11 +5402,90 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
   const [uploadingId, setUploadingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleUpload = async (id) => {
+  // Fee Details state variables
+  const [feeForm, setFeeForm] = useState({
+    periodFrom: '',
+    periodTo: '',
+    totalFeeDeposited: '',
+    remarks: ''
+  });
+  const [feeFile, setFeeFile] = useState(null);
+  const [savingFeeId, setSavingFeeId] = useState(null);
+  const [savingFee, setSavingFee] = useState(false);
+
+  const startEditFee = (report) => {
+    setFeeForm({
+      periodFrom: report.feeDetails?.periodFrom ? new Date(report.feeDetails.periodFrom).toISOString().split('T')[0] : '',
+      periodTo: report.feeDetails?.periodTo ? new Date(report.feeDetails.periodTo).toISOString().split('T')[0] : '',
+      totalFeeDeposited: report.feeDetails?.totalFeeDeposited || '',
+      remarks: report.feeDetails?.remarks || ''
+    });
+    setFeeFile(null);
+    setSavingFeeId(report._id);
+  };
+
+  const getCalculatedDuration = (fromStr, toStr) => {
+    const fromDate = new Date(fromStr);
+    const toDate = new Date(toStr);
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) return '';
+    const diffTime = Math.abs(toDate - fromDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const durationMonths = Math.floor(diffDays / 30);
+    const durationDays = diffDays % 30;
+    return `${durationMonths} Month${durationMonths !== 1 ? 's' : ''} & ${durationDays} Day${durationDays !== 1 ? 's' : ''}`;
+  };
+
+  const handleSaveFee = async (id) => {
+    if (!feeForm.remarks.trim()) {
+      return toast.warning('Remarks are mandatory.');
+    }
+    const report = reports.find(r => r._id === id);
+    if (!report?.feeDetails?.feeReceiptUrl && !feeFile) {
+      return toast.warning('Fee receipt document upload is mandatory.');
+    }
+
+    setSavingFee(true);
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('periodFrom', feeForm.periodFrom);
+      formData.append('periodTo', feeForm.periodTo);
+      formData.append('totalFeeDeposited', feeForm.totalFeeDeposited);
+      formData.append('remarks', feeForm.remarks);
+      if (feeFile) {
+        formData.append('feeReceipt', feeFile);
+      }
+
+      await axios.post(`${API}/milestones/${id}/fee-details`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      toast.success('Fee Details saved successfully!');
+      setSavingFeeId(null);
+      
+      // Sync state back
+      const { data: updatedData } = await axios.get(`${API}/thesis/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      onSubmit && onSubmit(null, null, true); // trigger context re-fetch
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save fee details.');
+    } finally {
+      setSavingFee(false);
+    }
+  };
+
+  const handleUpload = async (report) => {
+    if (!report.feeDetails?.feeReceiptUrl) {
+      return toast.warning('Fee payment receipt details are mandatory to submit this report.');
+    }
     if (!file) return toast.warning('Please choose a PDF document first.');
     setLoading(true);
     try {
-      await onSubmit(id, file);
+      await onSubmit(report._id, file);
       toast.success('6-Month Progress Report submitted successfully!');
       setFile(null);
       setUploadingId(null);
@@ -5542,6 +5621,146 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
                     </div>
                   )}
 
+                  {/* Fee Details Subsection (Always visible if saved) */}
+                  {report.feeDetails?.periodFrom && (
+                    <div style={{ marginTop: '16px', background: '#FFFFFF', padding: '14px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      <h5 style={{ margin: '0 0 10px 0', fontSize: '0.82rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>💰</span> Fee Payment Details
+                      </h5>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem', color: '#334155' }}>
+                        <div><strong>Fee Period:</strong> {new Date(report.feeDetails.periodFrom).toLocaleDateString()} to {new Date(report.feeDetails.periodTo).toLocaleDateString()} ({getCalculatedDuration(report.feeDetails.periodFrom, report.feeDetails.periodTo)})</div>
+                        <div><strong>Total Deposited:</strong> INR {report.feeDetails.totalFeeDeposited || 'N/A'}</div>
+                        <div><strong>Remarks:</strong> {report.feeDetails.remarks}</div>
+                        {report.feeDetails.feeReceiptUrl && (
+                          <div>
+                            <strong>Receipt:</strong>{' '}
+                            <a href={`${API_BASE_URL}${report.feeDetails.feeReceiptUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
+                              View Saved Receipt PDF 📄
+                            </a>
+                          </div>
+                        )}
+                        {(isDraft || isRejectedBySupervisor || isRejectedByHod) && savingFeeId !== report._id && (
+                          <button 
+                            onClick={() => startEditFee(report)} 
+                            className="btn-outline" 
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', marginTop: 6, width: 'fit-content', border: '1px solid #133A26', color: '#133A26' }}
+                          >
+                            Edit Fee Details
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty/Enter Form Only for Drafts if no details are saved or editing is active */}
+                  {(isDraft || isRejectedBySupervisor || isRejectedByHod) && (savingFeeId === report._id || !report.feeDetails?.periodFrom) && (
+                    <div style={{ marginTop: '16px', background: '#F1F5F9', padding: '16px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      <h5 style={{ margin: '0 0 12px 0', fontSize: '0.82rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>💰</span> Fee Payment Details (Sub-Section)
+                      </h5>
+                      {savingFeeId === report._id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Period From</label>
+                              <input 
+                                type="date" 
+                                className="form-input" 
+                                value={feeForm.periodFrom} 
+                                onChange={e => setFeeForm({ ...feeForm, periodFrom: e.target.value })} 
+                                style={{ width: '100%', padding: '6px' }} 
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Period To</label>
+                              <input 
+                                type="date" 
+                                className="form-input" 
+                                value={feeForm.periodTo} 
+                                onChange={e => setFeeForm({ ...feeForm, periodTo: e.target.value })} 
+                                style={{ width: '100%', padding: '6px' }} 
+                              />
+                            </div>
+                          </div>
+
+                          {feeForm.periodFrom && feeForm.periodTo && (
+                            <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>
+                              Calculated Period Duration: {getCalculatedDuration(feeForm.periodFrom, feeForm.periodTo)}
+                            </div>
+                          )}
+
+                          <div>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Total Fee Deposited (INR)</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="e.g. 15,000" 
+                              value={feeForm.totalFeeDeposited} 
+                              onChange={e => setFeeForm({ ...feeForm, totalFeeDeposited: e.target.value })} 
+                              style={{ width: '100%', padding: '6px' }} 
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Remarks <span style={{ color: '#EF4444' }}>*</span></label>
+                            <textarea 
+                              className="form-input" 
+                              rows="2" 
+                              placeholder="Add payment remarks (e.g., Bank Challan no, online transaction details)..." 
+                              value={feeForm.remarks} 
+                              onChange={e => setFeeForm({ ...feeForm, remarks: e.target.value })} 
+                              style={{ width: '100%', resize: 'none', padding: '6px' }} 
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>
+                              Upload Fee Receipt (PDF/Image) <span style={{ color: '#EF4444' }}>*</span>
+                            </label>
+                            <input 
+                              type="file" 
+                              accept=".pdf,.png,.jpg,.jpeg" 
+                              onChange={e => setFeeFile(e.target.files[0])} 
+                              style={{ fontSize: '0.8rem' }} 
+                            />
+                            {report.feeDetails?.feeReceiptUrl && !feeFile && (
+                              <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                                Existing: <a href={`${API_BASE_URL}${report.feeDetails.feeReceiptUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>View Saved Receipt</a>
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: 4 }}>
+                            {report.feeDetails?.periodFrom && (
+                              <button onClick={() => setSavingFeeId(null)} className="btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Cancel</button>
+                            )}
+                            <button 
+                              onClick={() => handleSaveFee(report._id)} 
+                              className="btn-primary" 
+                              disabled={savingFee} 
+                              style={{ background: '#059669', padding: '6px 16px', fontSize: '0.8rem' }}
+                            >
+                              {savingFee ? 'Saving...' : 'Save Fee Details'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <p style={{ margin: '0 0 10px 0', fontSize: '0.78rem', color: '#64748B' }}>
+                            Payment receipt details are mandatory to submit this progress report.
+                          </p>
+                          <button 
+                            onClick={() => startEditFee(report)} 
+                            className="btn-primary" 
+                            style={{ background: '#059669', padding: '6px 14px', fontSize: '0.8rem' }}
+                          >
+                            Enter Fee Details
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Submission Form */}
                   {(isDraft || isRejectedBySupervisor || isRejectedByHod) && (
                     <div style={{ marginTop: '16px', borderTop: '1px dashed #CBD5E1', paddingTop: '16px' }}>
@@ -5552,7 +5771,7 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
                             <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} style={{ fontSize: '0.85rem' }} />
                             <div style={{ display: 'flex', gap: '8px' }}>
                               <button onClick={() => setUploadingId(null)} className="btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Cancel</button>
-                              <button onClick={() => handleUpload(report._id)} className="btn-primary" disabled={loading} style={{ background: '#133A26', padding: '6px 16px', fontSize: '0.8rem' }}>
+                              <button onClick={() => handleUpload(report)} className="btn-primary" disabled={loading} style={{ background: '#133A26', padding: '6px 16px', fontSize: '0.8rem' }}>
                                 {loading ? 'Submitting...' : 'Upload & Submit'}
                               </button>
                             </div>
