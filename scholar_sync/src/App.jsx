@@ -14,6 +14,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UtilityAction from './components/UtilityAction';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Premium landing pages
+import ResearchLabsPage from './pages/ResearchLabsPage';
+import PublicationsPage from './pages/PublicationsPage';
+import FundingPage from './pages/FundingPage';
+import EventsPage from './pages/EventsPage';
+import CollaboratePage from './pages/CollaboratePage';
+
 function App() {
   return (
     <ErrorBoundary>
@@ -32,11 +39,11 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/logout-bridge" element={<LogoutBridge />} />
         <Route path="/workflow" element={<WorkflowPage />} />
-        <Route path="/labs" element={<GenericPage title="Research Labs" description="Discover and explore departmental research labs." />} />
-        <Route path="/collaborate" element={<GenericPage title="Collaborate" description="Find collaborators for your next big project." />} />
-        <Route path="/publications" element={<GenericPage title="Publications" description="Access research papers, journals, and publications." />} />
-        <Route path="/funding" element={<GenericPage title="Funding" description="Manage grants and explore funding opportunities." />} />
-        <Route path="/events" element={<GenericPage title="Events" description="Stay updated with university and community events." />} />
+        <Route path="/labs" element={<ResearchLabsPage />} />
+        <Route path="/collaborate" element={<CollaboratePage />} />
+        <Route path="/publications" element={<PublicationsPage />} />
+        <Route path="/funding" element={<FundingPage />} />
+        <Route path="/events" element={<EventsPage />} />
         <Route path="/about" element={<GenericPage title="About" description="Learn more about the ScholarSync platform." />} />
         <Route path="/search" element={<GenericPage title="Search Results" description="Global search directory results." />} />
 
