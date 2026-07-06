@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FileText, ShieldCheck } from 'lucide-react';
+import { X, FileText, ShieldCheck, Clock } from 'lucide-react';
 import useApi from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 
@@ -291,6 +291,45 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                   </div>
                 </div>
               )}
+              {/* Activity & Verification Log */}
+              <div style={{ marginTop: '20px', borderTop: '1px dashed #e2e8f0', paddingTop: '16px' }}>
+                <h4 style={{ color: 'var(--color-primary)', fontSize: '0.9rem', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Clock size={14} /> Activity & Verification Log
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* Submission log */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.8rem', border: '1px solid #e2e8f0' }}>
+                    <span className="badge" style={{ fontSize: '0.62rem', flexShrink: 0, background: '#eff6ff', color: '#1e40af', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                      SUBMITTED
+                    </span>
+                    <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
+                      <strong style={{ color: '#0f172a' }}>{student.name}</strong> <span style={{ color: '#64748b', fontSize: '0.72rem' }}>(Student)</span>: Registered and submitted profile details for verification.
+                      {student.createdAt && (
+                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: 2 }}>
+                          {new Date(student.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Verification log */}
+                  {student.isVerified && (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px', background: '#ecfdf5', borderRadius: '8px', fontSize: '0.8rem', border: '1px solid #a7f3d0' }}>
+                      <span className="badge" style={{ fontSize: '0.62rem', flexShrink: 0, background: '#ecfdf5', color: '#065f46', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                        APPROVED
+                      </span>
+                      <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
+                        <strong style={{ color: '#0f172a' }}>HOD</strong>: Verified credentials and approved candidate registration.
+                        {student.updatedAt && (
+                          <div style={{ fontSize: '0.7rem', color: '#047857', marginTop: 2 }}>
+                            {new Date(student.updatedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Footer Action Buttons */}

@@ -60,7 +60,7 @@ const roleNavConfig = {
     { key: "verifyAttendance", icon: ClipboardCheck, label: "Verify Attendance" },
     { key: "records", icon: Clock, label: "Attendance Records" },
     { key: "defaulters", icon: AlertTriangle, label: "Defaulters" },
-    { key: "students", icon: Users, label: "My Students" },
+    { key: "students", icon: Users, label: "Verify Student Registration" },
     { key: "mapping", icon: Layers, label: "Student Mapping" },
     { key: "mappingDetails", icon: ClipboardList, label: "Mapping Details" },
     { key: "audit", icon: BookOpen, label: "Audit Trail" },

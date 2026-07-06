@@ -32,7 +32,7 @@ const HodDashboard = () => {
     verifyAttendance: 'Verify Attendance',
     records: 'Attendance Records',
     defaulters: 'Defaulters & Warnings',
-    students: 'My Students',
+    students: 'Verify Student Registration',
     mapping: 'Student-Semester-Subject Mapping',
     mappingDetails: 'Mapping Details',
     audit: 'Audit Trail',

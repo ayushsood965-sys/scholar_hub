@@ -16,7 +16,7 @@ const MyStudentsTab = () => {
   // Filtering states
   const [searchTerm, setSearchTerm] = useState('');
   const [degreeTypeFilter, setDegreeTypeFilter] = useState('');
-  const [verificationFilter, setVerificationFilter] = useState(''); // 'verified' | 'pending' | ''
+  const [subTab, setSubTab] = useState('pending'); // 'pending' | 'verified'
   const [degreeTypes, setDegreeTypes] = useState([]);
 
   // Modal states
@@ -63,14 +63,9 @@ const MyStudentsTab = () => {
     
     const matchesDegree = degreeTypeFilter === '' || student.profile?.degreeType === degreeTypeFilter;
     
-    let matchesVerification = true;
-    if (verificationFilter === 'verified') {
-      matchesVerification = student.isVerified === true;
-    } else if (verificationFilter === 'pending') {
-      matchesVerification = student.isVerified !== true;
-    }
+    const matchesSubTab = subTab === 'verified' ? student.isVerified === true : student.isVerified !== true;
 
-    return matchesSearch && matchesDegree && matchesVerification;
+    return matchesSearch && matchesDegree && matchesSubTab;
   });
 
   return (
@@ -79,10 +74,10 @@ const MyStudentsTab = () => {
         <div>
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Users size={24} style={{ color: 'var(--color-primary)' }} />
-            Department Students Directory (Non-PhD)
+            Student Registration Verifications & Logs (Non-PhD)
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            List of all undergraduate and postgraduate students enrolled in the Department of {user?.department || 'your department'}.
+            Verify new student registrations and inspect approved registration log records.
           </p>
         </div>
         <div style={{
@@ -100,10 +95,28 @@ const MyStudentsTab = () => {
         </div>
       </div>
 
+      {/* Tab selection */}
+      <div className="tab-header mb-lg" style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--color-border-solid)', paddingBottom: '12px', marginBottom: '24px' }}>
+        <button 
+          className={`tab-btn ${subTab === 'pending' ? 'active' : ''}`} 
+          style={{ background: 'none', border: 'none', color: subTab === 'pending' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'pending' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '0.95rem' }}
+          onClick={() => setSubTab('pending')}
+        >
+          Pending Verification ({students.filter(s => !s.isVerified && !(s.profile?.isPhD || s.profile?.degreeType?.toUpperCase().includes('PHD'))).length})
+        </button>
+        <button 
+          className={`tab-btn ${subTab === 'verified' ? 'active' : ''}`} 
+          style={{ background: 'none', border: 'none', color: subTab === 'verified' ? 'var(--color-primary)' : 'var(--text-secondary)', fontWeight: subTab === 'verified' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '0.95rem' }}
+          onClick={() => setSubTab('verified')}
+        >
+          Verified Registrations Log ({students.filter(s => s.isVerified && !(s.profile?.isPhD || s.profile?.degreeType?.toUpperCase().includes('PHD'))).length})
+        </button>
+      </div>
+
       {/* Filter and Search Bar */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '2fr 1fr 1fr',
+        gridTemplateColumns: '3fr 1fr',
         gap: '16px',
         marginBottom: '24px',
         background: 'rgba(255,255,255,0.02)',
@@ -135,19 +148,6 @@ const MyStudentsTab = () => {
             {degreeTypes.map(dt => (
               <option key={dt._id} value={dt.code}>{dt.name} ({dt.code})</option>
             ))}
-          </select>
-        </div>
-
-        {/* Verification Filter */}
-        <div>
-          <select 
-            className="form-input"
-            value={verificationFilter}
-            onChange={e => setVerificationFilter(e.target.value)}
-          >
-            <option value="">All Verification Status</option>
-            <option value="verified">Verified Only</option>
-            <option value="pending">Pending Verification</option>
           </select>
         </div>
       </div>
