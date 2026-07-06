@@ -91,14 +91,21 @@ const ApprovalsTab = () => {
       const fetchPendingNonPhd = async () => {
         try {
           const nonPhdRes = await api.get('/auth/students?profileCompleted=true&isVerified=false&isPhD=false');
-          const nonPhdRegs = (nonPhdRes.data || []).map(u => ({
-            _id: u._id,
-            isNonPhD: true,
-            scholarId: u,
-            enrollmentNumber: u.profile?.enrollmentNumber || '—',
-            status: 'REGISTRATION_PENDING',
-            title: `${u.profile?.degreeType || 'Non-PhD'} Registration`
-          }));
+          const nonPhdRegs = (nonPhdRes.data || [])
+            .filter(u => !(
+              u.profile?.isPhD === true ||
+              u.profile?.degreeType?.toUpperCase().includes('PHD') ||
+              u.name?.toUpperCase().includes('PHD') ||
+              u.username?.toUpperCase().includes('PHD')
+            ))
+            .map(u => ({
+              _id: u._id,
+              isNonPhD: true,
+              scholarId: u,
+              enrollmentNumber: u.profile?.enrollmentNumber || '—',
+              status: 'REGISTRATION_PENDING',
+              title: `${u.profile?.degreeType || 'Non-PhD'} Registration`
+            }));
           setRegistrations(nonPhdRegs);
         } catch (e) {
           setRegistrations([]);
@@ -110,15 +117,22 @@ const ApprovalsTab = () => {
       const fetchApprovedNonPhd = async () => {
         try {
           const approvedNonPhdRes = await api.get('/auth/students?profileCompleted=true&isVerified=true&isPhD=false');
-          const approvedNonPhdRegs = (approvedNonPhdRes.data || []).map(u => ({
-            _id: u._id,
-            isNonPhD: true,
-            scholarId: u,
-            enrollmentNumber: u.profile?.enrollmentNumber || '—',
-            status: 'APPROVED',
-            title: `${u.profile?.degreeType || 'Non-PhD'} Registration`,
-            approvedAt: u.updatedAt
-          }));
+          const approvedNonPhdRegs = (approvedNonPhdRes.data || [])
+            .filter(u => !(
+              u.profile?.isPhD === true ||
+              u.profile?.degreeType?.toUpperCase().includes('PHD') ||
+              u.name?.toUpperCase().includes('PHD') ||
+              u.username?.toUpperCase().includes('PHD')
+            ))
+            .map(u => ({
+              _id: u._id,
+              isNonPhD: true,
+              scholarId: u,
+              enrollmentNumber: u.profile?.enrollmentNumber || '—',
+              status: 'APPROVED',
+              title: `${u.profile?.degreeType || 'Non-PhD'} Registration`,
+              approvedAt: u.updatedAt
+            }));
           setApprovedRegistrations(approvedNonPhdRegs);
         } catch (err) {
           console.error('Failed to fetch approved registrations', err);

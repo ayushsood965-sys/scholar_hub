@@ -54,7 +54,10 @@ const MyStudentsTab = () => {
   // Filter students locally
   const filteredStudents = students.filter(student => {
     // Hide PhDs explicitly
-    const isPhD = student.profile?.isPhD === true || student.profile?.degreeType?.toUpperCase().includes('PHD');
+    const isPhD = student.profile?.isPhD === true || 
+                  student.profile?.degreeType?.toUpperCase().includes('PHD') ||
+                  student.name?.toUpperCase().includes('PHD') ||
+                  student.username?.toUpperCase().includes('PHD');
     if (isPhD) return false;
 
     const matchesSearch = student.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -145,8 +148,8 @@ const MyStudentsTab = () => {
             onChange={e => setDegreeTypeFilter(e.target.value)}
           >
             <option value="">All Degree Types</option>
-            {degreeTypes.map(dt => (
-              <option key={dt._id} value={dt.code}>{dt.name} ({dt.code})</option>
+            {degreeTypes.filter(dt => dt.code !== 'PHD').map(dt => (
+              <option key={dt._id} value={dt.name}>{dt.name} ({dt.code})</option>
             ))}
           </select>
         </div>
