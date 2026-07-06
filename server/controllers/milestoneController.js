@@ -69,7 +69,11 @@ const generateMilestonesIfNeeded = async (thesisId) => {
     const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
     const publicationsApproved = verifiedJournals >= 2 && verifiedConferences >= 2;
 
-    if (hasThreeYearsPassed && allReportsApproved && publicationsApproved) {
+    // 4. Research Synopsis must be officially cleared/approved
+    const synopsisMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'SYNOPSIS' });
+    const synopsisApproved = synopsisMilestone?.status === 'APPROVED';
+
+    if (hasThreeYearsPassed && allReportsApproved && publicationsApproved && synopsisApproved) {
       const preExists = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
       if (!preExists) {
         await Milestone.create({

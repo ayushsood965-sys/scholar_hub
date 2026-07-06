@@ -1436,7 +1436,12 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
           let color = '#4B5563';
           let label = 'Awaiting Synopsis';
 
-          if (synopsisMilestone.status === 'PENDING') {
+          if (thesis.synopsisProvisionallyCleared && synopsisMilestone.status !== 'APPROVED') {
+            bg = '#FFFBEB';
+            border = '#F59E0B';
+            color = '#D97706';
+            label = 'Provisionally Cleared for Active Research (Upload & Approval Mandatory)';
+          } else if (synopsisMilestone.status === 'PENDING') {
             bg = '#FFFBEB';
             border = '#FDE68A';
             color = '#D97706';
@@ -1482,6 +1487,11 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
                   {label}
                 </span>
               </div>
+              {thesis.synopsisProvisionallyCleared && synopsisMilestone.status !== 'APPROVED' && (
+                <div style={{ marginTop: 10, fontSize: '0.8rem', color: '#B45309', borderTop: '1px dashed #F59E0B', paddingTop: 8 }}>
+                  ⚠️ Your department has provisionally bypassed the synopsis defense phase to place you into Active Research. However, you are strictly required to upload your synopsis document, finalize your research abstract, and obtain official supervisor and HOD/DRC clearance before you can unlock your Pre-Submission Colloquium phase.
+                </div>
+              )}
               {(() => {
                 const synDrcs = drcMeetings.filter(d => d.isSynopsisApproval);
                 const lastSynDrc = synDrcs.length > 0 ? synDrcs[0] : null;
@@ -1893,6 +1903,9 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
   const conferences = pubs.filter(p => p.type === 'CONFERENCE' && p.status === 'VERIFIED').length;
   const pubsCleared = journals >= 2 && conferences >= 2;
 
+  const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
+  const synopsisCleared = synopsisMilestone?.status === 'APPROVED';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Overview Banner */}
@@ -1950,6 +1963,15 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
                   <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: 2 verified journals & 2 verified conferences | Current: {journals} journals, {conferences} conferences</div>
                 </div>
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: pubsCleared ? '#059669' : '#DC2626' }}>{pubsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+              </div>
+
+              {/* Research Synopsis Clearance */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: synopsisCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: synopsisCleared ? '#065F46' : '#991B1B' }}>Research Synopsis Clearance</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Status: {synopsisCleared ? 'Official DRC Approval Cleared' : 'Pending official DRC synopsis verification'}</div>
+                </div>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: synopsisCleared ? '#059669' : '#DC2626' }}>{synopsisCleared ? '✓ Cleared' : '⏳ Pending'}</span>
               </div>
             </div>
           )}

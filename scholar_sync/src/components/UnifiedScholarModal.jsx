@@ -420,7 +420,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     approveCourseworkHOD, 
     rejectCourseworkHOD,
     schedulePreSubmissionSeminar,
-    recordPreSubmissionSeminarOutcome
+    recordPreSubmissionSeminarOutcome,
+    provisionalSynopsisClear
   } = useContext(ThesisContext);
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -649,6 +650,19 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       if (onRefresh) await onRefresh();
     } catch (err) { toast.error(err.response?.data?.message || 'Transfer failed.'); }
     finally { setTransferLoading(false); }
+  };
+
+  const handleProvisionalSynopsisClear = async () => {
+    setLoading(true);
+    try {
+      await provisionalSynopsisClear(thesis._id);
+      toast.success('Synopsis provisionally cleared successfully! Candidate has transitioned to the Active Research phase.');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Provisional clearance failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ── Bypass Pre-Submission ──
@@ -1227,6 +1241,12 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           {statusBadge()}
         </div>
 
+        {thesis.synopsisProvisionallyCleared && synopsisMilestone.status !== 'APPROVED' && (
+          <div style={{ background: '#FFFBEB', borderLeft: '4px solid #D97706', color: '#B45309', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
+            ⚠️ This candidate's synopsis requirement has been provisionally cleared to unlock Active Research. The candidate must submit the finalized synopsis online for official DRC approval before beginning the pre-submission colloquium phase.
+          </div>
+        )}
+
         {/* Scholar Research Details */}
         <div className="usm-card" style={{ padding: 16 }}>
           <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E3A8A', marginBottom: 12 }}>Research Outline</div>
@@ -1444,6 +1464,24 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {subRole === 'HOD' && thesis.status === 'SYNOPSIS_PENDING' && !thesis.synopsisProvisionallyCleared && (
+          <div className="usm-card" style={{ background: 'rgba(234, 88, 12, 0.05)', border: '1px solid rgba(234, 88, 12, 0.2)', padding: 20, borderRadius: 12 }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#C2410C', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>⚠️</span> Provisional Synopsis Fast-Track Clearance
+            </h4>
+            <p style={{ fontSize: '0.8rem', color: '#7C2D12', marginBottom: 16, lineHeight: '1.4' }}>
+              Bypass the strict synopsis defense phase. This transitions the scholar directly to **Active Research** to begin periodic progress reporting. The candidate remains obligated to upload and clear their final synopsis before launching pre-submission colloquiums.
+            </p>
+            <button 
+              className="btn-primary" 
+              onClick={handleProvisionalSynopsisClear}
+              disabled={loading}
+              style={{ width: '100%', padding: '12px', background: '#D97706', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <span>⚡</span> Provisionally Clear Synopsis & Start Active Research
+            </button>
           </div>
         )}
       </div>

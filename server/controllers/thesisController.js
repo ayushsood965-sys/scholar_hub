@@ -1846,6 +1846,44 @@ const recordPreSubmissionSeminarOutcome = async (req, res) => {
   }
 };
 
+// PUT /api/thesis/:id/provisional-synopsis-clear — HOD provisionally clear synopsis → ACTIVE_RESEARCH
+const provisionalSynopsisClear = async (req, res) => {
+  try {
+    const thesis = await Thesis.findById(req.params.id);
+    if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
+
+    // HOD department check
+    if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
+      return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
+    }
+
+    thesis.status = 'ACTIVE_RESEARCH';
+    thesis.synopsisProvisionallyCleared = true;
+    thesis.startDate = new Date();
+    thesis.auditLog.push({ 
+      action: 'SYNOPSIS_PROVISIONALLY_CLEARED', 
+      note: `Synopsis provisionally cleared by HOD ${req.user.name}. Scholar fast-tracked to Active Research phase.` 
+    });
+    await thesis.save();
+
+    // Auto-generate milestones for Active Research (progress reports) immediately
+    const { generateMilestonesIfNeeded } = require('./milestoneController');
+    await generateMilestonesIfNeeded(thesis._id);
+
+    await createNotification({
+      recipient: thesis.scholarId,
+      title: '⚠️ Synopsis Provisionally Cleared',
+      message: `Your research synopsis requirement has been provisionally cleared by the HOD. You are transitioned to the ACTIVE_RESEARCH phase, but you must upload and officially verify your synopsis before final pre-submission.`,
+      type: 'WARNING',
+      link: 'overview'
+    });
+
+    res.json(thesis);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createThesis, getMyThesis, getAllTheses, getThesisById,
   verifyEnrollment, assignSupervisor, clearCoursework, awardDegree, updateAuditLog,
@@ -1855,5 +1893,6 @@ module.exports = {
   submitCourseworkDetails, approveCourseworkFaculty, rejectCourseworkFaculty,
   approveCourseworkHOD, rejectCourseworkHOD,
   schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome,
-  finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails
+  finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails,
+  provisionalSynopsisClear
 };

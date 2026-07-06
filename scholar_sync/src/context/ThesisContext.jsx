@@ -68,6 +68,13 @@ export const ThesisProvider = ({ children }) => {
     return data;
   };
 
+  // HOD: Provisionally clear synopsis
+  const provisionalSynopsisClear = async (id) => {
+    const { data } = await axios.put(`${API}/thesis/${id}/provisional-synopsis-clear`, {}, getAuthHeader());
+    setAllTheses(prev => prev.map(t => t._id === id ? data : t));
+    return data;
+  };
+
   // Admin: fetch all theses
   const fetchAllTheses = useCallback(async (filters = {}) => {
     setLoading(true);
@@ -281,7 +288,8 @@ export const ThesisProvider = ({ children }) => {
       dispatchThesis, scheduleViva, recordViva, transferScholar, forcePreSubmission,
       submitCourseworkDetails, approveCourseworkFaculty, rejectCourseworkFaculty,
       approveCourseworkHOD, rejectCourseworkHOD,
-      schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome
+      schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome,
+      provisionalSynopsisClear
     }}>
       {children}
     </ThesisContext.Provider>

@@ -12,7 +12,8 @@ const {
   submitCourseworkDetails, approveCourseworkFaculty, rejectCourseworkFaculty,
   approveCourseworkHOD, rejectCourseworkHOD,
   schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome,
-  finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails
+  finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails,
+  provisionalSynopsisClear
 } = require('../controllers/thesisController');
 
 const storage = multer.diskStorage({
@@ -45,6 +46,7 @@ router.put('/:id/schedule-viva', protect, authorize('ADMIN', 'HOD'), scheduleViv
 router.put('/:id/record-viva', protect, authorize('ADMIN', 'HOD'), recordViva);
 router.put('/:id/transfer', protect, authorize('ADMIN', 'HOD', 'FACULTY'), transferThesis);
 router.put('/:id/force-pre-submission', protect, authorize('HOD', 'FACULTY'), forcePreSubmission);
+router.put('/:id/provisional-synopsis-clear', protect, authorize('HOD'), provisionalSynopsisClear);
 router.put('/:id/pre-submission/schedule', protect, authorize('HOD'), schedulePreSubmissionSeminar);
 router.put('/:id/pre-submission/record-outcome', protect, authorize('HOD'), recordPreSubmissionSeminarOutcome);
 router.put('/:id/final-approve-hod', protect, authorize('HOD'), finalApproveHOD);
