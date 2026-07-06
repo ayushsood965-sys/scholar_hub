@@ -12,22 +12,46 @@ export const AuthProvider = ({ children }) => {
   const { addNotification, clearNotifications, fetchNotifications } = useContext(NotificationContext);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        if (decoded.exp * 1000 < Date.now()) {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          if (decoded.exp * 1000 < Date.now()) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          } else {
+            const storedUser = JSON.parse(localStorage.getItem('user'));
+            if (storedUser) setUser(storedUser);
+
+            // Fetch fresh details from backend
+            const { data } = await axios.get(`${API_URL}/auth/me`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const updatedUser = { ...storedUser, ...data };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+          }
+        } catch (err) {
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
           setUser(null);
-        } else {
-          const storedUser = JSON.parse(localStorage.getItem('user'));
-          setUser(storedUser);
         }
-      } catch (err) {
-        localStorage.removeItem('token');
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initializeAuth();
+
+    // Sync on tab/window focus to reflect updates made in other portals
+    const handleFocus = () => {
+      fetchMe();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const login = async (username, password) => {
@@ -123,7 +147,8 @@ export const AuthProvider = ({ children }) => {
       const { data } = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const updatedUser = { ...user, ...data };
+      const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+      const updatedUser = { ...storedUser, ...data };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
       return updatedUser;
