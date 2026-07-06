@@ -715,7 +715,7 @@ exports.getAttendanceMatrix = async (req, res) => {
 exports.markAttendanceBulk = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-    const { sessionId, degreeTypeId, degreeNameId, semesterId, date, records } = req.body;
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, date, records, forwardToHOD } = req.body;
     const facultyId = req.user._id;
     const departmentId = req.user.departmentId;
     
@@ -815,7 +815,9 @@ exports.markAttendanceBulk = async (req, res) => {
               leaveRequestId: rec.leaveRequestId || null,
               classes: rec.classes || [],
               markedBy: facultyId,
-              markedAt: new Date()
+              markedAt: new Date(),
+              approvalStatus: forwardToHOD ? 'PENDING_HOD' : 'APPROVED',
+              forwardedToHOD: !!forwardToHOD
             }
           },
           upsert: true
@@ -1558,6 +1560,13 @@ exports.applyCorrection = async (req, res) => {
         return res.status(400).json({ message: 'You already have an approved correction request for this date.' });
       }
 
+      const pendingCorrection = existingCorrections.find(c => 
+        c.status === 'PENDING_FACULTY' || c.status === 'PENDING_HOD'
+      );
+      if (pendingCorrection) {
+        return res.status(400).json({ message: 'You already have a pending correction request for this date.' });
+      }
+
       const totalAttempts = existingCorrections.length;
       if (totalAttempts >= 2) {
         return res.status(400).json({ message: 'Maximum correction attempts (2) reached for this date.' });
@@ -1573,7 +1582,7 @@ exports.applyCorrection = async (req, res) => {
         timetableSlotIds: { $in: timetableSlotIds }
       }).sort({ createdAt: -1 });
 
-      // Group existing corrections by timetableSlotId to check per-subject limits
+      const pendingSubjects = [];
       const maxAttemptsReached = [];
       
       timetableSlotIds.forEach(slotId => {
@@ -1588,6 +1597,15 @@ exports.applyCorrection = async (req, res) => {
           return;
         }
 
+        // Check if a correction is currently pending for this subject
+        const pendingCorrection = subjectCorrections.find(c => 
+          c.status === 'PENDING_FACULTY' || c.status === 'PENDING_HOD'
+        );
+        if (pendingCorrection) {
+          pendingSubjects.push(slotId);
+          return;
+        }
+
         // Count total attempts (approved + rejected)
         const totalAttempts = subjectCorrections.length;
         if (totalAttempts >= 2) {
@@ -1595,6 +1613,12 @@ exports.applyCorrection = async (req, res) => {
           return;
         }
       });
+
+      if (pendingSubjects.length > 0) {
+        return res.status(400).json({
+          message: 'A correction request for one or more selected subjects is already pending. You cannot submit another request until it is processed.'
+        });
+      }
 
       if (maxAttemptsReached.length > 0) {
         return res.status(400).json({
@@ -3674,3 +3698,65 @@ exports.getHodDrillDown = async (req, res) => {
     res.status(400).json({ message: 'Invalid view parameter' });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
+
+exports.getHodForwardedAttendance = async (req, res) => {
+  try {
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, date } = req.query;
+    const departmentId = req.user.departmentId;
+
+    if (!sessionId || !degreeTypeId || !degreeNameId || !date) {
+      return res.status(400).json({ message: 'Missing required query parameters: sessionId, degreeTypeId, degreeNameId, and date.' });
+    }
+
+    const query = {
+      departmentId,
+      sessionId,
+      degreeTypeId,
+      degreeNameId,
+      date: new Date(date),
+      forwardedToHOD: true
+    };
+
+    if (semesterId) {
+      query.semesterId = semesterId;
+    } else {
+      query.semesterId = null;
+    }
+
+    const records = await AttendanceRecord.find(query)
+      .populate({
+        path: 'studentId',
+        select: 'name username profile isVerified isActive',
+        populate: {
+          path: 'profile.degreeNameId',
+          select: 'name'
+        }
+      })
+      .populate('facultyId', 'name')
+      .sort({ markedAt: -1 });
+
+    const approvedCandidatesRecords = records.filter(r => r.studentId && r.studentId.isVerified);
+    res.status(200).json(approvedCandidatesRecords);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.approveHodAttendance = async (req, res) => {
+  try {
+    const { recordIds } = req.body;
+    if (!recordIds || !Array.isArray(recordIds) || recordIds.length === 0) {
+      return res.status(400).json({ message: 'No record IDs provided for approval.' });
+    }
+
+    await AttendanceRecord.updateMany(
+      { _id: { $in: recordIds }, departmentId: req.user.departmentId },
+      { $set: { approvalStatus: 'APPROVED', lastEditedBy: req.user._id, lastEditedAt: new Date() } }
+    );
+
+    res.status(200).json({ message: 'Attendance records approved successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

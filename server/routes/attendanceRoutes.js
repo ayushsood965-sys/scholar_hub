@@ -134,6 +134,8 @@ router.get('/dashboard/faculty/low-attendance-students', protect, authorize('FAC
 router.get('/dashboard/faculty/course/:courseId/defaulters', protect, authorize('FACULTY'), requireDepartment, attendanceController.getFacultyCourseDefaulters);
 router.get('/dashboard/hod', protect, authorize('HOD'), requireDepartment, attendanceController.getHodDashboardStats);
 router.get('/dashboard/hod/drill-down', protect, authorize('HOD'), requireDepartment, attendanceController.getHodDrillDown);
+router.get('/hod/forwarded', protect, authorize('HOD'), requireDepartment, attendanceController.getHodForwardedAttendance);
+router.post('/hod/approve', protect, authorize('HOD'), requireDepartment, attendanceController.approveHodAttendance);
 router.get('/dashboard/super', protect, authorize('SUPER_ADMIN'), attendanceController.getSuperAdminDashboardStats);
 
 // Student absences for corrections selection

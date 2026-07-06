@@ -215,8 +215,8 @@ exports.saveMapping = async (req, res) => {
     const invalidStudents = await User.find({
       _id: { $in: studentIds },
       $or: [
-        { 'profile.degreeTypeId': { $ne: new mongoose.Types.ObjectId(degreeTypeId) } },
-        { 'profile.degreeNameId': { $ne: new mongoose.Types.ObjectId(degreeNameId) } },
+        { 'profile.degreeTypeId': { $ne: degreeTypeId.toString() } },
+        { 'profile.degreeNameId': { $ne: degreeNameId.toString() } },
         { isVerified: { $ne: true } }
       ]
     });

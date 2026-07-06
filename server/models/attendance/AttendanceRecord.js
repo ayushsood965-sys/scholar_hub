@@ -122,6 +122,15 @@ const attendanceRecordSchema = new mongoose.Schema(
       ref: 'AttendanceCorrection',
       default: null
     },
+    approvalStatus: {
+      type: String,
+      enum: ['PENDING_HOD', 'APPROVED'],
+      default: 'APPROVED'
+    },
+    forwardedToHOD: {
+      type: Boolean,
+      default: false
+    },
     auditHistory: [
       {
         editedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

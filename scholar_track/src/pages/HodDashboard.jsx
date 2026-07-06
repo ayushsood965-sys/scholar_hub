@@ -13,6 +13,7 @@ import StaffProfileTab from '../modules/profile/StaffProfileTab';
 import MyStudentsTab from '../modules/hod/MyStudentsTab';
 import StudentSubjectMappingTab from '../modules/faculty/StudentSubjectMappingTab';
 import StudentMappingDetailsTab from '../modules/faculty/StudentMappingDetailsTab';
+import VerifyAttendanceTab from '../modules/hod/VerifyAttendanceTab';
 
 const HodDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -27,6 +28,7 @@ const HodDashboard = () => {
     timetable: 'Timetable Builder',
     cloneTimetable: 'Clone Timetable',
     approvals: 'Leave & Correction Approvals',
+    verifyAttendance: 'Verify Attendance',
     defaulters: 'Defaulters & Warnings',
     students: 'My Students',
     mapping: 'Student-Semester-Subject Mapping',
@@ -43,6 +45,7 @@ const HodDashboard = () => {
       {activeTab === 'timetable' && <TimetableTab />}
       {activeTab === 'cloneTimetable' && <CloneTimetableTab />}
       {activeTab === 'approvals' && <ApprovalsTab />}
+      {activeTab === 'verifyAttendance' && <VerifyAttendanceTab />}
       {activeTab === 'defaulters' && <DefaultersTab />}
       {activeTab === 'students' && <MyStudentsTab />}
       {activeTab === 'audit' && <AuditTab />}

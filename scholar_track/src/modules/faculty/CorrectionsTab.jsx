@@ -15,7 +15,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   History,
-  Clock
+  Clock,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -171,54 +172,71 @@ const CorrectionsTab = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-              zIndex: 200000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+              position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(8px)',
+              zIndex: 200000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', 
+              padding: '24px', overflowY: 'auto'
             }}
             onClick={() => setSelectedCorrection(null)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.96, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="glass-card"
+              exit={{ opacity: 0, scale: 0.96, y: 15 }}
+              transition={{ type: 'spring', duration: 0.4 }}
               onClick={e => e.stopPropagation()}
-              style={{ maxWidth: 600, width: '100%', maxHeight: '90vh', overflow: 'auto', padding: 28 }}
+              style={{ 
+                maxWidth: 600, 
+                width: '100%', 
+                margin: '40px auto',
+                padding: '36px',
+                background: '#ffffff',
+                borderRadius: '20px',
+                border: '1px solid #f1f5f9',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+                position: 'relative'
+              }}
             >
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-                <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-                    Correction Request Details
-                  </h3>
-                  <p className="text-sm text-muted" style={{ marginTop: '4px', fontSize: '0.85rem' }}>
-                    Review the details below and take appropriate action
-                  </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileText size={18} style={{ color: 'var(--color-primary)' }} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                      Correction Request Details
+                    </h3>
+                  </div>
                 </div>
-                <button className="btn btn-sm btn-outline" onClick={() => setSelectedCorrection(null)} style={{ border: 'none', background: 'rgba(255,255,255,0.05)' }}>
-                  <XCircle size={20} />
+                <button 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} 
+                  onClick={() => setSelectedCorrection(null)}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <XCircle size={22} />
                 </button>
               </div>
 
               {/* Student Info */}
-              <div className="grid-2" style={{ marginBottom: 20 }}>
+              <div className="grid-2" style={{ marginBottom: 24, background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student</label>
-                  <p style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginTop: 4 }}>
-                    <User size={14} style={{ display: 'inline', marginRight: 6, opacity: 0.6 }} />
+                  <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Student</label>
+                  <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <User size={14} style={{ color: '#64748b' }} />
                     {selectedCorrection.studentId?.name || 'N/A'}
                   </p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    {selectedCorrection.studentId?.username || ''} | {selectedCorrection.studentId?.profile?.shNo || ''}
+                  <p style={{ fontSize: '0.8rem', color: '#475569', marginTop: 2, paddingLeft: '20px' }}>
+                    {selectedCorrection.studentId?.username || ''} <br/> SH No: {selectedCorrection.studentId?.profile?.shNo || '—'}
                   </p>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</label>
-                  <p style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginTop: 4 }}>
-                    <CalendarDays size={14} style={{ display: 'inline', marginRight: 6, opacity: 0.6 }} />
+                  <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Date of Absence</label>
+                  <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CalendarDays size={14} style={{ color: '#64748b' }} />
                     {selectedCorrection.recordId?.date
                       ? new Date(selectedCorrection.recordId.date).toLocaleDateString('en-IN', {
-                        day: 'numeric', month: 'long', year: 'numeric', weekday: 'long'
+                        day: 'numeric', month: 'long', year: 'numeric', weekday: 'short'
                       })
                       : 'N/A'}
                   </p>
@@ -226,17 +244,18 @@ const CorrectionsTab = () => {
               </div>
 
               {/* Correction Details */}
-              <div style={{ background: 'rgba(99, 102, 241, 0.03)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 20 }}>
-                <label style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12, display: 'block' }}>
-                  <BookOpen size={14} style={{ display: 'inline', marginRight: 6 }} /> Correction Details
+              <div style={{ background: '#ffffff', borderRadius: '12px', padding: '20px', marginBottom: 24, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}>
+                <label style={{ fontSize: '#0.75rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14, display: 'block', fontWeight: 700 }}>
+                  <BookOpen size={14} style={{ display: 'inline', marginRight: 6, color: 'var(--color-primary)' }} /> Correction Specification
                 </label>
-                <div className="grid-2">
+                <div className="grid-2" style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '14px' }}>
                   <div>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Requested Status</p>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Requested Status</p>
                     <span className="badge" style={{
-                      background: selectedCorrection.correctionType === 'ON_LEAVE' ? '#FEF3C7' : '#D1FAE5',
-                      color: selectedCorrection.correctionType === 'ON_LEAVE' ? '#92400E' : '#065F46',
-                      fontSize: '0.8rem', marginTop: 4
+                      background: selectedCorrection.correctionType === 'ON_LEAVE' ? '#fffbeb' : '#ecfdf5',
+                      color: selectedCorrection.correctionType === 'ON_LEAVE' ? '#b45309' : '#047857',
+                      border: `1px solid ${selectedCorrection.correctionType === 'ON_LEAVE' ? '#fde68a' : '#a7f3d0'}`,
+                      fontSize: '0.8rem', marginTop: 6, display: 'inline-block', padding: '4px 10px', borderRadius: '6px'
                     }}>
                       {selectedCorrection.correctionType === 'ON_LEAVE'
                         ? `On Leave — ${selectedCorrection.leaveType || ''}`
@@ -244,31 +263,28 @@ const CorrectionsTab = () => {
                     </span>
                   </div>
                   <div>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Subjects</p>
-                    <span className="badge badge-neutral" style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Subjects & Attempt</p>
+                    <span className="badge badge-neutral" style={{ fontSize: '0.8rem', marginTop: 6, display: 'inline-block', padding: '4px 10px', borderRadius: '6px' }}>
                       {selectedCorrection.timetableSlotIds?.length || 0} subject(s)
                       {selectedCorrection.correctionAttempt > 0 && ` | Attempt #${selectedCorrection.correctionAttempt}`}
                     </span>
                   </div>
                 </div>
-                <div style={{ marginTop: 12 }}>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Reason</p>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)', lineHeight: 1.5, marginTop: 4, background: 'rgba(0,0,0,0.03)', padding: 12, borderRadius: 'var(--radius-sm)' }}>
-                    {selectedCorrection.reason}
+                <div style={{ marginTop: 14 }}>
+                  <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Student Appeal Reason</p>
+                  <p style={{ fontSize: '0.9rem', color: '#0f172a', lineHeight: 1.5, marginTop: 6, background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontStyle: 'italic' }}>
+                    "{selectedCorrection.reason}"
                   </p>
                 </div>
                 {selectedCorrection.documentUrl && (
-                  <div style={{ marginTop: 12 }}>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                      <FileText size={12} style={{ display: 'inline', marginRight: 4 }} /> Document
-                    </p>
+                  <div style={{ marginTop: 16, paddingTop: '12px', borderTop: '1px dashed #e2e8f0' }}>
                     <a
                       href={`${API_BASE_URL}${selectedCorrection.documentUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}
+                      style={{ fontSize: '0.85rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
-                      View Attached Document
+                      <Upload size={14} /> View Attached Document
                     </a>
                   </div>
                 )}
@@ -276,36 +292,43 @@ const CorrectionsTab = () => {
 
               {/* Audit Log */}
               {selectedCorrection.auditLog && selectedCorrection.auditLog.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8, display: 'block' }}>
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10, display: 'block', fontWeight: 700 }}>
                     <Clock size={14} style={{ display: 'inline', marginRight: 6 }} /> Activity Log
                   </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {selectedCorrection.auditLog.map((log, idx) => (
-                      <div key={idx} style={{
-                        display: 'flex', alignItems: 'flex-start', gap: 8,
-                        padding: '8px 12px', background: 'rgba(0,0,0,0.02)', borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.8rem'
-                      }}>
-                        <span className="badge" style={{
-                          fontSize: '0.6rem', flexShrink: 0,
-                          background: log.action === 'SUBMITTED' ? '#DBEAFE' : log.action === 'RECOMMENDED' ? '#FEF3C7' : log.action === 'APPROVED' ? '#D1FAE5' : '#FEE2E2',
-                          color: log.action === 'SUBMITTED' ? '#1E40AF' : log.action === 'RECOMMENDED' ? '#92400E' : log.action === 'APPROVED' ? '#065F46' : '#991B1B'
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {selectedCorrection.auditLog.map((log, idx) => {
+                      let tagBg = '#eff6ff';
+                      let tagColor = '#1e40af';
+                      if (log.action === 'RECOMMENDED') { tagBg = '#fffbeb'; tagColor = '#92400e'; }
+                      else if (log.action === 'APPROVED') { tagBg = '#ecfdf5'; tagColor = '#065f46'; }
+                      else if (log.action === 'REJECTED') { tagBg = '#fef2f2'; tagColor = '#991b1b'; }
+
+                      return (
+                        <div key={idx} style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 10,
+                          padding: '12px', background: '#f8fafc', borderRadius: '8px',
+                          fontSize: '0.82rem', border: '1px solid #e2e8f0'
                         }}>
-                          {log.action}
-                        </span>
-                        <span style={{ color: 'var(--color-text-secondary)' }}>
-                          {log.actorName}: {log.remarks}
-                        </span>
-                      </div>
-                    ))}
+                          <span className="badge" style={{
+                            fontSize: '0.65rem', flexShrink: 0,
+                            background: tagBg, color: tagColor, padding: '3px 8px', borderRadius: '4px', fontWeight: 700
+                          }}>
+                            {log.action === 'RECOMMENDED' ? 'FORWARDED' : log.action}
+                          </span>
+                          <span style={{ color: '#334155', lineHeight: 1.4 }}>
+                            <strong style={{ color: '#0f172a' }}>{log.actorName}</strong>: {log.remarks}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Action Remarks */}
-              <div className="form-group" style={{ marginBottom: 16 }}>
-                <label className="form-label">
+              <div className="form-group" style={{ marginBottom: 20 }}>
+                <label className="form-label" style={{ color: '#374151', fontWeight: 600 }}>
                   <FileText size={14} /> Your Remarks <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <textarea
@@ -314,6 +337,7 @@ const CorrectionsTab = () => {
                   onChange={e => setActionRemarks(e.target.value)}
                   rows={3}
                   placeholder="Provide detailed remarks for your decision (minimum 5 characters)..."
+                  style={{ background: '#ffffff', color: '#111827', border: '1px solid #d1d5db' }}
                 />
               </div>
 
@@ -324,9 +348,9 @@ const CorrectionsTab = () => {
                   className="btn"
                   style={{
                     background: '#10B981', color: '#fff', border: 'none',
-                    padding: '10px 20px', borderRadius: 'var(--radius-md)', fontWeight: 600,
+                    padding: '10px 20px', borderRadius: '8px', fontWeight: 600,
                     display: 'flex', alignItems: 'center', gap: '8px',
-                    opacity: processing ? 0.7 : 1
+                    opacity: processing ? 0.7 : 1, cursor: 'pointer'
                   }}
                   onClick={() => handleAction(selectedCorrection._id, 'RECOMMEND')}
                   disabled={processing}
@@ -338,9 +362,9 @@ const CorrectionsTab = () => {
                   className="btn"
                   style={{
                     background: '#EF4444', color: '#fff', border: 'none',
-                    padding: '10px 20px', borderRadius: 'var(--radius-md)', fontWeight: 600,
+                    padding: '10px 20px', borderRadius: '8px', fontWeight: 600,
                     display: 'flex', alignItems: 'center', gap: '8px',
-                    opacity: processing ? 0.7 : 1
+                    opacity: processing ? 0.7 : 1, cursor: 'pointer'
                   }}
                   onClick={() => handleAction(selectedCorrection._id, 'REJECT')}
                   disabled={processing}

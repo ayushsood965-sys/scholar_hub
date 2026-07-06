@@ -33,6 +33,7 @@ const MarkAttendanceTab = () => {
   const [loadingFilters, setLoadingFilters] = useState(true);
   const [loadingMatrix, setLoadingMatrix] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [forwardToHod, setForwardToHod] = useState(false);
 
   const api = useApi();
   const toast = useToast();
@@ -344,7 +345,7 @@ const MarkAttendanceTab = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (shouldForwardToHod = false) => {
     if (!matrix) return;
     if (!isPhD && matrix.classes.length > 0) {
       const hasSelectedClass = Object.values(selectedSubjects).some(v => v === true);
@@ -396,9 +397,11 @@ const MarkAttendanceTab = () => {
         degreeNameId: filters.degreeNameId,
         semesterId: isPhD ? null : filters.semesterId,
         date: filters.date,
-        records: markedRecords
+        records: markedRecords,
+        forwardToHOD: shouldForwardToHod
       });
-      toast.success('Attendance saved successfully');
+      toast.success(shouldForwardToHod ? 'Attendance approved and forwarded to HOD successfully' : 'Attendance saved successfully');
+      setForwardToHod(false);
       const queryParams = new URLSearchParams({
         sessionId: filters.sessionId,
         degreeTypeId: filters.degreeTypeId,
@@ -799,10 +802,36 @@ const MarkAttendanceTab = () => {
           )}
 
           {unmarkedStudents.length > 0 && (isPhD || hasUnsavedClasses) && (
-            <div className="flex justify-end mt-lg">
-              <button type="button" className="btn btn-primary btn-lg" onClick={handleSave} disabled={saving || matrix.isLocked}>
-                <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
-              </button>
+            <div className="flex flex-col items-end mt-lg gap-xs">
+              {!forwardToHod ? (
+                <>
+                  <button type="button" className="btn btn-primary btn-lg" onClick={() => handleSave(false)} disabled={saving || matrix.isLocked}>
+                    <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="link-btn text-xs" 
+                    style={{ background: 'none', border: 'none', color: 'var(--color-primary, #6366F1)', cursor: 'pointer', textDecoration: 'underline', padding: '4px 8px' }}
+                    onClick={() => setForwardToHod(true)}
+                  >
+                    or forward request to HOD
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="btn btn-warning btn-lg" onClick={() => handleSave(true)} disabled={saving || matrix.isLocked} style={{ backgroundColor: '#D97706', borderColor: '#D97706', color: '#fff' }}>
+                    <Save size={18} /> {saving ? 'Forwarding...' : 'Approve and Forward to HOD'}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="link-btn text-xs" 
+                    style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary, #9CA3AF)', cursor: 'pointer', textDecoration: 'underline', padding: '4px 8px' }}
+                    onClick={() => setForwardToHod(false)}
+                  >
+                    Cancel forwarding
+                  </button>
+                </>
+              )}
             </div>
           )}
         </motion.div>
