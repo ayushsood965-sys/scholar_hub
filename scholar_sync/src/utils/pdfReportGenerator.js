@@ -260,6 +260,41 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
   const totalMilestones = milestones.length;
   const milestonesPercent = totalMilestones > 0 ? completedMilestones / totalMilestones : 0;
 
+  // Coursework ledger details builder
+  const cwRows = [];
+  let grandTotalObtained = 0;
+  let grandTotalMax = 0;
+
+  if (thesis.courseworkDetails) {
+    const ethics = thesis.courseworkDetails.researchEthics || [];
+    ethics.forEach(sub => {
+      cwRows.push({ category: 'Research Ethics', code: sub.subjectCode || 'N/A', name: sub.subjectName, marks: sub.marksObtained, max: sub.maxMarks, session: sub.examinationMonthYear || 'N/A' });
+      grandTotalObtained += Number(sub.marksObtained) || 0;
+      grandTotalMax += Number(sub.maxMarks) || 0;
+    });
+
+    const methodology = thesis.courseworkDetails.researchMethodology || [];
+    methodology.forEach(sub => {
+      cwRows.push({ category: 'Research Methodology', code: sub.subjectCode || 'N/A', name: sub.subjectName, marks: sub.marksObtained, max: sub.maxMarks, session: sub.examinationMonthYear || 'N/A' });
+      grandTotalObtained += Number(sub.marksObtained) || 0;
+      grandTotalMax += Number(sub.maxMarks) || 0;
+    });
+
+    const elective = thesis.courseworkDetails.elective || [];
+    elective.forEach(sub => {
+      cwRows.push({ category: 'Elective Course', code: sub.subjectCode || 'N/A', name: sub.subjectName, marks: sub.marksObtained, max: sub.maxMarks, session: sub.examinationMonthYear || 'N/A' });
+      grandTotalObtained += Number(sub.marksObtained) || 0;
+      grandTotalMax += Number(sub.maxMarks) || 0;
+    });
+
+    const others = thesis.courseworkDetails.others || [];
+    others.forEach(sub => {
+      cwRows.push({ category: 'Others', code: sub.subjectCode || 'N/A', name: sub.subjectName, marks: sub.marksObtained, max: sub.maxMarks, session: sub.examinationMonthYear || 'N/A' });
+      grandTotalObtained += Number(sub.marksObtained) || 0;
+      grandTotalMax += Number(sub.maxMarks) || 0;
+    });
+  }
+
   let currentY = 40;
 
   // --- Sub-Header Generator for Inner Pages ---
@@ -293,13 +328,6 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
   const drawCardBorder = (x, y, w, h) => {
     doc.setFillColor(...c.white); doc.setDrawColor(...c.border); doc.setLineWidth(0.4);
     doc.roundedRect(x, y, w, h, 3, 3, 'FD');
-  };
-
-  const drawSectionBadge = (x, y, label) => {
-    doc.setFillColor(...c.primary);
-    doc.roundedRect(x, y - 4, 30, 6, 1, 1, 'F');
-    doc.setFont('Helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...c.white);
-    doc.text(label.toUpperCase(), x + 15, y, { align: 'center' });
   };
 
   // ==========================================
@@ -385,7 +413,183 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
   doc.text(`Official Document compiled on: ${new Date().toLocaleString()}`, 105, 280, { align: 'center' });
 
   // ==========================================
-  // PAGE 2: RESEARCH PERFORMANCE & ELIGIBILITY STATUS
+  // PAGE 2: PHD COURSEWORK LEDGER & TRANSCRIPT
+  // ==========================================
+  doc.addPage();
+  drawPageHeader('Coursework Ledger');
+
+  doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
+  doc.text('Coursework Marks ledger & Examinations Record', 15, currentY);
+  doc.setFont('Helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...c.textMuted);
+  doc.text('Details of qualifying coursework examinations required under UGC doctoral rules.', 15, currentY + 5);
+
+  currentY += 12;
+
+  // Coursework Status Alert Banner
+  drawCardBorder(15, currentY, 180, 16);
+  if (thesis.courseworkCompleted) {
+    doc.setFillColor(...c.successBg); doc.roundedRect(15.2, currentY + 0.2, 179.6, 15.6, 3, 3, 'F');
+    doc.setFont('Helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...c.successText);
+    doc.text('✅ COURSEWORK REQUIREMENTS SATISFIED', 22, currentY + 10);
+    doc.setFont('Helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...c.textDark);
+    doc.text(`Cleared on ${thesis.courseworkClearedAt ? new Date(thesis.courseworkClearedAt).toLocaleDateString() : 'N/A'}`, 190, currentY + 10, { align: 'right' });
+  } else {
+    doc.setFillColor(...c.warningLight); doc.roundedRect(15.2, currentY + 0.2, 179.6, 15.6, 3, 3, 'F');
+    doc.setFont('Helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...c.warning);
+    doc.text('⚠️ COURSEWORK PROGRESS PENDING CLEARANCE', 22, currentY + 10);
+  }
+
+  currentY += 22;
+
+  // Marks Table
+  doc.setFillColor(...c.primary); doc.rect(15, currentY, 180, 8, 'F');
+  doc.setFont('Helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...c.white);
+  doc.text('SUBJECT CATEGORY', 18, currentY + 5.5);
+  doc.text('CODE', 55, currentY + 5.5);
+  doc.text('SUBJECT NAME', 75, currentY + 5.5);
+  doc.text('MARKS OBTAINED', 140, currentY + 5.5);
+  doc.text('MAX MARKS', 165, currentY + 5.5);
+  doc.text('STATUS', 185, currentY + 5.5);
+
+  currentY += 8;
+
+  if (cwRows.length === 0) {
+    doc.setFont('Helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(...c.textMuted);
+    doc.text('No coursework subject-wise marks registered inside scholar profile.', 18, currentY + 6);
+    currentY += 12;
+  } else {
+    cwRows.forEach(row => {
+      doc.setFont('Helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...c.textDark);
+      doc.text(row.category, 18, currentY + 5);
+      doc.text(row.code, 55, currentY + 5);
+      doc.text(safeText(row.name, 30), 75, currentY + 5);
+      doc.text(row.marks.toString(), 140, currentY + 5);
+      doc.text(row.max.toString(), 165, currentY + 5);
+      
+      const isPass = row.marks >= (row.max * 0.5); // UGC 50% pass rule
+      doc.setFont('Helvetica', 'bold');
+      if (isPass) {
+        doc.setTextColor(...c.successText);
+        doc.text('Passed', 185, currentY + 5);
+      } else {
+        doc.setTextColor(...c.danger);
+        doc.text('Failed', 185, currentY + 5);
+      }
+      
+      currentY += 8;
+      doc.setDrawColor(...c.border); doc.setLineWidth(0.3);
+      doc.line(15, currentY, 195, currentY);
+    });
+
+    // Summary Score Row
+    doc.setFillColor(...c.bgLight); doc.rect(15, currentY, 180, 8, 'F');
+    doc.setFont('Helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...c.textDark);
+    doc.text('CUMULATIVE TOTAL SCORE', 18, currentY + 5.5);
+    doc.text(`${grandTotalObtained} / ${grandTotalMax}`, 140, currentY + 5.5);
+    
+    const pct = grandTotalMax > 0 ? (grandTotalObtained / grandTotalMax) * 100 : 0;
+    doc.text(`Aggregate: ${pct.toFixed(1)}%`, 165, currentY + 5.5);
+    currentY += 12;
+  }
+
+  // ==========================================
+  // PAGE 3: SYNOPSIS LIFECYCLE & DRC MINUTES RECORD
+  // ==========================================
+  doc.addPage();
+  drawPageHeader('Synopsis & DRC Reviews');
+
+  doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
+  doc.text('Research Synopsis Lifecycle Assessment', 15, currentY);
+  doc.setFont('Helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...c.textMuted);
+  doc.text('Timeline of research synopsis submission, HOD clearance, and Departmental Committee reviews.', 15, currentY + 5);
+
+  currentY += 12;
+
+  // Synopsis Lifecycle card
+  const synMilestone = milestones.find(m => m.type === 'SYNOPSIS');
+  
+  drawCardBorder(15, currentY, 180, 36);
+  doc.setFont('Helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...c.textDark);
+  doc.text('Synopsis Presentation Status Details', 22, currentY + 7);
+  doc.setDrawColor(...c.border); doc.line(22, currentY + 10, 188, currentY + 10);
+
+  const synY = currentY + 16;
+  doc.setFontSize(8.5);
+  doc.setFont('Helvetica', 'bold'); doc.text('Milestone Status:', 22, synY);
+  doc.setFont('Helvetica', 'normal'); doc.setTextColor(...c.textMuted);
+  doc.text(synMilestone?.status || 'PENDING', 52, synY);
+
+  doc.setFont('Helvetica', 'bold'); doc.setTextColor(...c.textDark); doc.text('Submission Proof:', 105, synY);
+  doc.setFont('Helvetica', 'normal'); doc.setTextColor(...c.textMuted);
+  doc.text(synMilestone?.status === 'APPROVED' || synMilestone?.status === 'SUBMITTED' ? 'Document Uploaded & Filed' : 'Not Uploaded', 135, synY);
+
+  doc.setFont('Helvetica', 'bold'); doc.setTextColor(...c.textDark); doc.text('Created Timestamp:', 22, synY + 8);
+  doc.setFont('Helvetica', 'normal'); doc.setTextColor(...c.textMuted);
+  doc.text(synMilestone?.createdAt ? new Date(synMilestone.createdAt).toLocaleDateString() : 'N/A', 52, synY + 8);
+
+  doc.setFont('Helvetica', 'bold'); doc.setTextColor(...c.textDark); doc.text('Last Updated On:', 105, synY + 8);
+  doc.setFont('Helvetica', 'normal'); doc.setTextColor(...c.textMuted);
+  doc.text(synMilestone?.updatedAt ? new Date(synMilestone.updatedAt).toLocaleDateString() : 'N/A', 135, synY + 8);
+
+  // Fast-track warning inside card
+  doc.setFont('Helvetica', 'bold'); doc.setTextColor(...c.textDark); doc.text('Fast-Track Clearance:', 22, synY + 16);
+  if (thesis.synopsisProvisionallyCleared) {
+    doc.setFont('Helvetica', 'bold'); doc.setTextColor(...c.warning);
+    doc.text('PROVISIONALLY CLEARED (Active Research Phase unlocked without defense)', 55, synY + 16);
+  } else {
+    doc.setFont('Helvetica', 'normal'); doc.setTextColor(...c.textMuted);
+    doc.text('Standard Defense Route followed', 55, synY + 16);
+  }
+
+  currentY += 44;
+
+  // DRC Meetings Outcomes table
+  doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
+  doc.text('Departmental Research Committee (DRC) Scheduled Meetings & Directives', 15, currentY);
+  currentY += 4;
+
+  doc.setFillColor(...c.primary); doc.rect(15, currentY, 180, 8, 'F');
+  doc.setFont('Helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...c.white);
+  doc.text('DRC DATE', 18, currentY + 5.5);
+  doc.text('VENUE / TIME', 45, currentY + 5.5);
+  doc.text('MEETING AGENDA TITLE', 80, currentY + 5.5);
+  doc.text('COMMITTEE OUTCOME', 135, currentY + 5.5);
+  doc.text('REMARKS', 165, currentY + 5.5);
+
+  currentY += 8;
+
+  if (drcMeetings.length === 0) {
+    doc.setFont('Helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(...c.textMuted);
+    doc.text('No formal DRC review sessions registered in scholar history.', 18, currentY + 6);
+    currentY += 12;
+  } else {
+    drcMeetings.forEach(drc => {
+      doc.setFont('Helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...c.textDark);
+      doc.text(drc.scheduledDate ? new Date(drc.scheduledDate).toLocaleDateString() : 'N/A', 18, currentY + 5);
+      doc.text(safeText(`${drc.venue} / ${drc.scheduledTime}`, 18), 45, currentY + 5);
+      doc.text(safeText(drc.title || drc.agenda || 'DRC Review Meeting', 28), 80, currentY + 5);
+      
+      doc.setFont('Helvetica', 'bold');
+      if (drc.status === 'APPROVED') {
+        doc.setTextColor(...c.successText);
+      } else if (drc.status === 'REVISION_REQUIRED') {
+        doc.setTextColor(...c.danger);
+      } else {
+        doc.setTextColor(...c.warning);
+      }
+      doc.text(drc.status || 'SCHEDULED', 135, currentY + 5);
+
+      doc.setFont('Helvetica', 'normal'); doc.setTextColor(...c.textMuted);
+      doc.text(safeText(drc.remarks || 'No remarks provided.', 15), 165, currentY + 5);
+
+      currentY += 8;
+      doc.setDrawColor(...c.border); doc.setLineWidth(0.3);
+      doc.line(15, currentY, 195, currentY);
+    });
+  }
+
+  // ==========================================
+  // PAGE 4: PERFORMANCE & CHECKLIST ELIGIBILITY STATUS
   // ==========================================
   doc.addPage();
   drawPageHeader('Performance & Eligibility');
@@ -504,103 +708,7 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
   });
 
   // ==========================================
-  // PAGE 3: COMPREHENSIVE LICEFCYCLE TIMELINE
-  // ==========================================
-  doc.addPage();
-  drawPageHeader('Milestones & Timeline');
-
-  // Build sequential timeline of actions
-  const timeline = [];
-  if (thesis.createdAt) {
-    timeline.push({
-      date: new Date(thesis.createdAt),
-      title: 'Ph.D. Scholar Registration',
-      note: `Admitted into Department of ${departmentName}`,
-      status: 'COMPLETED'
-    });
-  }
-
-  // Add coursework
-  if (thesis.courseworkCompleted) {
-    timeline.push({
-      date: thesis.courseworkClearedAt ? new Date(thesis.courseworkClearedAt) : new Date(thesis.createdAt),
-      title: 'Coursework Stage Cleared',
-      note: 'Verified by HOD / Department Coordinator',
-      status: 'COMPLETED'
-    });
-  }
-
-  // Add Milestones
-  milestones.forEach(m => {
-    const isCompleted = m.status === 'APPROVED' || m.status === 'VERIFIED';
-    timeline.push({
-      date: m.updatedAt ? new Date(m.updatedAt) : (m.dueDate ? new Date(m.dueDate) : new Date()),
-      title: m.title || m.type.replace(/_/g, ' '),
-      note: m.remarks ? `Remarks: "${m.remarks}"` : (isCompleted ? 'Deliverable approved & filed' : 'Awaiting candidate upload'),
-      status: isCompleted ? 'COMPLETED' : 'PENDING'
-    });
-  });
-
-  // Sort timeline chronologically
-  timeline.sort((a, b) => a.date - b.date);
-
-  doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
-  doc.text('Academic Progression Timeline Log', 15, currentY);
-  doc.setFont('Helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...c.textMuted);
-  doc.text('Chronological record of doctoral milestones cleared inside ScholarSync.', 15, currentY + 5);
-
-  currentY += 12;
-
-  // Draw Vertical Timeline Line
-  const lineX = 40;
-  const startLineY = currentY;
-  const stepH = 20;
-  const maxTimelineSteps = 10;
-  const itemsToRender = timeline.slice(0, maxTimelineSteps);
-  const endLineY = startLineY + (itemsToRender.length - 1) * stepH;
-  
-  if (itemsToRender.length > 1) {
-    doc.setDrawColor(...c.primaryLight); doc.setLineWidth(1.2);
-    doc.line(lineX, startLineY, lineX, endLineY);
-  }
-
-  // Render Timeline Nodes
-  itemsToRender.forEach((item, index) => {
-    const nodeY = startLineY + index * stepH;
-    
-    // Date column (Left of line)
-    doc.setFont('Helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...c.textMuted);
-    doc.text(item.date.toLocaleDateString(), lineX - 8, nodeY + 1, { align: 'right' });
-
-    // Node Circle
-    doc.setFillColor(...c.white); doc.setDrawColor(...c.primary); doc.setLineWidth(1.5);
-    doc.circle(lineX, nodeY, 3.2, 'FD');
-    if (item.status === 'COMPLETED') {
-      doc.setFillColor(...c.accent);
-      doc.circle(lineX, nodeY, 1.8, 'F');
-    }
-
-    // Title & Info Card (Right of line)
-    doc.setFont('Helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...c.textDark);
-    doc.text(safeText(item.title, 60), lineX + 10, nodeY + 0.5);
-    doc.setFont('Helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...c.textMuted);
-    doc.text(safeText(item.note, 90), lineX + 10, nodeY + 5);
-
-    // Status Badge
-    doc.setFontSize(7);
-    if (item.status === 'COMPLETED') {
-      doc.setFillColor(220, 252, 231); doc.setTextColor(22, 163, 74);
-      doc.roundedRect(165, nodeY - 3, 30, 5.5, 1, 1, 'F');
-      doc.text('APPROVED', 180, nodeY + 1, { align: 'center' });
-    } else {
-      doc.setFillColor(254, 243, 199); doc.setTextColor(217, 119, 6);
-      doc.roundedRect(165, nodeY - 3, 30, 5.5, 1, 1, 'F');
-      doc.text('PENDING', 180, nodeY + 1, { align: 'center' });
-    }
-  });
-
-  // ==========================================
-  // PAGE 4: RESEARCH OUTPUT & PUBLICATIONS PORTFOLIO
+  // PAGE 5: RESEARCH OUTPUT & PUBLICATIONS PORTFOLIO
   // ==========================================
   doc.addPage();
   drawPageHeader('Publications & Patents');
@@ -682,10 +790,10 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
   }
 
   // ==========================================
-  // PAGE 5: COMMITTEE EVALUATIONS (DRC & RAC LOGS)
+  // PAGE 6: COMMITTEE EVALUATIONS (RAC LOGS)
   // ==========================================
   doc.addPage();
-  drawPageHeader('RAC & DRC Assessments');
+  drawPageHeader('RAC Progress Evaluations');
 
   // Render Grade Progression Line Graph
   drawCardBorder(15, currentY, 180, 78);
@@ -746,50 +854,8 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
     });
   }
 
-  // DRC Meetings Section
-  currentY += 6;
-  doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
-  doc.text('Departmental Research Committee (DRC) Directives', 15, currentY);
-  currentY += 4;
-
-  // Table header
-  doc.setFillColor(...c.bgLight); doc.rect(15, currentY, 180, 7, 'F');
-  doc.setFont('Helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...c.textMuted);
-  doc.text('DRC DATE', 18, currentY + 4.8);
-  doc.text('DECISION TYPE', 50, currentY + 4.8);
-  doc.text('DRC EXAMINERS & MEMBERS INVOLVED', 90, currentY + 4.8);
-  doc.text('STATUS', 165, currentY + 4.8);
-
-  currentY += 7.2;
-
-  if (drcMeetings.length === 0) {
-    doc.setFont('Helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(...c.textMuted);
-    doc.text('No formal DRC review sessions logged.', 18, currentY + 5);
-  } else {
-    drcMeetings.forEach((drc) => {
-      doc.setFont('Helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...c.textDark);
-      doc.text(drc.scheduledDate ? new Date(drc.scheduledDate).toLocaleDateString() : 'N/A', 18, currentY + 4.5);
-      doc.text(drc.topic || 'Review', 50, currentY + 4.5);
-      
-      const panel = drc.members ? drc.members.join(', ') : 'Department Panel';
-      doc.text(safeText(panel, 35), 90, currentY + 4.5);
-      
-      doc.setFont('Helvetica', 'bold');
-      if (drc.outcome === 'APPROVED') {
-        doc.setTextColor(...c.successText);
-      } else {
-        doc.setTextColor(...c.warning);
-      }
-      doc.text(drc.outcome || 'SCHEDULED', 165, currentY + 4.5);
-      
-      currentY += 8;
-      doc.setDrawColor(...c.border); doc.setLineWidth(0.3);
-      doc.line(15, currentY, 195, currentY);
-    });
-  }
-
   // ==========================================
-  // PAGE 6: GUIDE MEETINGS & SECURITY AUDIT HISTORY
+  // PAGE 7: GUIDE MEETINGS & SECURITY AUDIT HISTORY
   // ==========================================
   doc.addPage();
   drawPageHeader('Governance & Audit Trail');
