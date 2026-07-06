@@ -56,7 +56,7 @@ const roleNavConfig = {
     { key: "overview", icon: Home, label: "Department Overview" },
     { key: "timetable", icon: Calendar, label: "Timetable Builder" },
     { key: "cloneTimetable", icon: CalendarRange, label: "Clone Timetable" },
-    { key: "approvals", icon: Gavel, label: "Approvals" },
+    { key: "approvals", icon: Gavel, label: "Leave & Correction Queue" },
     { key: "verifyAttendance", icon: ClipboardCheck, label: "Verify Attendance" },
     { key: "records", icon: Clock, label: "Attendance Records" },
     { key: "defaulters", icon: AlertTriangle, label: "Defaulters" },

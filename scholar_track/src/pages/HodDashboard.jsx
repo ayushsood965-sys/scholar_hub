@@ -28,7 +28,7 @@ const HodDashboard = () => {
     overview: 'Department Overview',
     timetable: 'Timetable Builder',
     cloneTimetable: 'Clone Timetable',
-    approvals: 'Leave & Correction Approvals',
+    approvals: 'Leave & Correction Queue',
     verifyAttendance: 'Verify Attendance',
     records: 'Attendance Records',
     defaulters: 'Defaulters & Warnings',
