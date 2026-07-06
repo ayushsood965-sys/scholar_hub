@@ -406,7 +406,7 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
 
   // Coursework Status
   drawCardBorder(kpiX[1], currentY, kpiW, kpiH);
-  doc.setFillColor(thesis?.courseworkCompleted ? c.accent : c.warning); doc.rect(kpiX[1], currentY, 3, kpiH, 'F');
+  doc.setFillColor(...(thesis?.courseworkCompleted ? c.accent : c.warning)); doc.rect(kpiX[1], currentY, 3, kpiH, 'F');
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...c.textMuted);
   doc.text('COURSEWORK', kpiX[1] + 6, currentY + 6);
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...c.textDark);
@@ -426,7 +426,7 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
 
   // Active Research State
   drawCardBorder(kpiX[3], currentY, kpiW, kpiH);
-  doc.setFillColor(thesis.activeResearchBypassed ? c.danger : c.primary); doc.rect(kpiX[3], currentY, 3, kpiH, 'F');
+  doc.setFillColor(...(thesis.activeResearchBypassed ? c.danger : c.primary)); doc.rect(kpiX[3], currentY, 3, kpiH, 'F');
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...c.textMuted);
   doc.text('RESEARCH PHASE', kpiX[3] + 6, currentY + 6);
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...c.textDark);
