@@ -433,6 +433,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [bypassLoading, setBypassLoading] = useState(false);
   const [showProvisionalClearModal, setShowProvisionalClearModal] = useState(false);
   const [provisionalConfirmText, setProvisionalConfirmText] = useState('');
+  const [bypassConfirmText, setBypassConfirmText] = useState('');
 
   // States for Pre-Submission Seminar Schedule and Outcome Recording
   const [semDate, setSemDate] = useState('');
@@ -677,6 +678,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       toast.success('Scholar advanced to Pre-Submission phase!');
       setShowBypassModal(false);
       setBypassRemarks('');
+      setBypassConfirmText('');
       if (onRefresh) await onRefresh();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to advance scholar.');
@@ -3486,7 +3488,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 Are you sure you want to bypass all active research requirements (journals, conferences, minimum duration, etc.) and advance <strong>{thesis.scholarId?.name || 'the candidate'}</strong> directly to the <strong>Pre-Submission</strong> stage?
               </div>
 
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#7C2D12', marginBottom: 6 }}>
                   Enter Justification / Bypass Remarks (Required)
                 </label>
@@ -3501,11 +3503,26 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 />
               </div>
 
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#7C2D12', marginBottom: 6 }}>
+                  Type <strong style={{ textTransform: 'none' }}>confirm</strong> to proceed
+                </label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  required
+                  placeholder='Type "confirm"' 
+                  value={bypassConfirmText} 
+                  onChange={e => setBypassConfirmText(e.target.value)}
+                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FED7AA', background: '#FFFFFF' }}
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button 
                   type="button" 
                   className="btn-outline" 
-                  onClick={() => { setShowBypassModal(false); setBypassRemarks(''); }} 
+                  onClick={() => { setShowBypassModal(false); setBypassRemarks(''); setBypassConfirmText(''); }} 
                   style={{ borderColor: '#F97316', color: '#C2410C' }}
                 >
                   Cancel
@@ -3513,8 +3530,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <button 
                   type="submit" 
                   className="btn-primary" 
-                  disabled={bypassLoading || !bypassRemarks.trim()} 
-                  style={{ background: '#EA580C', color: 'white', border: 'none', borderRadius: '8px', cursor: (bypassLoading || !bypassRemarks.trim()) ? 'not-allowed' : 'pointer' }}
+                  disabled={bypassLoading || !bypassRemarks.trim() || bypassConfirmText.trim().toLowerCase() !== 'confirm'} 
+                  style={{ 
+                    background: (bypassLoading || !bypassRemarks.trim() || bypassConfirmText.trim().toLowerCase() !== 'confirm') ? '#E2E8F0' : '#EA580C', 
+                    color: (bypassLoading || !bypassRemarks.trim() || bypassConfirmText.trim().toLowerCase() !== 'confirm') ? '#94A3B8' : 'white', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    cursor: (bypassLoading || !bypassRemarks.trim() || bypassConfirmText.trim().toLowerCase() !== 'confirm') ? 'not-allowed' : 'pointer' 
+                  }}
                 >
                   {bypassLoading ? 'Saving...' : 'Bypass & Save'}
                 </button>
