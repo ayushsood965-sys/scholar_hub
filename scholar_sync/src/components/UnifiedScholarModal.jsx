@@ -2426,7 +2426,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="usm-section-title" style={{ marginBottom: 0 }}>{type === 'reports' ? '📑' : '📖'} {typeName}</div>
           {type === 'reports' && !showAssignReport && !isReadOnly && (
-            <button onClick={() => { setShowAssignReport(true); setNewReportTitle(`6-Month Progress Report #${reports.length + 1}`); setNewReportDueDate(new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); }} className="btn-primary" style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Assign Report</button>
+            <button onClick={() => { setShowAssignReport(true); setNewReportTitle(`Research Progress Report (Assigned) #${reports.length + 1}`); setNewReportDueDate(new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); }} className="btn-primary" style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Assign Report</button>
           )}
         </div>
 

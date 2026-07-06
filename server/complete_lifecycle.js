@@ -210,7 +210,7 @@ async function run() {
     const reportMilestone = await Milestone.create({
       thesisId: thesis._id,
       type: '6_MONTH_REPORT',
-      title: '6-Month Progress Report - Semester 1',
+      title: 'Research Progress Report #1',
       sequence: 1,
       dueDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
       status: 'SUBMITTED',

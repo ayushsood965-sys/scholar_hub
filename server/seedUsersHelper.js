@@ -764,7 +764,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
           milestonesToInsert.push({
             thesisId: thesis._id,
             type: '6_MONTH_REPORT',
-            title: `6-Month Progress Report - Semester ${r}`,
+            title: `Research Progress Report #${r}`,
             sequence: r,
             status: 'APPROVED',
             documentUrl: '/uploads/sample.pdf',
@@ -939,7 +939,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
           milestonesToInsert.push({
             thesisId: thesis._id,
             type: '6_MONTH_REPORT',
-            title: `6-Month Progress Report - Semester ${r}`,
+            title: `Research Progress Report #${r}`,
             sequence: r,
             status: 'APPROVED',
             documentUrl: '/uploads/sample.pdf',

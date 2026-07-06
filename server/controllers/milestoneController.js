@@ -16,7 +16,7 @@ const getPeriodMeta = (startDate, seq) => {
   const durationStr = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
   
   return {
-    title: `6-Month Progress Report - Semester ${seq} (${durationStr})`,
+    title: `Research Progress Report #${seq}`,
     dueDate: end
   };
 };

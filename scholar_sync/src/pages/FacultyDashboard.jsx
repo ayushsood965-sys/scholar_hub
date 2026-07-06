@@ -1830,7 +1830,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
                         type="button"
                         onClick={() => {
                           setShowAssignReportForm(true);
-                          setNewReportTitle(`6-Month Progress Report #${reports.length + 1}`);
+                          setNewReportTitle(`Research Progress Report (Assigned) #${reports.length + 1}`);
                           setNewReportDueDate(new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
                         }}
                         className="btn-primary"
