@@ -126,7 +126,7 @@ const MarkAttendanceTab = () => {
       res.data.classes.forEach(c => {
         const hasMarkedClass = res.data.students.some(st =>
           st.record && (st.record.classes || []).some(cc =>
-            cc.timetableSlotId === c._id && (cc.selected || cc.isCancelled)
+            cc.timetableSlotId === c._id
           )
         );
         const hasCancelledClass = res.data.students.some(st =>
@@ -324,7 +324,7 @@ const MarkAttendanceTab = () => {
       res.data.classes.forEach(c => {
         const hasMarkedClass = res.data.students.some(st =>
           st.record && (st.record.classes || []).some(cc =>
-            cc.timetableSlotId === c._id && (cc.selected || cc.isCancelled)
+            cc.timetableSlotId === c._id
           )
         );
         const hasCancelledClass = res.data.students.some(st =>
@@ -426,7 +426,7 @@ const MarkAttendanceTab = () => {
     if (activeClassIds.length === 0) return false;
     const hasMarkedForActiveClass = activeClassIds.some(cid => {
       const classRec = (st.record.classes || []).find(cc => cc.timetableSlotId === cid);
-      return classRec && classRec.selected;
+      return !!classRec;
     });
     return !hasMarkedForActiveClass;
   });
