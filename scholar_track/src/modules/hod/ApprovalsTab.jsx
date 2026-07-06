@@ -1373,13 +1373,20 @@ const ApprovalsTab = () => {
                         if (log.action === 'RECOMMENDED') { tagBg = '#fffbeb'; tagColor = '#92400e'; }
                         else if (log.action === 'APPROVED') { tagBg = '#ecfdf5'; tagColor = '#065f46'; }
                         else if (log.action === 'REJECTED') { tagBg = '#fef2f2'; tagColor = '#991b1b'; }
+                                                const role = log.action === 'SUBMITTED' ? 'Student' : (log.action === 'RECOMMENDED' ? 'Faculty' : 'HOD');
+                        const logTime = log.timestamp || log.date || log.createdAt;
                         return (
                           <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid #e2e8f0' }}>
                             <span className="badge" style={{ fontSize: '0.65rem', flexShrink: 0, background: tagBg, color: tagColor, padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                               {log.action === 'RECOMMENDED' ? 'FORWARDED' : log.action}
                             </span>
-                            <span style={{ color: '#334155', lineHeight: 1.4 }}>
-                              <strong style={{ color: '#0f172a' }}>{log.actorName}</strong>: {log.remarks}
+                            <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
+                              <strong style={{ color: '#0f172a' }}>{log.actorName}</strong> <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({role})</span>: {log.remarks}
+                              {logTime && (
+                                <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
+                                  {new Date(logTime).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              )}
                             </span>
                           </div>
                         );
@@ -1602,13 +1609,20 @@ const ApprovalsTab = () => {
                         if (log.action === 'RECOMMENDED') { tagBg = '#fffbeb'; tagColor = '#92400e'; }
                         else if (log.action === 'APPROVED') { tagBg = '#ecfdf5'; tagColor = '#065f46'; }
                         else if (log.action === 'REJECTED') { tagBg = '#fef2f2'; tagColor = '#991b1b'; }
+                        const role = log.action === 'SUBMITTED' ? 'Student' : (log.action === 'RECOMMENDED' ? 'Faculty' : 'HOD');
+                        const logTime = log.timestamp || log.date || log.createdAt;
                         return (
                           <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid #e2e8f0' }}>
                             <span className="badge" style={{ fontSize: '0.65rem', flexShrink: 0, background: tagBg, color: tagColor, padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                               {log.action === 'RECOMMENDED' ? 'FORWARDED' : log.action}
                             </span>
-                            <span style={{ color: '#334155', lineHeight: 1.4 }}>
-                              <strong style={{ color: '#0f172a' }}>{log.actorName}</strong>: {log.remarks}
+                            <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
+                              <strong style={{ color: '#0f172a' }}>{log.actorName}</strong> <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({role})</span>: {log.remarks}
+                              {logTime && (
+                                <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
+                                  {new Date(logTime).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              )}
                             </span>
                           </div>
                         );
