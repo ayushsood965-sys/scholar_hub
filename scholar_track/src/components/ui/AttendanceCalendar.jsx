@@ -44,8 +44,8 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
   // Create a map of backend days by day number for fast lookup
   const backendDaysMap = {};
   backendDays.forEach(d => {
-    if (d && d.date) {
-      const dayNum = new Date(d.date).getDate();
+    if (d) {
+      const dayNum = typeof d.dayOfMonth === 'number' ? d.dayOfMonth : new Date(d.date).getDate();
       backendDaysMap[dayNum] = d;
     }
   });
@@ -122,6 +122,9 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
         return 'var(--status-leave)';
       case 'HOLIDAY':
         return 'var(--status-info)';
+      case 'CANCELLED':
+      case 'NOT_APPLICABLE':
+        return 'var(--status-warning, #D97706)';
       case 'WEEKEND':
         return 'rgba(255,255,255,0.06)';
       case 'FUTURE':
@@ -193,7 +196,7 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
         {allDays.map((day, idx) => {
           const cellColor = getCellColor(day.status);
           const holidayTitle = day.holidayTitle;
-          const hasSolidBg = ['PRESENT', 'ABSENT', 'ON_LEAVE', 'HOLIDAY'].includes(day.status);
+          const hasSolidBg = ['PRESENT', 'ABSENT', 'ON_LEAVE', 'HOLIDAY', 'CANCELLED', 'NOT_APPLICABLE'].includes(day.status);
           
           return (
             <motion.div
@@ -257,6 +260,10 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--status-info)' }} />
           Holiday
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--status-warning, #D97706)' }} />
+          Cancelled / N/A
         </div>
       </div>
     </div>

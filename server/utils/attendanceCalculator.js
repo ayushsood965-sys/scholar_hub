@@ -136,9 +136,12 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         const existingRecord = recordMap[dStr];
         const classItem = existingRecord && existingRecord.classes && existingRecord.classes.find(c => c.timetableSlotId?.toString() === slot._id.toString());
         const isConducted = classItem && !classItem.isCancelled;
+        const isCancelled = classItem && classItem.isCancelled;
         if (isConducted) {
           datesSet.add(dStr);
           totalExpectedClasses++;
+        } else if (isCancelled) {
+          datesSet.add(dStr);
         }
       });
     });

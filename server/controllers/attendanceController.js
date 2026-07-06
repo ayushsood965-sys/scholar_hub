@@ -1446,7 +1446,7 @@ exports.getMyAbsences = async (req, res) => {
       }
 
       const absentClasses = (record.classes || []).filter(c => {
-        return c.selected !== true;
+        return c.selected !== true && c.isCancelled !== true;
       }).map(c => ({
         timetableSlotId: c.timetableSlotId?._id || c.timetableSlotId,
         subjectName: c.subjectName || c.timetableSlotId?.subjectName || 'Unknown',
@@ -3300,21 +3300,6 @@ exports.getSuperAdminDashboardStats = async (req, res) => {
   } catch (error) { 
     console.error("Error in getSuperAdminDashboardStats:", error);
     res.status(500).json({ message: error.message }); 
-  }
-};
-
-exports.getMyAbsences = async (req, res) => {
-  try {
-    const records = await AttendanceRecord.find({
-      studentId: req.user._id,
-      status: 'ABSENT'
-    })
-    .populate('timetableId')
-    .populate('classes.timetableSlotId')
-    .sort({ date: -1 });
-    res.status(200).json(records);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
 };
 

@@ -373,11 +373,21 @@ const MarkAttendanceTab = () => {
       const markedRecords = unmarkedStudents.map(st => {
         const studentId = st.student._id;
         const studentInfo = attendanceData[studentId];
-        const studentClasses = matrix.classes.map(c => ({
-          timetableSlotId: c._id,
-          subjectName: c.subjectName,
-          selected: !!selectedSubjects[c._id]
-        }));
+        const studentClasses = matrix.classes.map(c => {
+          const isCurrentSubject = !!selectedSubjects[c._id];
+          let selected = false;
+          if (isCurrentSubject) {
+            selected = studentInfo.status === 'PRESENT';
+          } else {
+            const existingClass = st.record?.classes?.find(cc => cc.timetableSlotId === c._id);
+            selected = existingClass ? !!existingClass.selected : false;
+          }
+          return {
+            timetableSlotId: c._id,
+            subjectName: c.subjectName,
+            selected
+          };
+        });
         return { studentId, status: studentInfo.status, leaveType: studentInfo.leaveType || '', leaveRequestId: studentInfo.leaveRequestId || null, classes: studentClasses };
       });
       await api.post('/attendance/faculty/mark-bulk', {

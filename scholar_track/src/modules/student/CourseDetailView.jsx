@@ -17,7 +17,7 @@ const CourseDetailView = ({ course, calendarMonths = [], onClose }) => {
         const classItem = (day.classes || []).find(c => c.timetableSlotId?.toString() === timetableSlotId?.toString());
         if (classItem) {
           if (classItem.isCancelled) {
-            status = 'HOLIDAY'; // Treated as holiday type!
+            status = 'CANCELLED';
           } else {
             status = classItem.selected ? 'PRESENT' : 'ABSENT';
           }

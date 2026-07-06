@@ -575,6 +575,7 @@ const StudentSubjectMappingTab = () => {
                       </th>
                       <th style={{ width: '110px' }}>Sh. No.</th>
                       <th>Student Name</th>
+                      <th>Degree Name</th>
                       <th>Father's Name</th>
                       <th>Username</th>
                     </tr>
@@ -621,6 +622,9 @@ const StudentSubjectMappingTab = () => {
                                 </span>
                               )}
                             </div>
+                          </td>
+                          <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>
+                            {degreeNames.find(dn => dn._id === st.profile?.degreeNameId)?.name || st.profile?.degreeName || '—'}
                           </td>
                           <td style={{ color: 'var(--color-text-secondary)' }}>{st.profile?.fatherName || '—'}</td>
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>{st.username}</td>

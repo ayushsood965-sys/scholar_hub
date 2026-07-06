@@ -179,12 +179,24 @@ const AttendanceRecordsTab = () => {
 
   const handleUpdateHistoryEntry = async (record) => {
     try {
+      const updatedClasses = (record.classes || []).map(c => {
+        const cSlotId = c.timetableSlotId?._id || c.timetableSlotId;
+        const activeSlotId = historyFilters.timetableSlotId;
+        if (cSlotId && activeSlotId && cSlotId.toString() === activeSlotId.toString()) {
+          return {
+            ...c,
+            selected: editingStatus.status === 'PRESENT'
+          };
+        }
+        return c;
+      });
+
       const updatedRecordPayload = {
         studentId: record.studentId?._id,
         status: editingStatus.status,
         leaveType: editingStatus.leaveType || '',
         leaveRequestId: editingStatus.leaveRequestId || null,
-        classes: record.classes
+        classes: updatedClasses
       };
 
       await api.post(`/attendance/faculty/mark-bulk`, {
