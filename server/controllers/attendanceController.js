@@ -1833,12 +1833,24 @@ exports.actionCorrection = async (req, res) => {
             return cls;
           });
 
-          // If ALL subjects in the record are now corrected, update the overall status
-          const allClassesCorrected = record.classes.every(cls => cls.correctionApproved);
-          if (allClassesCorrected) {
-            record.status = correction.correctionType;
-            if (correction.correctionType === 'ON_LEAVE') {
-              record.leaveType = correction.leaveType;
+          // Recalculate overall daily status based on all active (non-cancelled) classes
+          const activeClasses = record.classes.filter(cls => !cls.isCancelled);
+          if (activeClasses.length > 0) {
+            const allPresent = activeClasses.every(cls => cls.selected || cls.correctionStatus === 'PRESENT');
+            const allLeave = activeClasses.every(cls => cls.correctionStatus === 'ON_LEAVE');
+
+            if (allPresent) {
+              record.status = 'PRESENT';
+            } else if (allLeave) {
+              record.status = 'ON_LEAVE';
+              record.leaveType = correction.leaveType || '';
+            } else {
+              const hasAbsent = activeClasses.some(cls => !cls.selected && cls.correctionStatus !== 'PRESENT' && cls.correctionStatus !== 'ON_LEAVE');
+              if (hasAbsent) {
+                record.status = 'ABSENT';
+              } else {
+                record.status = 'PRESENT'; // Mixed PRESENT and ON_LEAVE defaults to PRESENT overall
+              }
             }
           }
         }

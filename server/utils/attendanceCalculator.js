@@ -164,36 +164,45 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
     let classes = [];
 
     if (existingRecord) {
-      status = existingRecord.status;
-      remarks = existingRecord.remarks || '';
-      isLocked = existingRecord.isLocked;
-      recordId = existingRecord._id;
-      classes = existingRecord.classes || [];
-
-      if (isPhD) {
-        if (status === 'PRESENT') presentCount++;
-        else if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) presentCount++; // Auto-credited
-        else if (status === 'ABSENT' || status === 'NOT_MARKED') absentCount++;
+      if (existingRecord.approvalStatus === 'PENDING_HOD') {
+        status = 'PENDING_HOD';
+        remarks = existingRecord.remarks || '';
+        isLocked = existingRecord.isLocked;
+        recordId = existingRecord._id;
+        classes = existingRecord.classes || [];
+        // Do not update present/absent stats for pending HOD verification
       } else {
-        if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
-          // Leave override acts as present for all scheduled classes that day that are not cancelled
-          const scheduledClassesToday = rawTimetables.filter(t => {
-            if (t.dayOfWeek !== ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]) return false;
-            const isSlotCancelled = existingRecord && existingRecord.classes && existingRecord.classes.some(c => c.timetableSlotId?.toString() === t._id.toString() && c.isCancelled);
-            return !isSlotCancelled;
-          }).length;
-          presentCount += scheduledClassesToday;
+        status = existingRecord.status;
+        remarks = existingRecord.remarks || '';
+        isLocked = existingRecord.isLocked;
+        recordId = existingRecord._id;
+        classes = existingRecord.classes || [];
+
+        if (isPhD) {
+          if (status === 'PRESENT') presentCount++;
+          else if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) presentCount++; // Auto-credited
+          else if (status === 'ABSENT' || status === 'NOT_MARKED') absentCount++;
         } else {
-          // Count class level checkboxes (excluding cancelled classes)
-          classes.forEach(c => {
-            if (c.isCancelled) {
-              // Ignore
-            } else if (c.selected) {
-              presentCount++;
-            } else {
-              absentCount++;
-            }
-          });
+          if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
+            // Leave override acts as present for all scheduled classes that day that are not cancelled
+            const scheduledClassesToday = rawTimetables.filter(t => {
+              if (t.dayOfWeek !== ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]) return false;
+              const isSlotCancelled = existingRecord && existingRecord.classes && existingRecord.classes.some(c => c.timetableSlotId?.toString() === t._id.toString() && c.isCancelled);
+              return !isSlotCancelled;
+            }).length;
+            presentCount += scheduledClassesToday;
+          } else {
+            // Count class level checkboxes (excluding cancelled classes)
+            classes.forEach(c => {
+              if (c.isCancelled) {
+                // Ignore
+              } else if (c.selected) {
+                presentCount++;
+              } else {
+                absentCount++;
+              }
+            });
+          }
         }
       }
     } else {

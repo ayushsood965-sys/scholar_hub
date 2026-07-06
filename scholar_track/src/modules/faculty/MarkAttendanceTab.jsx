@@ -400,7 +400,7 @@ const MarkAttendanceTab = () => {
         records: markedRecords,
         forwardToHOD: shouldForwardToHod
       });
-      toast.success(shouldForwardToHod ? 'Attendance approved and forwarded to HOD successfully' : 'Attendance saved successfully');
+      toast.success(shouldForwardToHod ? 'Attendance forwarded to HOD for final verification successfully' : 'Attendance saved and approved successfully');
       setForwardToHod(false);
       const queryParams = new URLSearchParams({
         sessionId: filters.sessionId,
@@ -806,7 +806,7 @@ const MarkAttendanceTab = () => {
               {!forwardToHod ? (
                 <>
                   <button type="button" className="btn btn-primary btn-lg" onClick={() => handleSave(false)} disabled={saving || matrix.isLocked}>
-                    <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
+                    <Save size={18} /> {saving ? 'Saving...' : 'Save and Approve attendance'}
                   </button>
                   <button 
                     type="button" 
@@ -820,7 +820,7 @@ const MarkAttendanceTab = () => {
               ) : (
                 <>
                   <button type="button" className="btn btn-warning btn-lg" onClick={() => handleSave(true)} disabled={saving || matrix.isLocked} style={{ backgroundColor: '#D97706', borderColor: '#D97706', color: '#fff' }}>
-                    <Save size={18} /> {saving ? 'Forwarding...' : 'Approve and Forward to HOD'}
+                    <Save size={18} /> {saving ? 'Forwarding...' : 'Verify and forward to HOD'}
                   </button>
                   <button 
                     type="button" 

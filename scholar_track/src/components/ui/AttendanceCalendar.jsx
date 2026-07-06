@@ -125,6 +125,8 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
       case 'CANCELLED':
       case 'NOT_APPLICABLE':
         return 'var(--status-warning, #D97706)';
+      case 'PENDING_HOD':
+        return '#f59e0b'; // Amber for pending HOD verification
       case 'WEEKEND':
         return 'rgba(255,255,255,0.06)';
       case 'FUTURE':
@@ -196,7 +198,7 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
         {allDays.map((day, idx) => {
           const cellColor = getCellColor(day.status);
           const holidayTitle = day.holidayTitle;
-          const hasSolidBg = ['PRESENT', 'ABSENT', 'ON_LEAVE', 'HOLIDAY', 'CANCELLED', 'NOT_APPLICABLE'].includes(day.status);
+          const hasSolidBg = ['PRESENT', 'ABSENT', 'ON_LEAVE', 'HOLIDAY', 'CANCELLED', 'NOT_APPLICABLE', 'PENDING_HOD'].includes(day.status);
           
           return (
             <motion.div

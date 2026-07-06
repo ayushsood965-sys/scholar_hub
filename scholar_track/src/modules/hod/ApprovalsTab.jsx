@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../../config';
 import useApi from '../../hooks/useApi';
 import { AuthContext } from '../../context/AuthContext';
@@ -6,7 +8,21 @@ import { useToast } from '../../context/ToastContext';
 import { progressiveFetch } from '../../utils/progressiveFetch';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { CheckCircle, XCircle, ChevronDown, ChevronUp, FileText, UserCheck, ShieldCheck, Calendar, Clock } from 'lucide-react';
+import { 
+  CheckCircle, 
+  XCircle, 
+  ChevronDown, 
+  ChevronUp, 
+  FileText, 
+  UserCheck, 
+  ShieldCheck, 
+  Calendar, 
+  Clock,
+  Layers,
+  CalendarDays,
+  Upload,
+  User
+} from 'lucide-react';
 
 const ApprovalsTab = () => {
   const { user } = useContext(AuthContext);
@@ -17,6 +33,8 @@ const ApprovalsTab = () => {
   const [faculties, setFaculties] = useState([]);
   const [assignedSupervisors, setAssignedSupervisors] = useState({});
   const [selectedRegForModal, setSelectedRegForModal] = useState(null);
+  const [selectedCorrectionForModal, setSelectedCorrectionForModal] = useState(null);
+  const [correctionRemarksText, setCorrectionRemarksText] = useState('');
   const [actionRemarks, setActionRemarks] = useState({}); // per-row remarks input
   const [processing, setProcessing] = useState({}); // per-row processing action
   const [loading, setLoading] = useState(true);
@@ -134,12 +152,21 @@ const ApprovalsTab = () => {
   };
 
   const handleCorrectionAction = async (id, action) => {
+    if (!correctionRemarksText || correctionRemarksText.trim().length < 5) {
+      return toast.error('Please provide remarks (at least 5 characters) before proceeding.');
+    }
+    setProcessing(prev => ({ ...prev, [id]: action }));
     try {
-      await api.put(`/attendance/corrections/${id}/action`, { action, remarks: `HOD ${action}` });
-      toast.success(`Correction ${action.toLowerCase()} successfully`);
+      await api.put(`/attendance/corrections/${id}/action`, { action, remarks: correctionRemarksText });
+      const label = action === 'APPROVE' ? 'Approved' : 'Rejected';
+      toast.success(`Correction ${label} successfully`);
+      setSelectedCorrectionForModal(null);
+      setCorrectionRemarksText('');
       fetchApprovals();
     } catch (err) {
-      toast.error('Error processing correction');
+      toast.error(err.response?.data?.message || 'Error processing correction');
+    } finally {
+      setProcessing(prev => ({ ...prev, [id]: null }));
     }
   };
 
@@ -311,21 +338,69 @@ const ApprovalsTab = () => {
   ];
 
   const correctionColumns = [
-    { header: 'Student Name', accessor: (row) => row.studentId?.name || 'Unknown' },
-    { header: 'Record Date', accessor: (row) => row.recordId?.date ? new Date(row.recordId.date).toLocaleDateString() : 'Unknown' },
-    { header: 'Requested Status', accessor: 'requestedStatus' },
-    { header: 'Reason', accessor: 'reason' },
     {
-      header: 'Actions',
+      header: 'Student',
       accessor: (row) => (
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-sm" style={{ background: '#10B981', color: '#fff' }} onClick={() => handleCorrectionAction(row._id, 'APPROVE')}>
-            <CheckCircle size={16} />
-          </button>
-          <button className="btn btn-sm" style={{ background: '#EF4444', color: '#fff' }} onClick={() => handleCorrectionAction(row._id, 'REJECT')}>
-            <XCircle size={16} />
-          </button>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>
+            {row.studentId?.name || 'Unknown'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+            {row.studentId?.username || ''}
+          </div>
         </div>
+      )
+    },
+    {
+      header: 'Date',
+      accessor: (row) => (
+        <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+          <Calendar size={10} style={{ display: 'inline', marginRight: 3 }} />
+          {row.recordId?.date
+            ? new Date(row.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+            : 'N/A'}
+        </span>
+      )
+    },
+    {
+      header: 'Requested',
+      accessor: (row) => (
+        <span className="badge" style={{
+          background: row.correctionType === 'ON_LEAVE' ? '#FEF3C7' : '#D1FAE5',
+          color: row.correctionType === 'ON_LEAVE' ? '#92400E' : '#065F46',
+          fontSize: '0.72rem'
+        }}>
+          {row.correctionType === 'ON_LEAVE' ? `Leave (${row.leaveType || ''})` : 'Present'}
+        </span>
+      )
+    },
+    {
+      header: 'Reason',
+      accessor: (row) => (
+        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+          {(row.reason || '').substring(0, 40)}{(row.reason || '').length > 40 ? '...' : ''}
+        </span>
+      )
+    },
+    {
+      header: 'Faculty Remarks',
+      accessor: (row) => (
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+          {row.facultyRemarks ? `"${row.facultyRemarks.substring(0, 50)}${row.facultyRemarks.length > 50 ? '...' : ''}"` : '\u2014'}
+        </span>
+      )
+    },
+    {
+      header: 'Action',
+      accessor: (row) => (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={() => { setSelectedCorrectionForModal(row); setCorrectionRemarksText(''); }}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
+          <FileText size={14} /> View
+        </button>
       )
     }
   ];
@@ -974,6 +1049,225 @@ const ApprovalsTab = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── HOD Correction Review Modal ── */}
+      {createPortal(
+        <AnimatePresence>
+          {selectedCorrectionForModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(8px)',
+                zIndex: 200000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+                padding: '24px', overflowY: 'auto'
+              }}
+              onClick={() => { setSelectedCorrectionForModal(null); setCorrectionRemarksText(''); }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 15 }}
+                transition={{ type: 'spring', duration: 0.4 }}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  maxWidth: 640,
+                  width: '100%',
+                  margin: '40px auto',
+                  padding: '36px',
+                  background: '#ffffff',
+                  borderRadius: '20px',
+                  border: '1px solid #f1f5f9',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+                  position: 'relative'
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ShieldCheck size={18} style={{ color: 'var(--color-primary)' }} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                        HOD Correction Review
+                      </h3>
+                      <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0 0' }}>Review and approve or reject this correction request</p>
+                    </div>
+                  </div>
+                  <button
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                    onClick={() => { setSelectedCorrectionForModal(null); setCorrectionRemarksText(''); }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <XCircle size={22} />
+                  </button>
+                </div>
+
+                {/* Student Info */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20, background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Student</label>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <User size={14} style={{ color: '#64748b' }} />
+                      {selectedCorrectionForModal.studentId?.name || 'N/A'}
+                    </p>
+                    <p style={{ fontSize: '0.8rem', color: '#475569', marginTop: 2, paddingLeft: '20px' }}>
+                      {selectedCorrectionForModal.studentId?.username || ''}
+                    </p>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Date of Absence</label>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CalendarDays size={14} style={{ color: '#64748b' }} />
+                      {selectedCorrectionForModal.recordId?.date
+                        ? new Date(selectedCorrectionForModal.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'short' })
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Correction Details */}
+                <div style={{ background: '#ffffff', borderRadius: '12px', padding: '20px', marginBottom: 20, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}>
+                  <label style={{ fontSize: '0.72rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14, display: 'block', fontWeight: 700 }}>
+                    <Layers size={14} style={{ display: 'inline', marginRight: 6, color: 'var(--color-primary)' }} /> Correction Specification
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '14px' }}>
+                    <div>
+                      <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Requested Status</p>
+                      <span className="badge" style={{
+                        background: selectedCorrectionForModal.correctionType === 'ON_LEAVE' ? '#fffbeb' : '#ecfdf5',
+                        color: selectedCorrectionForModal.correctionType === 'ON_LEAVE' ? '#b45309' : '#047857',
+                        border: `1px solid ${selectedCorrectionForModal.correctionType === 'ON_LEAVE' ? '#fde68a' : '#a7f3d0'}`,
+                        fontSize: '0.8rem', marginTop: 6, display: 'inline-block', padding: '4px 10px', borderRadius: '6px'
+                      }}>
+                        {selectedCorrectionForModal.correctionType === 'ON_LEAVE'
+                          ? `On Leave — ${selectedCorrectionForModal.leaveType || ''}`
+                          : 'Present'}
+                      </span>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Subjects & Attempt</p>
+                      <span className="badge badge-neutral" style={{ fontSize: '0.8rem', marginTop: 6, display: 'inline-block', padding: '4px 10px', borderRadius: '6px' }}>
+                        {selectedCorrectionForModal.timetableSlotIds?.length || 0} subject(s)
+                        {selectedCorrectionForModal.correctionAttempt > 0 && ` | Attempt #${selectedCorrectionForModal.correctionAttempt}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 14 }}>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Student Appeal Reason</p>
+                    <p style={{ fontSize: '0.9rem', color: '#0f172a', lineHeight: 1.5, marginTop: 6, background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontStyle: 'italic' }}>
+                      "{selectedCorrectionForModal.reason}"
+                    </p>
+                  </div>
+                  {selectedCorrectionForModal.documentUrl && (
+                    <div style={{ marginTop: 16, paddingTop: '12px', borderTop: '1px dashed #e2e8f0' }}>
+                      <a
+                        href={`${API_BASE_URL}${selectedCorrectionForModal.documentUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '0.85rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Upload size={14} /> View Attached Document
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Audit Log */}
+                {selectedCorrectionForModal.auditLog && selectedCorrectionForModal.auditLog.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10, display: 'block', fontWeight: 700 }}>
+                      <Clock size={14} style={{ display: 'inline', marginRight: 6 }} /> Activity Log
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedCorrectionForModal.auditLog.map((log, idx) => {
+                        let tagBg = '#eff6ff', tagColor = '#1e40af';
+                        if (log.action === 'RECOMMENDED') { tagBg = '#fffbeb'; tagColor = '#92400e'; }
+                        else if (log.action === 'APPROVED') { tagBg = '#ecfdf5'; tagColor = '#065f46'; }
+                        else if (log.action === 'REJECTED') { tagBg = '#fef2f2'; tagColor = '#991b1b'; }
+                        return (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid #e2e8f0' }}>
+                            <span className="badge" style={{ fontSize: '0.65rem', flexShrink: 0, background: tagBg, color: tagColor, padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              {log.action === 'RECOMMENDED' ? 'FORWARDED' : log.action}
+                            </span>
+                            <span style={{ color: '#334155', lineHeight: 1.4 }}>
+                              <strong style={{ color: '#0f172a' }}>{log.actorName}</strong>: {log.remarks}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Faculty Remarks banner */}
+                {selectedCorrectionForModal.facultyRemarks && (
+                  <div style={{ marginBottom: 20, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '14px' }}>
+                    <p style={{ fontSize: '0.72rem', color: '#92400e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Faculty Remarks</p>
+                    <p style={{ fontSize: '0.88rem', color: '#78350f', fontStyle: 'italic', margin: 0 }}>"{selectedCorrectionForModal.facultyRemarks}"</p>
+                  </div>
+                )}
+
+                {/* HOD Remarks Input */}
+                <div className="form-group" style={{ marginBottom: 20 }}>
+                  <label className="form-label" style={{ color: '#374151', fontWeight: 600 }}>
+                    <FileText size={14} style={{ display: 'inline', marginRight: 4 }} /> HOD Remarks <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <textarea
+                    className="form-input"
+                    value={correctionRemarksText}
+                    onChange={e => setCorrectionRemarksText(e.target.value)}
+                    rows={3}
+                    placeholder="Provide remarks for your decision (minimum 5 characters)..."
+                    style={{ background: '#ffffff', color: '#111827', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => { setSelectedCorrectionForModal(null); setCorrectionRemarksText(''); }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      background: '#EF4444', color: '#fff', border: 'none',
+                      padding: '10px 20px', borderRadius: '8px', fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+                      opacity: processing[selectedCorrectionForModal._id] ? 0.7 : 1
+                    }}
+                    onClick={() => handleCorrectionAction(selectedCorrectionForModal._id, 'REJECT')}
+                    disabled={!!processing[selectedCorrectionForModal._id]}
+                  >
+                    <XCircle size={16} /> {processing[selectedCorrectionForModal._id] === 'REJECT' ? 'Rejecting...' : 'Reject'}
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      background: '#10B981', color: '#fff', border: 'none',
+                      padding: '10px 20px', borderRadius: '8px', fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+                      opacity: processing[selectedCorrectionForModal._id] ? 0.7 : 1
+                    }}
+                    onClick={() => handleCorrectionAction(selectedCorrectionForModal._id, 'APPROVE')}
+                    disabled={!!processing[selectedCorrectionForModal._id]}
+                  >
+                    <CheckCircle size={16} /> {processing[selectedCorrectionForModal._id] === 'APPROVE' ? 'Approving...' : 'Approve'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
     </div>
   );
