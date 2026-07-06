@@ -431,6 +431,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [showBypassModal, setShowBypassModal] = useState(false);
   const [bypassRemarks, setBypassRemarks] = useState('');
   const [bypassLoading, setBypassLoading] = useState(false);
+  const [showProvisionalClearModal, setShowProvisionalClearModal] = useState(false);
+  const [provisionalConfirmText, setProvisionalConfirmText] = useState('');
 
   // States for Pre-Submission Seminar Schedule and Outcome Recording
   const [semDate, setSemDate] = useState('');
@@ -1476,7 +1478,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             </p>
             <button 
               className="btn-primary" 
-              onClick={handleProvisionalSynopsisClear}
+              onClick={() => { setShowProvisionalClearModal(true); setProvisionalConfirmText(''); }}
               disabled={loading}
               style={{ width: '100%', padding: '12px', background: '#D97706', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
@@ -3515,6 +3517,65 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   style={{ background: '#EA580C', color: 'white', border: 'none', borderRadius: '8px', cursor: (bypassLoading || !bypassRemarks.trim()) ? 'not-allowed' : 'pointer' }}
                 >
                   {bypassLoading ? 'Saving...' : 'Bypass & Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Provisional Synopsis Clearance Confirmation Modal */}
+        {showProvisionalClearModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', zIndex: 200002, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (provisionalConfirmText.trim().toLowerCase() !== 'confirm') return;
+                setShowProvisionalClearModal(false);
+                handleProvisionalSynopsisClear();
+              }} 
+              style={{ background: '#FFFDF5', border: '1px solid #FDE68A', padding: 28, borderRadius: 16, width: '100%', maxWidth: '460px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#B45309' }}>Confirm Provisional Clearance</span>
+              </div>
+              
+              <div style={{ background: '#FFFBEB', borderLeft: '4px solid #F59E0B', padding: '12px 16px', borderRadius: 8, fontSize: '0.82rem', color: '#92400E', marginBottom: 20, lineHeight: 1.5 }}>
+                Are you absolutely sure you want to bypass the standard synopsis presentation and defense? This transitions <strong>{thesis.scholarId?.name || 'the candidate'}</strong> directly to the <strong>Active Research</strong> phase. The option to upload the synopsis will remain open, and approval remains mandatory before Pre-Submission can start.
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#92400E', marginBottom: 6 }}>
+                  Type <strong style={{ textTransform: 'none' }}>confirm</strong> to proceed
+                </label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  required
+                  placeholder='Type "confirm"' 
+                  value={provisionalConfirmText} 
+                  onChange={e => setProvisionalConfirmText(e.target.value)}
+                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FDE68A', background: '#FFFFFF' }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  onClick={() => { setShowProvisionalClearModal(false); setProvisionalConfirmText(''); }}
+                  className="btn-outline" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: '#CBD5E1', color: '#475569' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  disabled={provisionalConfirmText.trim().toLowerCase() !== 'confirm'}
+                  style={{ padding: '8px 20px', fontSize: '0.85rem', background: provisionalConfirmText.trim().toLowerCase() === 'confirm' ? '#D97706' : '#E2E8F0', color: provisionalConfirmText.trim().toLowerCase() === 'confirm' ? '#FFFFFF' : '#94A3B8', border: 'none', cursor: provisionalConfirmText.trim().toLowerCase() === 'confirm' ? 'pointer' : 'not-allowed' }}
+                >
+                  Confirm Clearance
                 </button>
               </div>
             </form>
