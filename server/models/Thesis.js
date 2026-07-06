@@ -101,6 +101,19 @@ const thesisSchema = new mongoose.Schema(
     },
     enrollmentVerified: { type: Boolean, default: false },
     synopsisProvisionallyCleared: { type: Boolean, default: false },
+    activeResearchBypassed: { type: Boolean, default: false },
+    activeResearchBypassMetadata: {
+      bypassedBy: { type: String, default: '' },
+      designation: { type: String, default: '' },
+      timestamp: { type: Date, default: null },
+      justification: { type: String, default: '' },
+      statsBeforeBypass: {
+        researchTimeMonths: { type: Number, default: 0 },
+        approvedReportsCount: { type: Number, default: 0 },
+        journalsCount: { type: Number, default: 0 },
+        conferencesCount: { type: Number, default: 0 }
+      }
+    },
     startDate: { type: Date, default: null },
     submittedAt: { type: Date, default: null },
     awardedAt: { type: Date, default: null },

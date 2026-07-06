@@ -1333,15 +1333,45 @@ const forcePreSubmission = async (req, res) => {
       return res.status(400).json({ message: `Scholar is currently in ${thesis.status}. This action is only available during ACTIVE_RESEARCH phase.` });
     }
 
+    // Calculate current research stats before bypass
+    const User = require('../models/User');
+    const scholar = await User.findById(thesis.scholarId);
+    const hasMphil = scholar?.profile?.qualifications?.mphil?.done === true && scholar?.isVerified === true;
+    const admissionDate = scholar?.profile?.admissionDate ? new Date(scholar.profile.admissionDate) : null;
+    const referenceDate = admissionDate && !isNaN(admissionDate.getTime()) ? admissionDate : (thesis.startDate ? new Date(thesis.startDate) : new Date());
+    const diffMs = new Date() - referenceDate;
+    const diffMonths = Math.max(0, diffMs / (1000 * 60 * 60 * 24 * 30.4375));
+
+    const Milestone = require('../models/Milestone');
+    const reports = await Milestone.find({ thesisId: thesis._id, type: '6_MONTH_REPORT' });
+    const approvedReportsCount = reports.filter(r => r.status === 'VERIFIED').length;
+
+    const Publication = require('../models/Publication');
+    const journalsCount = await Publication.countDocuments({ thesisId: thesis._id, type: 'JOURNAL', status: 'VERIFIED' });
+    const conferencesCount = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
+
     thesis.status = 'PRE_SUBMISSION';
+    thesis.activeResearchBypassed = true;
+    thesis.activeResearchBypassMetadata = {
+      bypassedBy: req.user.name,
+      designation: req.user.profile?.designation || 'Head of Department',
+      timestamp: new Date(),
+      justification: req.body.remarks || '',
+      statsBeforeBypass: {
+        researchTimeMonths: parseFloat(diffMonths.toFixed(1)),
+        approvedReportsCount,
+        journalsCount,
+        conferencesCount
+      }
+    };
+
     thesis.auditLog.push({
       action: 'FORCE_PRE_SUBMISSION',
-      note: `HOD ${req.user.name} force-advanced scholar to Pre-Submission phase (bypassing prerequisite checks).${req.body.remarks ? ' Remarks: ' + req.body.remarks : ''}`
+      note: `HOD ${req.user.name} (${req.user.profile?.designation || 'Head of Department'}) force-advanced scholar to Pre-Submission phase (bypassing checks). Original stats at bypass - Time: ${diffMonths.toFixed(1)}m, Reports: ${approvedReportsCount}, Journals: ${journalsCount}, Conferences: ${conferencesCount}. Remarks: ${req.body.remarks || 'None'}`
     });
     await thesis.save();
 
     // Auto-create PRE_SUBMISSION milestone if it doesn't exist
-    const Milestone = require('../models/Milestone');
     let preMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
     if (!preMilestone) {
       await Milestone.create({
@@ -1874,7 +1904,7 @@ const provisionalSynopsisClear = async (req, res) => {
       recipient: thesis.scholarId,
       title: '⚠️ Synopsis Provisionally Cleared',
       message: `Your research synopsis requirement has been provisionally cleared by the HOD. You are transitioned to the ACTIVE_RESEARCH phase, but you must upload and officially verify your synopsis before final pre-submission.`,
-      type: 'WARNING',
+      type: 'INFO',
       link: 'overview'
     });
 

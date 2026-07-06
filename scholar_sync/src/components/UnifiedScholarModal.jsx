@@ -1563,6 +1563,27 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           {statusBadge(semStatus)}
         </div>
 
+        {thesis.activeResearchBypassed && (
+          <div className="usm-card" style={{ background: '#FFF7ED', borderLeft: '4px solid #EA580C', padding: '16px 20px', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#C2410C', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>⚡</span> Active Research Prerequisites Bypassed by HOD
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.82rem', color: '#9A3412', lineHeight: '1.4' }}>
+              This candidate was advanced by <strong>{thesis.activeResearchBypassMetadata?.bypassedBy || 'HOD'}</strong> ({thesis.activeResearchBypassMetadata?.designation || 'Head of Department'}) on <strong>{new Date(thesis.activeResearchBypassMetadata?.timestamp).toLocaleString()}</strong>.
+            </p>
+            <div style={{ marginTop: 8, padding: 12, background: 'rgba(255, 255, 255, 0.6)', borderRadius: 8, fontSize: '0.8rem', color: '#7C2D12' }}>
+              <strong>Justification / HOD Decision remarks:</strong>
+              <p style={{ margin: '4px 0 0 0', fontStyle: 'italic' }}>"{thesis.activeResearchBypassMetadata?.justification || 'No remarks provided'}"</p>
+            </div>
+            <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', borderTop: '1px dashed #FED7AA', paddingTop: 8, fontSize: '0.78rem', color: '#7C2D12' }}>
+              <div>⏳ <strong>Research time elapsed at bypass:</strong> {thesis.activeResearchBypassMetadata?.statsBeforeBypass?.researchTimeMonths || 0} months</div>
+              <div>📄 <strong>Approved progress reports at bypass:</strong> {thesis.activeResearchBypassMetadata?.statsBeforeBypass?.approvedReportsCount || 0} approved</div>
+              <div>🏆 <strong>Verified journals at bypass:</strong> {thesis.activeResearchBypassMetadata?.statsBeforeBypass?.journalsCount || 0} / 2</div>
+              <div>🏟️ <strong>Verified conferences at bypass:</strong> {thesis.activeResearchBypassMetadata?.statsBeforeBypass?.conferencesCount || 0} / 2</div>
+            </div>
+          </div>
+        )}
+
         {/* 1. DRAFT SUBMISSION & REVIEW PIPELINE (Must happen first) */}
         <div className="usm-card" style={{ padding: 16 }}>
           <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
