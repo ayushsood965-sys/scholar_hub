@@ -8,18 +8,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const DepartmentsTab = () => {
   const [data, setData] = useState([]);
+  const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', code: '' });
+  const [formData, setFormData] = useState({ name: '', code: '', facultyId: '' });
   const [seeding, setSeeding] = useState(false);
   const api = useApi();
   const toast = useToast();
 
   const fetchData = async () => {
     try {
-      const res = await api.get('/departments');
-      setData(res.data);
+      const [deptRes, facRes] = await Promise.all([
+        api.get('/departments'),
+        api.get('/faculties')
+      ]);
+      setData(deptRes.data);
+      setFaculties(facRes.data || []);
     } catch (err) {
       toast.error('Failed to load departments');
     } finally {
@@ -31,12 +36,16 @@ const DepartmentsTab = () => {
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({ name: '', code: '' });
+    setFormData({ name: '', code: '', facultyId: '' });
   };
 
   const handleEdit = (row) => {
     setEditingId(row._id);
-    setFormData({ name: row.name, code: row.code });
+    setFormData({
+      name: row.name,
+      code: row.code,
+      facultyId: row.facultyId?._id || row.facultyId || ''
+    });
     setFormOpen(true);
   };
 
@@ -86,16 +95,19 @@ const DepartmentsTab = () => {
   const columns = [
     {
       header: 'Department Name',
-      accessor: (row) => (
-        <span>
-          {row.name}
-          {row.faculty && (
-            <span style={{ color: '#EF4444', fontWeight: '500', marginLeft: '8px' }}>
-              ({row.faculty})
-            </span>
-          )}
-        </span>
-      )
+      accessor: (row) => {
+        const facultyName = row.facultyId?.name || row.faculty;
+        return (
+          <span>
+            {row.name}
+            {facultyName && (
+              <span style={{ color: '#EF4444', fontWeight: '500', marginLeft: '8px' }}>
+                ({facultyName})
+              </span>
+            )}
+          </span>
+        );
+      }
     },
     { header: 'Code', accessor: 'code' },
     {
@@ -156,7 +168,7 @@ const DepartmentsTab = () => {
                 </button>
               </div>
               <form onSubmit={handleSubmit}>
-                <div className="grid-2">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                   <div className="form-group">
                     <label className="form-label">Name</label>
                     <input className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
@@ -164,6 +176,20 @@ const DepartmentsTab = () => {
                   <div className="form-group">
                     <label className="form-label">Code</label>
                     <input className="form-input" required value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Faculty Mapping</label>
+                    <select
+                      className="form-input"
+                      value={formData.facultyId}
+                      onChange={e => setFormData({...formData, facultyId: e.target.value})}
+                      style={{ height: '42px', padding: '0 12px' }}
+                    >
+                      <option value="">-- Select Faculty --</option>
+                      {faculties.map(f => (
+                        <option key={f._id} value={f._id}>{f.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>

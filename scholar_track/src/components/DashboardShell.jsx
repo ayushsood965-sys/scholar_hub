@@ -71,6 +71,7 @@ const roleNavConfig = {
     { key: "overview", icon: Home, label: "System Overview" },
 
     { kind: "section", label: "📋 MASTERS & MAPPING" },
+    { key: "univFaculties", icon: Building, label: "University Faculty Master" },
     { key: "departments", icon: Building, label: "Department Master" },
     { key: "sessions", icon: CalendarRange, label: "Academic Sessions" },
     { key: "degreeTypes", icon: Settings, label: "Degree Types" },

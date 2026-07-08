@@ -20,6 +20,11 @@ const departmentSchema = new mongoose.Schema(
       default: '',
       trim: true
     },
+    facultyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'FacultyMaster',
+      default: null
+    },
   },
   {
     timestamps: true,

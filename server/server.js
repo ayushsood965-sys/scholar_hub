@@ -19,6 +19,7 @@ const adminConfigRoutes = require('./routes/adminConfigRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const seedRoutes = require('./routes/seedRoutes');
 const studentMappingRoutes = require('./routes/studentMappingRoutes');
+const facultyRoutes = require('./routes/facultyRoutes');
 const fs = require('fs');
 const { seedUserData } = require('./seedUsersHelper');
 
@@ -293,6 +294,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/thesis', thesisRoutes);
 app.use('/api/milestones', milestoneRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use('/api/faculties', facultyRoutes);
 app.use('/api/lifecycle', lifecycleRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/publications', publicationRoutes);

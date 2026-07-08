@@ -3,7 +3,7 @@ const Department = require('../models/Department');
 // Get all departments
 exports.getAllDepartments = async (req, res) => {
   try {
-    let depts = await Department.find().sort({ name: 1 });
+    let depts = await Department.find().populate('facultyId').sort({ name: 1 });
     res.json(depts);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving departments', error: error.message });
@@ -13,7 +13,7 @@ exports.getAllDepartments = async (req, res) => {
 // Create a department
 exports.createDepartment = async (req, res) => {
   try {
-    const { name, code } = req.body;
+    const { name, code, facultyId } = req.body;
     if (!name || !code) {
       return res.status(400).json({ message: 'Name and Code are required' });
     }
@@ -32,10 +32,12 @@ exports.createDepartment = async (req, res) => {
 
     const dept = await Department.create({
       name: name.trim(),
-      code: code.trim().toUpperCase()
+      code: code.trim().toUpperCase(),
+      facultyId: facultyId || null
     });
 
-    res.status(201).json({ success: true, department: dept });
+    const populatedDept = await Department.findById(dept._id).populate('facultyId');
+    res.status(201).json({ success: true, department: populatedDept });
   } catch (error) {
     res.status(500).json({ message: 'Error creating department', error: error.message });
   }
@@ -45,7 +47,7 @@ exports.createDepartment = async (req, res) => {
 exports.updateDepartment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code } = req.body;
+    const { name, code, facultyId } = req.body;
 
     const dept = await Department.findById(id);
     if (!dept) {
@@ -54,6 +56,7 @@ exports.updateDepartment = async (req, res) => {
 
     if (name) dept.name = name.trim();
     if (code) dept.code = code.trim().toUpperCase();
+    if (facultyId !== undefined) dept.facultyId = facultyId || null;
 
     // Check duplicate values if changing
     const duplicate = await Department.findOne({
@@ -69,7 +72,8 @@ exports.updateDepartment = async (req, res) => {
     }
 
     await dept.save();
-    res.json({ success: true, department: dept });
+    const populatedDept = await Department.findById(dept._id).populate('facultyId');
+    res.json({ success: true, department: populatedDept });
   } catch (error) {
     res.status(500).json({ message: 'Error updating department', error: error.message });
   }

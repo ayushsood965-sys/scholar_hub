@@ -18,6 +18,7 @@ import DepartmentsTab from "../modules/admin/DepartmentsTab";
 import CategoryGenderMasterTab from "../modules/admin/CategoryGenderMasterTab";
 import PolicyConfigTab from "../modules/admin/PolicyConfigTab";
 import LeaveRulesTab from "../modules/admin/LeaveRulesTab";
+import UniversityFacultiesTab from "../modules/admin/UniversityFacultiesTab";
 
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -39,6 +40,7 @@ const SuperAdminDashboard = () => {
     semesters: "Semesters",
     holidays: "Holiday Calendar",
     departments: "Department Master",
+    univFaculties: "University Faculty Master",
     categoryGender: "Category & Gender Master",
     policies: "Policy Configuration",
     leaveRules: "Leave Rules",
@@ -66,6 +68,7 @@ const SuperAdminDashboard = () => {
       {activeTab === "semesters" && <SemesterMasterTab />}
       {activeTab === "holidays" && <HolidayCalendarTab />}
       {activeTab === "departments" && <DepartmentsTab />}
+      {activeTab === "univFaculties" && <UniversityFacultiesTab />}
       {activeTab === "categoryGender" && <CategoryGenderMasterTab />}
       {activeTab === "policies" && <PolicyConfigTab />}
       {activeTab === "leaveRules" && <LeaveRulesTab />}

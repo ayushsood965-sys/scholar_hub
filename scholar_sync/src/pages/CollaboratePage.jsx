@@ -105,7 +105,7 @@ const CollaboratePage = () => {
                     <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>{st.desc}</span>
                   </div>
                 </div>
-                {idx < 2 && <ChevronRight size={20} color="#A5D6A7" style={{ display: 'none', display: 'block' }} />}
+                {idx < 2 && <ChevronRight size={20} color="#A5D6A7" style={{ display: 'block' }} />}
               </React.Fragment>
             ))}
           </div>

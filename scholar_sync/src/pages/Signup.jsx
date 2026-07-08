@@ -107,6 +107,28 @@ const Signup = () => {
       .catch(() => {});
   }, []);
 
+  // Group departments by faculty name
+  const getGroupedDepts = () => {
+    const filtered = depts.filter(d => {
+      const q = searchQuery.toLowerCase();
+      const nameMatch = d.name.toLowerCase().includes(q);
+      const facultyName = d.facultyId?.name || d.faculty || '';
+      const facultyMatch = facultyName.toLowerCase().includes(q);
+      return nameMatch || facultyMatch;
+    });
+
+    const grouped = {};
+    filtered.forEach(d => {
+      const facultyName = d.facultyId?.name || d.faculty || 'Other / General';
+      if (!grouped[facultyName]) {
+        grouped[facultyName] = [];
+      }
+      grouped[facultyName].push(d);
+    });
+
+    return grouped;
+  };
+
   // When department changes, check if PhD is mapped under this department
   useEffect(() => {
     if (!departmentId) {
@@ -385,31 +407,45 @@ const Signup = () => {
                           />
                         </div>
                         <div className="searchable-dropdown-list">
-                          {depts.filter(d =>
-                            d.name.toLowerCase().includes(searchQuery.toLowerCase())
-                          ).length > 0 ? (
-                            depts
-                              .filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                              .map(d => (
-                                <div
-                                  key={d._id}
-                                  className={`searchable-dropdown-item ${department === d.name ? 'active' : ''}`}
-                                  onClick={() => {
-                                    setDepartment(d.name);
-                                    setDepartmentId(d._id);
-                                    setIsDropdownOpen(false);
-                                    setSearchQuery('');
-                                    if (error.includes('No PhD')) setError('');
-                                  }}
-                                  style={{
-                                    color: theme.textPrimary,
-                                    backgroundColor: department === d.name ? theme.primaryLight : 'transparent',
-                                    '&:hover': { backgroundColor: theme.dropdownItemHover },
-                                  }}
-                                >
-                                  {d.name} {d.faculty ? `(${d.faculty})` : ''}
+                          {Object.keys(getGroupedDepts()).length > 0 ? (
+                            Object.entries(getGroupedDepts()).map(([facultyName, deptList]) => (
+                              <div key={facultyName}>
+                                <div style={{
+                                  padding: '8px 12px 4px 12px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: '800',
+                                  color: 'var(--color-primary, #10B981)',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '1px solid rgba(var(--color-primary-rgb), 0.1)',
+                                  marginBottom: '4px',
+                                  marginTop: '4px'
+                                }}>
+                                  {facultyName}
                                 </div>
-                              ))
+                                {deptList.map(d => (
+                                  <div
+                                    key={d._id}
+                                    className={`searchable-dropdown-item ${department === d.name ? 'active' : ''}`}
+                                    onClick={() => {
+                                      setDepartment(d.name);
+                                      setDepartmentId(d._id);
+                                      setIsDropdownOpen(false);
+                                      setSearchQuery('');
+                                      if (error.includes('No PhD')) setError('');
+                                    }}
+                                    style={{
+                                      color: theme.textPrimary,
+                                      backgroundColor: department === d.name ? theme.primaryLight : 'transparent',
+                                      paddingLeft: '24px',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {d.name}
+                                  </div>
+                                ))}
+                              </div>
+                            ))
                           ) : (
                             <div style={{ padding: '10px', color: theme.textMuted, fontSize: '0.9rem', textAlign: 'center' }}>
                               No departments found
@@ -681,25 +717,42 @@ const Signup = () => {
                           />
                         </div>
                         <div className="searchable-dropdown-list">
-                          {depts.filter(d =>
-                            d.name.toLowerCase().includes(searchQuery.toLowerCase())
-                          ).length > 0 ? (
-                            depts
-                              .filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                              .map(d => (
-                                <div
-                                  key={d._id}
-                                  className={`searchable-dropdown-item ${department === d.name ? 'active' : ''}`}
-                                  onClick={() => {
-                                    setDepartment(d.name);
-                                    setDepartmentId(d._id);
-                                    setIsDropdownOpen(false);
-                                    setSearchQuery('');
-                                  }}
-                                >
-                                  {d.name} {d.faculty ? `(${d.faculty})` : ''}
+                          {Object.keys(getGroupedDepts()).length > 0 ? (
+                            Object.entries(getGroupedDepts()).map(([facultyName, deptList]) => (
+                              <div key={facultyName}>
+                                <div style={{
+                                  padding: '8px 12px 4px 12px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: '800',
+                                  color: 'var(--color-primary, #10B981)',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  borderBottom: '1px solid rgba(var(--color-primary-rgb), 0.1)',
+                                  marginBottom: '4px',
+                                  marginTop: '4px'
+                                }}>
+                                  {facultyName}
                                 </div>
-                              ))
+                                {deptList.map(d => (
+                                  <div
+                                    key={d._id}
+                                    className={`searchable-dropdown-item ${department === d.name ? 'active' : ''}`}
+                                    onClick={() => {
+                                      setDepartment(d.name);
+                                      setDepartmentId(d._id);
+                                      setIsDropdownOpen(false);
+                                      setSearchQuery('');
+                                    }}
+                                    style={{
+                                      paddingLeft: '24px',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {d.name}
+                                  </div>
+                                ))}
+                              </div>
+                            ))
                           ) : (
                             <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.9rem', textAlign: 'center' }}>
                               No departments found
