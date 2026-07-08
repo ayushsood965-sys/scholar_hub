@@ -23,7 +23,7 @@ const roleFeatures = {
     { text: 'Academic Standing', desc: 'Instant Good / Warning / Defaulter status indicator with actionable recovery guidance.', icon: AlertTriangle },
   ],
   faculty: [
-    { text: 'Bulk Attendance Matrix', desc: 'Mark Present / Absent / Late for an entire class in one go against mapped timetable slots.', icon: ClipboardCheck },
+    { text: 'Bulk Attendance Matrix', desc: 'Mark Present / Absent for an entire class in one go against mapped timetable slots.', icon: ClipboardCheck },
     { text: 'Course Statistics Cards', desc: 'Per-course overview: total students, present %, absent %, and low-attendance alerts.', icon: PieChart },
     { text: 'Defaulter Drill-Down', desc: 'Identify students below threshold per course and take proactive intervention measures.', icon: AlertTriangle },
     { text: 'Student-Subject Mapping', desc: 'Map and manage which students are enrolled in which courses for accurate tracking.', icon: Users },
@@ -51,7 +51,7 @@ const roleFeatures = {
 // ─── Lifecycle steps ───
 const lifecycleSteps = [
   { num: '01', title: 'Timetable Setup', desc: 'HOD creates course slots with faculty assignments, day/time schedules, and session configs.', icon: Calendar },
-  { num: '02', title: 'Mark Attendance', desc: 'Faculty opens the attendance matrix and bulk-marks Present, Absent, or Late for each class.', icon: ClipboardCheck },
+  { num: '02', title: 'Mark Attendance', desc: 'Faculty opens the attendance matrix and bulk-marks Present or Absent for each class.', icon: ClipboardCheck },
   { num: '03', title: 'Student Monitors', desc: 'Students track cumulative attendance, per-course stats, and academic standing in real-time.', icon: Activity },
   { num: '04', title: 'Leave & Corrections', desc: 'Students apply for leaves or file correction appeals. Documents can be uploaded as proof.', icon: FileText },
   { num: '05', title: 'HOD Verifies', desc: 'Faculty-forwarded records undergo HOD verification. Leave applications get final approval.', icon: CheckCircle2 },
@@ -173,10 +173,10 @@ const Landing = () => {
 
             <div className="st-roster-grid">
               {[
-                { label: 'Present Today', value: '92%', color: 'var(--status-present)' },
+                { label: 'Present Today', value: '93%', color: 'var(--status-present)' },
                 { label: 'Absent Today', value: '4%', color: 'var(--status-absent)' },
-                { label: 'Approved Leave', value: '3%', color: 'var(--status-leave)' },
-                { label: 'Late In', value: '1%', color: 'var(--status-late)' },
+                { label: 'Medical Leave', value: '2%', color: 'var(--status-leave)' },
+                { label: 'Duty Leave', value: '1%', color: 'var(--color-primary)' },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -427,7 +427,6 @@ const Landing = () => {
               <div className="st-mock-vocab">
                 <span className="st-vocab present">Present</span>
                 <span className="st-vocab absent">Absent</span>
-                <span className="st-vocab late">Late</span>
                 <span className="st-vocab leave">Leave</span>
               </div>
             </div>
