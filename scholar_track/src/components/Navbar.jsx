@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BarChart3 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
@@ -7,6 +7,9 @@ import ThemeToggle from './ThemeToggle';
 const Navbar = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isHomePage = location.pathname === '/';
 
   const dashMap = {
     SUPER_ADMIN: '/super-dashboard',
@@ -26,9 +29,13 @@ const Navbar = () => {
       </Link>
 
       <div className="nav-links">
-        <Link to="/" className="nav-link active">Home</Link>
-        <a href="#features" className="nav-link">Features</a>
-        <a href="#stats" className="nav-link">Statistics</a>
+        <Link to="/" className={`nav-link ${isHomePage ? 'active' : ''}`}>Home</Link>
+        {isHomePage && (
+          <>
+            <a href="#features" className="nav-link">Features</a>
+            <a href="#stats" className="nav-link">Statistics</a>
+          </>
+        )}
       </div>
 
       <div className="nav-actions">
