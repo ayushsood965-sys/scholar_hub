@@ -236,7 +236,7 @@ const Landing = () => {
     { 
       name: 'Admissions Portal', 
       icon: <UserCheck size={18} />, 
-      url: 'https://nadmission.hpushimla.in/', 
+      url: 'https://nadmissions.hpushimla.in/', 
       status: 'Official Portal' 
     },
     { 
