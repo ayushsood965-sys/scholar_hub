@@ -34,22 +34,7 @@ const OverviewTab = () => {
     fetchStats();
   }, []);
 
-  const handleSeed = async (type) => {
-    const pwd = window.prompt(`Enter Security Password to seed ${type}:`);
-    if (!pwd) return;
 
-    try {
-      setLoading(true);
-      const endpoint = type === "masters" ? "/seed/masters" : "/seed/students";
-      const res = await api.post(endpoint, { password: pwd });
-      toast.success(res.data.message || `Successfully seeded ${type}`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || `Error seeding ${type}`);
-    } finally {
-      setLoading(false);
-      window.location.reload();
-    }
-  };
 
   if (loading) return <SkeletonLoader count={1} height={400} />;
   if (!stats) return null;
@@ -64,47 +49,7 @@ const OverviewTab = () => {
         </p>
       </div>
 
-      <div
-        className="glass-panel p-xl mb-lg"
-        style={{ border: "1px solid rgba(16, 185, 129, 0.2)" }}
-      >
-        <h3
-          style={{
-            marginBottom: "16px",
-            color: "var(--color-primary)",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <Building size={20} /> System Database Seeding
-        </h3>
-        <p
-          style={{
-            color: "var(--text-secondary)",
-            marginBottom: "20px",
-            fontSize: "0.9rem",
-          }}
-        >
-          Use these utilities to quickly bootstrap the ScholarTrack Attendance
-          database with HPU-specific configurations and dummy candidates. This
-          requires a security password.
-        </p>
-        <div style={{ display: "flex", gap: "16px" }}>
-          <button
-            className="btn btn-primary"
-            onClick={() => handleSeed("masters")}
-          >
-            <Building size={18} /> Seed Sessions and Degrees
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleSeed("students")}
-          >
-            <Users size={18} /> Seed Students
-          </button>
-        </div>
-      </div>
+
 
       {/* ScholarTrack Stats */}
       <div
