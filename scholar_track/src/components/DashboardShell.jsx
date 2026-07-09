@@ -175,7 +175,7 @@ const DashboardShell = ({
             📊
           </div>
           <h2>
-            Scholar<span>Hub</span>
+            Scholar<span>{role === "SUPER_ADMIN" ? "Hub" : "Track"}</span>
           </h2>
         </div>
 
