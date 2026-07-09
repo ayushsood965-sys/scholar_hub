@@ -161,6 +161,18 @@ const SearchEditStudentTab = () => {
   const [activeEditTab, setActiveEditTab] = useState('account'); // account | personal | academic | qualifications
   const [saveLoading, setSaveLoading] = useState(false);
 
+  const [showDegreeDropdown, setShowDegreeDropdown] = useState(false);
+
+  useEffect(() => {
+    const handleGlobalClick = (e) => {
+      if (!e.target.closest('.degree-dropdown-container')) {
+        setShowDegreeDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleGlobalClick);
+    return () => document.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   // Fetch dropdowns
   const fetchDropdowns = async () => {
     try {
@@ -459,35 +471,103 @@ const SearchEditStudentTab = () => {
           </div>
         </div>
 
-        {/* Academic Filters */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Academic Session</label>
-            <select name="session" value={searchParams.session} onChange={handleSearchChange} className="form-input">
-              <option value="">All Sessions</option>
-              {sessions.map(s => <option key={s._id} value={s.sessionName}>{s.sessionName}</option>)}
-            </select>
+        {/* OR Divider block */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '20px 0', position: 'relative' }}>
+          <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '0 16px', color: 'var(--color-text-muted, #6B7280)', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', userSelect: 'none', zIndex: 2 }}>
+            OR
           </div>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Degree Type</label>
-            <select name="degreeType" value={searchParams.degreeType} onChange={handleSearchChange} className="form-input">
-              <option value="">All Degree Types</option>
-              {degreeTypes.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Degree Name</label>
-            <select name="degreeName" value={searchParams.degreeName} onChange={handleSearchChange} className="form-input">
-              <option value="">All Degree Names</option>
-              {degreeNames.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Semester</label>
-            <select name="semesterId" value={searchParams.semesterId} onChange={handleSearchChange} className="form-input">
-              <option value="">All Semesters</option>
-              {semesters.map(s => <option key={s._id} value={s._id}>{s.name} ({s.number})</option>)}
-            </select>
+          <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'var(--color-border, #E2E8F0)', zIndex: 1 }} />
+        </div>
+
+        {/* Academic Filters Container with white background */}
+        <div style={{ background: 'var(--color-surface, #ffffff)', padding: '16px', borderRadius: '8px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            <div>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Academic Session</label>
+              <select name="session" value={searchParams.session} onChange={handleSearchChange} className="form-input">
+                <option value="">All Sessions</option>
+                {sessions.map(s => <option key={s._id} value={s.sessionName}>{s.sessionName}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Degree Type</label>
+              <select name="degreeType" value={searchParams.degreeType} onChange={handleSearchChange} className="form-input">
+                <option value="">All Degree Types</option>
+                {degreeTypes.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
+              </select>
+            </div>
+
+            {/* Dynamic Search Degree Name Dropdown */}
+            <div className="degree-dropdown-container" style={{ position: 'relative' }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Degree Name</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  placeholder="Search & select degree..." 
+                  value={searchParams.degreeName} 
+                  onChange={(e) => {
+                    setSearchParams(prev => ({ ...prev, degreeName: e.target.value }));
+                    setShowDegreeDropdown(true);
+                  }}
+                  onFocus={() => setShowDegreeDropdown(true)}
+                  className="form-input"
+                  style={{ paddingRight: '30px' }}
+                />
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setSearchParams(prev => ({ ...prev, degreeName: '' }));
+                    setShowDegreeDropdown(true);
+                  }}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '0.9rem', padding: 0 }}
+                >
+                  {searchParams.degreeName ? '×' : '▼'}
+                </button>
+              </div>
+
+              {showDegreeDropdown && (
+                <div 
+                  className="stylish-scrollbar"
+                  style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, background: 'var(--color-surface, #ffffff)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)', maxHeight: '200px', overflowY: 'auto', marginTop: '4px' }}
+                >
+                  <div 
+                    onClick={() => {
+                      setSearchParams(prev => ({ ...prev, degreeName: '' }));
+                      setShowDegreeDropdown(false);
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--color-text-muted, #64748B)', background: !searchParams.degreeName ? 'var(--color-surface-elevated, #F1F5F9)' : 'transparent' }}
+                    className="dropdown-hover-item"
+                  >
+                    All Degree Names (Clear selection)
+                  </div>
+                  {degreeNames.filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).length === 0 ? (
+                    <div style={{ padding: '8px 12px', fontSize: '0.82rem', color: '#94A3B8', fontStyle: 'italic' }}>No matches found</div>
+                  ) : (
+                    degreeNames.filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).map(d => (
+                      <div 
+                        key={d._id}
+                        onClick={() => {
+                          setSearchParams(prev => ({ ...prev, degreeName: d.name }));
+                          setShowDegreeDropdown(false);
+                        }}
+                        style={{ padding: '8px 12px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--color-text-primary, #1F2937)', background: searchParams.degreeName === d.name ? 'var(--color-surface-elevated, #F1F5F9)' : 'transparent' }}
+                        className="dropdown-hover-item"
+                      >
+                        {d.name}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Semester</label>
+              <select name="semesterId" value={searchParams.semesterId} onChange={handleSearchChange} className="form-input">
+                <option value="">All Semesters</option>
+                {semesters.map(s => <option key={s._id} value={s._id}>{s.name} ({s.number})</option>)}
+              </select>
+            </div>
           </div>
         </div>
 
