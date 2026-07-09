@@ -435,6 +435,143 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [provisionalConfirmText, setProvisionalConfirmText] = useState('');
   const [bypassConfirmText, setBypassConfirmText] = useState('');
 
+  // Rejection & Editing states
+  const [showRejectPopup, setShowRejectPopup] = useState(false);
+  const [rejectRemarks, setRejectRemarks] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
+
+  const handleRejectAndSendToStudent = async () => {
+    if (!rejectRemarks.trim()) {
+      toast.warning('Please enter rejection remarks.');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const scholarId = thesis.scholarId?._id || thesis.scholarId;
+      const res = await axios.put(`${API_BASE_URL}/api/auth/users/${scholarId}/reject`, { remarks: rejectRemarks }, getAuthHeader());
+      toast.success(res.data.message || 'Registration rejected and sent back to student.');
+      setShowRejectPopup(false);
+      if (onRefresh) onRefresh();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject registration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectEditAtHodEnd = () => {
+    const scholar = thesis.scholarId || {};
+    const profile = scholar.profile || {};
+    const q = profile.qualifications || {};
+    
+    setEditForm({
+      name: scholar.name || '',
+      dob: profile.dob || '',
+      gender: profile.gender || '',
+      category: profile.category || '',
+      nationality: profile.nationality || '',
+      fatherName: profile.fatherName || '',
+      motherName: profile.motherName || '',
+      phoneNumber: profile.phoneNumber || '',
+      address: profile.address || '',
+      degreeType: profile.degreeType || '',
+      degreeName: profile.degreeName || '',
+      academicSession: profile.academicSession || '',
+      enrollmentNumber: profile.enrollmentNumber || '',
+      erpAdmissionNo: profile.erpAdmissionNo || '',
+      admissionDate: profile.admissionDate || '',
+      phdMode: profile.phdMode || '',
+      specialization: profile.specialization || '',
+      areaOfInterest: profile.areaOfInterest || '',
+      thesisTitle: thesis.title || profile.thesisTitle || '',
+      thesisSummary: thesis.abstract || profile.thesisSummary || '',
+      thesisKeywords: profile.thesisKeywords || '',
+      preferredGuideId: profile.preferredGuideId || '',
+      
+      qualifications: {
+        class10: {
+          board: q.class10?.board || '',
+          school: q.class10?.school || '',
+          rollNo: q.class10?.rollNo || '',
+          percentage: q.class10?.percentage || '',
+          certificateUrl: q.class10?.certificateUrl || ''
+        },
+        class12: {
+          board: q.class12?.board || '',
+          school: q.class12?.school || '',
+          rollNo: q.class12?.rollNo || '',
+          percentage: q.class12?.percentage || '',
+          certificateUrl: q.class12?.certificateUrl || ''
+        },
+        graduation: {
+          university: q.graduation?.university || '',
+          college: q.graduation?.college || '',
+          degree: q.graduation?.degree || '',
+          rollNo: q.graduation?.rollNo || '',
+          percentage: q.graduation?.percentage || '',
+          certificateUrl: q.graduation?.certificateUrl || ''
+        },
+        postGraduation: {
+          university: q.postGraduation?.university || '',
+          college: q.postGraduation?.college || '',
+          degree: q.postGraduation?.degree || '',
+          rollNo: q.postGraduation?.rollNo || '',
+          percentage: q.postGraduation?.percentage || '',
+          certificateUrl: q.postGraduation?.certificateUrl || ''
+        }
+      }
+    });
+    setIsEditing(true);
+    setShowRejectPopup(false);
+    setShowProfileDetails(true);
+  };
+
+  const handleSaveEdit = async (approveAfterSave) => {
+    try {
+      setLoading(true);
+      const scholarId = thesis.scholarId?._id || thesis.scholarId;
+      
+      let cleanedPhone = editForm.phoneNumber;
+      if (cleanedPhone) {
+        cleanedPhone = cleanedPhone.trim().replace(/[\s\-()]/g, '');
+        const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
+        if (!indianPhoneRegex.test(cleanedPhone)) {
+          toast.warning('Please enter a valid 10-digit Indian phone number.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      await axios.put(`${API_BASE_URL}/api/auth/users/${scholarId}/profile`, editForm, getAuthHeader());
+      
+      if (approveAfterSave) {
+        if (!thesis.supervisorId) {
+          if (!selSupervisor) {
+            toast.warning('Please select a supervisor first.');
+            setLoading(false);
+            return;
+          }
+          await onAssign(selSupervisor);
+        }
+        await onVerify();
+        toast.success('Profile saved, supervisor assigned and registration approved successfully!');
+      } else {
+        toast.success('Profile changes saved successfully!');
+      }
+
+      if (onRefresh) onRefresh();
+      setIsEditing(false);
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save profile changes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // States for Pre-Submission Seminar Schedule and Outcome Recording
   const [semDate, setSemDate] = useState('');
   const [semTime, setSemTime] = useState('');
@@ -1932,168 +2069,375 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     </div>
   );
 
-  const renderProfile = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div>
-        <div className="usm-section-title" style={{ marginBottom: '10px' }}>📁 Scholar Personal Details</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
-          <div><strong>Email:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.username || 'N/A'}</span></div>
-          <div><strong>Mobile:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.phoneNumber || 'N/A'}</span></div>
-          <div><strong>DOB:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.dob ? new Date(thesis.scholarId.profile.dob).toLocaleDateString() : 'N/A'}</span></div>
-          <div><strong>Gender:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.gender || 'N/A'}</span></div>
-          <div><strong>Category:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.category || 'N/A'}</span></div>
-          <div><strong>Nationality:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.nationality || 'N/A'}</span></div>
-          <div><strong>Father:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.fatherName || 'N/A'}</span></div>
-          <div><strong>Mother:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.motherName || 'N/A'}</span></div>
-          <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.address || 'N/A'}</span></div>
+  const renderProfile = () => {
+    const scholar = thesis.scholarId || {};
+    const profile = scholar.profile || {};
+    const qualifications = profile.qualifications || {};
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div>
+          <div className="usm-section-title" style={{ marginBottom: '10px' }}>📁 Scholar Personal Details</div>
+          {isEditing ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
+              <div>
+                <strong>Email (Username):</strong>
+                <input type="text" value={editForm.username || scholar.username || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #E2E8F0', borderRadius: '6px', background: '#F1F5F9', cursor: 'not-allowed', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Mobile:</strong>
+                <input type="text" value={editForm.phoneNumber || ''} onChange={e => setEditForm({...editForm, phoneNumber: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>DOB:</strong>
+                <input type="date" value={editForm.dob ? editForm.dob.split('T')[0] : ''} onChange={e => setEditForm({...editForm, dob: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Gender:</strong>
+                <select value={editForm.gender || ''} onChange={e => setEditForm({...editForm, gender: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', background: 'white' }}>
+                  <option value="">Select Gender</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div>
+                <strong>Category:</strong>
+                <input type="text" value={editForm.category || ''} onChange={e => setEditForm({...editForm, category: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Nationality:</strong>
+                <input type="text" value={editForm.nationality || ''} onChange={e => setEditForm({...editForm, nationality: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Father's Name:</strong>
+                <input type="text" value={editForm.fatherName || ''} onChange={e => setEditForm({...editForm, fatherName: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Mother's Name:</strong>
+                <input type="text" value={editForm.motherName || ''} onChange={e => setEditForm({...editForm, motherName: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Address:</strong>
+                <textarea value={editForm.address || ''} onChange={e => setEditForm({...editForm, address: e.target.value})} style={{ width: '100%', height: '60px', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', resize: 'vertical' }} />
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
+              <div><strong>Email:</strong> <span style={{ color: '#475569' }}>{scholar.username || 'N/A'}</span></div>
+              <div><strong>Mobile:</strong> <span style={{ color: '#475569' }}>{profile.phoneNumber || 'N/A'}</span></div>
+              <div><strong>DOB:</strong> <span style={{ color: '#475569' }}>{profile.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</span></div>
+              <div><strong>Gender:</strong> <span style={{ color: '#475569' }}>{profile.gender || 'N/A'}</span></div>
+              <div><strong>Category:</strong> <span style={{ color: '#475569' }}>{profile.category || 'N/A'}</span></div>
+              <div><strong>Nationality:</strong> <span style={{ color: '#475569' }}>{profile.nationality || 'N/A'}</span></div>
+              <div><strong>Father:</strong> <span style={{ color: '#475569' }}>{profile.fatherName || 'N/A'}</span></div>
+              <div><strong>Mother:</strong> <span style={{ color: '#475569' }}>{profile.motherName || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> <span style={{ color: '#475569' }}>{profile.address || 'N/A'}</span></div>
+            </div>
+          )}
         </div>
-      </div>
-
-      <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
-        <div className="usm-section-title" style={{ marginBottom: '10px' }}>📝 Academic & Research Details</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
-          <div><strong>SH no:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{thesis.scholarId?.profile?.shNo || 'N/A'}</span></div>
-          <div><strong>Enrollment No:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
-          <div><strong>Department:</strong> <span style={{ color: '#475569' }}>{thesis.department || 'N/A'}</span></div>
-          <div><strong>Admission Date:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.admissionDate ? new Date(thesis.scholarId.profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
-          <div><strong>Ph.D. Mode:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.phdMode || 'N/A'}</span></div>
-          <div><strong>Specialization:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.specialization || 'N/A'}</span></div>
-          <div><strong>Academic Session:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.academicSession || 'N/A'}</span></div>
-          <div><strong>Degree Type:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.degreeType || 'N/A'}</span></div>
-          <div><strong>Degree Name:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.degreeName || 'N/A'}</span></div>
-          <div><strong>Subject:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.subject || 'N/A'}</span></div>
-          <div style={{ gridColumn: 'span 2' }}><strong>Academic Background:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.academicBackground || 'N/A'}</span></div>
-          <div style={{ gridColumn: 'span 2' }}><strong>Area of Research Interest:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.areaOfInterest || 'N/A'}</span></div>
-          <div style={{ gridColumn: 'span 2' }}>
-            <strong>Preferred Supervisor Choice:</strong>{' '}
-            <span style={{ color: '#4F46E5', fontWeight: 700, background: '#EEF2FF', border: '1px solid #C7D2FE', padding: '2px 8px', borderRadius: '4px', marginLeft: '6px' }}>
-              {thesis.scholarId?.profile?.preferredGuideId
-                ? (faculty.find(f => f._id === thesis.scholarId.profile.preferredGuideId)?.name || 'Loading Choice...')
-                : 'None Selected'}
-            </span>
-          </div>
-          <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: '#0F172A', fontWeight: 700 }}>{thesis.scholarId?.profile?.thesisTitle || thesis.title || 'N/A'}</span></div>
-          <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: '#475569', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4, marginTop: 4 }}>{thesis.scholarId?.profile?.thesisSummary || thesis.abstract || 'N/A'}</span></div>
-          <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
+        
+        <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
+          <div className="usm-section-title" style={{ marginBottom: '10px' }}>📝 Academic & Research Details</div>
+          {isEditing ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
+              <div>
+                <strong>SH no:</strong>
+                <input type="text" value={profile.shNo || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #E2E8F0', borderRadius: '6px', background: '#F1F5F9', cursor: 'not-allowed', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Enrollment No:</strong>
+                <input type="text" value={editForm.enrollmentNumber || ''} onChange={e => setEditForm({...editForm, enrollmentNumber: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Department:</strong>
+                <input type="text" value={thesis.department || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #E2E8F0', borderRadius: '6px', background: '#F1F5F9', cursor: 'not-allowed', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Admission Date:</strong>
+                <input type="date" value={editForm.admissionDate ? editForm.admissionDate.split('T')[0] : ''} onChange={e => setEditForm({...editForm, admissionDate: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Ph.D. Mode:</strong>
+                <select value={editForm.phdMode || ''} onChange={e => setEditForm({...editForm, phdMode: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', background: 'white' }}>
+                  <option value="">Select Mode</option>
+                  <option value="FULL_TIME">Full Time</option>
+                  <option value="PART_TIME">Part Time</option>
+                </select>
+              </div>
+              <div>
+                <strong>Specialization:</strong>
+                <input type="text" value={editForm.specialization || ''} onChange={e => setEditForm({...editForm, specialization: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Academic Session:</strong>
+                <input type="text" value={editForm.academicSession || ''} onChange={e => setEditForm({...editForm, academicSession: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Degree Type:</strong>
+                <input type="text" value={editForm.degreeType || ''} onChange={e => setEditForm({...editForm, degreeType: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Degree Name:</strong>
+                <input type="text" value={editForm.degreeName || ''} onChange={e => setEditForm({...editForm, degreeName: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div>
+                <strong>Subject:</strong>
+                <input type="text" value={editForm.subject || profile.subject || ''} onChange={e => setEditForm({...editForm, subject: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Academic Background:</strong>
+                <input type="text" value={editForm.academicBackground || profile.academicBackground || ''} onChange={e => setEditForm({...editForm, academicBackground: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Area of Research Interest:</strong>
+                <input type="text" value={editForm.areaOfInterest || ''} onChange={e => setEditForm({...editForm, areaOfInterest: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Thesis Title:</strong>
+                <input type="text" value={editForm.thesisTitle || ''} onChange={e => setEditForm({...editForm, thesisTitle: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Thesis Summary / Abstract:</strong>
+                <textarea value={editForm.thesisSummary || ''} onChange={e => setEditForm({...editForm, thesisSummary: e.target.value})} style={{ width: '100%', height: '80px', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', resize: 'vertical' }} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Keywords:</strong>
+                <input type="text" value={editForm.thesisKeywords || profile.thesisKeywords || ''} onChange={e => setEditForm({...editForm, thesisKeywords: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
+              <div><strong>SH no:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{profile.shNo || 'N/A'}</span></div>
+              <div><strong>Enrollment No:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{profile.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
+              <div><strong>Department:</strong> <span style={{ color: '#475569' }}>{thesis.department || 'N/A'}</span></div>
+              <div><strong>Admission Date:</strong> <span style={{ color: '#475569' }}>{profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
+              <div><strong>Ph.D. Mode:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{profile.phdMode || 'N/A'}</span></div>
+              <div><strong>Specialization:</strong> <span style={{ color: '#475569' }}>{profile.specialization || 'N/A'}</span></div>
+              <div><strong>Academic Session:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{profile.academicSession || 'N/A'}</span></div>
+              <div><strong>Degree Type:</strong> <span style={{ color: '#475569' }}>{profile.degreeType || 'N/A'}</span></div>
+              <div><strong>Degree Name:</strong> <span style={{ color: '#475569' }}>{profile.degreeName || 'N/A'}</span></div>
+              <div><strong>Subject:</strong> <span style={{ color: '#475569' }}>{profile.subject || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Academic Background:</strong> <span style={{ color: '#475569' }}>{profile.academicBackground || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Area of Research Interest:</strong> <span style={{ color: '#475569' }}>{profile.areaOfInterest || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Preferred Supervisor Choice:</strong>{' '}
+                <span style={{ color: '#4F46E5', fontWeight: 700, background: '#EEF2FF', border: '1px solid #C7D2FE', padding: '2px 8px', borderRadius: '4px', marginLeft: '6px' }}>
+                  {profile.preferredGuideId
+                    ? (faculty.find(f => f._id === profile.preferredGuideId)?.name || 'Loading Choice...')
+                    : 'None Selected'}
+                </span>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: '#0F172A', fontWeight: 700 }}>{profile.thesisTitle || thesis.title || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: '#475569', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4, marginTop: 4 }}>{profile.thesisSummary || thesis.abstract || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: '#475569' }}>{profile.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Qualifications */}
-      {thesis.scholarId?.profile?.qualifications && (
-        <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div className="usm-section-title">🎓 Educational Background</div>
-          {['class10', 'class12', 'graduation', 'postGraduation'].map(level => {
-            const q = thesis.scholarId?.profile?.qualifications?.[level];
-            if (!q) return null;
-            const labels = { class10: 'Class 10th', class12: 'Class 12th', graduation: 'Graduation', postGraduation: 'Post Graduation' };
-            const isSchool = level === 'class10' || level === 'class12';
-            return (
-              <div key={level} className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
-                <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{labels[level]}</span>
-                  {q.certificateUrl ? <a href={`${API_BASE_URL}${q.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a> : <span style={{ color: '#94A3B8' }}>Pending</span>}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
-                  <div><strong>Roll No:</strong> {q.rollNo || 'N/A'}</div>
-                  {isSchool ? (
-                    <>
-                      <div><strong>Board:</strong> {q.board || 'N/A'}</div>
-                      <div><strong>School:</strong> {q.school || 'N/A'}</div>
-                      <div style={{ gridColumn: 'span 3' }}>
-                        <strong>Marks/CGPA:</strong> {q.marksObtained}/{q.totalMarks || 'N/A'} ({q.percentage}%)
+        {/* Qualifications */}
+        {(profile.qualifications || isEditing) && (
+          <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="usm-section-title">🎓 Educational Background</div>
+            {['class10', 'class12', 'graduation', 'postGraduation'].map(level => {
+              const qVal = qualifications[level];
+              if (!qVal && !isEditing) return null;
+              
+              const labels = { class10: 'Class 10th', class12: 'Class 12th', graduation: 'Graduation', postGraduation: 'Post Graduation' };
+              const isSchool = level === 'class10' || level === 'class12';
+              
+              return (
+                <div key={level} className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
+                  <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{labels[level]}</span>
+                    {qVal?.certificateUrl ? <a href={`${API_BASE_URL}${qVal.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a> : <span style={{ color: '#94A3B8' }}>Pending</span>}
+                  </div>
+                  
+                  {isEditing ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 12px', marginTop: '6px' }}>
+                      <div>
+                        <strong>Roll No:</strong>
+                        <input type="text" value={editForm.qualifications?.[level]?.rollNo || ''} onChange={e => {
+                          const qry = {...editForm.qualifications};
+                          if (!qry[level]) qry[level] = {};
+                          qry[level].rollNo = e.target.value;
+                          setEditForm({...editForm, qualifications: qry});
+                        }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
                       </div>
-                    </>
+                      
+                      {isSchool ? (
+                        <>
+                          <div>
+                            <strong>Board:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.board || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].board = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>School:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.school || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].school = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>Marks Obtained:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.marksObtained || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].marksObtained = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>Total Marks:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.totalMarks || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].totalMarks = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>Percentage:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.percentage || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].percentage = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <strong>Degree:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.degree || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].degree = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>College:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.college || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].college = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>University:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.university || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].university = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>Marks Obtained:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.marksObtained || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].marksObtained = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>Total Marks:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.totalMarks || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].totalMarks = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                          <div>
+                            <strong>Percentage:</strong>
+                            <input type="text" value={editForm.qualifications?.[level]?.percentage || ''} onChange={e => {
+                              const qry = {...editForm.qualifications};
+                              if (!qry[level]) qry[level] = {};
+                              qry[level].percentage = e.target.value;
+                              setEditForm({...editForm, qualifications: qry});
+                            }} style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', border: '1px solid #CBD5E1', borderRadius: '4px' }} />
+                          </div>
+                        </>
+                      )}
+                    </div>
                   ) : (
-                    <>
-                      <div><strong>Degree:</strong> {q.degree || 'N/A'}</div>
-                      <div><strong>College:</strong> {q.college || 'N/A'}</div>
-                      <div style={{ gridColumn: 'span 2' }}><strong>University:</strong> {q.university || 'N/A'}</div>
-                      <div><strong>Marks/CGPA:</strong> {q.marksObtained}/{q.totalMarks || 'N/A'} ({q.percentage}%)</div>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {thesis.scholarId?.profile?.qualifications?.mphil && thesis.scholarId.profile.qualifications.mphil.done === true && (
-            <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#F8FAF5', borderColor: '#D7F3A0', marginBottom: 8 }}>
-              <div style={{ fontWeight: 700, color: '#4D7C0F', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                <span>M.Phil Qualification</span>
-                {thesis.scholarId.profile.qualifications.mphil.certificateUrl ? (
-                  <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.mphil.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#65A30D', fontWeight: 600 }}>📄 M.Phil Certificate</a>
-                ) : (
-                  <span style={{ color: '#94A3B8' }}>Pending Proof</span>
-                )}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
-                <div><strong>University:</strong> {thesis.scholarId.profile.qualifications.mphil.university || 'N/A'}</div>
-                <div><strong>Passing Year:</strong> {thesis.scholarId.profile.qualifications.mphil.passingYear || 'N/A'}</div>
-                <div><strong>Marks:</strong> {thesis.scholarId.profile.qualifications.mphil.marksObtained}/{thesis.scholarId.profile.qualifications.mphil.totalMarks || 'N/A'} ({thesis.scholarId.profile.qualifications.mphil.percentage}%)</div>
-              </div>
-            </div>
-          )}
-          {thesis.scholarId?.profile?.qualifications?.netJrf && (thesis.scholarId.profile.qualifications.netJrf.qualified === true || thesis.scholarId.profile.qualifications.netJrf.qualified === 'YES' || thesis.scholarId.profile.qualifications.netJrf.qualified !== 'No') && (
-            <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#ECFDF5', borderColor: '#A7F3D0' }}>
-              <div style={{ fontWeight: 700, color: '#065F46', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                <span>NET / JRF Qualified</span>
-                {thesis.scholarId.profile.qualifications.netJrf.certificateUrl ? (
-                  <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.netJrf.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#059669', fontWeight: 600 }}>📄 View Proof</a>
-                ) : null}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
-                <div><strong>Status:</strong> {thesis.scholarId.profile.qualifications.netJrf.qualified === true || thesis.scholarId.profile.qualifications.netJrf.qualified === 'YES' ? 'Yes' : 'No'}</div>
-                <div><strong>Cert No:</strong> {thesis.scholarId.profile.qualifications.netJrf.certNumber || thesis.scholarId.profile.qualifications.netJrf.certificateNo || 'N/A'}</div>
-                <div><strong>Roll No:</strong> {thesis.scholarId.profile.qualifications.netJrf.rollNo || 'N/A'}</div>
-                <div><strong>Rank:</strong> {thesis.scholarId.profile.qualifications.netJrf.rank || 'N/A'}</div>
-                <div><strong>Score:</strong> {thesis.scholarId.profile.qualifications.netJrf.score || 'N/A'}</div>
-                <div><strong>Issue Date:</strong> {thesis.scholarId.profile.qualifications.netJrf.issueDate ? new Date(thesis.scholarId.profile.qualifications.netJrf.issueDate).toLocaleDateString() : 'N/A'}</div>
-              </div>
-            </div>
-          )}
-          {thesis.scholarId?.profile?.qualifications?.fellowships?.length > 0 && (
-            <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#F0F9FF', borderColor: '#BAE6FD' }}>
-              <div style={{ fontWeight: 700, color: '#0369A1', marginBottom: 4 }}>National & International Fellowships</div>
-              {thesis.scholarId.profile.qualifications.fellowships.map((f, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, paddingBottom: 6, marginBottom: 6, borderBottom: i !== thesis.scholarId.profile.qualifications.fellowships.length - 1 ? '1px solid #E0F2FE' : 'none' }}>
-                  <div><strong>Type:</strong> {f.type === 'Other' ? f.otherType : f.type || 'N/A'}</div>
-                  <div><strong>Awarding Body:</strong> {f.awardingBody || 'N/A'}</div>
-                  <div><strong>Award Date:</strong> {f.awardDate || 'N/A'}</div>
-                  <div><strong>Ref/ID:</strong> {f.referenceNo || 'N/A'}</div>
-                  <div><strong>Duration:</strong> {f.duration || 'N/A'}</div>
-                  <div><strong>Amount:</strong> {f.amount || 'N/A'}</div>
-                  {f.certificateUrl && (
-                    <div style={{ gridColumn: 'span 3' }}>
-                      <a href={`${API_BASE_URL}${f.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#0284C7', fontWeight: 600 }}>📄 View Fellowship Proof</a>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
+                      <div><strong>Roll No:</strong> {qVal?.rollNo || 'N/A'}</div>
+                      {isSchool ? (
+                        <>
+                          <div><strong>Board:</strong> {qVal?.board || 'N/A'}</div>
+                          <div><strong>School:</strong> {qVal?.school || 'N/A'}</div>
+                          <div style={{ gridColumn: 'span 3' }}>
+                            <strong>Marks/CGPA:</strong> {qVal?.marksObtained}/{qVal?.totalMarks || 'N/A'} ({qVal?.percentage}%)
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div><strong>Degree:</strong> {qVal?.degree || 'N/A'}</div>
+                          <div><strong>College:</strong> {qVal?.college || 'N/A'}</div>
+                          <div style={{ gridColumn: 'span 2' }}><strong>University:</strong> {qVal?.university || 'N/A'}</div>
+                          <div><strong>Marks/CGPA:</strong> {qVal?.marksObtained}/{qVal?.totalMarks || 'N/A'} ({qVal?.percentage}%)</div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
-          {thesis.scholarId?.profile?.qualifications?.otherQuals?.length > 0 && (
-            <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem', background: '#F8FAFC', borderColor: '#CBD5E1' }}>
-              <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: 4 }}>Other Qualifications</div>
-              {thesis.scholarId.profile.qualifications.otherQuals.map((o, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, paddingBottom: 6, marginBottom: 6, borderBottom: idx !== thesis.scholarId.profile.qualifications.otherQuals.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
-                  <div><strong>Type:</strong> {o.type === 'Other' ? o.otherType : o.type || 'N/A'}</div>
-                  <div><strong>Roll:</strong> {o.rollNo || 'N/A'}</div>
-                  <div><strong>Board/Univ:</strong> {o.board || 'N/A'}</div>
-                  <div><strong>School/Inst:</strong> {o.school || 'N/A'}</div>
-                  <div><strong>Marks:</strong> {o.marksObtained}/{o.totalMarks || 'N/A'} ({o.percentage}%)</div>
-                  {o.certificateUrl && (
-                    <div style={{ gridColumn: 'span 3', marginTop: 2 }}>
-                      <a href={`${API_BASE_URL}${o.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600 }}>📄 View Proof</a>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
+        )}
+        
+        {isEditing && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', borderTop: '1px solid #E2E8F0', paddingTop: '16px' }}>
+            <button 
+              type="button"
+              onClick={() => setIsEditing(false)}
+              style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#F1F5F9', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#475569' }}
+            >
+              Cancel Edit
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleSaveEdit(false)}
+              disabled={loading}
+              style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#3B82F6', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
+            >
+              {loading ? 'Saving...' : 'Save Profile Changes'}
+            </button>
+          </div>
+        )}
+
+      {/* HOD Review, Verify & Assign Supervisor Card */}
+      {!isReadOnly && subRole === 'HOD' && thesis.status === 'REJECTED' && (
+        <div className="usm-card" style={{ borderTop: '2px solid #E2E8F0', paddingTop: '16px', marginTop: '12px', background: '#FFF5F5', padding: '16px', borderRadius: '10px', border: '1px solid #FEB2B2', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#C53030', marginBottom: '8px', marginTop: 0 }}>📋 Verification & Supervisor Assignment</h4>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            color: '#C53030',
+            fontWeight: 600,
+            fontSize: '0.85rem'
+          }}>
+            <span style={{ fontSize: '1.25rem' }}>❌</span>
+            <span>Profile rejected. Awaiting resubmission from the student.</span>
+          </div>
         </div>
       )}
 
-      {/* HOD Review, Verify & Assign Supervisor Card */}
-      {!isReadOnly && subRole === 'HOD' && (
+      {!isReadOnly && subRole === 'HOD' && thesis.status !== 'REJECTED' && (
         <div className="usm-card" style={{ borderTop: '2px solid #E2E8F0', paddingTop: '16px', marginTop: '12px', background: '#F8FAFC', padding: '16px', borderRadius: '10px' }}>
           <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', marginBottom: '8px', marginTop: 0 }}>📋 Verification & Supervisor Assignment</h4>
           <p style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: '16px' }}>
@@ -2136,49 +2480,111 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             </div>
 
             {/* Unified Action Button Row */}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Action:</span>
-              {(!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') ? (
-                <button 
-                  className="btn-primary" 
-                  onClick={async () => {
-                    if (!thesis.supervisorId) {
-                      if (!selSupervisor) {
-                        toast.warning('Please select a supervisor first.');
-                        return;
-                      }
-                      setLoading(true);
-                      try {
-                        await onAssign(selSupervisor);
-                        await onVerify();
-                        toast.success('Supervisor assigned and profile verified successfully!');
-                      } catch (err) {
-                        toast.error(err.response?.data?.message || 'Error executing action.');
-                      } finally {
-                        setLoading(false);
-                      }
-                    } else {
-                      act(onVerify);
-                    }
-                  }} 
-                  disabled={loading} 
-                  style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
-                >
-                  {!thesis.supervisorId 
-                    ? 'Verify Profile, Assign Supervisor & Move to Coursework' 
-                    : 'Verify Enrollment & Move to Coursework'}
-                </button>
-              ) : (
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>
-                  ✓ Verified & Supervisor Assigned
-                </span>
-              )}
-            </div>
+            {showRejectPopup ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', background: '#FFF5F5', padding: '16px', borderRadius: '10px', border: '1px solid #FED7D7', width: '100%', textAlign: 'left' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#C53030' }}>
+                    Rejection Remarks / Correction Instructions <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <textarea
+                    placeholder="Please explain the reason for rejection or what corrections are needed..."
+                    value={rejectRemarks}
+                    onChange={e => setRejectRemarks(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '80px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #FC8181',
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                      resize: 'vertical',
+                      color: '#2D3748',
+                      fontFamily: 'Outfit, sans-serif'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleRejectAndSendToStudent}
+                    disabled={loading}
+                    style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#EF4444', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white', fontWeight: 600 }}
+                  >
+                    Send back to Candidate for Editing
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSelectEditAtHodEnd}
+                    style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#3B82F6', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white', fontWeight: 600 }}
+                  >
+                    ✏️ Edit Profile Info at HOD End
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectPopup(false)}
+                    style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#E2E8F0', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#475569', fontWeight: 600 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Action:</span>
+                {(!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') ? (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowRejectPopup(true)}
+                      disabled={loading}
+                      style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#EF4444', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white', fontWeight: 600 }}
+                    >
+                      Reject Request
+                    </button>
+                    <button 
+                      className="btn-primary" 
+                      onClick={async () => {
+                        if (!thesis.supervisorId) {
+                          if (!selSupervisor) {
+                            toast.warning('Please select a supervisor first.');
+                            return;
+                          }
+                          setLoading(true);
+                          try {
+                            await onAssign(selSupervisor);
+                            await onVerify();
+                            toast.success('Supervisor assigned and profile verified successfully!');
+                          } catch (err) {
+                            toast.error(err.response?.data?.message || 'Error executing action.');
+                          } finally {
+                            setLoading(false);
+                          }
+                        } else {
+                          act(onVerify);
+                        }
+                      }} 
+                      disabled={loading} 
+                      style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
+                    >
+                      {!thesis.supervisorId 
+                        ? 'Verify Profile, Assign Supervisor & Move to Coursework' 
+                        : 'Verify Enrollment & Move to Coursework'}
+                    </button>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>
+                    ✓ Verified & Supervisor Assigned
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
+};
 
   const renderDRC = () => {
     const synopsisApproved = synopsisMilestone?.status === 'APPROVED';
@@ -3626,6 +4032,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </div>
         )}
       </div>
+
 
       {/* Sub-modals via portal */}
       {selectedEvalDoc && createPortal(

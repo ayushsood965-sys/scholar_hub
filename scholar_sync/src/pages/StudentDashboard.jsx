@@ -430,7 +430,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
         {items.map(({ key, label, Icon }) => {
           const disabled = (() => {
             if (key === 'overview' || key === 'profile') return false;
-            if (!thesis || thesis.status === 'REGISTRATION_PENDING') return true;
+            if (!thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
             
             const status = thesis.status;
             if (key === 'workspace' || key === 'certificates') {
@@ -6020,7 +6020,8 @@ const ChapterDraftsTab = ({ thesis, milestones = [], onSubmit }) => {
 
 const ProfileTab = () => {
   const { user, updateProfile, uploadAvatar, uploadProfileDocument, fetchMe } = useContext(AuthContext);
-  const { thesis, createThesis, fetchMyThesis } = useContext(ThesisContext);
+  const { thesis: rawThesis, createThesis, fetchMyThesis } = useContext(ThesisContext);
+  const thesis = rawThesis && rawThesis.status !== 'REJECTED' ? rawThesis : null;
   const toast = useToast();
   const [subTab, setSubTab] = useState('general'); // general | academic | guide
   const [loading, setLoading] = useState(false);
@@ -7377,7 +7378,19 @@ const ProfileTab = () => {
   };
 
   const getUploadButton = (docType, certUrl) => {
+    // Determine edit mode for this specific docType
+    let isEditingThisDoc = false;
+    if (docType === 'class10') isEditingThisDoc = editModes.class10;
+    else if (docType === 'class12') isEditingThisDoc = editModes.class12;
+    else if (docType === 'graduation') isEditingThisDoc = editModes.graduation;
+    else if (docType === 'postGraduation') isEditingThisDoc = editModes.postGraduation;
+    else if (docType.startsWith('otherQuals_')) isEditingThisDoc = editModes.otherQuals;
+    else if (docType === 'mphil') isEditingThisDoc = editModes.mphil;
+    else if (docType === 'netJrf') isEditingThisDoc = editModes.netJrf;
+    else if (docType.startsWith('fellowship_')) isEditingThisDoc = editModes.fellowships;
+
     const isUploaded = !!certUrl;
+    const isDisabled = !!thesis || !isEditingThisDoc;
     const currentSelectedName = selectedFileNames[docType];
     let displayFileName = '';
     if (currentSelectedName) {
@@ -7394,19 +7407,19 @@ const ProfileTab = () => {
           alignItems: 'center', 
           justifyContent: 'center',
           gap: '6px', 
-          background: !!thesis ? '#9CA3AF' : isUploaded ? '#D97706' : '#4B5563', 
+          background: isDisabled ? '#9CA3AF' : isUploaded ? '#D97706' : '#4B5563', 
           color: 'white', 
           padding: '8px 12px', 
           borderRadius: '6px', 
           fontSize: '0.75rem', 
           fontWeight: 600, 
-          cursor: !!thesis ? 'not-allowed' : 'pointer', 
+          cursor: isDisabled ? 'not-allowed' : 'pointer', 
           textAlign: 'center',
           transition: 'all 0.2s',
-          boxShadow: !thesis && isUploaded ? '0 2px 4px rgba(217, 119, 6, 0.2)' : 'none'
+          boxShadow: !isDisabled && isUploaded ? '0 2px 4px rgba(217, 119, 6, 0.2)' : 'none'
         }}>
           {isUploaded ? '✓ Certificate Uploaded' : '📤 Upload Certificate (PDF)'}
-          {!thesis && <input type="file" accept=".pdf,image/*" onChange={e => handleDocUpload(e, docType)} style={{ display: 'none' }} />}
+          {!isDisabled && <input type="file" accept=".pdf,image/*" onChange={e => handleDocUpload(e, docType)} style={{ display: 'none' }} />}
         </label>
         {displayFileName && (
           <div style={{ fontSize: '0.7rem', color: '#4B5563', fontStyle: 'italic', wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -7710,21 +7723,43 @@ const ProfileTab = () => {
 
       {/* Dynamic Profile Registration Status Banner */}
       {!thesis ? (
-        <div style={{
-          background: '#EFF6FF',
-          border: '1px solid #BFDBFE',
-          borderLeft: '4px solid #3B82F6',
-          padding: '16px',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          fontSize: '0.85rem',
-          color: '#1E3A8A',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>ℹ️ Ph.D. Profile Verification Pending Submission</div>
-          <div>Please fill out your complete profile information: <strong>General Info</strong>, <strong>Qualifications (with certificates)</strong>, and <strong>Preferred Guide Selection</strong>. Once completed, click the green <strong>🚀 Submit PhD Profile for HOD Registration Approval</strong> button at the very bottom!</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+          {user?.profile?.rejectionRemarks && (
+            <div style={{
+              background: '#FEF2F2',
+              border: '1px solid #FCA5A5',
+              borderLeft: '4px solid #EF4444',
+              padding: '16px',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              color: '#991B1B'
+            }}>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertCircle size={16} /> Status: Rejected by HOD and Awaiting Re-submission
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                Remarks: <strong style={{ color: '#7F1D1D' }}>"{user.profile.rejectionRemarks}"</strong>
+              </div>
+              <div style={{ color: '#4B5563' }}>
+                Your profile has been unlocked for editing. Please update the necessary fields below and re-submit your profile.
+              </div>
+            </div>
+          )}
+          <div style={{
+            background: '#EFF6FF',
+            border: '1px solid #BFDBFE',
+            borderLeft: '4px solid #3B82F6',
+            padding: '16px',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            color: '#1E3A8A',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>ℹ️ Ph.D. Profile Verification Pending Submission</div>
+            <div>Please fill out your complete profile information: <strong>General Info</strong>, <strong>Qualifications (with certificates)</strong>, and <strong>Preferred Guide Selection</strong>. Once completed, click the green <strong>🚀 Submit PhD Profile for HOD Registration Approval</strong> button at the very bottom!</div>
+          </div>
         </div>
       ) : thesis.status === 'REGISTRATION_PENDING' ? (
         <div style={{
@@ -10024,13 +10059,41 @@ const StudentDashboard = () => {
       );
     }
 
-    if (!thesis) {
+    if (!thesis || thesis.status === 'REJECTED') {
       if (activeTab === 'profile') return <ProfileTab />;
       return (
         <div className="card" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center', padding: 48 }}>
-          <ClipboardList size={64} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Ph.D. Profile Registration Required</h3>
-          <p style={{ color: '#6b7280', marginBottom: 24 }}>Please complete all required details in the **Profile** tab and click **Submit PhD Profile for HOD Approval** to register and unlock the student portal features.</p>
+          {user?.profile?.rejectionRemarks ? (
+            <>
+              <AlertCircle size={64} color="#EF4444" style={{ margin: '0 auto 16px' }} />
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Status: Rejected by HOD and Awaiting Re-submission</h3>
+              <p style={{ color: '#6b7280', marginBottom: 12 }}>
+                Your Ph.D. Profile has been rejected by the HOD with the following remarks:
+              </p>
+              <div style={{
+                background: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                color: '#991B1B',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                marginBottom: 24,
+                textAlign: 'left'
+              }}>
+                "{user.profile.rejectionRemarks}"
+              </div>
+              <p style={{ color: '#6b7280', marginBottom: 24 }}>
+                Please go to the Profile tab, update the required fields, and re-submit your profile for approval.
+              </p>
+            </>
+          ) : (
+            <>
+              <ClipboardList size={64} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Ph.D. Profile Registration Required</h3>
+              <p style={{ color: '#6b7280', marginBottom: 24 }}>Please complete all required details in the **Profile** tab and click **Submit PhD Profile for HOD Approval** to register and unlock the student portal features.</p>
+            </>
+          )}
           <button className="btn-primary" onClick={() => setActiveTab('profile')}>Go to Profile Tab</button>
         </div>
       );
@@ -10138,7 +10201,7 @@ const StudentDashboard = () => {
   return (
     <div className="app-container">
       <div className="mobile-overlay" onClick={() => document.body.classList.remove('sidebar-mobile-open')} />
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isVerified={thesis && thesis.status !== 'REGISTRATION_PENDING'} thesis={thesis} milestones={milestones} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isVerified={thesis && thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED'} thesis={thesis} milestones={milestones} />
       <div className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         {/* Floating warning banner */}
         {user && !user.profileCompleted && (

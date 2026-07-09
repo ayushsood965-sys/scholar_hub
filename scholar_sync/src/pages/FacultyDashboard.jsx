@@ -291,6 +291,7 @@ const Header = ({ title, user }) => {
 };
 
 const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
+  if (status === 'REJECTED') return { text: 'Rejected (Awaiting Re-submission)', color: '#DC2626', bg: '#FEE2E2' };
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {

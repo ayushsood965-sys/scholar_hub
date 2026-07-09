@@ -857,15 +857,27 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const getUploadButton = (docType, certUrl) => {
     if (isSubmitted) return null;
     const isUploading = uploadingDoc === docType;
+
+    // Determine edit mode for this specific docType
+    let isEditingThisDoc = false;
+    if (docType === 'class10') isEditingThisDoc = editModes.class10;
+    else if (docType === 'class12') isEditingThisDoc = editModes.class12;
+    else if (docType === 'graduation') isEditingThisDoc = editModes.graduation;
+    else if (docType === 'postGraduation') isEditingThisDoc = editModes.postGraduation;
+    else if (docType.startsWith('otherQuals_')) isEditingThisDoc = editModes.otherQuals;
+    else if (docType === 'netJrf') isEditingThisDoc = editModes.netJrf;
+
+    const isDisabled = isUploading || !isEditingThisDoc;
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <label style={{
           display: 'inline-flex', alignItems: 'center', gap: '6px', 
-          background: 'var(--color-primary)', color: 'white', padding: '8px 12px', 
-          borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, width: 'fit-content'
+          background: isDisabled ? '#9CA3AF' : 'var(--color-primary)', color: 'white', padding: '8px 12px', 
+          borderRadius: '6px', cursor: isDisabled ? 'not-allowed' : 'pointer', fontSize: '0.8rem', fontWeight: 600, width: 'fit-content'
         }}>
           <Upload size={14} /> {isUploading ? 'Uploading...' : certUrl ? 'Re-upload PDF' : 'Upload PDF'}
-          <input type="file" accept=".pdf,image/*" onChange={e => handleDocUpload(e, docType)} style={{ display: 'none' }} disabled={isUploading} />
+          {!isDisabled && <input type="file" accept=".pdf,image/*" onChange={e => handleDocUpload(e, docType)} style={{ display: 'none' }} />}
         </label>
         {selectedFileNames[docType] && (
           <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Selected: {selectedFileNames[docType]}</span>
@@ -1239,24 +1251,50 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         ) : (
           <>
             {!profile?.profileCompleted ? (
-              <div style={{
-                background: 'rgba(245, 158, 11, 0.1)',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                borderLeft: '4px solid var(--status-late)',
-                padding: '16px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <ShieldAlert style={{ color: 'var(--status-late)', flexShrink: 0 }} />
-                <div>
-                  <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                    Profile Completion Required
-                  </strong>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-                    Please complete your profile details and submit them for HOD verification.
-                  </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                {profile?.profile?.rejectionRemarks && (
+                  <div style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderLeft: '4px solid #EF4444',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <ShieldAlert style={{ color: '#EF4444', flexShrink: 0 }} />
+                    <div>
+                      <strong style={{ color: '#EF4444', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                        Status: Rejected by HOD and Awaiting Re-submission
+                      </strong>
+                      <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                        Your registration details were sent back by the HOD with the following remarks:
+                        <br />
+                        <strong style={{ color: '#0f172a' }}>"{profile.profile.rejectionRemarks}"</strong>
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div style={{
+                  background: 'rgba(245, 158, 11, 0.1)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  borderLeft: '4px solid var(--status-late)',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <ShieldAlert style={{ color: 'var(--status-late)', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: 'var(--status-late)', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
+                      Profile Completion Required
+                    </strong>
+                    <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                      Please complete your profile details and submit them for HOD verification.
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : profile?.isVerified ? (

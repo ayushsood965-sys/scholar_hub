@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
-const { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, getMe, getStudentsFiltered } = require('../controllers/authController');
+const { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const storage = multer.diskStorage({
@@ -24,6 +24,8 @@ router.put('/profile/avatar', protect, upload.single('avatar'), uploadAvatar);
 router.put('/profile/document', protect, upload.single('file'), uploadDocument);
 router.put('/users/:id/active', protect, toggleUserActive);
 router.put('/users/:id/verify', protect, verifyUser);
+router.put('/users/:id/reject', protect, rejectUser);
+router.put('/users/:id/profile', protect, updateUserProfileByHod);
 router.get('/dept-users', protect, getDeptUsers);
 router.get('/students', protect, authorize('FACULTY', 'HOD', 'SUPER_ADMIN'), getStudentsFiltered);
 router.get('/all-users', protect, authorize('SUPER_ADMIN'), getAllUsers);

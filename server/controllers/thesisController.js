@@ -54,9 +54,6 @@ const augmentThesesWithMilestones = async (theses) => {
 // POST /api/thesis — Create thesis registration
 const createThesis = async (req, res) => {
   try {
-    const existing = await Thesis.findOne({ scholarId: req.user._id });
-    if (existing) return res.status(400).json({ message: 'Profile registration already submitted or approved' });
-
     // Fetch full User profile
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -69,7 +66,35 @@ const createThesis = async (req, res) => {
     }
 
     user.profileCompleted = true;
+    if (user.profile) {
+      user.profile.rejectionRemarks = '';
+      user.markModified('profile');
+    }
     await user.save();
+
+    const existing = await Thesis.findOne({ scholarId: req.user._id });
+    if (existing) {
+      if (existing.status === 'REJECTED') {
+        existing.status = 'REGISTRATION_PENDING';
+        existing.title = user.profile.thesisTitle || user.profile.areaOfInterest || "Ph.D. Research Candidate";
+        existing.enrollmentNumber = user.profile.enrollmentNumber;
+        existing.abstract = user.profile.thesisSummary || `Specialization: ${user.profile.specialization || "N/A"}. Mode: ${user.profile.phdMode || "N/A"}. Candidate has completed and submitted their academic profile details for HOD registration review.`;
+        existing.keywords = user.profile.thesisKeywords || '';
+        await existing.save();
+
+        await createNotification({
+          roleScope: 'HOD',
+          department: existing.department,
+          title: '⏳ New Scholar Profile Verification',
+          message: `Scholar ${user.name} has re-submitted their academic registration details and profile for HOD registration approval.`,
+          type: 'PENDING_ACTION',
+          link: 'registration'
+        });
+
+        return res.status(200).json(existing);
+      }
+      return res.status(400).json({ message: 'Profile registration already submitted or approved' });
+    }
 
     const thesis = await Thesis.create({
       scholarId: req.user._id,

@@ -217,6 +217,9 @@ const updateProfile = async (req, res) => {
 
     if (req.body.profileCompleted === true) {
       user.profileCompleted = true;
+      if (user.profile) {
+        user.profile.rejectionRemarks = '';
+      }
     }
     user.markModified('profile');
     user.markModified('profile.qualifications');
@@ -563,4 +566,109 @@ const verifyUser = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, getMe, getStudentsFiltered };
+// PUT /api/auth/users/:id/reject — Reject a user profile request (HOD or Admin/Super Admin action)
+const rejectUser = async (req, res) => {
+  try {
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) return res.status(404).json({ message: 'User not found' });
+
+    // HODs, ADMINs, or SUPER_ADMINs can reject
+    if (!['HOD', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized.' });
+    }
+    if (req.user.role === 'HOD' && req.user.department !== targetUser.department) {
+      return res.status(403).json({ message: 'Not authorized. Can only reject users in your own department.' });
+    }
+
+    const { remarks } = req.body;
+    if (!remarks) {
+      return res.status(400).json({ message: 'Rejection remarks are required.' });
+    }
+
+    targetUser.isVerified = false;
+    targetUser.profileCompleted = false;
+    if (!targetUser.profile) {
+      targetUser.profile = {};
+    }
+    targetUser.profile.rejectionRemarks = remarks;
+    targetUser.markModified('profile');
+    await targetUser.save();
+
+    // Update associated Thesis record to REJECTED so the student can resubmit their registration
+    if (targetUser.role === 'STUDENT') {
+      const Thesis = require('../models/Thesis');
+      await Thesis.updateOne({ scholarId: targetUser._id }, { status: 'REJECTED' });
+    }
+
+    // Notify the student that their profile verification has been rejected
+    await createNotification({
+      recipient: targetUser._id,
+      title: '❌ Profile Verification Rejected',
+      message: `Your profile verification has been rejected by HOD. Remarks: ${remarks}`,
+      type: 'PROFILE_INCOMPLETE',
+      link: 'profile'
+    });
+
+    res.json({ message: `User registration has been rejected and sent back to student.`, user: targetUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// PUT /api/auth/users/:id/profile — HOD / Admin updates a specific student's profile
+const updateUserProfileByHod = async (req, res) => {
+  try {
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) return res.status(404).json({ message: 'User not found' });
+
+    // HODs, ADMINs, or SUPER_ADMINs can edit profile
+    if (!['HOD', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized.' });
+    }
+    if (req.user.role === 'HOD' && req.user.department !== targetUser.department) {
+      return res.status(403).json({ message: 'Not authorized. Can only edit profiles in your own department.' });
+    }
+
+    const { name, username, ...profileData } = req.body;
+
+    if (name) targetUser.name = name;
+    if (username) targetUser.username = username;
+
+    if (!targetUser.profile) {
+      targetUser.profile = {};
+    }
+    Object.keys(profileData).forEach(key => {
+      targetUser.profile[key] = profileData[key];
+    });
+
+    // Recalculate isPhD if degree type was updated
+    if (profileData.degreeType || profileData.degreeTypeName) {
+      const degreeTypeStr = (profileData.degreeTypeName || profileData.degreeType || targetUser.profile.degreeType || targetUser.profile.degreeTypeName || '').toUpperCase();
+      targetUser.profile.isPhD = degreeTypeStr.replace(/[^A-Z]/g, '').includes('PHD');
+    }
+
+    targetUser.markModified('profile');
+    if (profileData.qualifications) {
+      targetUser.markModified('profile.qualifications');
+    }
+    await targetUser.save();
+
+    // If PhD and thesis exists, we should update the thesis title/department etc. as well if they were modified in the profile
+    if (targetUser.profile.isPhD) {
+      const Thesis = require('../models/Thesis');
+      const thesis = await Thesis.findOne({ scholarId: targetUser._id });
+      if (thesis) {
+        if (profileData.thesisTitle) thesis.title = profileData.thesisTitle;
+        if (profileData.thesisSummary) thesis.abstract = profileData.thesisSummary;
+        if (profileData.specialization) thesis.specialization = profileData.specialization;
+        await thesis.save();
+      }
+    }
+
+    res.json({ message: 'Profile updated successfully by HOD.', user: targetUser });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered };

@@ -11,7 +11,7 @@ const thesisSchema = new mongoose.Schema(
     keywords: { type: String, default: '' },
     status: {
       type: String,
-      enum: ['REGISTRATION_PENDING', 'COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'],
+      enum: ['REGISTRATION_PENDING', 'REJECTED', 'COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'],
       default: 'REGISTRATION_PENDING',
     },
     courseworkCompleted: { type: Boolean, default: false },
