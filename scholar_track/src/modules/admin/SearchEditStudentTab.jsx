@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import { useGridControl } from '../../hooks/useGridControl';
@@ -454,178 +455,189 @@ const SearchEditStudentTab = () => {
       )}
 
       {/* VIEW MODAL */}
-      <AnimatePresence>
-        {viewStudent && (
-          <div onClick={() => setViewStudent(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '800px', maxHeight: '85vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #E2E8F0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '14px', marginBottom: '20px' }}>
-                <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Student Profile Details</h4>
-                <button onClick={() => setViewStudent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}>
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* View layout */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* General Account Info */}
-                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Account Information</h5>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
-                    {renderDetailItem('Full Name', viewStudent.name)}
-                    {renderDetailItem('Username / Email', viewStudent.username)}
-                    {renderDetailItem('Department', viewStudent.department)}
-                    {renderDetailItem('Verified Profile', viewStudent.isVerified ? 'Yes / Verified' : 'No / Pending Verification')}
-                    {renderDetailItem('Active Status', viewStudent.isActive ? 'Active' : 'Disabled')}
-                  </div>
+      {createPortal(
+        <AnimatePresence>
+          {viewStudent && (
+            <div onClick={() => setViewStudent(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: 'var(--color-surface, #ffffff)', color: 'var(--color-text-primary, #1F2937)', borderRadius: '16px', width: '100%', maxWidth: '800px', height: '600px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid var(--color-border, rgba(0, 0, 0, 0.08))', overflow: 'hidden' }}>
+                {/* Header - Fixed */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border, #E2E8F0)', padding: '20px 24px' }}>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)', margin: 0 }}>Student Profile Details</h4>
+                  <button onClick={() => setViewStudent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted, #64748B)' }}>
+                    <X size={20} />
+                  </button>
                 </div>
 
-                {/* Personal Profile Details */}
-                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Personal Details</h5>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
-                    {renderDetailItem('Date of Birth', viewStudent.profile?.dob)}
-                    {renderDetailItem('Gender', viewStudent.profile?.gender)}
-                    {renderDetailItem('Category', viewStudent.profile?.category)}
-                    {renderDetailItem('Phone Number', viewStudent.profile?.phoneNumber)}
-                    {renderDetailItem("Father's Name", viewStudent.profile?.fatherName)}
-                    {renderDetailItem("Mother's Name", viewStudent.profile?.motherName)}
-                    {renderDetailItem('Nationality', viewStudent.profile?.nationality)}
-                    {renderDetailItem('Correspondence Address', viewStudent.profile?.address)}
-                  </div>
-                </div>
-
-                {/* Academic Profile Details */}
-                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Details</h5>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
-                    {renderDetailItem('SH ID (Scholar Track)', viewStudent.profile?.shNo)}
-                    {renderDetailItem('Enrollment Number', viewStudent.profile?.enrollmentNumber)}
-                    {renderDetailItem('ERP Admission ID', viewStudent.profile?.erpAdmissionNo)}
-                    {renderDetailItem('Admission Date', viewStudent.profile?.admissionDate)}
-                    {renderDetailItem('Academic Session', viewStudent.profile?.academicSession)}
-                    {renderDetailItem('Degree Type', viewStudent.profile?.degreeType)}
-                    {renderDetailItem('Degree Name', viewStudent.profile?.degreeName)}
-                    {renderDetailItem('Current Semester', semesters.find(s => s._id === viewStudent.profile?.semesterId)?.name)}
-                    {viewStudent.profile?.phdMode && renderDetailItem('PhD Mode', viewStudent.profile?.phdMode)}
-                  </div>
-                  {viewStudent.profile?.thesisTitle && (
-                    <div style={{ borderTop: '1px solid #E2E8F0', marginTop: '16px', paddingTop: '16px' }}>
-                      <h6 style={{ margin: '0 0 10px', color: '#1E293B', fontWeight: 700, fontSize: '0.85rem' }}>PhD Dissertation Details</h6>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {renderDetailItem('Thesis Title', viewStudent.profile?.thesisTitle)}
-                        {renderDetailItem('Thesis Abstract / Summary', viewStudent.profile?.thesisSummary)}
-                        {renderDetailItem('Thesis Keywords', viewStudent.profile?.thesisKeywords)}
+                {/* Content - Scrollable */}
+                <div className="stylish-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {/* General Account Info */}
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '18px', borderRadius: '12px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))' }}>
+                      <h5 style={{ fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Account Information</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                        {renderDetailItem('Full Name', viewStudent.name)}
+                        {renderDetailItem('Username / Email', viewStudent.username)}
+                        {renderDetailItem('Department', viewStudent.department)}
+                        {renderDetailItem('Verified Profile', viewStudent.isVerified ? 'Yes / Verified' : 'No / Pending Verification')}
+                        {renderDetailItem('Active Status', viewStudent.isActive ? 'Active' : 'Disabled')}
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Academic Qualifications Details */}
-                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Qualifications</h5>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid #CBD5E1' }}>
-                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Standard/Exam</th>
-                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Board/University</th>
-                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Passing Year</th>
-                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Roll No.</th>
-                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Marks/CGPA</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {viewStudent.profile?.qualifications?.class10 && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Class 10</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.board}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.passingYear}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.rollNo}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.cgpaPercentage}</td>
-                          </tr>
-                        )}
-                        {viewStudent.profile?.qualifications?.class12 && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Class 12</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.board}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.passingYear}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.rollNo}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.cgpaPercentage}</td>
-                          </tr>
-                        )}
-                        {viewStudent.profile?.qualifications?.graduation && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Graduation ({viewStudent.profile.qualifications.graduation.degreePassed || 'N/A'})</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.university}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.passingYear}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.rollNo}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.cgpaPercentage}</td>
-                          </tr>
-                        )}
-                        {viewStudent.profile?.qualifications?.postGraduation && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Post-Graduation ({viewStudent.profile.qualifications.postGraduation.degreePassed || 'N/A'})</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.university}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.passingYear}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.rollNo}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.cgpaPercentage}</td>
-                          </tr>
-                        )}
-                        {viewStudent.profile?.qualifications?.netJrf && viewStudent.profile.qualifications.netJrf.rollNo && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>NET / JRF ({viewStudent.profile.qualifications.netJrf.qualifyingExam || 'N/A'})</td>
-                            <td style={{ padding: '8px 10px' }}>Subject: {viewStudent.profile.qualifications.netJrf.subject}</td>
-                            <td style={{ padding: '8px 10px' }}>Date: {viewStudent.profile.qualifications.netJrf.examDate}</td>
-                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.netJrf.rollNo}</td>
-                            <td style={{ padding: '8px 10px' }}>—</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                    {/* Personal Profile Details */}
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '18px', borderRadius: '12px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))' }}>
+                      <h5 style={{ fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Personal Details</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                        {renderDetailItem('Date of Birth', viewStudent.profile?.dob)}
+                        {renderDetailItem('Gender', viewStudent.profile?.gender)}
+                        {renderDetailItem('Category', viewStudent.profile?.category)}
+                        {renderDetailItem('Phone Number', viewStudent.profile?.phoneNumber)}
+                        {renderDetailItem("Father's Name", viewStudent.profile?.fatherName)}
+                        {renderDetailItem("Mother's Name", viewStudent.profile?.motherName)}
+                        {renderDetailItem('Nationality', viewStudent.profile?.nationality)}
+                        {renderDetailItem('Correspondence Address', viewStudent.profile?.address)}
+                      </div>
+                    </div>
+
+                    {/* Academic Profile Details */}
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '18px', borderRadius: '12px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))' }}>
+                      <h5 style={{ fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Details</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                        {renderDetailItem('SH ID (Scholar Track)', viewStudent.profile?.shNo)}
+                        {renderDetailItem('Enrollment Number', viewStudent.profile?.enrollmentNumber)}
+                        {renderDetailItem('ERP Admission ID', viewStudent.profile?.erpAdmissionNo)}
+                        {renderDetailItem('Admission Date', viewStudent.profile?.admissionDate)}
+                        {renderDetailItem('Academic Session', viewStudent.profile?.academicSession)}
+                        {renderDetailItem('Degree Type', viewStudent.profile?.degreeType)}
+                        {renderDetailItem('Degree Name', viewStudent.profile?.degreeName)}
+                        {renderDetailItem('Current Semester', semesters.find(s => s._id === viewStudent.profile?.semesterId)?.name)}
+                        {viewStudent.profile?.phdMode && renderDetailItem('PhD Mode', viewStudent.profile?.phdMode)}
+                      </div>
+                      {viewStudent.profile?.thesisTitle && (
+                        <div style={{ borderTop: '1px solid var(--color-border, #E2E8F0)', marginTop: '16px', paddingTop: '16px' }}>
+                          <h6 style={{ margin: '0 0 10px', color: 'var(--color-text-primary, #1E293B)', fontWeight: 700, fontSize: '0.85rem' }}>PhD Dissertation Details</h6>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {renderDetailItem('Thesis Title', viewStudent.profile?.thesisTitle)}
+                            {renderDetailItem('Thesis Abstract / Summary', viewStudent.profile?.thesisSummary)}
+                            {renderDetailItem('Thesis Keywords', viewStudent.profile?.thesisKeywords)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Academic Qualifications Details */}
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '18px', borderRadius: '12px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))' }}>
+                      <h5 style={{ fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Qualifications</h5>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid var(--color-border, #CBD5E1)' }}>
+                              <th style={{ padding: '8px 10px', color: 'var(--color-text-secondary, #475569)', fontWeight: 700 }}>Standard/Exam</th>
+                              <th style={{ padding: '8px 10px', color: 'var(--color-text-secondary, #475569)', fontWeight: 700 }}>Board/University</th>
+                              <th style={{ padding: '8px 10px', color: 'var(--color-text-secondary, #475569)', fontWeight: 700 }}>Passing Year</th>
+                              <th style={{ padding: '8px 10px', color: 'var(--color-text-secondary, #475569)', fontWeight: 700 }}>Roll No.</th>
+                              <th style={{ padding: '8px 10px', color: 'var(--color-text-secondary, #475569)', fontWeight: 700 }}>Marks/CGPA</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {viewStudent.profile?.qualifications?.class10 && (
+                              <tr style={{ borderBottom: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface, white)' }}>
+                                <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>Class 10</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.board}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.passingYear}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.rollNo}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.cgpaPercentage}</td>
+                              </tr>
+                            )}
+                            {viewStudent.profile?.qualifications?.class12 && (
+                              <tr style={{ borderBottom: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface, white)' }}>
+                                <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>Class 12</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.board}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.passingYear}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.rollNo}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.cgpaPercentage}</td>
+                              </tr>
+                            )}
+                            {viewStudent.profile?.qualifications?.graduation && (
+                              <tr style={{ borderBottom: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface, white)' }}>
+                                <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>Graduation ({viewStudent.profile.qualifications.graduation.degreePassed || 'N/A'})</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.university}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.passingYear}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.rollNo}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.cgpaPercentage}</td>
+                              </tr>
+                            )}
+                            {viewStudent.profile?.qualifications?.postGraduation && (
+                              <tr style={{ borderBottom: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface, white)' }}>
+                                <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>Post-Graduation ({viewStudent.profile.qualifications.postGraduation.degreePassed || 'N/A'})</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.university}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.passingYear}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.rollNo}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.cgpaPercentage}</td>
+                              </tr>
+                            )}
+                            {viewStudent.profile?.qualifications?.netJrf && viewStudent.profile.qualifications.netJrf.rollNo && (
+                              <tr style={{ borderBottom: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface, white)' }}>
+                                <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>NET / JRF ({viewStudent.profile.qualifications.netJrf.qualifyingExam || 'N/A'})</td>
+                                <td style={{ padding: '8px 10px' }}>Subject: {viewStudent.profile.qualifications.netJrf.subject}</td>
+                                <td style={{ padding: '8px 10px' }}>Date: {viewStudent.profile.qualifications.netJrf.examDate}</td>
+                                <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.netJrf.rollNo}</td>
+                                <td style={{ padding: '8px 10px' }}>—</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={() => setViewStudent(null)} className="btn-outline" style={{ padding: '8px 20px' }}>Close Profile View</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                {/* Footer - Fixed */}
+                <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border, #E2E8F0)', display: 'flex', justifyContent: 'flex-end', background: 'var(--color-surface-elevated, #F8FAFC)' }}>
+                  <button onClick={() => setViewStudent(null)} className="btn-outline" style={{ padding: '8px 20px' }}>Close Profile View</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* EDIT MODAL */}
-      <AnimatePresence>
-        {editStudent && editForm && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '850px', maxHeight: '85vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #E2E8F0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '14px', marginBottom: '20px' }}>
-                <div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Super Admin Edit Profile</h4>
-                  <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0 }}>Edit candidate details for <strong>{editStudent.name}</strong></p>
-                </div>
-                <button onClick={() => setEditStudent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}>
-                  <X size={20} />
-                </button>
-              </div>
+      {createPortal(
+        <AnimatePresence>
+          {editStudent && editForm && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: 'var(--color-surface, #ffffff)', color: 'var(--color-text-primary, #1F2937)', borderRadius: '16px', width: '100%', maxWidth: '900px', height: '700px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid var(--color-border, rgba(0, 0, 0, 0.08))', overflow: 'hidden' }}>
+                <form onSubmit={handleSaveEdit} style={{ height: '100%', display: 'flex', flexDirection: 'column', margin: 0 }}>
+                  {/* Header - Fixed */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border, #E2E8F0)', padding: '20px 24px' }}>
+                    <div>
+                      <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)', margin: 0 }}>Super Admin Edit Profile</h4>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted, #64748B)', margin: 0 }}>Edit candidate details for <strong>{editStudent.name}</strong></p>
+                    </div>
+                    <button type="button" onClick={() => setEditStudent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted, #64748B)' }}>
+                      <X size={20} />
+                    </button>
+                  </div>
 
-              {/* Form Tabs */}
-              <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '20px', overflowX: 'auto' }}>
-                <button type="button" onClick={() => setActiveEditTab('account')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'account' ? '#0F172A' : 'transparent', color: activeEditTab === 'account' ? 'white' : '#64748B' }}>
-                  Account & Status
-                </button>
-                <button type="button" onClick={() => setActiveEditTab('personal')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'personal' ? '#0F172A' : 'transparent', color: activeEditTab === 'personal' ? 'white' : '#64748B' }}>
-                  Personal Info
-                </button>
-                <button type="button" onClick={() => setActiveEditTab('academic')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'academic' ? '#0F172A' : 'transparent', color: activeEditTab === 'academic' ? 'white' : '#64748B' }}>
-                  Academic Profile
-                </button>
-                <button type="button" onClick={() => setActiveEditTab('qualifications')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'qualifications' ? '#0F172A' : 'transparent', color: activeEditTab === 'qualifications' ? 'white' : '#64748B' }}>
-                  Qualifications
-                </button>
-              </div>
+                  {/* Form Tabs - Fixed */}
+                  <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--color-border, #E2E8F0)', padding: '10px 24px', background: 'var(--color-surface-elevated, #F8FAFC)', overflowX: 'auto' }}>
+                    <button type="button" onClick={() => setActiveEditTab('account')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'account' ? 'var(--color-primary, #1A5A3B)' : 'transparent', color: activeEditTab === 'account' ? 'white' : 'var(--color-text-muted, #64748B)' }}>
+                      Account & Status
+                    </button>
+                    <button type="button" onClick={() => setActiveEditTab('personal')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'personal' ? 'var(--color-primary, #1A5A3B)' : 'transparent', color: activeEditTab === 'personal' ? 'white' : 'var(--color-text-muted, #64748B)' }}>
+                      Personal Info
+                    </button>
+                    <button type="button" onClick={() => setActiveEditTab('academic')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'academic' ? 'var(--color-primary, #1A5A3B)' : 'transparent', color: activeEditTab === 'academic' ? 'white' : 'var(--color-text-muted, #64748B)' }}>
+                      Academic Profile
+                    </button>
+                    <button type="button" onClick={() => setActiveEditTab('qualifications')} style={{ padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: activeEditTab === 'qualifications' ? 'var(--color-primary, #1A5A3B)' : 'transparent', color: activeEditTab === 'qualifications' ? 'white' : 'var(--color-text-muted, #64748B)' }}>
+                      Qualifications
+                    </button>
+                  </div>
 
-              <form onSubmit={handleSaveEdit}>
+                  {/* Content area - Scrollable */}
+                  <div className="stylish-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                 {/* ACCOUNT & STATUS TAB */}
                 {activeEditTab === 'account' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -980,18 +992,47 @@ const SearchEditStudentTab = () => {
                   </div>
                 )}
 
-                {/* MODAL FOOTER */}
-                <div style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0', paddingTop: '16px' }}>
-                  <button type="button" onClick={() => setEditStudent(null)} className="btn-outline" style={{ padding: '8px 20px' }}>Cancel</button>
-                  <button type="submit" disabled={saveLoading} className="btn-primary" style={{ padding: '8px 20px', background: '#10B981', borderColor: '#10B981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {saveLoading ? 'Saving changes...' : <><Save size={16} /> Save Profile Details</>}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                  </div>
+
+                  {/* MODAL FOOTER - Fixed */}
+                  <div style={{ padding: '16px 24px', display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface-elevated, #F8FAFC)' }}>
+                    <button type="button" onClick={() => setEditStudent(null)} className="btn-outline" style={{ padding: '8px 20px' }}>Cancel</button>
+                    <button type="submit" disabled={saveLoading} className="btn-primary" style={{ padding: '8px 20px', background: 'var(--color-primary, #1A5A3B)', borderColor: 'var(--color-primary, #1A5A3B)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {saveLoading ? 'Saving changes...' : <><Save size={16} /> Save Profile Details</>}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Stylish Scrollbar CSS Injection */}
+      <style>{`
+        .stylish-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .stylish-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .stylish-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.15);
+          border-radius: 99px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+        [data-theme="dark"] .stylish-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+          background-clip: padding-box;
+        }
+        .stylish-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: var(--color-primary, #1A5A3B);
+          background-clip: padding-box;
+        }
+      `}</style>
     </div>
   );
 };
