@@ -49,7 +49,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
       const res = await api.put(`/auth/users/${student._id}/reject`, { remarks });
       toast.success(res.data.message || 'Registration rejected and sent back to candidate.');
       if (onVerifySuccess) {
-        onVerifySuccess(student._id);
+        onVerifySuccess(res.data.user || student);
       }
       setShowRejectPopup(false);
       onClose();
@@ -129,20 +129,24 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
         }
       }
 
-      await api.put(`/auth/users/${student._id}/profile`, editForm);
+      const res = await api.put(`/auth/users/${student._id}/profile`, editForm);
+      const updatedUser = res.data.user;
       
       if (approveAfterSave) {
         await api.put(`/auth/users/${student._id}/verify`);
         toast.success('Profile saved and registration approved successfully!');
+        if (onVerifySuccess) {
+          onVerifySuccess(updatedUser ? { ...updatedUser, isVerified: true } : student._id);
+        }
+        setIsEditing(false);
+        onClose();
       } else {
         toast.success('Profile changes saved successfully!');
+        if (onVerifySuccess) {
+          onVerifySuccess(updatedUser || student);
+        }
+        setIsEditing(false);
       }
-
-      if (onVerifySuccess) {
-        onVerifySuccess(student._id);
-      }
-      setIsEditing(false);
-      onClose();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save profile changes');
     } finally {
@@ -712,7 +716,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                             fontSize: '0.85rem'
                           }}>
                             <span style={{ fontSize: '1.25rem' }}>❌</span>
-                            <span>Profile rejected. Awaiting resubmission from the student.</span>
+                            <span>Request rejected and awaiting resubmission by the candidate.</span>
                           </div>
                         </div>
                       ) : showRejectPopup ? (

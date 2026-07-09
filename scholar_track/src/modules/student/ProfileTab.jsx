@@ -1266,7 +1266,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <ShieldAlert style={{ color: '#EF4444', flexShrink: 0 }} />
                     <div>
                       <strong style={{ color: '#EF4444', display: 'block', fontSize: '0.95rem', marginBottom: '2px' }}>
-                        Status: Rejected by HOD and Awaiting Re-submission
+                        Status: Request rejected and awaiting resubmission by the candidate.
                       </strong>
                       <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
                         Your registration details were sent back by the HOD with the following remarks:

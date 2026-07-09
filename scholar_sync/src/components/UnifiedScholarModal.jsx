@@ -558,13 +558,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         }
         await onVerify();
         toast.success('Profile saved, supervisor assigned and registration approved successfully!');
+        if (onRefresh) await onRefresh();
+        setIsEditing(false);
+        onClose();
       } else {
         toast.success('Profile changes saved successfully!');
+        if (onRefresh) await onRefresh();
+        setIsEditing(false);
       }
-
-      if (onRefresh) onRefresh();
-      setIsEditing(false);
-      onClose();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save profile changes');
     } finally {
@@ -2432,7 +2433,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             fontSize: '0.85rem'
           }}>
             <span style={{ fontSize: '1.25rem' }}>❌</span>
-            <span>Profile rejected. Awaiting resubmission from the student.</span>
+            <span>Request rejected and awaiting resubmission by the candidate.</span>
           </div>
         </div>
       )}

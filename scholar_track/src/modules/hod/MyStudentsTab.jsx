@@ -45,10 +45,24 @@ const MyStudentsTab = () => {
     }
   }, [user]);
 
-  const handleVerifySuccess = (verifiedStudentId) => {
+  const handleVerifySuccess = (updatedStudentOrId) => {
     setStudents(prev => 
-      prev.map(s => s._id === verifiedStudentId ? { ...s, isVerified: true } : s)
+      prev.map(s => {
+        if (typeof updatedStudentOrId === 'string') {
+          return s._id === updatedStudentOrId ? { ...s, isVerified: true } : s;
+        } else {
+          return s._id === updatedStudentOrId._id ? updatedStudentOrId : s;
+        }
+      })
     );
+    setSelectedStudent(prev => {
+      if (!prev) return null;
+      if (typeof updatedStudentOrId === 'string') {
+        return prev._id === updatedStudentOrId ? { ...prev, isVerified: true } : prev;
+      } else {
+        return prev._id === updatedStudentOrId._id ? updatedStudentOrId : prev;
+      }
+    });
   };
 
   const isStudentPhD = (student) => {
@@ -192,7 +206,10 @@ const MyStudentsTab = () => {
                 return (
                   <tr key={student._id} style={{ borderBottom: '1px solid var(--color-border-solid, rgba(255,255,255,0.05))' }}>
                     <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{index + 1}</td>
-                    <td style={{ padding: '14px 16px', fontWeight: '600', color: 'var(--text-primary)' }}>{student.name}</td>
+                    <td style={{ padding: '14px 16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                      <div>{student.name}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '400', marginTop: '2px' }}>{student.username}</div>
+                    </td>
                     <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{profile.fatherName || '—'}</td>
                     <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontWeight: '500' }}>{profile.enrollmentNumber || '—'}</td>
                     <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{profile.degreeName || '—'}</td>
@@ -210,6 +227,17 @@ const MyStudentsTab = () => {
                           gap: '3px'
                         }}>
                           <ShieldCheck size={12} /> Verified
+                        </span>
+                      ) : student.profile?.rejectionRemarks ? (
+                        <span style={{ 
+                          fontSize: '0.72rem', 
+                          background: 'rgba(239, 68, 68, 0.1)', 
+                          color: '#EF4444', 
+                          padding: '4px 10px', 
+                          borderRadius: '20px', 
+                          fontWeight: 600 
+                        }}>
+                          ❌ Rejected
                         </span>
                       ) : (
                         <span style={{ 

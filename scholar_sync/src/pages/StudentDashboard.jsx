@@ -7735,7 +7735,7 @@ const ProfileTab = () => {
               color: '#991B1B'
             }}>
               <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <AlertCircle size={16} /> Status: Rejected by HOD and Awaiting Re-submission
+                <AlertCircle size={16} /> Status: Request rejected and awaiting resubmission by the candidate.
               </div>
               <div style={{ marginBottom: '8px' }}>
                 Remarks: <strong style={{ color: '#7F1D1D' }}>"{user.profile.rejectionRemarks}"</strong>
