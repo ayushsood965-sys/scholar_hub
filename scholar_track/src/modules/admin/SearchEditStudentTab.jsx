@@ -174,6 +174,40 @@ const SearchEditStudentTab = () => {
     return () => document.removeEventListener('click', handleGlobalClick);
   }, []);
 
+  // Get filtered degree names based on selected degreeType
+  const getFilteredDegreeNames = () => {
+    if (!searchParams.degreeType) {
+      return [];
+    }
+    const selectedType = degreeTypes.find(
+      t => t.name.toLowerCase() === searchParams.degreeType.toLowerCase()
+    );
+    if (!selectedType) {
+      return [];
+    }
+    return degreeNames.filter(d => {
+      const typeId = d.degreeTypeId?._id || d.degreeTypeId;
+      return typeId === selectedType._id;
+    });
+  };
+
+  // Keep degreeName selection aligned when Degree Type is modified/cleared
+  useEffect(() => {
+    if (searchParams.degreeType) {
+      const validDegrees = getFilteredDegreeNames();
+      const isValid = validDegrees.some(
+        d => d.name.toLowerCase() === searchParams.degreeName.toLowerCase()
+      );
+      if (!isValid && searchParams.degreeName) {
+        setSearchParams(prev => ({ ...prev, degreeName: '' }));
+      }
+    } else {
+      if (searchParams.degreeName) {
+        setSearchParams(prev => ({ ...prev, degreeName: '' }));
+      }
+    }
+  }, [searchParams.degreeType, degreeNames, degreeTypes]);
+
   // Get filtered semesters based on selected degreeName
   const getFilteredSemesters = () => {
     if (!searchParams.degreeName) {
@@ -545,13 +579,14 @@ const SearchEditStudentTab = () => {
               <div style={{ position: 'relative' }}>
                 <input 
                   type="text" 
-                  placeholder="Search & select degree..." 
+                  placeholder={!searchParams.degreeType ? 'Select degree type first...' : 'Search & select degree...'} 
                   value={searchParams.degreeName} 
                   onChange={(e) => {
                     setSearchParams(prev => ({ ...prev, degreeName: e.target.value }));
                     setShowDegreeDropdown(true);
                   }}
                   onFocus={() => setShowDegreeDropdown(true)}
+                  disabled={!searchParams.degreeType}
                   className="form-input"
                   style={{ paddingRight: '30px' }}
                 />
@@ -561,6 +596,7 @@ const SearchEditStudentTab = () => {
                     setSearchParams(prev => ({ ...prev, degreeName: '' }));
                     setShowDegreeDropdown(true);
                   }}
+                  disabled={!searchParams.degreeType}
                   style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '0.9rem', padding: 0 }}
                 >
                   {searchParams.degreeName ? '×' : '▼'}
@@ -582,10 +618,10 @@ const SearchEditStudentTab = () => {
                   >
                     All Degree Names (Clear selection)
                   </div>
-                  {degreeNames.filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).length === 0 ? (
+                  {getFilteredDegreeNames().filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).length === 0 ? (
                     <div style={{ padding: '8px 12px', fontSize: '0.82rem', color: '#94A3B8', fontStyle: 'italic' }}>No matches found</div>
                   ) : (
-                    degreeNames.filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).map(d => (
+                    getFilteredDegreeNames().filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).map(d => (
                       <div 
                         key={d._id}
                         onClick={() => {
