@@ -10,6 +10,13 @@ const SearchEditStudentTab = () => {
   const api = useApi();
   const toast = useToast();
 
+  const renderDetailItem = (label, value) => (
+    <div style={{ background: 'var(--color-surface, #ffffff)', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--color-border, rgba(0, 0, 0, 0.1))', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-muted, #64748B)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
+      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-primary, #0F172A)', wordBreak: 'break-all', overflowWrap: 'break-word' }}>{value || '—'}</span>
+    </div>
+  );
+
   // Search parameters state
   const [searchParams, setSearchParams] = useState({
     name: '',
@@ -296,53 +303,63 @@ const SearchEditStudentTab = () => {
   };
 
   return (
-    <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-      <h3 className="card-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', marginBottom: '16px' }}>
+    <div className="card" style={{ padding: '24px', background: 'var(--color-surface, #ffffff)', color: 'var(--color-text-primary, #1F2937)', borderRadius: '16px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))' }}>
+      <h3 className="card-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary, #1F2937)', marginBottom: '16px' }}>
         Search & Edit Student Profiles
       </h3>
 
       {/* SEARCH FORM */}
-      <form onSubmit={handleSearchSubmit} style={{ background: '#F8FAFC', padding: '20px', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px' }}>
+      <form onSubmit={handleSearchSubmit} style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))', marginBottom: '24px' }}>
+        {/* Search by Name OR Email OR SH No OR Phone */}
+        <div style={{ background: 'var(--color-surface, #ffffff)', padding: '16px', borderRadius: '8px', border: '1px solid var(--color-border, rgba(0,0,0,0.08))', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+            <div style={{ flex: 1, minWidth: '180px' }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Name</label>
+              <input type="text" name="name" value={searchParams.name} onChange={handleSearchChange} className="form-input" placeholder="Search by name..." />
+            </div>
+            <div style={{ color: 'var(--color-text-muted, #6B7280)', fontWeight: 800, fontSize: '0.8rem', paddingTop: '20px', textTransform: 'uppercase', userSelect: 'none' }}>OR</div>
+            <div style={{ flex: 1, minWidth: '180px' }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Email ID</label>
+              <input type="text" name="email" value={searchParams.email} onChange={handleSearchChange} className="form-input" placeholder="Search by email..." />
+            </div>
+            <div style={{ color: 'var(--color-text-muted, #6B7280)', fontWeight: 800, fontSize: '0.8rem', paddingTop: '20px', textTransform: 'uppercase', userSelect: 'none' }}>OR</div>
+            <div style={{ flex: 1, minWidth: '180px' }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>SH No.</label>
+              <input type="text" name="shNo" value={searchParams.shNo} onChange={handleSearchChange} className="form-input" placeholder="Search by SH no..." />
+            </div>
+            <div style={{ color: 'var(--color-text-muted, #6B7280)', fontWeight: 800, fontSize: '0.8rem', paddingTop: '20px', textTransform: 'uppercase', userSelect: 'none' }}>OR</div>
+            <div style={{ flex: 1, minWidth: '180px' }}>
+              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Mobile/Phone Number</label>
+              <input type="text" name="phoneNumber" value={searchParams.phoneNumber} onChange={handleSearchChange} className="form-input" placeholder="Search by phone..." />
+            </div>
+          </div>
+        </div>
+
+        {/* Academic Filters */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginBottom: '16px' }}>
           <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>Name</label>
-            <input type="text" name="name" value={searchParams.name} onChange={handleSearchChange} className="form-input" placeholder="Search by name..." />
-          </div>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>Email ID</label>
-            <input type="text" name="email" value={searchParams.email} onChange={handleSearchChange} className="form-input" placeholder="Search by email..." />
-          </div>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>SH No.</label>
-            <input type="text" name="shNo" value={searchParams.shNo} onChange={handleSearchChange} className="form-input" placeholder="Search by SH no..." />
-          </div>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>Mobile/Phone Number</label>
-            <input type="text" name="phoneNumber" value={searchParams.phoneNumber} onChange={handleSearchChange} className="form-input" placeholder="Search by phone..." />
-          </div>
-          <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>Academic Session</label>
+            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Academic Session</label>
             <select name="session" value={searchParams.session} onChange={handleSearchChange} className="form-input">
               <option value="">All Sessions</option>
               {sessions.map(s => <option key={s._id} value={s.sessionName}>{s.sessionName}</option>)}
             </select>
           </div>
           <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>Degree Type</label>
+            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Degree Type</label>
             <select name="degreeType" value={searchParams.degreeType} onChange={handleSearchChange} className="form-input">
               <option value="">All Degree Types</option>
               {degreeTypes.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>Degree Name</label>
+            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Degree Name</label>
             <select name="degreeName" value={searchParams.degreeName} onChange={handleSearchChange} className="form-input">
               <option value="">All Degree Names</option>
               {degreeNames.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: '#475569' }}>Semester</label>
+            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)' }}>Semester</label>
             <select name="semesterId" value={searchParams.semesterId} onChange={handleSearchChange} className="form-input">
               <option value="">All Semesters</option>
               {semesters.map(s => <option key={s._id} value={s._id}>{s.name} ({s.number})</option>)}
@@ -352,7 +369,7 @@ const SearchEditStudentTab = () => {
 
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button type="button" onClick={handleResetSearch} className="btn-outline" style={{ padding: '8px 16px' }}>Reset</button>
-          <button type="submit" className="btn-primary" style={{ padding: '8px 16px', background: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button type="submit" className="btn-primary" style={{ padding: '8px 16px', background: 'var(--color-primary, #1A5A3B)', borderColor: 'var(--color-primary, #1A5A3B)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Search size={16} /> Search Database
           </button>
         </div>
@@ -439,8 +456,8 @@ const SearchEditStudentTab = () => {
       {/* VIEW MODAL */}
       <AnimatePresence>
         {viewStudent && (
-          <div onClick={() => setViewStudent(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', padding: '24px' }}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+          <div onClick={() => setViewStudent(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '800px', maxHeight: '85vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #E2E8F0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '14px', marginBottom: '20px' }}>
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Student Profile Details</h4>
                 <button onClick={() => setViewStudent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}>
@@ -449,115 +466,118 @@ const SearchEditStudentTab = () => {
               </div>
 
               {/* View layout */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* General Account Info */}
-                <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                   <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Account Information</h5>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', fontSize: '0.85rem' }}>
-                    <div><strong>Full Name:</strong> {viewStudent.name}</div>
-                    <div><strong>Username/Email:</strong> {viewStudent.username}</div>
-                    <div><strong>Department:</strong> {viewStudent.department || '—'}</div>
-                    <div><strong>Verified:</strong> {viewStudent.isVerified ? 'Yes' : 'No'}</div>
-                    <div><strong>Active Status:</strong> {viewStudent.isActive ? 'Active' : 'Disabled'}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                    {renderDetailItem('Full Name', viewStudent.name)}
+                    {renderDetailItem('Username / Email', viewStudent.username)}
+                    {renderDetailItem('Department', viewStudent.department)}
+                    {renderDetailItem('Verified Profile', viewStudent.isVerified ? 'Yes / Verified' : 'No / Pending Verification')}
+                    {renderDetailItem('Active Status', viewStudent.isActive ? 'Active' : 'Disabled')}
                   </div>
                 </div>
 
                 {/* Personal Profile Details */}
-                <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Personal Profile Details</h5>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', fontSize: '0.85rem' }}>
-                    <div><strong>DOB:</strong> {viewStudent.profile?.dob || '—'}</div>
-                    <div><strong>Gender:</strong> {viewStudent.profile?.gender || '—'}</div>
-                    <div><strong>Category:</strong> {viewStudent.profile?.category || '—'}</div>
-                    <div><strong>Phone:</strong> {viewStudent.profile?.phoneNumber || '—'}</div>
-                    <div><strong>Father\'s Name:</strong> {viewStudent.profile?.fatherName || '—'}</div>
-                    <div><strong>Mother\'s Name:</strong> {viewStudent.profile?.motherName || '—'}</div>
-                    <div><strong>Nationality:</strong> {viewStudent.profile?.nationality || '—'}</div>
-                    <div><strong>Address:</strong> {viewStudent.profile?.address || '—'}</div>
+                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Personal Details</h5>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                    {renderDetailItem('Date of Birth', viewStudent.profile?.dob)}
+                    {renderDetailItem('Gender', viewStudent.profile?.gender)}
+                    {renderDetailItem('Category', viewStudent.profile?.category)}
+                    {renderDetailItem('Phone Number', viewStudent.profile?.phoneNumber)}
+                    {renderDetailItem("Father's Name", viewStudent.profile?.fatherName)}
+                    {renderDetailItem("Mother's Name", viewStudent.profile?.motherName)}
+                    {renderDetailItem('Nationality', viewStudent.profile?.nationality)}
+                    {renderDetailItem('Correspondence Address', viewStudent.profile?.address)}
                   </div>
                 </div>
 
                 {/* Academic Profile Details */}
-                <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Profile Details</h5>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', fontSize: '0.85rem' }}>
-                    <div><strong>SH No:</strong> {viewStudent.profile?.shNo || '—'}</div>
-                    <div><strong>Enrollment No:</strong> {viewStudent.profile?.enrollmentNumber || '—'}</div>
-                    <div><strong>ERP Admission No:</strong> {viewStudent.profile?.erpAdmissionNo || '—'}</div>
-                    <div><strong>Admission Date:</strong> {viewStudent.profile?.admissionDate || '—'}</div>
-                    <div><strong>Academic Session:</strong> {viewStudent.profile?.academicSession || '—'}</div>
-                    <div><strong>Degree Type:</strong> {viewStudent.profile?.degreeType || '—'}</div>
-                    <div><strong>Degree Name:</strong> {viewStudent.profile?.degreeName || '—'}</div>
-                    <div><strong>Semester:</strong> {semesters.find(s => s._id === viewStudent.profile?.semesterId)?.name || '—'}</div>
-                    {viewStudent.profile?.phdMode && <div><strong>PhD Mode:</strong> {viewStudent.profile?.phdMode}</div>}
+                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                  <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Details</h5>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                    {renderDetailItem('SH ID (Scholar Track)', viewStudent.profile?.shNo)}
+                    {renderDetailItem('Enrollment Number', viewStudent.profile?.enrollmentNumber)}
+                    {renderDetailItem('ERP Admission ID', viewStudent.profile?.erpAdmissionNo)}
+                    {renderDetailItem('Admission Date', viewStudent.profile?.admissionDate)}
+                    {renderDetailItem('Academic Session', viewStudent.profile?.academicSession)}
+                    {renderDetailItem('Degree Type', viewStudent.profile?.degreeType)}
+                    {renderDetailItem('Degree Name', viewStudent.profile?.degreeName)}
+                    {renderDetailItem('Current Semester', semesters.find(s => s._id === viewStudent.profile?.semesterId)?.name)}
+                    {viewStudent.profile?.phdMode && renderDetailItem('PhD Mode', viewStudent.profile?.phdMode)}
                   </div>
                   {viewStudent.profile?.thesisTitle && (
-                    <div style={{ borderTop: '1px solid #E2E8F0', marginTop: '12px', paddingTop: '12px', fontSize: '0.85rem' }}>
-                      <div style={{ marginBottom: '4px' }}><strong>Thesis Title:</strong> {viewStudent.profile?.thesisTitle}</div>
-                      <div><strong>Thesis Summary:</strong> {viewStudent.profile?.thesisSummary || '—'}</div>
-                      <div style={{ marginTop: '4px' }}><strong>Thesis Keywords:</strong> {viewStudent.profile?.thesisKeywords || '—'}</div>
+                    <div style={{ borderTop: '1px solid #E2E8F0', marginTop: '16px', paddingTop: '16px' }}>
+                      <h6 style={{ margin: '0 0 10px', color: '#1E293B', fontWeight: 700, fontSize: '0.85rem' }}>PhD Dissertation Details</h6>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {renderDetailItem('Thesis Title', viewStudent.profile?.thesisTitle)}
+                        {renderDetailItem('Thesis Abstract / Summary', viewStudent.profile?.thesisSummary)}
+                        {renderDetailItem('Thesis Keywords', viewStudent.profile?.thesisKeywords)}
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {/* Academic Qualifications Details */}
-                <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                <div style={{ background: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                   <h5 style={{ fontWeight: 700, color: '#1E293B', marginBottom: '12px', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Academic Qualifications</h5>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid #CBD5E1' }}>
-                          <th style={{ padding: '6px 8px' }}>Standard/Exam</th>
-                          <th style={{ padding: '6px 8px' }}>Board/University</th>
-                          <th style={{ padding: '6px 8px' }}>Passing Year</th>
-                          <th style={{ padding: '6px 8px' }}>Roll No.</th>
-                          <th style={{ padding: '6px 8px' }}>Marks/CGPA</th>
+                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Standard/Exam</th>
+                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Board/University</th>
+                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Passing Year</th>
+                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Roll No.</th>
+                          <th style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>Marks/CGPA</th>
                         </tr>
                       </thead>
                       <tbody>
                         {viewStudent.profile?.qualifications?.class10 && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>Class 10</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class10.board}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class10.passingYear}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class10.rollNo}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class10.cgpaPercentage}</td>
+                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Class 10</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.board}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.passingYear}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.rollNo}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class10.cgpaPercentage}</td>
                           </tr>
                         )}
                         {viewStudent.profile?.qualifications?.class12 && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>Class 12</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class12.board}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class12.passingYear}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class12.rollNo}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.class12.cgpaPercentage}</td>
+                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Class 12</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.board}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.passingYear}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.rollNo}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.class12.cgpaPercentage}</td>
                           </tr>
                         )}
                         {viewStudent.profile?.qualifications?.graduation && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>Graduation ({viewStudent.profile.qualifications.graduation.degreePassed || 'N/A'})</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.graduation.university}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.graduation.passingYear}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.graduation.rollNo}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.graduation.cgpaPercentage}</td>
+                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Graduation ({viewStudent.profile.qualifications.graduation.degreePassed || 'N/A'})</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.university}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.passingYear}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.rollNo}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.graduation.cgpaPercentage}</td>
                           </tr>
                         )}
                         {viewStudent.profile?.qualifications?.postGraduation && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>Post-Graduation ({viewStudent.profile.qualifications.postGraduation.degreePassed || 'N/A'})</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.postGraduation.university}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.postGraduation.passingYear}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.postGraduation.rollNo}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.postGraduation.cgpaPercentage}</td>
+                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>Post-Graduation ({viewStudent.profile.qualifications.postGraduation.degreePassed || 'N/A'})</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.university}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.passingYear}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.rollNo}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.postGraduation.cgpaPercentage}</td>
                           </tr>
                         )}
                         {viewStudent.profile?.qualifications?.netJrf && viewStudent.profile.qualifications.netJrf.rollNo && (
-                          <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>NET / JRF ({viewStudent.profile.qualifications.netJrf.qualifyingExam || 'N/A'})</td>
-                            <td style={{ padding: '6px 8px' }}>Subject: {viewStudent.profile.qualifications.netJrf.subject}</td>
-                            <td style={{ padding: '6px 8px' }}>Date: {viewStudent.profile.qualifications.netJrf.examDate}</td>
-                            <td style={{ padding: '6px 8px' }}>{viewStudent.profile.qualifications.netJrf.rollNo}</td>
-                            <td style={{ padding: '6px 8px' }}>—</td>
+                          <tr style={{ borderBottom: '1px solid #E2E8F0', background: 'white' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>NET / JRF ({viewStudent.profile.qualifications.netJrf.qualifyingExam || 'N/A'})</td>
+                            <td style={{ padding: '8px 10px' }}>Subject: {viewStudent.profile.qualifications.netJrf.subject}</td>
+                            <td style={{ padding: '8px 10px' }}>Date: {viewStudent.profile.qualifications.netJrf.examDate}</td>
+                            <td style={{ padding: '8px 10px' }}>{viewStudent.profile.qualifications.netJrf.rollNo}</td>
+                            <td style={{ padding: '8px 10px' }}>—</td>
                           </tr>
                         )}
                       </tbody>
@@ -577,8 +597,8 @@ const SearchEditStudentTab = () => {
       {/* EDIT MODAL */}
       <AnimatePresence>
         {editStudent && editForm && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', padding: '24px' }}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} style={{ background: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '850px', maxHeight: '85vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #E2E8F0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '14px', marginBottom: '20px' }}>
                 <div>
                   <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Super Admin Edit Profile</h4>

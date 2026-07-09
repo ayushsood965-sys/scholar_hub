@@ -517,17 +517,27 @@ const getStudentsFiltered = async (req, res) => {
     if (semesterId) {
       query['profile.semesterId'] = semesterId;
     }
+
+    // Text search query conditions grouped with OR
+    const textConditions = [];
     if (name) {
-      query.name = { $regex: new RegExp(name, 'i') };
+      textConditions.push({ name: { $regex: new RegExp(name, 'i') } });
+      textConditions.push({ 'profile.fatherName': { $regex: new RegExp(name, 'i') } });
+      textConditions.push({ 'profile.motherName': { $regex: new RegExp(name, 'i') } });
+      textConditions.push({ 'profile.address': { $regex: new RegExp(name, 'i') } });
     }
     if (email) {
-      query.username = { $regex: new RegExp(email, 'i') };
+      textConditions.push({ username: { $regex: new RegExp(email, 'i') } });
     }
     if (shNo) {
-      query['profile.shNo'] = { $regex: new RegExp(shNo, 'i') };
+      textConditions.push({ 'profile.shNo': { $regex: new RegExp(shNo, 'i') } });
     }
     if (phoneNumber) {
-      query['profile.phoneNumber'] = { $regex: new RegExp(phoneNumber, 'i') };
+      textConditions.push({ 'profile.phoneNumber': { $regex: new RegExp(phoneNumber, 'i') } });
+    }
+
+    if (textConditions.length > 0) {
+      query.$or = textConditions;
     }
 
     if (req.query.profileCompleted !== undefined) {
@@ -546,6 +556,53 @@ const getStudentsFiltered = async (req, res) => {
     }
 
     const students = await User.find(query).select('name username department profile isVerified profileCompleted isActive');
+    
+    // Sort students by relevance
+    const getRelevanceScore = (student) => {
+      let score = 0;
+      const studentName = (student.name || '').toLowerCase().trim();
+
+      if (name) {
+        const queryName = name.toLowerCase().trim();
+        if (studentName === queryName) {
+          score += 100; // Exact match of student name
+        } else if (studentName.startsWith(queryName)) {
+          score += 50;  // Starts with student name
+        } else if (studentName.includes(queryName)) {
+          score += 20;  // Contains student name
+        }
+        
+        // Matches father/mother/address
+        if (student.profile?.fatherName?.toLowerCase().includes(queryName)) score += 5;
+        if (student.profile?.motherName?.toLowerCase().includes(queryName)) score += 5;
+        if (student.profile?.address?.toLowerCase().includes(queryName)) score += 2;
+      }
+
+      if (email) {
+        const queryEmail = email.toLowerCase().trim();
+        const studentEmail = (student.username || '').toLowerCase().trim();
+        if (studentEmail === queryEmail) score += 80;
+        else if (studentEmail.includes(queryEmail)) score += 30;
+      }
+
+      if (shNo) {
+        const querySh = shNo.toLowerCase().trim();
+        const studentSh = (student.profile?.shNo || '').toLowerCase().trim();
+        if (studentSh === querySh) score += 80;
+        else if (studentSh.includes(querySh)) score += 30;
+      }
+
+      if (phoneNumber) {
+        const queryPhone = phoneNumber.toLowerCase().trim();
+        const studentPhone = (student.profile?.phoneNumber || '').toLowerCase().trim();
+        if (studentPhone === queryPhone) score += 80;
+        else if (studentPhone.includes(queryPhone)) score += 30;
+      }
+
+      return score;
+    };
+
+    students.sort((a, b) => getRelevanceScore(b) - getRelevanceScore(a));
     res.json(students);
   } catch (error) {
     res.status(500).json({ message: error.message });
