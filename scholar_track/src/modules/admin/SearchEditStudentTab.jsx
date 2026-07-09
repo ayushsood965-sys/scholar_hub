@@ -148,6 +148,7 @@ const SearchEditStudentTab = () => {
   const [degreeNames, setDegreeNames] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [semesterDegreeMappings, setSemesterDegreeMappings] = useState([]);
 
   // Results state
   const [students, setStudents] = useState([]);
@@ -173,21 +174,62 @@ const SearchEditStudentTab = () => {
     return () => document.removeEventListener('click', handleGlobalClick);
   }, []);
 
+  // Get filtered semesters based on selected degreeName
+  const getFilteredSemesters = () => {
+    if (!searchParams.degreeName) {
+      return [];
+    }
+    const selectedDegree = degreeNames.find(
+      d => d.name.toLowerCase() === searchParams.degreeName.toLowerCase()
+    );
+    if (!selectedDegree) {
+      return [];
+    }
+    
+    // Filter mappings matching this degree ID
+    const mappedSemesterIds = semesterDegreeMappings
+      .filter(m => {
+        const dId = m.degreeNameId?._id || m.degreeNameId;
+        return dId === selectedDegree._id;
+      })
+      .map(m => m.semesterId?._id || m.semesterId);
+
+    // Filter semesters to only show those that are mapped
+    return semesters.filter(s => mappedSemesterIds.includes(s._id));
+  };
+
+  // Keep semester selection aligned when Degree Name is modified/cleared
+  useEffect(() => {
+    if (searchParams.degreeName) {
+      const validSemesters = getFilteredSemesters();
+      const isValid = validSemesters.some(s => s._id === searchParams.semesterId);
+      if (!isValid && searchParams.semesterId) {
+        setSearchParams(prev => ({ ...prev, semesterId: '' }));
+      }
+    } else {
+      if (searchParams.semesterId) {
+        setSearchParams(prev => ({ ...prev, semesterId: '' }));
+      }
+    }
+  }, [searchParams.degreeName, semesters, semesterDegreeMappings]);
+
   // Fetch dropdowns
   const fetchDropdowns = async () => {
     try {
-      const [sessRes, typeRes, nameRes, semRes, deptRes] = await Promise.all([
+      const [sessRes, typeRes, nameRes, semRes, deptRes, mapRes] = await Promise.all([
         api.get('/attendance/sessions').catch(() => ({ data: [] })),
         api.get('/attendance/masters/degree-types').catch(() => ({ data: [] })),
         api.get('/attendance/masters/degree-names').catch(() => ({ data: [] })),
         api.get('/attendance/masters/semesters').catch(() => ({ data: [] })),
         api.get('/departments').catch(() => ({ data: [] })),
+        api.get('/attendance/masters/semester-degree-mappings').catch(() => ({ data: [] })),
       ]);
       setSessions(sessRes.data || []);
       setDegreeTypes(typeRes.data || []);
       setDegreeNames(nameRes.data || []);
       setSemesters(semRes.data || []);
       setDepartments(deptRes.data || []);
+      setSemesterDegreeMappings(mapRes.data || []);
     } catch (err) {
       toast.error('Failed to load master dropdown configurations');
     }
@@ -563,9 +605,11 @@ const SearchEditStudentTab = () => {
 
             <div>
               <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text-secondary, #4B5563)', marginBottom: '4px' }}>Semester</label>
-              <select name="semesterId" value={searchParams.semesterId} onChange={handleSearchChange} className="form-input">
-                <option value="">All Semesters</option>
-                {semesters.map(s => <option key={s._id} value={s._id}>{s.name} ({s.number})</option>)}
+              <select name="semesterId" value={searchParams.semesterId} onChange={handleSearchChange} className="form-input" disabled={!searchParams.degreeName}>
+                <option value="">{!searchParams.degreeName ? 'Select degree name first...' : 'All Mapped Semesters'}</option>
+                {getFilteredSemesters().map(s => (
+                  <option key={s._id} value={s._id}>{s.name} ({s.number})</option>
+                ))}
               </select>
             </div>
           </div>
