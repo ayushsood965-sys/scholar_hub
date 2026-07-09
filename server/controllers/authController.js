@@ -486,16 +486,19 @@ const uploadDocument = async (req, res) => {
 // GET /api/auth/students — Filter and fetch department scholars
 const getStudentsFiltered = async (req, res) => {
   try {
-    const { department, session, degreeType, degreeName, subject } = req.query;
+    const { department, session, degreeType, degreeName, subject, name, email, shNo, phoneNumber, semesterId } = req.query;
 
     const query = {
-      role: 'STUDENT',
-      isActive: true
+      role: 'STUDENT'
     };
 
     if (req.user.role === 'SUPER_ADMIN') {
       if (department) query.department = department;
+      if (req.query.isActive !== undefined) {
+        query.isActive = req.query.isActive === 'true';
+      }
     } else {
+      query.isActive = true;
       query.department = req.user.department;
     }
 
@@ -510,6 +513,21 @@ const getStudentsFiltered = async (req, res) => {
     }
     if (subject) {
       query['profile.subject'] = { $regex: new RegExp(subject, 'i') };
+    }
+    if (semesterId) {
+      query['profile.semesterId'] = semesterId;
+    }
+    if (name) {
+      query.name = { $regex: new RegExp(name, 'i') };
+    }
+    if (email) {
+      query.username = { $regex: new RegExp(email, 'i') };
+    }
+    if (shNo) {
+      query['profile.shNo'] = { $regex: new RegExp(shNo, 'i') };
+    }
+    if (phoneNumber) {
+      query['profile.phoneNumber'] = { $regex: new RegExp(phoneNumber, 'i') };
     }
 
     if (req.query.profileCompleted !== undefined) {
@@ -527,7 +545,7 @@ const getStudentsFiltered = async (req, res) => {
       }
     }
 
-    const students = await User.find(query).select('name username department profile isVerified profileCompleted');
+    const students = await User.find(query).select('name username department profile isVerified profileCompleted isActive');
     res.json(students);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -629,10 +647,15 @@ const updateUserProfileByHod = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized. Can only edit profiles in your own department.' });
     }
 
-    const { name, username, ...profileData } = req.body;
+    const { name, username, department, isVerified, isActive, role, subRole, ...profileData } = req.body;
 
-    if (name) targetUser.name = name;
-    if (username) targetUser.username = username;
+    if (name !== undefined) targetUser.name = name;
+    if (username !== undefined) targetUser.username = username;
+    if (department !== undefined) targetUser.department = department;
+    if (isVerified !== undefined) targetUser.isVerified = isVerified;
+    if (isActive !== undefined) targetUser.isActive = isActive;
+    if (role !== undefined) targetUser.role = role;
+    if (subRole !== undefined) targetUser.subRole = subRole;
 
     if (!targetUser.profile) {
       targetUser.profile = {};
@@ -661,11 +684,12 @@ const updateUserProfileByHod = async (req, res) => {
         if (profileData.thesisTitle) thesis.title = profileData.thesisTitle;
         if (profileData.thesisSummary) thesis.abstract = profileData.thesisSummary;
         if (profileData.specialization) thesis.specialization = profileData.specialization;
+        if (department !== undefined) thesis.department = department;
         await thesis.save();
       }
     }
 
-    res.json({ message: 'Profile updated successfully by HOD.', user: targetUser });
+    res.json({ message: 'Profile updated successfully.', user: targetUser });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

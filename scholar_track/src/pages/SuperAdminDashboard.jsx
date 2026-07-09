@@ -19,6 +19,7 @@ import CategoryGenderMasterTab from "../modules/admin/CategoryGenderMasterTab";
 import PolicyConfigTab from "../modules/admin/PolicyConfigTab";
 import LeaveRulesTab from "../modules/admin/LeaveRulesTab";
 import UniversityFacultiesTab from "../modules/admin/UniversityFacultiesTab";
+import SearchEditStudentTab from "../modules/admin/SearchEditStudentTab";
 
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -33,6 +34,7 @@ const SuperAdminDashboard = () => {
   const titles = {
     overview: "System Overview",
     users: "User Verification",
+    searchEditStudent: "Search/Edit Student Details",
     sessions: "Academic Sessions",
     degreeTypes: "Degree Types",
     degreeNames: "Degree Names",
@@ -58,6 +60,7 @@ const SuperAdminDashboard = () => {
     >
       {activeTab === "overview" && <OverviewTab />}
       {activeTab === "users" && <UserVerificationTab />}
+      {activeTab === "searchEditStudent" && <SearchEditStudentTab />}
       {activeTab === "faculty" && <FacultyMasterTab />}
       {activeTab === "hod" && <HODMasterTab />}
       {activeTab === "profile" && <SAProfileTab />}
