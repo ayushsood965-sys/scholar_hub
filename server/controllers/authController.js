@@ -483,6 +483,72 @@ const uploadDocument = async (req, res) => {
   }
 };
 
+// PUT /api/auth/users/:id/document — Upload certificate on behalf of student
+const uploadStudentDocumentByAdmin = async (req, res) => {
+  try {
+    const student = await User.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+    if (!req.file) return res.status(400).json({ message: 'Please select a file to upload' });
+
+    const { docType } = req.body;
+    if (!docType) return res.status(400).json({ message: 'docType parameter is required' });
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+
+    if (!student.profile) student.profile = {};
+    if (!student.profile.qualifications) student.profile.qualifications = {};
+
+    if (docType === 'class10') {
+      if (!student.profile.qualifications.class10) student.profile.qualifications.class10 = {};
+      student.profile.qualifications.class10.certificateUrl = fileUrl;
+    } else if (docType === 'class12') {
+      if (!student.profile.qualifications.class12) student.profile.qualifications.class12 = {};
+      student.profile.qualifications.class12.certificateUrl = fileUrl;
+    } else if (docType === 'graduation') {
+      if (!student.profile.qualifications.graduation) student.profile.qualifications.graduation = {};
+      student.profile.qualifications.graduation.certificateUrl = fileUrl;
+    } else if (docType === 'postGraduation') {
+      if (!student.profile.qualifications.postGraduation) student.profile.qualifications.postGraduation = {};
+      student.profile.qualifications.postGraduation.certificateUrl = fileUrl;
+    } else if (docType === 'netJrf') {
+      if (!student.profile.qualifications.netJrf) student.profile.qualifications.netJrf = {};
+      student.profile.qualifications.netJrf.certificateUrl = fileUrl;
+    } else if (docType === 'mphil') {
+      if (!student.profile.qualifications.mphil) student.profile.qualifications.mphil = {};
+      student.profile.qualifications.mphil.certificateUrl = fileUrl;
+    } else if (docType === 'other') {
+      if (!student.profile.qualifications.other) student.profile.qualifications.other = {};
+      student.profile.qualifications.other.certificateUrl = fileUrl;
+    } else if (docType.startsWith('fellowship_')) {
+      const index = parseInt(docType.split('_')[1], 10);
+      if (!student.profile.qualifications.fellowships) student.profile.qualifications.fellowships = [];
+      const fellowships = [...student.profile.qualifications.fellowships];
+      if (!fellowships[index]) fellowships[index] = {};
+      fellowships[index] = { ...fellowships[index], certificateUrl: fileUrl };
+      student.profile.qualifications.fellowships = fellowships;
+    } else if (docType.startsWith('otherQuals_')) {
+      const index = parseInt(docType.split('_')[1], 10);
+      if (!student.profile.qualifications.otherQuals) student.profile.qualifications.otherQuals = [];
+      const otherQuals = [...student.profile.qualifications.otherQuals];
+      if (!otherQuals[index]) otherQuals[index] = {};
+      otherQuals[index] = { ...otherQuals[index], certificateUrl: fileUrl };
+      student.profile.qualifications.otherQuals = otherQuals;
+    }
+
+    student.markModified('profile');
+    student.markModified('profile.qualifications');
+    await student.save();
+
+    res.json({
+      message: 'Certificate uploaded successfully!',
+      certificateUrl: fileUrl,
+      qualifications: student.profile.qualifications
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // GET /api/auth/students — Filter and fetch department scholars
 const getStudentsFiltered = async (req, res) => {
   try {
@@ -752,4 +818,4 @@ const updateUserProfileByHod = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered };
+module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin };

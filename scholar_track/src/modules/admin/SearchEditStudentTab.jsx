@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import { useGridControl } from '../../hooks/useGridControl';
-import { Search, Eye, Edit3, X, Save, Plus, Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Search, Eye, Edit3, X, Save, Plus, Trash2, CheckCircle, AlertTriangle, Upload, FileText } from 'lucide-react';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,6 +17,118 @@ const SearchEditStudentTab = () => {
       <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-primary, #0F172A)', wordBreak: 'break-all', overflowWrap: 'break-word' }}>{value || '—'}</span>
     </div>
   );
+
+  // Doc upload state for admin on behalf of student
+  const [uploadingDocKey, setUploadingDocKey] = useState(null);
+
+  const handleCertificateUpload = async (e, section, index = null) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    let docType = section;
+    if (section === 'fellowships') {
+      docType = `fellowship_${index}`;
+    } else if (section === 'otherQuals') {
+      docType = `otherQuals_${index}`;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('docType', docType);
+
+    setUploadingDocKey(docType);
+    try {
+      const res = await api.put(`/auth/users/${editStudent._id}/document`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success(res.data.message || 'Certificate uploaded successfully');
+
+      if (index !== null) {
+        const list = [...editForm.qualifications[section]];
+        list[index] = { ...list[index], certificateUrl: res.data.certificateUrl };
+        setEditForm(prev => ({
+          ...prev,
+          qualifications: {
+            ...prev.qualifications,
+            [section]: list
+          }
+        }));
+      } else {
+        setEditForm(prev => ({
+          ...prev,
+          qualifications: {
+            ...prev.qualifications,
+            [section]: {
+              ...prev.qualifications[section],
+              certificateUrl: res.data.certificateUrl
+            }
+          }
+        }));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload certificate');
+    } finally {
+      setUploadingDocKey(null);
+    }
+  };
+
+  const handleRemoveCertificate = (section, index = null) => {
+    if (index !== null) {
+      const list = [...editForm.qualifications[section]];
+      list[index] = { ...list[index], certificateUrl: '' };
+      setEditForm(prev => ({
+        ...prev,
+        qualifications: {
+          ...prev.qualifications,
+          [section]: list
+        }
+      }));
+    } else {
+      setEditForm(prev => ({
+        ...prev,
+        qualifications: {
+          ...prev.qualifications,
+          [section]: {
+            ...prev.qualifications[section],
+            certificateUrl: ''
+          }
+        }
+      }));
+    }
+    toast.success('Certificate URL cleared. Save profile details to persist changes.');
+  };
+
+  const renderCertificateUploadField = (section, index = null) => {
+    if (!editForm || !editForm.qualifications) return null;
+    const q = editForm.qualifications;
+    const item = index !== null ? q[section]?.[index] : q[section];
+    const url = item?.certificateUrl || '';
+    const uniqueId = `cert_${section}_${index !== null ? index : 'main'}`;
+    const docType = index !== null ? (section === 'fellowships' ? `fellowship_${index}` : `otherQuals_${index}`) : section;
+    const isUploading = uploadingDocKey === docType;
+
+    if (url) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+          <a href={`${api.defaults.baseURL || ''}${url}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--color-primary, #1A5A3B)', fontWeight: 600, textDecoration: 'underline' }}>
+            <FileText size={14} /> View Document
+          </a>
+          <button type="button" onClick={() => handleRemoveCertificate(section, index)} style={{ border: 'none', background: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '0.78rem', padding: 0 }}>
+            Remove
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ marginTop: '12px' }}>
+        <input type="file" id={uniqueId} onChange={(e) => handleCertificateUpload(e, section, index)} style={{ display: 'none' }} accept=".pdf,image/*" />
+        <label htmlFor={uniqueId} className="btn-outline-small" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem', padding: '6px 12px' }}>
+          {isUploading ? 'Uploading...' : <><Upload size={14} /> Upload Certificate</>}
+        </label>
+      </div>
+    );
+  };
 
   // Search parameters state
   const [searchParams, setSearchParams] = useState({
@@ -82,6 +194,17 @@ const SearchEditStudentTab = () => {
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
+
+    // Enforce that academic parameters are a unified entity
+    const { session, degreeType, degreeName, semesterId } = searchParams;
+    const isAnyAcademicFilterSelected = session || degreeType || degreeName || semesterId;
+    const areAllAcademicFiltersSelected = session && degreeType && degreeName && semesterId;
+
+    if (isAnyAcademicFilterSelected && !areAllAcademicFiltersSelected) {
+      toast.error('Search parameters Academic Session, Degree Type, Degree Name, and Semester are linked and must all be selected together.');
+      return;
+    }
+
     setLoading(true);
     setHasSearched(true);
     try {
@@ -804,8 +927,8 @@ const SearchEditStudentTab = () => {
                 {activeEditTab === 'qualifications' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '55vh', overflowY: 'auto', paddingRight: '8px' }}>
                     {/* Class 10 */}
-                    <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: '#1E293B', fontSize: '0.88rem' }}>Class 10 Qualifications</h6>
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', fontSize: '0.88rem' }}>Class 10 Qualifications</h6>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                         <div>
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>Board</label>
@@ -827,12 +950,16 @@ const SearchEditStudentTab = () => {
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>CGPA / Percentage</label>
                           <input type="text" value={editForm.qualifications.class10.cgpaPercentage} onChange={(e) => handleQualificationChange('class10', 'cgpaPercentage', e.target.value)} className="form-input" />
                         </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600 }}>Certificate Document</label>
+                          {renderCertificateUploadField('class10')}
+                        </div>
                       </div>
                     </div>
 
                     {/* Class 12 */}
-                    <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: '#1E293B', fontSize: '0.88rem' }}>Class 12 Qualifications</h6>
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', fontSize: '0.88rem' }}>Class 12 Qualifications</h6>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                         <div>
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>Board</label>
@@ -854,12 +981,16 @@ const SearchEditStudentTab = () => {
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>CGPA / Percentage</label>
                           <input type="text" value={editForm.qualifications.class12.cgpaPercentage} onChange={(e) => handleQualificationChange('class12', 'cgpaPercentage', e.target.value)} className="form-input" />
                         </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600 }}>Certificate Document</label>
+                          {renderCertificateUploadField('class12')}
+                        </div>
                       </div>
                     </div>
 
                     {/* Graduation */}
-                    <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: '#1E293B', fontSize: '0.88rem' }}>Graduation Details</h6>
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', fontSize: '0.88rem' }}>Graduation Details</h6>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                         <div>
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>Degree Passed</label>
@@ -885,12 +1016,16 @@ const SearchEditStudentTab = () => {
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>CGPA / Percentage</label>
                           <input type="text" value={editForm.qualifications.graduation.cgpaPercentage} onChange={(e) => handleQualificationChange('graduation', 'cgpaPercentage', e.target.value)} className="form-input" />
                         </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600 }}>Certificate Document</label>
+                          {renderCertificateUploadField('graduation')}
+                        </div>
                       </div>
                     </div>
 
                     {/* Post Graduation */}
-                    <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: '#1E293B', fontSize: '0.88rem' }}>Post-Graduation Details</h6>
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', fontSize: '0.88rem' }}>Post-Graduation Details</h6>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                         <div>
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>Degree Passed</label>
@@ -916,12 +1051,16 @@ const SearchEditStudentTab = () => {
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>CGPA / Percentage</label>
                           <input type="text" value={editForm.qualifications.postGraduation.cgpaPercentage} onChange={(e) => handleQualificationChange('postGraduation', 'cgpaPercentage', e.target.value)} className="form-input" />
                         </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600 }}>Certificate Document</label>
+                          {renderCertificateUploadField('postGraduation')}
+                        </div>
                       </div>
                     </div>
 
                     {/* NET / JRF */}
-                    <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: '#1E293B', fontSize: '0.88rem' }}>NET / JRF Verification Details</h6>
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+                      <h6 style={{ margin: '0 0 12px', fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', fontSize: '0.88rem' }}>NET / JRF Verification Details</h6>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                         <div>
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>Qualifying Exam</label>
@@ -939,54 +1078,84 @@ const SearchEditStudentTab = () => {
                           <label className="form-label" style={{ fontSize: '0.78rem' }}>Roll Number</label>
                           <input type="text" value={editForm.qualifications.netJrf.rollNo} onChange={(e) => handleQualificationChange('netJrf', 'rollNo', e.target.value)} className="form-input" />
                         </div>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600 }}>Certificate Document</label>
+                          {renderCertificateUploadField('netJrf')}
+                        </div>
                       </div>
                     </div>
 
                     {/* Fellowships */}
-                    <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border, #E2E8F0)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <h6 style={{ margin: 0, fontWeight: 700, color: '#1E293B', fontSize: '0.88rem' }}>Fellowships Received</h6>
+                        <h6 style={{ margin: 0, fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', fontSize: '0.88rem' }}>Fellowships Received</h6>
                         <button type="button" onClick={addFellowship} className="btn-outline-small" style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Plus size={12} /> Add Fellowship
                         </button>
                       </div>
                       {editForm.qualifications.fellowships.length === 0 ? (
-                        <div style={{ fontSize: '0.78rem', color: '#64748B', fontStyle: 'italic', textAlign: 'center', padding: '12px' }}>No fellowships listed.</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted, #64748B)', fontStyle: 'italic', textAlign: 'center', padding: '12px' }}>No fellowships listed.</div>
                       ) : (
-                        editForm.qualifications.fellowships.map((f, i) => (
-                          <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr) auto', gap: '8px', alignItems: 'center', padding: '8px', borderBottom: '1px solid #E2E8F0' }}>
-                            <input type="text" value={f.name || ''} onChange={(e) => handleFellowshipChange(i, 'name', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Name" />
-                            <input type="text" value={f.fundingAgency || ''} onChange={(e) => handleFellowshipChange(i, 'fundingAgency', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Funding Agency" />
-                            <input type="text" value={f.duration || ''} onChange={(e) => handleFellowshipChange(i, 'duration', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Duration" />
-                            <input type="text" value={f.amount || ''} onChange={(e) => handleFellowshipChange(i, 'amount', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Amount" />
-                            <input type="text" value={f.certificateUrl || ''} onChange={(e) => handleFellowshipChange(i, 'certificateUrl', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Certificate URL" />
-                            <button type="button" onClick={() => removeFellowship(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr) 180px auto', gap: '8px', padding: '4px 8px', fontWeight: 600, fontSize: '0.75rem', color: 'var(--color-text-secondary, #475569)', borderBottom: '1px solid var(--color-border, #E2E8F0)' }}>
+                            <div>Name</div>
+                            <div>Funding Agency</div>
+                            <div>Duration</div>
+                            <div>Amount</div>
+                            <div>Certificate File</div>
+                            <div></div>
                           </div>
-                        ))
+                          {editForm.qualifications.fellowships.map((f, i) => (
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr) 180px auto', gap: '8px', alignItems: 'center', padding: '8px', borderBottom: '1px solid var(--color-border, #E2E8F0)' }}>
+                              <input type="text" value={f.name || ''} onChange={(e) => handleFellowshipChange(i, 'name', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Name" />
+                              <input type="text" value={f.fundingAgency || ''} onChange={(e) => handleFellowshipChange(i, 'fundingAgency', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Funding Agency" />
+                              <input type="text" value={f.duration || ''} onChange={(e) => handleFellowshipChange(i, 'duration', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Duration" />
+                              <input type="text" value={f.amount || ''} onChange={(e) => handleFellowshipChange(i, 'amount', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Amount" />
+                              <div>
+                                {renderCertificateUploadField('fellowships', i)}
+                              </div>
+                              <button type="button" onClick={() => removeFellowship(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
 
                     {/* Other Qualifications */}
-                    <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ background: 'var(--color-surface-elevated, #F8FAFC)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border, #E2E8F0)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <h6 style={{ margin: 0, fontWeight: 700, color: '#1E293B', fontSize: '0.88rem' }}>Other Qualifications</h6>
+                        <h6 style={{ margin: 0, fontWeight: 700, color: 'var(--color-text-primary, #1E293B)', fontSize: '0.88rem' }}>Other Qualifications</h6>
                         <button type="button" onClick={addOtherQual} className="btn-outline-small" style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Plus size={12} /> Add Entry
                         </button>
                       </div>
                       {editForm.qualifications.otherQuals.length === 0 ? (
-                        <div style={{ fontSize: '0.78rem', color: '#64748B', fontStyle: 'italic', textAlign: 'center', padding: '12px' }}>No other qualifications listed.</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted, #64748B)', fontStyle: 'italic', textAlign: 'center', padding: '12px' }}>No other qualifications listed.</div>
                       ) : (
-                        editForm.qualifications.otherQuals.map((o, i) => (
-                          <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr) auto', gap: '8px', alignItems: 'center', padding: '8px', borderBottom: '1px solid #E2E8F0' }}>
-                            <input type="text" value={o.degreePassed || ''} onChange={(e) => handleOtherQualChange(i, 'degreePassed', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Degree" />
-                            <input type="text" value={o.university || ''} onChange={(e) => handleOtherQualChange(i, 'university', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="University" />
-                            <input type="text" value={o.passingYear || ''} onChange={(e) => handleOtherQualChange(i, 'passingYear', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Year" />
-                            <input type="text" value={o.cgpaPercentage || ''} onChange={(e) => handleOtherQualChange(i, 'cgpaPercentage', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="CGPA/Marks" />
-                            <input type="text" value={o.rollNo || ''} onChange={(e) => handleOtherQualChange(i, 'rollNo', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Roll No" />
-                            <button type="button" onClick={() => removeOtherQual(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr) 180px auto', gap: '8px', padding: '4px 8px', fontWeight: 600, fontSize: '0.75rem', color: 'var(--color-text-secondary, #475569)', borderBottom: '1px solid var(--color-border, #E2E8F0)' }}>
+                            <div>Degree</div>
+                            <div>University</div>
+                            <div>Year</div>
+                            <div>CGPA/Marks</div>
+                            <div>Roll No</div>
+                            <div>Certificate File</div>
+                            <div></div>
                           </div>
-                        ))
+                          {editForm.qualifications.otherQuals.map((o, i) => (
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr) 180px auto', gap: '8px', alignItems: 'center', padding: '8px', borderBottom: '1px solid var(--color-border, #E2E8F0)' }}>
+                              <input type="text" value={o.degreePassed || ''} onChange={(e) => handleOtherQualChange(i, 'degreePassed', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Degree" />
+                              <input type="text" value={o.university || ''} onChange={(e) => handleOtherQualChange(i, 'university', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="University" />
+                              <input type="text" value={o.passingYear || ''} onChange={(e) => handleOtherQualChange(i, 'passingYear', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Year" />
+                              <input type="text" value={o.cgpaPercentage || ''} onChange={(e) => handleOtherQualChange(i, 'cgpaPercentage', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="CGPA/Marks" />
+                              <input type="text" value={o.rollNo || ''} onChange={(e) => handleOtherQualChange(i, 'rollNo', e.target.value)} className="form-input" style={{ fontSize: '0.78rem', padding: '6px' }} placeholder="Roll No" />
+                              <div>
+                                {renderCertificateUploadField('otherQuals', i)}
+                              </div>
+                              <button type="button" onClick={() => removeOtherQual(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
