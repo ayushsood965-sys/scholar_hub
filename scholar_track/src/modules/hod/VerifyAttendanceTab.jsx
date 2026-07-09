@@ -6,6 +6,7 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { Check, Search, ClipboardList, ShieldAlert, CheckCircle, Save, X, Edit3, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGridControl } from '../../hooks/useGridControl';
 
 const VerifyAttendanceTab = () => {
   const [sessions, setSessions] = useState([]);
@@ -124,6 +125,12 @@ const VerifyAttendanceTab = () => {
       row.timetableSlotId && row.timetableSlotId.toString() === selectedSubjectId
     );
   }, [flatRows, selectedSubjectId]);
+
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
+    filteredRows,
+    ['studentId.name', 'studentId.username', 'studentId.profile.enrollmentNumber'],
+    10
+  );
 
   useEffect(() => {
     const fetchLeaveTypes = async () => {
@@ -484,47 +491,49 @@ const VerifyAttendanceTab = () => {
             </div>
 
             {filteredRows.length > 0 ? (
-              <div className="data-table-wrapper">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '40px', textAlign: 'center' }}>
-                        {filteredPendingRecords.length > 0 && (
-                          <input
-                            type="checkbox"
-                            checked={allSelected}
-                            onChange={handleSelectAll}
-                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                          />
-                        )}
-                      </th>
-                      <th style={{ width: '50px' }}>#</th>
-                      <th>Student Name</th>
-                      <th>Enrollment No.</th>
-                      <th>Degree Program</th>
-                      <th>Classes / Subject Details</th>
-                      <th>Marked By (Faculty)</th>
-                      <th>Marked Status</th>
-                      <th>Approval Status</th>
-                      <th style={{ width: '120px', textAlign: 'center' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRows.map((r, index) => {
-                      const isPending = r.approvalStatus === 'PENDING_HOD';
-                      return (
-                        <tr key={r._id} className={isPending ? '' : 'row-dimmed'} style={{ opacity: isPending ? 1 : 0.65 }}>
-                          <td style={{ textAlign: 'center' }}>
-                            {isPending && (
-                              <input
-                                type="checkbox"
-                                checked={!!selectedRecordIds[r._id]}
-                                onChange={(e) => handleSelectRow(r._id, e.target.checked)}
-                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                              />
-                            )}
-                          </td>
-                          <td>{index + 1}</td>
+              <>
+                {renderGridControls()}
+                <div className="data-table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40px', textAlign: 'center' }}>
+                          {filteredPendingRecords.length > 0 && (
+                            <input
+                              type="checkbox"
+                              checked={allSelected}
+                              onChange={handleSelectAll}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            />
+                          )}
+                        </th>
+                        <th style={{ width: '50px' }}>#</th>
+                        <th>Student Name</th>
+                        <th>Enrollment No.</th>
+                        <th>Degree Program</th>
+                        <th>Classes / Subject Details</th>
+                        <th>Marked By (Faculty)</th>
+                        <th>Marked Status</th>
+                        <th>Approval Status</th>
+                        <th style={{ width: '120px', textAlign: 'center' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedData.map((r, index) => {
+                        const isPending = r.approvalStatus === 'PENDING_HOD';
+                        return (
+                          <tr key={r._id} className={isPending ? '' : 'row-dimmed'} style={{ opacity: isPending ? 1 : 0.65 }}>
+                            <td style={{ textAlign: 'center' }}>
+                              {isPending && (
+                                <input
+                                  type="checkbox"
+                                  checked={!!selectedRecordIds[r._id]}
+                                  onChange={(e) => handleSelectRow(r._id, e.target.checked)}
+                                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                />
+                              )}
+                            </td>
+                            <td>{index + 1 + (currentPage - 1) * pageSize}</td>
                           <td>
                             <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{r.studentId?.name}</div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{r.studentId?.username}</div>
@@ -683,7 +692,8 @@ const VerifyAttendanceTab = () => {
                   </tbody>
                 </table>
               </div>
-            ) : (
+            </>
+          ) : (
               <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
                 <Check size={48} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                 <p style={{ margin: 0 }}>No forwarded candidates' attendance records found matching this criteria.</p>

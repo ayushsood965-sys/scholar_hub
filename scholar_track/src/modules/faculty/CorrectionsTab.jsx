@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import useApi from '../../hooks/useApi';
 import { API_BASE_URL } from '../../config';
 import { useToast } from '../../context/ToastContext';
+import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import {
   Eye,
@@ -30,6 +31,89 @@ const CorrectionsTab = () => {
 
   const api = useApi();
   const toast = useToast();
+
+  const columns = [
+    {
+      key: 'student',
+      header: 'Student',
+      accessor: (row) => row.studentId?.name || '',
+      render: (row) => (
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>
+            {row.studentId?.name || 'Unknown'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+            {row.studentId?.username || ''}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'date',
+      header: 'Date',
+      accessor: (row) => row.recordId?.date ? new Date(row.recordId.date).toLocaleDateString('en-IN') : '',
+      render: (row) => row.recordId?.date
+        ? new Date(row.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+        : 'N/A'
+    },
+    {
+      key: 'subjects',
+      header: 'Subjects',
+      accessor: (row) => `${row.timetableSlotIds?.length || 0} subject(s)`,
+      render: (row) => (
+        <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>
+          {row.timetableSlotIds?.length || 0} subject(s)
+        </span>
+      )
+    },
+    {
+      key: 'requested',
+      header: 'Requested',
+      accessor: (row) => row.correctionType === 'ON_LEAVE' ? `On Leave (${row.leaveType || ''})` : 'Present',
+      render: (row) => (
+        <span className="badge" style={{
+          background: row.correctionType === 'ON_LEAVE' ? '#FEF3C7' : '#D1FAE5',
+          color: row.correctionType === 'ON_LEAVE' ? '#92400E' : '#065F46',
+          fontSize: '0.7rem'
+        }}>
+          {row.correctionType === 'ON_LEAVE' ? `On Leave (${row.leaveType || ''})` : 'Present'}
+        </span>
+      )
+    },
+    {
+      key: 'reason',
+      header: 'Reason',
+      accessor: 'reason',
+      render: (row) => (
+        <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {row.reason?.substring(0, 40)}{row.reason?.length > 40 ? '...' : ''}
+        </div>
+      )
+    },
+    {
+      key: 'attempt',
+      header: 'Attempt',
+      accessor: (row) => `#${row.correctionAttempt || 1}`,
+      render: (row) => (
+        <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>#{row.correctionAttempt || 1}</span>
+      )
+    },
+    {
+      key: 'actions',
+      header: 'Action',
+      sortable: false,
+      render: (row) => (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={() => openModal(row)}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
+          <Eye size={14} /> View
+        </button>
+      )
+    }
+  ];
 
   const fetchApprovals = async () => {
     try {
@@ -92,77 +176,7 @@ const CorrectionsTab = () => {
           </p>
         </div>
       ) : (
-        <div className="data-table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: '50px' }}>#</th>
-                <th>Student</th>
-                <th>Date</th>
-                <th>Subjects</th>
-                <th>Requested</th>
-                <th>Reason</th>
-                <th>Attempt</th>
-                <th style={{ width: '120px' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {corrections.map((c, idx) => (
-                <motion.tr
-                  key={c._id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(idx * 0.02, 0.3) }}
-                >
-                  <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', textAlign: 'center' }}>{idx + 1}</td>
-                  <td>
-                    <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>
-                      {c.studentId?.name || 'Unknown'}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-                      {c.studentId?.username || ''}
-                    </div>
-                  </td>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                    {c.recordId?.date
-                      ? new Date(c.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                      : 'N/A'}
-                  </td>
-                  <td>
-                    <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>
-                      {c.timetableSlotIds?.length || 0} subject(s)
-                    </span>
-                  </td>
-                  <td>
-                    <span className="badge" style={{
-                      background: c.correctionType === 'ON_LEAVE' ? '#FEF3C7' : '#D1FAE5',
-                      color: c.correctionType === 'ON_LEAVE' ? '#92400E' : '#065F46',
-                      fontSize: '0.7rem'
-                    }}>
-                      {c.correctionType === 'ON_LEAVE' ? `On Leave (${c.leaveType || ''})` : 'Present'}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {c.reason?.substring(0, 40)}{c.reason?.length > 40 ? '...' : ''}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>#{c.correctionAttempt || 1}</span>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline"
-                      onClick={() => openModal(c)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Eye size={14} /> View
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable columns={columns} data={corrections} />
       )}
 
       {/* ── View/ Action Modal ── */}

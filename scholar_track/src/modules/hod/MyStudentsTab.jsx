@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import UnifiedStudentModal from '../../components/UnifiedStudentModal';
 import { Search, Users, ShieldCheck, GraduationCap, Filter, BookOpen } from 'lucide-react';
+import { useGridControl } from '../../hooks/useGridControl';
 
 const MyStudentsTab = () => {
   const { user } = useContext(AuthContext);
@@ -14,7 +15,6 @@ const MyStudentsTab = () => {
   const [loading, setLoading] = useState(true);
   
   // Filtering states
-  const [searchTerm, setSearchTerm] = useState('');
   const [degreeTypeFilter, setDegreeTypeFilter] = useState('');
   const [subTab, setSubTab] = useState('pending'); // 'pending' | 'verified'
   const [degreeTypes, setDegreeTypes] = useState([]);
@@ -72,21 +72,22 @@ const MyStudentsTab = () => {
            student.username?.toUpperCase().includes('PHD');
   };
 
-  // Filter students locally
-  const filteredStudents = students.filter(student => {
+  // Filter students locally (base category/verification subtab filters)
+  const baseFilteredStudents = students.filter(student => {
     // Hide PhDs explicitly
     if (isStudentPhD(student)) return false;
 
-    const matchesSearch = student.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          student.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          student.profile?.enrollmentNumber?.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesDegree = degreeTypeFilter === '' || student.profile?.degreeType === degreeTypeFilter;
-    
     const matchesSubTab = subTab === 'verified' ? student.isVerified === true : student.isVerified !== true;
 
-    return matchesSearch && matchesDegree && matchesSubTab;
+    return matchesDegree && matchesSubTab;
   });
+
+  const { paginatedData, renderGridControls, currentPage, pageSize, totalItems } = useGridControl(
+    baseFilteredStudents,
+    ['name', 'username', 'profile.enrollmentNumber'],
+    10
+  );
 
   return (
     <div className="glass-panel p-xl">
@@ -111,7 +112,7 @@ const MyStudentsTab = () => {
           alignItems: 'center',
           gap: '6px'
         }}>
-          Total: {filteredStudents.length} Students
+          Total: {totalItems} Students
         </div>
       </div>
 
@@ -135,8 +136,8 @@ const MyStudentsTab = () => {
 
       {/* Filter and Search Bar */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '3fr 1fr',
+        display: 'flex',
+        flexDirection: 'column',
         gap: '16px',
         marginBottom: '24px',
         background: 'rgba(255,255,255,0.02)',
@@ -144,25 +145,12 @@ const MyStudentsTab = () => {
         borderRadius: '12px',
         border: '1px solid var(--color-border)'
       }}>
-        {/* Search */}
-        <div style={{ position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input 
-            type="text" 
-            placeholder="Search by name, username or enrollment number..." 
-            className="form-input"
-            style={{ paddingLeft: '36px' }}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Degree Type Filter */}
-        <div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <select 
             className="form-input" 
             value={degreeTypeFilter}
             onChange={e => setDegreeTypeFilter(e.target.value)}
+            style={{ maxWidth: '240px' }}
           >
             <option value="">All Degree Types</option>
             {degreeTypes.filter(dt => dt.code !== 'PHD').map(dt => (
@@ -170,6 +158,8 @@ const MyStudentsTab = () => {
             ))}
           </select>
         </div>
+
+        {renderGridControls()}
       </div>
 
       {/* Student List Table */}
@@ -178,7 +168,7 @@ const MyStudentsTab = () => {
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(26, 90, 59, 0.1)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Loading department student records...</p>
         </div>
-      ) : filteredStudents.length === 0 ? (
+      ) : paginatedData.length === 0 ? (
         <div className="clay-card p-xl text-center" style={{ padding: '60px', color: 'var(--text-secondary)' }}>
           <BookOpen size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
           <h3>No Students Found</h3>
@@ -201,11 +191,11 @@ const MyStudentsTab = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map((student, index) => {
+              {paginatedData.map((student, index) => {
                 const profile = student.profile || {};
                 return (
                   <tr key={student._id} style={{ borderBottom: '1px solid var(--color-border-solid, rgba(255,255,255,0.05))' }}>
-                    <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{index + 1}</td>
+                    <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{index + 1 + (currentPage - 1) * pageSize}</td>
                     <td style={{ padding: '14px 16px', fontWeight: '600', color: 'var(--text-primary)' }}>
                       <div>{student.name}</div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '400', marginTop: '2px' }}>{student.username}</div>

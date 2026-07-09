@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Search, History, BookOpen, Users, Trash2, AlertTriangle } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
@@ -27,6 +28,104 @@ const StudentMappingDetailsTab = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // holds { id, type: 'all'|'subject', subjectId? }
   const [sortBySubject, setSortBySubject] = useState('');
+
+  const processedRecords = useMemo(() => {
+    return records
+      .filter(rec => {
+        if (!sortBySubject) return true;
+        return (rec.mappedSubjects || []).some(
+          sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
+        );
+      })
+      .sort((a, b) => {
+        if (!sortBySubject) return 0;
+        const aHas = (a.mappedSubjects || []).some(
+          sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
+        );
+        const bHas = (b.mappedSubjects || []).some(
+          sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
+        );
+        if (aHas && !bHas) return -1;
+        if (!aHas && bHas) return 1;
+        return 0;
+      });
+  }, [records, sortBySubject]);
+
+  const columns = [
+    {
+      key: 'shNo',
+      header: 'Sh. No.',
+      accessor: (row) => row.shNo || 'N/A'
+    },
+    {
+      key: 'student',
+      header: 'Student Name',
+      accessor: (row) => row.studentName || '',
+      render: (row) => (
+        <div>
+          <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{row.studentName}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{row.studentUsername}</div>
+        </div>
+      )
+    },
+    {
+      key: 'fatherName',
+      header: "Father's Name",
+      accessor: (row) => row.fatherName || '—'
+    },
+    {
+      key: 'mappedSubjects',
+      header: 'Mapped Subjects',
+      sortable: false,
+      render: (row) => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {(row.mappedSubjects || []).map((sub, sIdx) => (
+            <span
+              key={sub.timetableSlotId?._id || sub.timetableSlotId || sIdx}
+              className="badge badge-subject"
+              style={{
+                background: 'rgba(99, 102, 241, 0.1)',
+                color: '#6366F1',
+                fontSize: '0.7rem',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              {sub.subjectName || sub.subjectCode || 'Unknown'}
+            </span>
+          ))}
+        </div>
+      )
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      sortable: false,
+      render: (row) => (
+        <button
+          type="button"
+          className="btn btn-sm"
+          style={{
+            background: 'rgba(239, 68, 68, 0.08)',
+            color: '#EF4444',
+            border: '1px solid rgba(239, 68, 68, 0.15)',
+            padding: '6px 12px',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+          onClick={() => handleDeleteClick(row)}
+          disabled={deletingId === row._id}
+        >
+          <Trash2 size={14} /> Delete
+        </button>
+      )
+    }
+  ];
 
   const api = useApi();
   const toast = useToast();
@@ -305,100 +404,7 @@ const StudentMappingDetailsTab = () => {
           </div>
 
           {/* ── Records Table ── */}
-          <div className="data-table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '50px' }}>#</th>
-                  <th style={{ width: '110px' }}>Sh. No.</th>
-                  <th>Student Name</th>
-                  <th>Father's Name</th>
-                  <th>Mapped Subjects</th>
-                  <th style={{ width: '100px' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records
-                  .filter(rec => {
-                    if (!sortBySubject) return true;
-                    return (rec.mappedSubjects || []).some(
-                      sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
-                    );
-                  })
-                  .sort((a, b) => {
-                    if (!sortBySubject) return 0;
-                    // Sort: students with the selected subject first
-                    const aHas = (a.mappedSubjects || []).some(
-                      sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
-                    );
-                    const bHas = (b.mappedSubjects || []).some(
-                      sub => (sub.timetableSlotId?._id || sub.timetableSlotId) === sortBySubject
-                    );
-                    if (aHas && !bHas) return -1;
-                    if (!aHas && bHas) return 1;
-                    return 0;
-                  })
-                  .map((rec, idx) => (
-                  <motion.tr
-                    key={rec._id}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(idx * 0.02, 0.3) }}
-                  >
-                    <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', textAlign: 'center' }}>{idx + 1}</td>
-                    <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{rec.shNo}</td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{rec.studentName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rec.studentUsername}</div>
-                    </td>
-                    <td style={{ color: 'var(--color-text-secondary)' }}>{rec.fatherName}</td>
-                    <td>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {(rec.mappedSubjects || []).map((sub, sIdx) => (
-                          <span
-                            key={sub.timetableSlotId?._id || sub.timetableSlotId || sIdx}
-                            className="badge badge-subject"
-                            style={{
-                              background: 'rgba(99, 102, 241, 0.1)',
-                              color: '#6366F1',
-                              fontSize: '0.7rem',
-                              padding: '4px 10px',
-                              borderRadius: '20px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            {sub.subjectName || sub.subjectCode || 'Unknown'}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-sm"
-                        style={{
-                          background: 'rgba(239, 68, 68, 0.08)',
-                          color: '#EF4444',
-                          border: '1px solid rgba(239, 68, 68, 0.15)',
-                          padding: '6px 12px',
-                          fontSize: '0.75rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                        onClick={() => handleDeleteClick(rec)}
-                        disabled={deletingId === rec._id}
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable columns={columns} data={processedRecords} searchPlaceholder="Search mapped students by name or enrollment..." />
         </motion.div>
       ) : (
         <div className="glass-panel p-xl" style={{ textAlign: 'center' }}>

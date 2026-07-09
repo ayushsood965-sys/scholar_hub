@@ -3358,6 +3358,7 @@ const SupervisorRACConsole = ({ theses }) => {
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [schedForm, setSchedForm] = useState({ thesisId: '', racNumber: 1, scheduledDate: '', committeeMembers: '' });
   const [selectedRAC, setSelectedRAC] = useState(null);
+  const [racStatusFilter, setRacStatusFilter] = useState('ALL');
 
   const activeScholars = theses.filter(t => t.status === 'ACTIVE_RESEARCH');
 
@@ -3401,6 +3402,19 @@ const SupervisorRACConsole = ({ theses }) => {
       toast.error('Failed to submit grade.');
     }
   };
+
+  const filteredRacsForGrid = useMemo(() => {
+    return racs.filter(r => {
+      if (racStatusFilter === 'ALL') return true;
+      return r.status === racStatusFilter;
+    });
+  }, [racs, racStatusFilter]);
+
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
+    filteredRacsForGrid,
+    ['scholar.name', 'title'],
+    10
+  );
 
   return (
     <div className="card" style={{ padding: 24, borderRadius: 16 }}>
@@ -3451,6 +3465,44 @@ const SupervisorRACConsole = ({ theses }) => {
         </form>
       )}
 
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'center',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+        background: '#F8FAFC',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid #E2E8F0'
+      }}>
+        <div style={{ flex: 1, minWidth: '250px' }}>
+          {renderGridControls()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status Filter:</span>
+          <select 
+            value={racStatusFilter} 
+            onChange={e => setRacStatusFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '0.85rem',
+              background: 'white',
+              color: '#1E293B',
+              fontWeight: 500,
+              cursor: 'pointer'
+            }}
+          >
+            <option value="ALL">All RACs</option>
+            <option value="SCHEDULED">Scheduled / Pending Evaluation</option>
+            <option value="SATISFACTORY">Satisfactory (Cleared)</option>
+            <option value="UNSATISFACTORY">Unsatisfactory (Rejected)</option>
+          </select>
+        </div>
+      </div>
+
       {loading ? (
         <div className="premium-preloader-container" style={{ padding: '20px' }}>
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
@@ -3460,9 +3512,14 @@ const SupervisorRACConsole = ({ theses }) => {
         <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: '#F8FAFC', borderRadius: 8 }}>
           No scheduled RAC review meetings found for your active scholars.
         </div>
+      ) : paginatedData.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: '#F8FAFC', borderRadius: 8 }}>
+          No RAC records match the selected status filter or search query.
+        </div>
       ) : (
         <div className="file-list">
           <div className="file-header">
+            <div style={{ flex: 0.5 }}>S.No.</div>
             <div style={{ flex: 2 }}>Scholar</div>
             <div style={{ flex: 1 }}>Session</div>
             <div style={{ flex: 1.5 }}>Scheduled Date</div>
@@ -3470,9 +3527,12 @@ const SupervisorRACConsole = ({ theses }) => {
             <div style={{ flex: 1.2 }}>Status</div>
             <div style={{ flex: 2.2, textAlign: 'center' }}>Grading Actions & Remarks</div>
           </div>
-          {racs.map(r => (
+          {paginatedData.map((r, idx) => (
             <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>
+                  {idx + 1 + (currentPage - 1) * pageSize}
+                </div>
                 <div style={{ flex: 2 }}>
                   <div style={{ fontWeight: 700 }}>{r.scholar?.name || 'Scholar'}</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748B', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>

@@ -2225,21 +2225,100 @@ const ManageUsers = () => {
 // ── Faculty Management ──
 const ManageFaculty = () => {
   const [faculty, setFaculty] = useState([]);
-  useEffect(() => { axios.get(`${API}/auth/faculty`, getAuthHeader()).then(r => setFaculty(r.data)).catch(() => {}); }, []);
+  const [roleFilter, setRoleFilter] = useState('ALL'); // ALL | HOD | SUPERVISOR
+
+  useEffect(() => {
+    axios.get(`${API}/auth/faculty`, getAuthHeader())
+      .then(r => setFaculty(r.data))
+      .catch(() => {});
+  }, []);
+
+  const filteredFaculty = useMemo(() => {
+    return faculty.filter(f => {
+      if (roleFilter === 'ALL') return true;
+      if (roleFilter === 'HOD') return f.subRole === 'HOD';
+      return f.subRole !== 'HOD';
+    });
+  }, [faculty, roleFilter]);
+
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
+    filteredFaculty,
+    ['name', 'department', 'username'],
+    10
+  );
+
   return (
     <div className="card documents-card">
-      <h3 className="card-title">Faculty Supervison Directory</h3>
+      <h3 className="card-title">Faculty Supervision Directory</h3>
+      
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'center',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+        background: '#F8FAFC',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid #E2E8F0'
+      }}>
+        <div style={{ flex: 1, minWidth: '250px' }}>
+          {renderGridControls()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Filter by Role:</span>
+          <select 
+            value={roleFilter} 
+            onChange={e => setRoleFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '0.85rem',
+              background: 'white',
+              color: '#1E293B',
+              fontWeight: 500,
+              cursor: 'pointer'
+            }}
+          >
+            <option value="ALL">All Faculty</option>
+            <option value="HOD">HODs only</option>
+            <option value="SUPERVISOR">Supervisors only</option>
+          </select>
+        </div>
+      </div>
+
       <div className="file-list">
-        <div className="file-header"><div style={{ flex: 0.5 }}>S.No.</div><div style={{ flex: 2 }}>Name</div><div style={{ flex: 1.5 }}>Department</div><div style={{ flex: 1 }}>Sub-Role</div><div style={{ flex: 1.5 }}>Username</div></div>
-        {faculty.map((f, idx) => (
-          <div key={f._id} className="file-item">
-            <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{idx + 1}</div>
-            <div className="file-name" style={{ flex: 2 }}>{f.name}</div>
-            <div className="file-date" style={{ flex: 1.5 }}>{f.department || '—'}</div>
-            <div style={{ flex: 1 }}><span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, background: f.subRole === 'HOD' ? '#FEF3C7' : '#DBEAFE', color: f.subRole === 'HOD' ? '#D97706' : '#1D4ED8' }}>{f.subRole || 'SUPERVISOR'}</span></div>
-            <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#6b7280' }}>{f.username}</div>
-          </div>
-        ))}
+        <div className="file-header">
+          <div style={{ flex: 0.5 }}>S.No.</div>
+          <div style={{ flex: 2 }}>Name</div>
+          <div style={{ flex: 1.5 }}>Department</div>
+          <div style={{ flex: 1 }}>Sub-Role</div>
+          <div style={{ flex: 1.5 }}>Username</div>
+        </div>
+        {paginatedData.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 24, color: '#9CA3AF' }}>No faculty members match the selection.</div>
+        ) : (
+          paginatedData.map((f, idx) => (
+            <div key={f._id} className="file-item">
+              <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>
+                {idx + 1 + (currentPage - 1) * pageSize}
+              </div>
+              <div className="file-name" style={{ flex: 2 }}>{f.name}</div>
+              <div className="file-date" style={{ flex: 1.5 }}>{f.department || '—'}</div>
+              <div style={{ flex: 1 }}>
+                <span style={{ 
+                  padding: '3px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, 
+                  background: f.subRole === 'HOD' ? '#FEF3C7' : '#DBEAFE', 
+                  color: f.subRole === 'HOD' ? '#D97706' : '#1D4ED8' 
+                }}>
+                  {f.subRole || 'SUPERVISOR'}
+                </span>
+              </div>
+              <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#6b7280' }}>{f.username}</div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -2515,6 +2594,50 @@ const HODDocumentManager = ({ theses }) => {
   const [chapterDrafts, setChapterDrafts] = useState([]);
   const [publications, setPublications] = useState([]);
   const [researchOutputs, setResearchOutputs] = useState([]);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Grid / filter controls
+  const [chapterStatusFilter, setChapterStatusFilter] = useState('SUBMITTED');
+  const filteredChaptersForGrid = useMemo(() => {
+    return chapterDrafts.filter(c => {
+      if (chapterStatusFilter === 'ALL') return true;
+      return c.status === chapterStatusFilter;
+    });
+  }, [chapterDrafts, chapterStatusFilter]);
+
+  const chapterGrid = useGridControl(
+    filteredChaptersForGrid,
+    ['scholarName', 'enrollmentNumber', 'title', 'thesisTitle'],
+    10
+  );
+
+  const [pubStatusFilter, setPubStatusFilter] = useState('UNDER_REVIEW_HOD');
+  const filteredPubsForGrid = useMemo(() => {
+    return publications.filter(p => {
+      if (pubStatusFilter === 'ALL') return ['UNDER_REVIEW_HOD', 'VERIFIED', 'REJECTED_BY_HOD'].includes(p.status);
+      return p.status === pubStatusFilter;
+    });
+  }, [publications, pubStatusFilter]);
+
+  const pubGrid = useGridControl(
+    filteredPubsForGrid,
+    ['scholarName', 'enrollmentNumber', 'title', 'journalName', 'publisher'],
+    10
+  );
+
+  const [reportStatusFilter, setReportStatusFilter] = useState('SUBMITTED');
+  const filteredReportsForGrid = useMemo(() => {
+    return researchOutputs.filter(r => {
+      if (reportStatusFilter === 'ALL') return true;
+      return r.status === reportStatusFilter;
+    });
+  }, [researchOutputs, reportStatusFilter]);
+
+  const reportGrid = useGridControl(
+    filteredReportsForGrid,
+    ['scholarName', 'enrollmentNumber', 'thesisTitle'],
+    10
+  );
 
   const fetchAllDocs = async () => {
     setLoading(true);
@@ -2773,9 +2896,52 @@ const HODDocumentManager = ({ theses }) => {
           {/* Chapter Drafts Tab */}
           {activeTab === 'chapters' && (
             <div>
+              {/* Filter and Search controls */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '16px', 
+                alignItems: 'center', 
+                marginBottom: '16px',
+                flexWrap: 'wrap',
+                background: '#F8FAFC',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0'
+              }}>
+                <div style={{ flex: 1, minWidth: '250px' }}>
+                  {chapterGrid.renderGridControls()}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+                  <select 
+                    value={chapterStatusFilter} 
+                    onChange={e => setChapterStatusFilter(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '0.85rem',
+                      background: 'white',
+                      color: '#1E293B',
+                      fontWeight: 500,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="SUBMITTED">Submitted (Pending HOD)</option>
+                    <option value="APPROVED">Approved / Verified</option>
+                    <option value="REVISION_REQUIRED">Revision Required</option>
+                  </select>
+                </div>
+              </div>
+
               {chapterDrafts.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                   No chapter drafts uploaded by scholars in your department yet.
+                </div>
+              ) : chapterGrid.paginatedData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                  No chapter drafts match the selected status or search filter.
                 </div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
@@ -2791,8 +2957,11 @@ const HODDocumentManager = ({ theses }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {chapterDrafts.map(c => (
+                    {chapterGrid.paginatedData.map((c, idx) => (
                       <tr key={c._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>
+                          {idx + 1 + (chapterGrid.currentPage - 1) * chapterGrid.pageSize}
+                        </td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontWeight: 700, color: '#1E293B' }}>{c.scholarName}</div>
                           <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{c.enrollmentNumber}</div>
@@ -2836,94 +3005,137 @@ const HODDocumentManager = ({ theses }) => {
 
           {/* Publications Tab */}
           {activeTab === 'publications' && (() => {
-            const filteredPublications = publications.filter(p => ['UNDER_REVIEW_HOD', 'VERIFIED', 'REJECTED_BY_HOD'].includes(p.status));
-            if (filteredPublications.length === 0) {
-              return (
-                <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
-                  No scientific publications logged by scholars in your department yet.
-                </div>
-              );
-            }
             return (
               <div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Paper Title</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Journal & Publisher</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>ISSN/DOI</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Proofs</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPublications.map((p, idx) => (
-                      <tr key={p._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1}</td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontWeight: 700, color: '#1E293B' }}>{p.scholarName}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{p.enrollmentNumber}</div>
-                        </td>
-                        <td style={{ padding: '14px 16px', fontWeight: 600 }}>{p.title}</td>
-                        <td style={{ padding: '14px 16px', color: '#475569' }}>
-                          <div>{p.journalName}</div>
-                          <span style={{ 
-                            fontSize: '0.72rem', 
-                            background: p.type === 'PATENT' || p.type === 'IPR' ? '#ECFDF5' : p.type === 'CONFERENCE' ? '#F5F3FF' : '#EFF6FF', 
-                            color: p.type === 'PATENT' || p.type === 'IPR' ? '#047857' : p.type === 'CONFERENCE' ? '#6D28D9' : '#1D4ED8', 
-                            padding: '2px 6px', 
-                            borderRadius: 4, 
-                            fontWeight: 700 
-                          }}>{p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type || 'JOURNAL'}</span>
-                          {p.itemStatus && <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: '#475569' }}>
-                          <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR No:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
-                          {p.doiUrl && <div style={{ fontSize: '0.75rem', marginTop: 4 }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'App Number:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          {(() => {
-                            const display = getStatusDisplay(p.status);
-                            return (
-                              <span style={{ 
-                                padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700,
-                                background: display.bg,
-                                color: display.color,
-                                border: `1px solid ${display.border}`
-                              }}>
-                                {display.text}
-                              </span>
-                            );
-                          })()}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#2563EB', fontWeight: 600 }}>🔗 {p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Article'}</a>}
-                            {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>📄 {p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR Proof' : 'View Uploaded Proof'}</a>}
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          {p.status === 'UNDER_REVIEW_HOD' ? (
-                            <button 
-                              onClick={() => setSelectedDoc({ ...p, docType: 'PUBLICATION' })}
-                              className="btn-action" 
-                              style={{ background: '#133A26', padding: '6px 14px', fontSize: '0.78rem' }}
-                            >
-                              Evaluate
-                            </button>
-                          ) : (
-                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>
-                              —
-                            </span>
-                          )}
-                        </td>
+                {/* Filter and Search controls */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '16px', 
+                  alignItems: 'center', 
+                  marginBottom: '16px',
+                  flexWrap: 'wrap',
+                  background: '#F8FAFC',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #E2E8F0'
+                }}>
+                  <div style={{ flex: 1, minWidth: '250px' }}>
+                    {pubGrid.renderGridControls()}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+                    <select 
+                      value={pubStatusFilter} 
+                      onChange={e => setPubStatusFilter(e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '0.85rem',
+                        background: 'white',
+                        color: '#1E293B',
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="UNDER_REVIEW_HOD">Under Review (Pending HOD)</option>
+                      <option value="VERIFIED">Verified / Approved</option>
+                      <option value="REJECTED_BY_HOD">Rejected by HOD</option>
+                    </select>
+                  </div>
+                </div>
+
+                {publications.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                    No scientific publications logged by scholars in your department yet.
+                  </div>
+                ) : pubGrid.paginatedData.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                    No scientific publications match the selected status or search filter.
+                  </div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Paper Title</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Journal & Publisher</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>ISSN/DOI</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Proofs</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {pubGrid.paginatedData.map((p, idx) => (
+                        <tr key={p._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
+                          <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>
+                            {idx + 1 + (pubGrid.currentPage - 1) * pubGrid.pageSize}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ fontWeight: 700, color: '#1E293B' }}>{p.scholarName}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{p.enrollmentNumber}</div>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontWeight: 600 }}>{p.title}</td>
+                          <td style={{ padding: '14px 16px', color: '#475569' }}>
+                            <div>{p.journalName}</div>
+                            <span style={{ 
+                              fontSize: '0.72rem', 
+                              background: p.type === 'PATENT' || p.type === 'IPR' ? '#ECFDF5' : p.type === 'CONFERENCE' ? '#F5F3FF' : '#EFF6FF', 
+                              color: p.type === 'PATENT' || p.type === 'IPR' ? '#047857' : p.type === 'CONFERENCE' ? '#6D28D9' : '#1D4ED8', 
+                              padding: '2px 6px', 
+                              borderRadius: 4, 
+                              fontWeight: 700 
+                            }}>{p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type || 'JOURNAL'}</span>
+                            {p.itemStatus && <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#475569' }}>
+                            <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR No:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
+                            {p.doiUrl && <div style={{ fontSize: '0.75rem', marginTop: 4 }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'App Number:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            {(() => {
+                              const display = getStatusDisplay(p.status);
+                              return (
+                                <span style={{ 
+                                  padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700,
+                                  background: display.bg,
+                                  color: display.color,
+                                  border: `1px solid ${display.border}`
+                                }}>
+                                  {display.text}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#2563EB', fontWeight: 600 }}>🔗 {p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Article'}</a>}
+                              {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>📄 {p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR Proof' : 'View Uploaded Proof'}</a>}
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            {p.status === 'UNDER_REVIEW_HOD' ? (
+                              <button 
+                                onClick={() => setSelectedDoc({ ...p, docType: 'PUBLICATION' })}
+                                className="btn-action" 
+                                style={{ background: '#133A26', padding: '6px 14px', fontSize: '0.78rem' }}
+                              >
+                                Evaluate
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>
+                                —
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             );
           })()}
@@ -2931,14 +3143,58 @@ const HODDocumentManager = ({ theses }) => {
           {/* Research Outputs Tab */}
           {activeTab === 'reports' && (
             <div>
+              {/* Filter and Search controls */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '16px', 
+                alignItems: 'center', 
+                marginBottom: '16px',
+                flexWrap: 'wrap',
+                background: '#F8FAFC',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0'
+              }}>
+                <div style={{ flex: 1, minWidth: '250px' }}>
+                  {reportGrid.renderGridControls()}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+                  <select 
+                    value={reportStatusFilter} 
+                    onChange={e => setReportStatusFilter(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '0.85rem',
+                      background: 'white',
+                      color: '#1E293B',
+                      fontWeight: 500,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="SUBMITTED">Submitted (Pending HOD)</option>
+                    <option value="APPROVED">Approved / Verified</option>
+                    <option value="REVISION_REQUIRED">Revision Required</option>
+                  </select>
+                </div>
+              </div>
+
               {researchOutputs.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                   No research outputs or progress reports logged by scholars in your department yet.
+                </div>
+              ) : reportGrid.paginatedData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                  No research outputs match the selected status or search filter.
                 </div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Milestone / Report Title</th>
                       <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Milestone Type</th>
@@ -2949,9 +3205,11 @@ const HODDocumentManager = ({ theses }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {researchOutputs.map((r, idx) => (
+                    {reportGrid.paginatedData.map((r, idx) => (
                       <tr key={r._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1}</td>
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>
+                          {idx + 1 + (reportGrid.currentPage - 1) * reportGrid.pageSize}
+                        </td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontWeight: 700, color: '#1E293B' }}>{r.scholarName}</div>
                           <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{r.enrollmentNumber}</div>
@@ -3180,6 +3438,7 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
   const [racs, setRacs] = useState([]);
   const [selectedRAC, setSelectedRAC] = useState(null);
   const { user } = useContext(AuthContext);
+  const [racStatusFilter, setRacStatusFilter] = useState('ALL');
 
   // Form states for scheduling
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -3190,15 +3449,12 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
       const dept = user?.department;
       if (!dept) return;
 
-      // Filter ACTIVE_RESEARCH theses in HOD's department for RAC scheduling
       const filtered = theses.filter(t => t.department === dept && t.status === 'ACTIVE_RESEARCH');
       setScholars(filtered);
 
-      // Fetch RACs for all scholars in dept
       const allRacs = [];
       for (const t of filtered) {
         const rRes = await axios.get(`${API}/lifecycle/rac/thesis/${t._id}`, getAuthHeader());
-        // Attach student details
         rRes.data.forEach(r => { r.scholar = t.scholarId; r.title = t.title; });
         allRacs.push(...rRes.data);
       }
@@ -3233,6 +3489,19 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
       toast.error('Failed to submit grade.');
     }
   };
+
+  const filteredRacsForGrid = useMemo(() => {
+    return racs.filter(r => {
+      if (racStatusFilter === 'ALL') return true;
+      return r.status === racStatusFilter;
+    });
+  }, [racs, racStatusFilter]);
+
+  const { paginatedData, renderGridControls, currentPage, pageSize } = useGridControl(
+    filteredRacsForGrid,
+    ['scholar.name', 'title'],
+    10
+  );
 
   return (
     <div>
@@ -3278,6 +3547,44 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
         </form>
       )}
 
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'center',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+        background: '#F8FAFC',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid #E2E8F0'
+      }}>
+        <div style={{ flex: 1, minWidth: '250px' }}>
+          {renderGridControls()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status Filter:</span>
+          <select 
+            value={racStatusFilter} 
+            onChange={e => setRacStatusFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '0.85rem',
+              background: 'white',
+              color: '#1E293B',
+              fontWeight: 500,
+              cursor: 'pointer'
+            }}
+          >
+            <option value="ALL">All RACs</option>
+            <option value="SCHEDULED">Scheduled / Pending Evaluation</option>
+            <option value="SATISFACTORY">Satisfactory (Cleared)</option>
+            <option value="UNSATISFACTORY">Unsatisfactory (Rejected)</option>
+          </select>
+        </div>
+      </div>
+
       <div className="file-list">
         <div className="file-header">
           <div style={{ flex: 0.5 }}>S.No.</div>
@@ -3288,79 +3595,101 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
           <div style={{ flex: 1.2 }}>Status</div>
           <div style={{ flex: 2.2, textAlign: 'center' }}>Grading Actions</div>
         </div>
-        {racs.map((r, idx) => (
-          <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{idx + 1}</div>
-              <div style={{ flex: 1.8 }}>
-                <div style={{ fontWeight: 700 }}>{r.scholar?.name || 'Academic Scholar'}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+        {racs.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary, #64748B)' }}>No scheduled RAC review meetings found.</div>
+        ) : paginatedData.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary, #64748B)' }}>No RAC records match the selected status filter or search query.</div>
+        ) : (
+          paginatedData.map((r, idx) => (
+            <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>
+                  {idx + 1 + (currentPage - 1) * pageSize}
+                </div>
+                <div style={{ flex: 1.8 }}>
+                  <div style={{ fontWeight: 700 }}>{r.scholar?.name || 'Academic Scholar'}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                </div>
+                <div style={{ flex: 0.8, fontWeight: 600, color: '#1E3A8A' }}>RAC-{r.racNumber}</div>
+                <div style={{ flex: 1.2, fontSize: '0.85rem' }}>{new Date(r.scheduledDate).toLocaleDateString()}</div>
+                <div style={{ flex: 1.5 }}>
+                  {r.progressReportUrl ? (
+                    <a href={`${API_BASE_URL}${r.progressReportUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
+                      📄 View Report
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontStyle: 'italic' }}>Pending submission</span>
+                  )}
+                </div>
+                <div style={{ flex: 1.2 }}>
+                  <span style={{ 
+                    padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
+                    background: r.status === 'SATISFACTORY' ? '#D1FAE5' : r.status === 'UNSATISFACTORY' ? '#FEE2E2' : '#FEF3C7',
+                    color: r.status === 'SATISFACTORY' ? '#065F46' : r.status === 'UNSATISFACTORY' ? '#991B1B' : '#D97706'
+                  }}>
+                    {r.status === 'SATISFACTORY' ? 'CLEARED' : r.status === 'UNSATISFACTORY' ? 'REJECTED' : r.status}
+                  </span>
+                </div>
+                <div style={{ flex: 2.2, display: 'flex', gap: 6, justifyContent: 'center' }}>
+                  <button 
+                    onClick={() => setSelectedRAC(r)}
+                    className={r.status === 'SCHEDULED' ? "btn-primary" : "btn-outline"}
+                    style={{ 
+                      padding: '6px 14px', 
+                      fontSize: '0.8rem', 
+                      background: r.status === 'SCHEDULED' ? '#133A26' : 'transparent',
+                      color: r.status === 'SCHEDULED' ? '#ffffff' : '#133A26'
+                    }}
+                  >
+                    {r.status === 'SCHEDULED' ? 'Evaluate' : 'Edit Grade'}
+                  </button>
+                  {r.status !== 'SCHEDULED' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Remarks: {r.remarks || 'None'}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div style={{ flex: 0.8, fontWeight: 600, color: '#1E3A8A' }}>RAC-{r.racNumber}</div>
-              <div style={{ flex: 1.2, fontSize: '0.85rem' }}>{new Date(r.scheduledDate).toLocaleDateString()}</div>
-              <div style={{ flex: 1.5 }}>
-                {r.progressReportUrl ? (
-                  <a href={`${API_BASE_URL}${r.progressReportUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
-                    📄 View Report
-                  </a>
-                ) : (
-                  <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontStyle: 'italic' }}>Pending submission</span>
-                )}
-              </div>
-              <div style={{ flex: 1.2 }}>
-                <span style={{ 
-                  padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
-                  background: r.status === 'SATISFACTORY' ? '#D1FAE5' : r.status === 'UNSATISFACTORY' ? '#FEE2E2' : '#FEF3C7',
-                  color: r.status === 'SATISFACTORY' ? '#065F46' : r.status === 'UNSATISFACTORY' ? '#991B1B' : '#D97706'
-                }}>
-                  {r.status === 'SATISFACTORY' ? 'CLEARED' : r.status === 'UNSATISFACTORY' ? 'REJECTED' : r.status}
-                </span>
-              </div>
-              <div style={{ flex: 2.2, display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
-                <button 
-                  onClick={() => setSelectedRAC(r)}
-                  className={r.status === 'SCHEDULED' ? "btn-primary" : "btn-outline"}
-                  style={{ 
-                    padding: '6px 14px', 
-                    fontSize: '0.8rem', 
-                    background: r.status === 'SCHEDULED' ? 'var(--color-primary, #059669)' : 'transparent',
-                    borderColor: 'var(--color-primary, #059669)',
-                    color: r.status === 'SCHEDULED' ? '#ffffff' : 'var(--color-primary, #059669)',
-                    border: r.status === 'SCHEDULED' ? 'none' : '1px solid var(--color-primary, #059669)'
-                  }}
-                >
-                  {r.status === 'SCHEDULED' ? 'Review Meeting' : 'Edit Review'}
-                </button>
-                {r.status !== 'SCHEDULED' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Remarks: {r.remarks || 'None'}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#065F46', background: '#D1FAE5', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>Evaluated ✓</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {(r.submissions && r.submissions.length > 0) || r.progressReportUrl || r.studentRemarks ? (
-              <div style={{ width: '100%', marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, alignSelf: 'flex-start' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Candidate Submissions History:</span>
-                <div style={{ width: '100%', overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: '#ffffff', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
-                    <thead>
-                      <tr style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '15%' }}>Submission</th>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Date & Time</th>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Attached File</th>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '35%' }}>Remarks</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {r.submissions && r.submissions.length > 0 ? (
-                        r.submissions.map((sub, idx) => (
-                          <tr key={sub._id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                            <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#{idx + 1}</td>
-                            <td style={{ padding: '6px 10px', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</td>
+              {(r.submissions && r.submissions.length > 0) || r.progressReportUrl || r.studentRemarks ? (
+                <div style={{ width: '100%', marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, alignSelf: 'flex-start' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Candidate Submissions History:</span>
+                  <div style={{ width: '100%', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: '#ffffff', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
+                      <thead>
+                        <tr style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '15%' }}>Submission</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Date & Time</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Attached File</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '35%' }}>Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {r.submissions && r.submissions.length > 0 ? (
+                          r.submissions.map((sub, idx) => (
+                            <tr key={sub._id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                              <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#{idx + 1}</td>
+                              <td style={{ padding: '6px 10px', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</td>
+                              <td style={{ padding: '6px 10px' }}>
+                                {sub.progressReportUrl ? (
+                                  <a href={`${API_BASE_URL}${sub.progressReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
+                                    📄 View File
+                                  </a>
+                                ) : (
+                                  <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '6px 10px', color: '#334155' }}>
+                                {sub.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                            <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#1</td>
+                            <td style={{ padding: '6px 10px', color: '#64748B' }}>—</td>
                             <td style={{ padding: '6px 10px' }}>
-                              {sub.progressReportUrl ? (
-                                <a href={`${API_BASE_URL}${sub.progressReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
+                              {r.progressReportUrl ? (
+                                <a href={`${API_BASE_URL}${r.progressReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
                                   📄 View File
                                 </a>
                               ) : (
@@ -3368,37 +3697,17 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
                               )}
                             </td>
                             <td style={{ padding: '6px 10px', color: '#334155' }}>
-                              {sub.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                              {r.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                          <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#1</td>
-                          <td style={{ padding: '6px 10px', color: '#64748B' }}>—</td>
-                          <td style={{ padding: '6px 10px' }}>
-                            {r.progressReportUrl ? (
-                              <a href={`${API_BASE_URL}${r.progressReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
-                                📄 View File
-                              </a>
-                            ) : (
-                              <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
-                            )}
-                          </td>
-                          <td style={{ padding: '6px 10px', color: '#334155' }}>
-                            {r.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            ) : null}
-          </div>
-        ))}
-        {racs.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary, #64748B)' }}>No scheduled RAC review meetings found.</div>
+              ) : null}
+            </div>
+          ))
         )}
       </div>
 
@@ -3486,6 +3795,21 @@ const HODChangeRequestsTab = ({ user }) => {
     }
   };
 
+  const [reqStatusFilter, setReqStatusFilter] = useState('ALL');
+
+  const filteredRequests = useMemo(() => {
+    const list = Array.isArray(requests) ? requests : [];
+    const sorted = [...list].sort((a, b) => (a.status === 'PENDING' ? -1 : 1));
+    if (reqStatusFilter === 'ALL') return sorted;
+    return sorted.filter(r => r.status === reqStatusFilter);
+  }, [requests, reqStatusFilter]);
+
+  const { paginatedData: reqPaginatedData, renderGridControls: reqRenderGridControls, currentPage: reqCurrentPage, pageSize: reqPageSize } = useGridControl(
+    filteredRequests,
+    ['scholarId.name', 'scholarId.username', 'type', 'currentValue', 'proposedValue'],
+    10
+  );
+
   if (loading) {
     return (
       <div className="premium-preloader-container">
@@ -3494,8 +3818,6 @@ const HODChangeRequestsTab = ({ user }) => {
       </div>
     );
   }
-
-  const sortedRequests = [...(Array.isArray(requests) ? requests : [])].sort((a, b) => (a.status === 'PENDING' ? -1 : 1));
 
   return (
     <div className="card" style={{ padding: 24, background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
@@ -3506,9 +3828,47 @@ const HODChangeRequestsTab = ({ user }) => {
         Review, reassign, approve, or reject student requests for Thesis Title modifications and Research Supervisor (Guide) reallocations.
       </p>
 
-      {sortedRequests.length === 0 ? (
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'center',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+        background: '#F8FAFC',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid #E2E8F0'
+      }}>
+        <div style={{ flex: 1, minWidth: '250px' }}>
+          {reqRenderGridControls()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+          <select
+            value={reqStatusFilter}
+            onChange={e => setReqStatusFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '0.85rem',
+              background: 'white',
+              color: '#1E293B',
+              fontWeight: 500,
+              cursor: 'pointer'
+            }}
+          >
+            <option value="ALL">All Requests</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredRequests.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0', fontStyle: 'italic' }}>
-          No academic modification requests logged for your department.
+          No academic modification requests match the selected filters.
         </div>
       ) : (
         <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: '12px' }}>
@@ -3525,7 +3885,7 @@ const HODChangeRequestsTab = ({ user }) => {
               </tr>
             </thead>
             <tbody>
-              {sortedRequests.map((r, idx) => {
+              {reqPaginatedData.map((r, idx) => {
                 const isPending = r.status === 'PENDING';
                 const isGuideChange = r.type === 'GUIDE_CHANGE';
                 const proposedFaculty = faculty.find(f => f._id === r.proposedValue);
@@ -3540,7 +3900,7 @@ const HODChangeRequestsTab = ({ user }) => {
                       transition: 'background-color 0.2s' 
                     }}
                   >
-                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1}</td>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (reqCurrentPage - 1) * reqPageSize}</td>
                     <td style={{ padding: '14px 16px', fontWeight: 600, color: '#0F172A' }}>
                       <div style={{ fontWeight: 700 }}>{r.scholarId?.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 400 }}>{r.scholarId?.username}</div>
@@ -4068,7 +4428,6 @@ const DefaultersTab = () => {
 const GlobalTransfersTab = ({ theses, onRefresh }) => {
   const toast = useToast();
   const { transferScholar } = useContext(ThesisContext);
-  const [searchTerm, setSearchTerm] = useState('');
   const [allFaculties, setAllFaculties] = useState([]);
   const [departments, setDepartments] = useState([]);
   
@@ -4124,17 +4483,13 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
     }
   };
 
-  // Filter candidates by search term
   const cleanTheses = Array.isArray(theses) ? theses : [];
-  const filteredTheses = cleanTheses.filter(t => {
-    if (!t) return false;
-    const term = searchTerm.toLowerCase();
-    const name = t.scholarId?.name?.toLowerCase() || '';
-    const enrollment = t.enrollmentNumber?.toLowerCase() || '';
-    const dept = t.department?.toLowerCase() || '';
-    const title = t.title?.toLowerCase() || '';
-    return name.includes(term) || enrollment.includes(term) || dept.includes(term) || title.includes(term);
-  });
+
+  const { paginatedData: transferPaginatedData, renderGridControls: transferRenderGridControls, currentPage: transferCurrentPage, pageSize: transferPageSize } = useGridControl(
+    cleanTheses,
+    ['scholarId.name', 'enrollmentNumber', 'department', 'title'],
+    10
+  );
 
   // Find HOD for a department
   const getDeptHOD = (deptName) => {
@@ -4154,29 +4509,28 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
 
   return (
     <div className="card" style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Global Candidate Transfers</h3>
-          <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 4 }}>
-            As a Super Admin, you can relocate any scholar to another department, manually reassigning a verified Supervisor and HOD.
-          </p>
-        </div>
-        <div style={{ position: 'relative', minWidth: 280 }}>
-          <input 
-            type="text" 
-            placeholder="Search scholar, department, roll..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-input"
-            style={{ width: '100%', padding: '10px 14px', fontSize: '0.85rem', borderRadius: 8 }}
-          />
-        </div>
+      <div style={{ marginBottom: 24 }}>
+        <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Global Candidate Transfers</h3>
+        <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 4 }}>
+          As a Super Admin, you can relocate any scholar to another department, manually reassigning a verified Supervisor and HOD.
+        </p>
+      </div>
+
+      <div style={{
+        background: '#F8FAFC',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        border: '1px solid #E2E8F0',
+        marginBottom: '16px'
+      }}>
+        {transferRenderGridControls()}
       </div>
 
       <div className="table-container" style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #E2E8F0' }}>
         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>S.No.</th>
               <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Scholar Name / Enrollment</th>
               <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Department</th>
               <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Current Supervisor</th>
@@ -4185,15 +4539,16 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
             </tr>
           </thead>
           <tbody>
-            {filteredTheses.length === 0 ? (
+            {transferPaginatedData.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: '#64748B', fontSize: '0.9rem' }}>
+                <td colSpan="6" style={{ padding: '32px', textAlign: 'center', color: '#64748B', fontSize: '0.9rem' }}>
                   No scholars found matching your search.
                 </td>
               </tr>
             ) : (
-              filteredTheses.map((t, idx) => (
+              transferPaginatedData.map((t, idx) => (
                 <tr key={t._id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (transferCurrentPage - 1) * transferPageSize}</td>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ fontWeight: 700, color: '#1E293B' }}>{t.scholarId?.name || 'N/A'}</div>
                     <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>SH no.: {t.scholarId?.profile?.shNo || '—'} | Roll: {t.enrollmentNumber}</div>

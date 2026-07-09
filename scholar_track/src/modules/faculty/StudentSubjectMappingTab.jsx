@@ -5,6 +5,7 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Save, Search, Check, Users, BookOpen, ChevronDown, AlertTriangle, X } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
+import { useGridControl } from '../../hooks/useGridControl';
 
 const StudentSubjectMappingTab = () => {
   const [sessions, setSessions] = useState([]);
@@ -135,6 +136,12 @@ const StudentSubjectMappingTab = () => {
 
     return allStudents;
   }, [selectedSubjects, allStudents, previewData]);
+
+  const { paginatedData, renderGridControls } = useGridControl(
+    displayedStudents,
+    ['name', 'username', 'profile.shNo', 'profile.fatherName'],
+    10
+  );
 
   // When displayed students changes, synchronize selection state
   useEffect(() => {
@@ -561,79 +568,84 @@ const StudentSubjectMappingTab = () => {
             )}
 
             {displayedStudents.length > 0 && selectedSubjectCount > 0 && (
-              <div className="data-table-wrapper">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '50px' }}>
-                        <input
-                          type="checkbox"
-                          checked={selectAllStudents}
-                          onChange={handleSelectAllStudentsChange}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                        />
-                      </th>
-                      <th style={{ width: '110px' }}>Sh. No.</th>
-                      <th>Student Name</th>
-                      <th>Degree Name</th>
-                      <th>Father's Name</th>
-                      <th>Username</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayedStudents.map((st, sIdx) => {
-                      const stId = st._id;
-                      const isAlreadyMapped = mappedStudentIdsForSelected.has(stId);
-                      const isChecked = isAlreadyMapped || !!selectedStudents[stId];
-                      return (
-                        <motion.tr
-                          key={stId}
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: Math.min(sIdx * 0.015, 0.3) }}
-                          onClick={() => !isAlreadyMapped && handleStudentToggle(stId)}
-                          style={{
-                            cursor: isAlreadyMapped ? 'not-allowed' : 'pointer',
-                            background: isAlreadyMapped
-                              ? 'rgba(16, 185, 129, 0.04)'
-                              : isChecked
-                                ? 'rgba(99, 102, 241, 0.04)'
-                                : 'transparent',
-                            opacity: isAlreadyMapped ? 0.85 : 1
-                          }}
-                        >
-                          <td style={{ textAlign: 'center' }}>
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              disabled={isAlreadyMapped}
-                              onChange={() => !isAlreadyMapped && handleStudentToggle(stId)}
-                              onClick={e => e.stopPropagation()}
-                              style={{ width: '16px', height: '16px', cursor: isAlreadyMapped ? 'not-allowed' : 'pointer' }}
-                            />
-                          </td>
-                          <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{st.profile?.shNo || 'N/A'}</td>
-                          <td>
-                            <div className="flex items-center gap-sm">
-                              <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{st.name}</div>
-                              {isAlreadyMapped && (
-                                <span className="badge badge-success" style={{ fontSize: '0.65rem', padding: '2px 6px', whiteSpace: 'nowrap' }}>
-                                  Already Mapped
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>
-                            {degreeNames.find(dn => dn._id === st.profile?.degreeNameId)?.name || st.profile?.degreeName || '—'}
-                          </td>
-                          <td style={{ color: 'var(--color-text-secondary)' }}>{st.profile?.fatherName || '—'}</td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>{st.username}</td>
-                        </motion.tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                <div style={{ marginBottom: '16px' }}>
+                  {renderGridControls()}
+                </div>
+                <div className="data-table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '50px' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectAllStudents}
+                            onChange={handleSelectAllStudentsChange}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                        </th>
+                        <th style={{ width: '110px' }}>Sh. No.</th>
+                        <th>Student Name</th>
+                        <th>Degree Name</th>
+                        <th>Father's Name</th>
+                        <th>Username</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedData.map((st, sIdx) => {
+                        const stId = st._id;
+                        const isAlreadyMapped = mappedStudentIdsForSelected.has(stId);
+                        const isChecked = isAlreadyMapped || !!selectedStudents[stId];
+                        return (
+                          <motion.tr
+                            key={stId}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: Math.min(sIdx * 0.015, 0.3) }}
+                            onClick={() => !isAlreadyMapped && handleStudentToggle(stId)}
+                            style={{
+                              cursor: isAlreadyMapped ? 'not-allowed' : 'pointer',
+                              background: isAlreadyMapped
+                                ? 'rgba(16, 185, 129, 0.04)'
+                                : isChecked
+                                  ? 'rgba(99, 102, 241, 0.04)'
+                                  : 'transparent',
+                              opacity: isAlreadyMapped ? 0.85 : 1
+                            }}
+                          >
+                            <td style={{ textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                disabled={isAlreadyMapped}
+                                onChange={() => !isAlreadyMapped && handleStudentToggle(stId)}
+                                onClick={e => e.stopPropagation()}
+                                style={{ width: '16px', height: '16px', cursor: isAlreadyMapped ? 'not-allowed' : 'pointer' }}
+                              />
+                            </td>
+                            <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{st.profile?.shNo || 'N/A'}</td>
+                            <td>
+                              <div className="flex items-center gap-sm">
+                                <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{st.name}</div>
+                                {isAlreadyMapped && (
+                                  <span className="badge badge-success" style={{ fontSize: '0.65rem', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                                    Already Mapped
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>
+                              {degreeNames.find(dn => dn._id === st.profile?.degreeNameId)?.name || st.profile?.degreeName || '—'}
+                            </td>
+                            <td style={{ color: 'var(--color-text-secondary)' }}>{st.profile?.fatherName || '—'}</td>
+                            <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>{st.username}</td>
+                          </motion.tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
 
             {displayedStudents.length === 0 && selectedSubjectCount > 0 && !loadingPreview && (

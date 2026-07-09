@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useMemo } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 import { AuthContext } from '../../context/AuthContext';
+import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { progressiveFetch } from '../../utils/progressiveFetch';
 import { Search, History, Save, ChevronDown, X, Edit3 } from 'lucide-react';
@@ -32,6 +33,114 @@ const AttendanceRecordsTab = () => {
   const [historyClasses, setHistoryClasses] = useState([]);
   const [filteredSubjects, setFilteredSubjects] = useState([]);
   const [openHistoryLeaveDropdownStudentId, setOpenHistoryLeaveDropdownStudentId] = useState(null);
+
+  const columns = [
+    {
+      key: 'shNo',
+      header: 'Sh. No.',
+      accessor: (row) => row.studentId?.profile?.shNo || 'N/A'
+    },
+    {
+      key: 'student',
+      header: 'Student Name',
+      accessor: (row) => row.studentId?.name || '',
+      render: (row) => (
+        <div>
+          <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{row.studentId?.name}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{row.studentId?.username}</div>
+        </div>
+      )
+    },
+    {
+      key: 'fatherName',
+      header: "Father's Name",
+      accessor: (row) => row.studentId?.profile?.fatherName || '—'
+    },
+    {
+      key: 'attendanceStatus',
+      header: 'Attendance Status',
+      accessor: (row) => row.status || '',
+      render: (row) => (
+        <span className={`badge ${
+          row.status === 'PRESENT' ? 'badge-present' :
+          row.status === 'ABSENT' ? 'badge-absent' :
+          row.status === 'ON_LEAVE' ? 'badge-leave' : 'badge-neutral'
+        }`}>
+          {row.status === 'ON_LEAVE' ? `Leave - ${row.leaveType}` : row.status}
+        </span>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      accessor: (row) => row.forwardedToHOD ? (row.approvalStatus === 'PENDING_HOD' ? 'Pending HOD' : 'Approved') : 'Approved',
+      render: (row) => {
+        return row.forwardedToHOD ? (
+          row.approvalStatus === 'PENDING_HOD' ? (
+            <span className="badge badge-pending">Forwarded to HOD / Pending at HOD</span>
+          ) : (
+            <span className="badge badge-approved">Approved</span>
+          )
+        ) : (
+          <span className="badge badge-approved">Approved</span>
+        );
+      }
+    },
+    {
+      key: 'logs',
+      header: 'Verification Logs',
+      sortable: false,
+      render: (row) => {
+        const formatTimestamp = (ts) => {
+          if (!ts) return 'N/A';
+          return new Date(ts).toLocaleString('en-IN', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: true
+          });
+        };
+
+        const facultyName = row.markedBy?.name || 'Faculty';
+        const facultyDesignation = row.markedBy?.profile?.designation || 'Faculty';
+        const markedTime = formatTimestamp(row.markedAt || row.createdAt);
+
+        const hodName = row.hodApprovedBy?.name || row.lastEditedBy?.name || row.departmentHod?.name || 'HOD';
+        const hodDesignation = row.hodApprovedBy?.profile?.designation || row.lastEditedBy?.profile?.designation || row.departmentHod?.profile?.designation || 'Professor & Head';
+        const hodTime = formatTimestamp(row.hodApprovedAt || row.lastEditedAt || row.updatedAt);
+
+        const editorName = row.lastEditedBy?.name;
+        const editorDesignation = row.lastEditedBy?.profile?.designation || 'HOD';
+        const editTime = formatTimestamp(row.lastEditedAt);
+        const isEditedByHod = row.lastEditedBy && row.lastEditedBy.role === 'HOD';
+
+        return row.forwardedToHOD ? (
+          row.approvalStatus === 'PENDING_HOD' ? (
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+              <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+              {isEditedByHod && (
+                <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+              )}
+              <div><strong>Forwarded To:</strong> HOD {hodName} ({hodDesignation})</div>
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+              <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+              {isEditedByHod && (
+                <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+              )}
+              <div><strong>Approved By HOD:</strong> {hodName} ({hodDesignation}) at {hodTime}</div>
+            </div>
+          )
+        ) : (
+          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+            <div><strong>Approved By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+            {isEditedByHod && (
+              <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+            )}
+          </div>
+        );
+      }
+    }
+  ];
 
   const api = useApi();
   const toast = useToast();
@@ -356,118 +465,7 @@ const AttendanceRecordsTab = () => {
       {historyLoading ? (
         <div className="mt-lg"><SkeletonLoader count={3} height={60} /></div>
       ) : historyList.length > 0 ? (
-        <div className="data-table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: '50px' }}>#</th>
-                <th style={{ width: '110px' }}>Sh. No.</th>
-                <th>Student Name</th>
-                <th>Father's Name</th>
-                <th style={{ width: '180px' }}>Attendance Status</th>
-                <th style={{ width: '220px' }}>Status</th>
-                <th style={{ width: '380px' }}>Verification Logs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {historyList.map((record, hIdx) => {
-                const formatTimestamp = (ts) => {
-                  if (!ts) return 'N/A';
-                  return new Date(ts).toLocaleString('en-IN', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', hour12: true
-                  });
-                };
-
-                const facultyName = record.markedBy?.name || 'Faculty';
-                const facultyDesignation = record.markedBy?.profile?.designation || 'Faculty';
-                const markedTime = formatTimestamp(record.markedAt || record.createdAt);
-
-                const hodName = record.hodApprovedBy?.name || record.lastEditedBy?.name || record.departmentHod?.name || 'HOD';
-                const hodDesignation = record.hodApprovedBy?.profile?.designation || record.lastEditedBy?.profile?.designation || record.departmentHod?.profile?.designation || 'Professor & Head';
-                const hodTime = formatTimestamp(record.hodApprovedAt || record.lastEditedAt || record.updatedAt);
-
-                const editorName = record.lastEditedBy?.name;
-                const editorDesignation = record.lastEditedBy?.profile?.designation || 'HOD';
-                const editTime = formatTimestamp(record.lastEditedAt);
-                const isEditedByHod = record.lastEditedBy && record.lastEditedBy.role === 'HOD';
-
-                return (
-                  <motion.tr
-                    key={record._id}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(hIdx * 0.02, 0.3) }}
-                  >
-                    <td style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', textAlign: 'center' }}>{hIdx + 1}</td>
-                    <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{record.studentId?.profile?.shNo || 'N/A'}</td>
-                    <td>
-                      <div>
-                        <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{record.studentId?.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{record.studentId?.username}</div>
-                      </div>
-                    </td>
-                    <td style={{ color: 'var(--color-text-secondary)' }}>{record.studentId?.profile?.fatherName || '—'}</td>
-                    <td>
-                      <span className={`badge ${
-                        record.status === 'PRESENT' ? 'badge-present' :
-                        record.status === 'ABSENT' ? 'badge-absent' :
-                        record.status === 'ON_LEAVE' ? 'badge-leave' : 'badge-neutral'
-                      }`}>
-                        {record.status === 'ON_LEAVE' ? `Leave - ${record.leaveType}` : record.status}
-                      </span>
-                    </td>
-                    <td>
-                      {record.forwardedToHOD ? (
-                        record.approvalStatus === 'PENDING_HOD' ? (
-                          <span className="badge badge-pending">
-                            Forwarded to HOD / Pending at HOD
-                          </span>
-                        ) : (
-                          <span className="badge badge-approved">
-                            Approved
-                          </span>
-                        )
-                      ) : (
-                        <span className="badge badge-approved">
-                          Approved
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {record.forwardedToHOD ? (
-                        record.approvalStatus === 'PENDING_HOD' ? (
-                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                            <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
-                            {isEditedByHod && (
-                              <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
-                            )}
-                            <div><strong>Forwarded To:</strong> HOD {hodName} ({hodDesignation})</div>
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                            <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
-                            {isEditedByHod && (
-                              <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
-                            )}
-                            <div><strong>Approved By HOD:</strong> {hodName} ({hodDesignation}) at {hodTime}</div>
-                          </div>
-                        )
-                      ) : (
-                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                          <div><strong>Approved By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
-                          {isEditedByHod && (
-                            <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  </motion.tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataTable columns={columns} data={historyList} searchPlaceholder="Search by student name or enrollment..." />
       ) : (
         <div className="glass-panel p-xl" style={{ textAlign: 'center' }}>
           <div style={{ color: 'var(--color-text-muted)', marginBottom: '12px' }}>
