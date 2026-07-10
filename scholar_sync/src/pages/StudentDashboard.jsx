@@ -9275,7 +9275,7 @@ const ProfileTab = () => {
                 </>
               )}
             </div>
-            {user?.profile?.dob && (
+            {user?.profile?.dob && !thesis && (
               <div style={{ marginTop: '32px', padding: '16px', borderTop: '2px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <button
                   type="button"
