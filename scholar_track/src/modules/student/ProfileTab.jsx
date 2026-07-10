@@ -1043,7 +1043,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   }, [profile, isPhD]);
 
   const thesisActive = thesis && thesis.status !== 'REJECTED' ? thesis : null;
-  const isSubmitted = !!thesisActive || !!profile?.profileCompleted;
+  const isSubmitted = !!thesisActive || !!profile?.profileCompleted || !!user?.profileCompleted;
   const isVerifiedPhD = thesisActive && thesisActive.enrollmentVerified === true;
   const isPersonalInfoSaved = isPhD ? !!profile?.profile?.dob : (!!profile?.profile?.phoneNumber && !!profile?.profile?.address);
 
