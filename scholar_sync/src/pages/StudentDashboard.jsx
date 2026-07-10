@@ -6252,8 +6252,19 @@ const ProfileTab = () => {
     otherQuals: false,
     mphil: false,
     netJrf: false,
-    fellowships: false
+    fellowships: false,
+    guide: false
   });
+  const isEditingAcademic = !!(
+    editModes.class10 ||
+    editModes.class12 ||
+    editModes.graduation ||
+    editModes.postGraduation ||
+    editModes.otherQuals ||
+    editModes.mphil ||
+    editModes.netJrf ||
+    editModes.fellowships
+  );
   // Common ERP fields
   const [dob, setDob] = useState(user?.profile?.dob ? user.profile.dob.split('T')[0] : '');
   const [gender, setGender] = useState(user?.profile?.gender || '');
@@ -6464,10 +6475,11 @@ const ProfileTab = () => {
         class12: prev.class12 || !q?.class12?.rollNo,
         graduation: prev.graduation || !q?.graduation?.rollNo,
         postGraduation: prev.postGraduation || !q?.postGraduation?.rollNo,
-        otherQuals: prev.otherQuals || !q?.otherQuals,
-        mphil: prev.mphil || !q?.mphil?.university,
-        netJrf: prev.netJrf || q?.netJrf?.qualified === undefined || (q?.netJrf?.qualified === true && !q?.netJrf?.rollNo),
-        fellowships: prev.fellowships || !q?.fellowships
+        otherQuals: prev.otherQuals || false,
+        mphil: prev.mphil || (mphilDone === 'YES' && !q?.mphil?.university),
+        netJrf: prev.netJrf || (netJrfQualified === 'YES' && !q?.netJrf?.rollNo),
+        fellowships: prev.fellowships || false,
+        guide: prev.guide || !user?.profile?.preferredGuideId
       }));
     } else {
       setEditModes({
@@ -6476,10 +6488,11 @@ const ProfileTab = () => {
         class12: true,
         graduation: true,
         postGraduation: true,
-        otherQuals: true,
-        mphil: true,
-        netJrf: true,
-        fellowships: true
+        otherQuals: false,
+        mphil: false,
+        netJrf: false,
+        fellowships: false,
+        guide: true
       });
     }
     if (user?.profile?.preferredGuideId || thesis) {
@@ -6696,7 +6709,7 @@ const ProfileTab = () => {
     await handleUpdate(e);
   };
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = async (e, section) => {
     e.preventDefault();
     const validationError = validatePersonalInfo();
     if (validationError) {
@@ -6809,7 +6822,10 @@ const ProfileTab = () => {
       setIsPersonalInfoSavedState(true);
       let msg = 'PhD Scholar profile details updated successfully!';
       const isFirstTimeGeneral = !user?.profile?.dob;
-      if (subTab === 'general' || isFirstTimeGeneral) {
+      if (section === 'guide') {
+        msg = 'Guide preference saved. Submit your profile to HOD for verification now.';
+        setEditModes(prev => ({ ...prev, guide: false }));
+      } else if (subTab === 'general' || isFirstTimeGeneral) {
         msg = 'Personal details saved successfully! Proceeding to Academic Qualifications.';
         setEditModes(prev => ({ ...prev, general: false }));
         setTimeout(() => {
@@ -7689,7 +7705,19 @@ const ProfileTab = () => {
     setLoading(false);
     if (res.success) {
       setGuideUnlocked(true);
-      toast.success('Academic qualifications saved successfully! Proceeding to Supervisor Selection.');
+      const isComplete = isAcademicQualificationsComplete();
+      toast.success(`Academic qualifications ${isComplete ? 'updated' : 'saved'} successfully! Proceeding to Supervisor Selection.`);
+      setEditModes(prev => ({
+        ...prev,
+        class10: false,
+        class12: false,
+        graduation: false,
+        postGraduation: false,
+        otherQuals: false,
+        mphil: false,
+        netJrf: false,
+        fellowships: false
+      }));
       setTimeout(() => {
         scrollToSection('supervisor', true);
       }, 100);
@@ -8358,9 +8386,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, class10: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, class10: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Class 10 Details
                     </button>
@@ -8412,8 +8440,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSection('class10')}
-                      disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (loading || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
                     >
                       💾 Save Class 10 Details
                     </button>
@@ -8459,9 +8487,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, class12: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, class12: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Class 12 Details
                     </button>
@@ -8513,8 +8541,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSection('class12')}
-                      disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (loading || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
                     >
                       💾 Save Class 12 Details
                     </button>
@@ -8564,9 +8592,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, graduation: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, graduation: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Graduation Details
                     </button>
@@ -8622,8 +8650,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSection('graduation')}
-                      disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (loading || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
                     >
                       💾 Save Graduation Details
                     </button>
@@ -8673,9 +8701,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, postGraduation: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, postGraduation: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Post-Graduation Details
                     </button>
@@ -8731,8 +8759,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSection('postGraduation')}
-                      disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (loading || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
                     >
                       💾 Save Post Graduation Details
                     </button>
@@ -8785,9 +8813,9 @@ const ProfileTab = () => {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, otherQuals: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, otherQuals: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit / Add Other Qualifications
                     </button>
@@ -8852,8 +8880,8 @@ const ProfileTab = () => {
                           <button
                             type="button"
                             onClick={() => saveSectionRow('otherQuals', i)}
-                            disabled={loading}
-                            style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', height: '38px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            disabled={loading || !isEditingAcademic}
+                            style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer', height: '38px', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
                             💾 Save
                           </button>
@@ -8873,8 +8901,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSectionList('otherQuals')}
-                      disabled={loading}
-                      style={{ background: '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer' }}
                     >
                       💾 Save & Close
                     </button>
@@ -8928,9 +8956,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, mphil: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, mphil: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit M.Phil Details
                     </button>
@@ -9002,8 +9030,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSection('mphil')}
-                      disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (loading || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
                     >
                       💾 Save M.Phil Details
                     </button>
@@ -9057,9 +9085,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, netJrf: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, netJrf: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit NET JRF Details
                     </button>
@@ -9121,8 +9149,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSection('netJrf')}
-                      disabled={loading}
-                      style={{ background: '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#059669', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (loading || !isEditingAcademic) ? 'none' : '0 2px 4px rgba(5, 150, 105, 0.2)', transition: 'all 0.2s' }}
                     >
                       💾 Save NET JRF Details
                     </button>
@@ -9157,9 +9185,9 @@ const ProfileTab = () => {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
                     <button
                       type="button"
-                      disabled={!!thesis}
-                      onClick={() => !thesis && setEditModes(prev => ({ ...prev, fellowships: true }))}
-                      style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                      disabled={!!thesis || !isEditingAcademic}
+                      onClick={() => !thesis && isEditingAcademic && setEditModes(prev => ({ ...prev, fellowships: true }))}
+                      style={{ background: (!!thesis || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !isEditingAcademic) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit / Add Fellowships
                     </button>
@@ -9238,8 +9266,8 @@ const ProfileTab = () => {
                     <button
                       type="button"
                       onClick={() => saveSectionList('fellowships')}
-                      disabled={loading}
-                      style={{ background: '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+                      disabled={loading || !isEditingAcademic}
+                      style={{ background: (loading || !isEditingAcademic) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !isEditingAcademic) ? 'not-allowed' : 'pointer' }}
                     >
                       💾 Save & Close
                     </button>
@@ -9251,7 +9279,33 @@ const ProfileTab = () => {
               <div style={{ marginTop: '32px', padding: '16px', borderTop: '2px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <button
                   type="button"
-                  onClick={handleProceedToGuide}
+                  onClick={(e) => {
+                    const isEditing = (
+                      editModes.class10 ||
+                      editModes.class12 ||
+                      editModes.graduation ||
+                      editModes.postGraduation ||
+                      editModes.otherQuals ||
+                      editModes.mphil ||
+                      editModes.netJrf ||
+                      editModes.fellowships
+                    );
+                    if (!isEditing) {
+                      setEditModes(prev => ({
+                        ...prev,
+                        class10: true,
+                        class12: true,
+                        graduation: true,
+                        postGraduation: true,
+                        otherQuals: false,
+                        mphil: mphilDone === 'YES',
+                        netJrf: netJrfQualified === 'YES',
+                        fellowships: false
+                      }));
+                    } else {
+                      handleProceedToGuide(e);
+                    }
+                  }}
                   style={{
                     background: '#059669',
                     color: 'white',
@@ -9268,7 +9322,20 @@ const ProfileTab = () => {
                     gap: '8px'
                   }}
                 >
-                  {guideUnlocked ? '🔓' : '🔒'} Save Academic Qualifications & Move to Preferred Supervisor
+                  {!(
+                    editModes.class10 ||
+                    editModes.class12 ||
+                    editModes.graduation ||
+                    editModes.postGraduation ||
+                    editModes.otherQuals ||
+                    editModes.mphil ||
+                    editModes.netJrf ||
+                    editModes.fellowships
+                  ) ? (
+                    <>✏️ Edit Academic Qualifications</>
+                  ) : (
+                    <>{guideUnlocked ? '🔓' : '🔒'} Save Academic Qualifications & Move to Preferred Supervisor</>
+                  )}
                 </button>
               </div>
             )}
@@ -9321,20 +9388,31 @@ const ProfileTab = () => {
             </p>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Preferred supervisor / Guide</label>
-              <select 
-                className="form-input" 
-                value={preferredGuideId} 
-                onChange={e => setPreferredGuideId(e.target.value)}
-                disabled={!!thesis}
-              >
-                <option value="">Select Preferred Guide...</option>
-                {faculties.map(fac => (
-                  <option key={fac._id} value={fac._id}>
-                    {fac.name} ({(fac.role === 'HOD' || fac.subRole === 'HOD') ? 'HOD' : 'Faculty'})
-                  </option>
-                ))}
-              </select>
+              {editModes.guide ? (
+                <>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>Preferred supervisor / Guide</label>
+                  <select 
+                    className="form-input" 
+                    value={preferredGuideId} 
+                    onChange={e => setPreferredGuideId(e.target.value)}
+                    disabled={!!thesis}
+                  >
+                    <option value="">Select Preferred Guide...</option>
+                    {faculties.map(fac => (
+                      <option key={fac._id} value={fac._id}>
+                        {fac.name} ({(fac.role === 'HOD' || fac.subRole === 'HOD') ? 'HOD' : 'Faculty'})
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : (
+                <div style={{ background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Preferred supervisor / Guide</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.95rem' }}>
+                    {faculties.find(f => f._id === preferredGuideId)?.name || 'Select Preferred Guide...'}
+                  </strong>
+                </div>
+              )}
             </div>
 
             {preferredGuideId && (
@@ -9356,15 +9434,26 @@ const ProfileTab = () => {
             )}
             {!thesis && (
               <>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={handleUpdate}
-                  className="btn-primary"
-                  style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                >
-                  {loading ? 'Saving Changes...' : '💾 Save Guide Preference'}
-                </button>
+                {editModes.guide ? (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={(e) => handleUpdate(e, 'guide')}
+                    className="btn-primary"
+                    style={{ flex: 1, background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    {loading ? 'Saving Changes...' : '💾 Save Guide Preference'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditModes(prev => ({ ...prev, guide: true }))}
+                    className="btn-primary"
+                    style={{ flex: 1, background: '#4B5563', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    ✏️ Edit Guide Preference
+                  </button>
+                )}
                 <button
                   type="button"
                   disabled={registering || !canSubmit}
