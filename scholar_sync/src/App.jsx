@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './Landing';
 import StudentDashboard from './pages/StudentDashboard';
@@ -22,6 +22,66 @@ import EventsPage from './pages/EventsPage';
 import CollaboratePage from './pages/CollaboratePage';
 
 function App() {
+  useEffect(() => {
+    const addTableLabels = () => {
+      const tables = document.querySelectorAll('table');
+      tables.forEach(table => {
+        if (table.classList.contains('no-responsive')) return;
+        const headers = [];
+        const ths = table.querySelectorAll('thead th, tr:first-child th');
+        ths.forEach(th => {
+          headers.push(th.textContent.trim());
+        });
+        
+        const trs = table.querySelectorAll('tbody tr, tr');
+        trs.forEach(tr => {
+          if (tr.querySelector('th')) return;
+          const tds = tr.querySelectorAll('td');
+          tds.forEach((td, idx) => {
+            if (headers[idx] && !td.getAttribute('data-label')) {
+              td.setAttribute('data-label', headers[idx]);
+            }
+          });
+        });
+      });
+    };
+
+    const addFileListLabels = () => {
+      const fileLists = document.querySelectorAll('.file-list');
+      fileLists.forEach(list => {
+        const headers = [];
+        const headerDivs = list.querySelectorAll('.file-header > div');
+        headerDivs.forEach(div => {
+          headers.push(div.textContent.trim());
+        });
+
+        if (headers.length === 0) return;
+
+        const items = list.querySelectorAll('.file-item');
+        items.forEach(item => {
+          const itemDivs = item.querySelectorAll(':scope > div');
+          itemDivs.forEach((div, idx) => {
+            if (headers[idx] && !div.getAttribute('data-label')) {
+              div.setAttribute('data-label', headers[idx]);
+            }
+          });
+        });
+      });
+    };
+
+    addTableLabels();
+    addFileListLabels();
+
+    const observer = new MutationObserver(() => {
+      addTableLabels();
+      addFileListLabels();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <ErrorBoundary>
       <Router>
