@@ -337,6 +337,230 @@ const renderHistoryTable = (history) => {
   );
 };
 
+const getPublicationVirtualHistory = (p) => {
+  if (!p) return [];
+  const list = [];
+  
+  if (p.createdAt) {
+    list.push({
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Submitted research output log: "${p.title}"`,
+      timestamp: new Date(p.createdAt),
+      documentUrl: p.documentUrl
+    });
+  }
+
+  // If approved by supervisor / pending HOD
+  const isSupervisorApproved = p.status === 'UNDER_REVIEW_HOD' || p.status === 'VERIFIED';
+  const isSupervisorRejected = p.status === 'REJECTED_BY_SUPERVISOR';
+  const isHodApproved = p.status === 'VERIFIED';
+  const isHodRejected = p.status === 'REJECTED_BY_HOD';
+
+  if (isSupervisorApproved || isSupervisorRejected) {
+    list.push({
+      action: isSupervisorApproved ? 'SUPERVISOR_APPROVED' : 'SUPERVISOR_REJECTED',
+      actorName: 'Supervisor',
+      actorRole: 'SUPERVISOR',
+      remarks: isSupervisorApproved ? 'Approved & forwarded to HOD.' : (p.remarks || 'Rejected by supervisor.'),
+      timestamp: p.reviewedAt ? new Date(p.reviewedAt) : new Date(new Date(p.createdAt).getTime() + 10 * 60 * 1000),
+      documentUrl: p.documentUrl
+    });
+  }
+
+  if (isHodApproved || isHodRejected) {
+    list.push({
+      action: isHodApproved ? 'HOD_APPROVED' : 'HOD_REJECTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: isHodApproved ? 'Verified & Approved.' : (p.remarks || 'Rejected by HOD.'),
+      timestamp: p.updatedAt ? new Date(p.updatedAt) : new Date(new Date(p.createdAt).getTime() + 20 * 60 * 1000),
+      documentUrl: p.documentUrl
+    });
+  }
+
+  return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+
+const getMeetingVirtualHistory = (m) => {
+  if (!m) return [];
+  const list = [];
+  if (m.createdAt) {
+    list.push({
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Requested consultation meeting. Agenda: "${m.reason}"`,
+      timestamp: new Date(m.createdAt)
+    });
+  }
+  if (m.status === 'APPROVED' || m.status === 'REJECTED') {
+    list.push({
+      action: m.status === 'APPROVED' ? 'HOD_APPROVED' : 'HOD_REJECTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: m.remarks || (m.status === 'APPROVED' ? 'Meeting approved and scheduled.' : 'Meeting request rejected.'),
+      timestamp: m.updatedAt ? new Date(m.updatedAt) : new Date(new Date(m.createdAt).getTime() + 10 * 60 * 1000)
+    });
+  }
+  return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+
+const getDrcMeetingVirtualHistory = (drc) => {
+  if (!drc) return [];
+  const list = [];
+  if (drc.createdAt) {
+    list.push({
+      action: 'SUBMITTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: `Scheduled DRC/RAC evaluation meeting: "${drc.title || 'Periodic Review'}"`,
+      timestamp: new Date(drc.createdAt)
+    });
+  }
+  if (drc.status === 'APPROVED' || drc.status === 'REJECTED') {
+    list.push({
+      action: drc.status === 'APPROVED' ? 'HOD_APPROVED' : 'HOD_REJECTED',
+      actorName: 'Committee / HOD',
+      actorRole: 'HOD',
+      remarks: drc.remarks || (drc.status === 'APPROVED' ? 'Cleared successfully.' : 'Unsatisfactory progress.'),
+      timestamp: drc.updatedAt ? new Date(drc.updatedAt) : new Date(new Date(drc.createdAt).getTime() + 10 * 60 * 1000)
+    });
+  }
+  return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+
+const getChangeRequestVirtualHistory = (r, thesis, faculty = []) => {
+  if (!r) return [];
+  const list = [];
+  if (r.createdAt) {
+    const proposedText = r.type === 'GUIDE_CHANGE' 
+      ? (faculty.find(f => f._id === r.proposedValue)?.name || 'New Faculty')
+      : r.proposedValue;
+    list.push({
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Proposed ${r.type === 'TITLE_CHANGE' ? 'title change' : 'supervisor change'} to: "${proposedText}"`,
+      timestamp: new Date(r.createdAt)
+    });
+  }
+  if (r.status === 'APPROVED' || r.status === 'REJECTED') {
+    list.push({
+      action: r.status === 'APPROVED' ? 'HOD_APPROVED' : 'HOD_REJECTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: r.remarks || (r.status === 'APPROVED' ? 'Request approved.' : 'Request rejected.'),
+      timestamp: r.updatedAt ? new Date(r.updatedAt) : new Date(new Date(r.createdAt).getTime() + 10 * 60 * 1000)
+    });
+  }
+  return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+
+const getDocumentVirtualHistory = (doc) => {
+  if (!doc) return [];
+  const list = [];
+  if (doc.createdAt) {
+    list.push({
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Uploaded additional document: "${doc.documentType || 'Supplementary file'}"`,
+      timestamp: new Date(doc.createdAt),
+      documentUrl: doc.documentUrl
+    });
+  }
+  if (doc.status === 'APPROVED' || doc.status === 'REJECTED') {
+    list.push({
+      action: doc.status === 'APPROVED' ? 'HOD_APPROVED' : 'HOD_REJECTED',
+      actorName: doc.forwardedRole || 'HOD',
+      actorRole: doc.forwardedRole || 'HOD',
+      remarks: doc.remarks || (doc.status === 'APPROVED' ? 'Approved & accepted.' : 'Rejected.'),
+      timestamp: doc.updatedAt ? new Date(doc.updatedAt) : new Date(new Date(doc.createdAt).getTime() + 10 * 60 * 1000),
+      documentUrl: doc.documentUrl
+    });
+  }
+  return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+
+const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Milestone') => {
+  if (!milestone) return null;
+  const status = milestone.status;
+  const isUnderReviewSupervisor = status === 'PENDING' || status === 'SUBMITTED';
+  const isRejectedSupervisor = status === 'REJECTED_BY_SUPERVISOR';
+  const isUnderReviewHod = status === 'UNDER_REVIEW_HOD';
+  const isRejectedHod = status === 'REJECTED_BY_HOD' || status === 'REJECTED';
+  const isApproved = status === 'APPROVED' || status === 'VERIFIED' || status === 'CLEARED';
+
+  let step1Status = 'complete'; // Student Submission
+  let step2Status = 'pending';  // Supervisor Review
+  let step3Status = 'pending';  // HOD Approval
+
+  if (isUnderReviewSupervisor) {
+    step2Status = 'current';
+  } else if (isRejectedSupervisor) {
+    step2Status = 'rejected';
+  } else if (isUnderReviewHod) {
+    step2Status = 'complete';
+    step3Status = 'current';
+  } else if (isRejectedHod) {
+    step2Status = 'complete';
+    step3Status = 'rejected';
+  } else if (isApproved) {
+    step2Status = 'complete';
+    step3Status = 'complete';
+  }
+
+  const getStepStyles = (stepStatus) => {
+    if (stepStatus === 'complete') return { bg: '#ECFDF5', border: '#10B981', color: '#065F46', text: '✓ Complete' };
+    if (stepStatus === 'current') return { bg: '#EFF6FF', border: '#3B82F6', color: '#1D4ED8', text: '⟳ Under Review' };
+    if (stepStatus === 'rejected') return { bg: '#FEF2F2', border: '#EF4444', color: '#991B1B', text: '✗ Rejected / Revision Required' };
+    return { bg: '#F8FAFC', border: '#E2E8F0', color: '#64748B', text: '○ Pending' };
+  };
+
+  const s1 = getStepStyles(step1Status);
+  const s2 = getStepStyles(step2Status);
+  const s3 = getStepStyles(step3Status);
+
+  return (
+    <div style={{ marginTop: 20, padding: 16, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h6 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#1E293B' }}>
+          {titlePrefix} Evaluation Status
+        </h6>
+        <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 500 }}>
+          Current Status: <strong style={{ color: isApproved ? '#059669' : '#1E293B' }}>{status}</strong>
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 12px 1fr 12px 1fr', alignItems: 'center', gap: 6 }}>
+        {/* Step 1 */}
+        <div style={{ background: s1.bg, border: `1px solid ${s1.border}`, borderRadius: 6, padding: '10px 12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', marginBottom: 4 }}>Step 1</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: s1.color }}>Student Submitted</div>
+          <div style={{ fontSize: '0.72rem', color: s1.color, marginTop: 4, fontWeight: 500 }}>{s1.text}</div>
+        </div>
+        {/* Connector */}
+        <div style={{ textAlign: 'center', color: '#CBD5E1', fontSize: '1rem', fontWeight: 700 }}>➔</div>
+        {/* Step 2 */}
+        <div style={{ background: s2.bg, border: `1px solid ${s2.border}`, borderRadius: 6, padding: '10px 12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', marginBottom: 4 }}>Step 2</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: s2.color }}>Supervisor Verification</div>
+          <div style={{ fontSize: '0.72rem', color: s2.color, marginTop: 4, fontWeight: 500 }}>{s2.text}</div>
+        </div>
+        {/* Connector */}
+        <div style={{ textAlign: 'center', color: '#CBD5E1', fontSize: '1rem', fontWeight: 700 }}>➔</div>
+        {/* Step 3 */}
+        <div style={{ background: s3.bg, border: `1px solid ${s3.border}`, borderRadius: 6, padding: '10px 12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', marginBottom: 4 }}>Step 3</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: s3.color }}>HOD Approval</div>
+          <div style={{ fontSize: '0.72rem', color: s3.color, marginTop: 4, fontWeight: 500 }}>{s3.text}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Status resolver (shared) ──
 const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
@@ -3087,6 +3311,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 {!isReadOnly && subRole === 'HOD' && drc.status === 'SCHEDULED' && (
                   <button className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record Outcome</button>
                 )}
+                {/* Timeline & History Logs */}
+                {renderEvaluationTimelineGeneric(drc, thesis, 'DRC Meeting Schedule')}
+                {renderHistoryTable(getDrcMeetingVirtualHistory(drc))}
               </div>
             ))}
 
@@ -3289,6 +3516,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               {r.status === 'SCHEDULED' ? 'Evaluate Meeting' : 'Edit Review'}
             </button>
           )}
+          {/* Timeline */}
+          {renderEvaluationTimelineGeneric(r, thesis, `RAC-${r.racNumber}`)}
         </div>
       ))}
     </div>
@@ -3353,10 +3582,21 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   canEval = true;
                 }
               }
-              if (!canEval || isReadOnly) return null;
+              if (!canEval || isReadOnly) return (
+                <div style={{ marginTop: 10 }}>
+                  {/* Timeline & History Logs */}
+                  {renderEvaluationTimelineGeneric(item, thesis, item.type === '6_MONTH_REPORT' ? 'Progress Report' : 'Chapter Draft')}
+                  {renderHistoryTable(getMilestoneHistory(item, thesis))}
+                </div>
+              );
               return (
-                <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setSelectedEvalDoc({ ...item, docType: 'MILESTONE', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title, isSupervisor })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setSelectedEvalDoc({ ...item, docType: 'MILESTONE', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title, isSupervisor })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
+                  </div>
+                  {/* Timeline & History Logs */}
+                  {renderEvaluationTimelineGeneric(item, thesis, item.type === '6_MONTH_REPORT' ? 'Progress Report' : 'Chapter Draft')}
+                  {renderHistoryTable(getMilestoneHistory(item, thesis))}
                 </div>
               );
             })()}
@@ -3452,9 +3692,20 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> {p.remarks}
             </div>
           )}
-          {((p.status === 'PENDING' && isSupervisor) || (p.status === 'UNDER_REVIEW_HOD' && isHodUser)) && !isReadOnly && (
-            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setSelectedEvalDoc({ ...p, docType: 'PUBLICATION', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
+          {((p.status === 'PENDING' && isSupervisor) || (p.status === 'UNDER_REVIEW_HOD' && isHodUser)) && !isReadOnly ? (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={() => setSelectedEvalDoc({ ...p, docType: 'PUBLICATION', scholarName: thesis.scholarId?.name, enrollmentNumber: thesis.scholarId?.username, thesisTitle: thesis.title })} className="btn-primary" style={{ padding: '6px 14px', fontSize: '0.78rem', background: '#133A26' }}>Evaluate</button>
+              </div>
+              {/* Timeline & History Logs */}
+              {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type)}
+              {renderHistoryTable(getPublicationVirtualHistory(p))}
+            </div>
+          ) : (
+            <div style={{ marginTop: 10 }}>
+              {/* Timeline & History Logs */}
+              {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type)}
+              {renderHistoryTable(getPublicationVirtualHistory(p))}
             </div>
           )}
         </div>
@@ -3539,6 +3790,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </tbody>
             </table>
 
+            {renderEvaluationTimelineGeneric(m, thesis, m.type === 'PRE_SUBMISSION' ? 'Pre-Submission' : m.type === 'SYNOPSIS' ? 'Synopsis' : 'Final Submission')}
             {renderHistoryTable(getMilestoneHistory(m, thesis))}
             {!isReadOnly && (
               <>
@@ -3607,6 +3859,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     </button>
                   </div>
                 )}
+                {/* Timeline & History Logs */}
+                {renderEvaluationTimelineGeneric(doc, thesis, 'Additional Document')}
+                {getDocumentVirtualHistory && renderHistoryTable(getDocumentVirtualHistory(doc))}
               </div>
             ))}
           </>
@@ -3646,6 +3901,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             <div><strong>Reason:</strong> <em>"{r.reason}"</em></div>
             {r.remarks && <div style={{ background: '#F8FAFC', borderLeft: '3px solid #64748B', padding: '6px 10px', borderRadius: 4, marginTop: 4 }}><strong>HOD Remarks:</strong> "{r.remarks}"</div>}
             <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 4 }}>Filed: {new Date(r.createdAt).toLocaleString()}</div>
+            {/* Timeline & History Logs */}
+            {renderEvaluationTimelineGeneric(r, thesis, r.type === 'TITLE_CHANGE' ? 'Title Change Request' : 'Supervisor Allocation Request')}
+            {renderHistoryTable(getChangeRequestVirtualHistory(r, thesis, faculty))}
           </div>
         </div>
       ))}

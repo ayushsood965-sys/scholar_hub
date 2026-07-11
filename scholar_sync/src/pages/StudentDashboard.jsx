@@ -177,6 +177,307 @@ const getMilestoneHistory = (m, thesis) => {
   return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 };
 
+const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Draft') => {
+  if (!milestone || ['DRAFT', 'NOT_SUBMITTED'].includes(milestone.status) || !milestone.status) return null;
+  const status = milestone.status;
+  
+  let facultyStatus = 'PENDING'; // PENDING, APPROVED, REJECTED
+  let hodStatus = 'LOCKED'; // LOCKED, PENDING, APPROVED, REJECTED
+  
+  if (status === 'PENDING_HOD' || status === 'UNDER_REVIEW_HOD') {
+    facultyStatus = 'APPROVED';
+    hodStatus = 'PENDING';
+  } else if (status === 'APPROVED' || status === 'VERIFIED') {
+    facultyStatus = 'APPROVED';
+    hodStatus = 'APPROVED';
+  } else if (status === 'REVISION_REQUIRED' || status === 'REJECTED_BY_SUPERVISOR' || status === 'REJECTED_BY_HOD' || status === 'REJECTED') {
+    const isHODRejection = status === 'REJECTED_BY_HOD' || status === 'REJECTED';
+    if (isHODRejection) {
+      facultyStatus = 'APPROVED';
+      hodStatus = 'REJECTED';
+    } else {
+      facultyStatus = 'REJECTED';
+      hodStatus = 'LOCKED';
+    }
+  } else if (status === 'SUBMITTED' || status === 'PENDING') {
+    facultyStatus = 'PENDING';
+    hodStatus = 'LOCKED';
+  }
+  
+  return (
+    <div style={{ marginTop: 24, borderTop: '1px solid #E2E8F0', paddingTop: 20 }}>
+      <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span>📊</span> Evaluation Progress Timeline
+      </h4>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Step 1: Submission */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#10B981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>✓</div>
+            <div style={{ width: 2, flex: 1, background: '#10B981', minHeight: 20 }} />
+          </div>
+          <div style={{ flex: 1, paddingBottom: 8 }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1E293B' }}>{titlePrefix} Submitted</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+              Submitted on {milestone.submittedAt || milestone.createdAt ? new Date(milestone.submittedAt || milestone.createdAt).toLocaleDateString() : 'N/A'}
+            </div>
+          </div>
+        </div>
+        
+        {/* Step 2: Faculty Review */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ 
+              width: 24, 
+              height: 24, 
+              borderRadius: '50%', 
+              background: facultyStatus === 'APPROVED' ? '#10B981' : (facultyStatus === 'REJECTED' ? '#EF4444' : '#3B82F6'), 
+              color: 'white', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontSize: '0.8rem', 
+              fontWeight: 700 
+            }}>
+              {facultyStatus === 'APPROVED' ? '✓' : (facultyStatus === 'REJECTED' ? '✗' : '2')}
+            </div>
+            <div style={{ width: 2, flex: 1, background: (facultyStatus === 'APPROVED' || hodStatus === 'PENDING' || hodStatus === 'APPROVED') ? '#10B981' : '#E2E8F0', minHeight: 20 }} />
+          </div>
+          <div style={{ flex: 1, paddingBottom: 8 }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>Faculty Supervisor Verification</span>
+              <span style={{ 
+                fontSize: '0.7rem', 
+                padding: '2px 8px', 
+                borderRadius: 4, 
+                fontWeight: 700,
+                background: facultyStatus === 'APPROVED' ? '#D1FAE5' : (facultyStatus === 'REJECTED' ? '#FEE2E2' : '#DBEAFE'),
+                color: facultyStatus === 'APPROVED' ? '#065F46' : (facultyStatus === 'REJECTED' ? '#991B1B' : '#1E40AF')
+              }}>
+                {facultyStatus === 'APPROVED' ? 'Verified' : (facultyStatus === 'REJECTED' ? 'Revision Requested' : 'Awaiting Review')}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+              {facultyStatus === 'APPROVED' 
+                ? 'Supervisor has approved and forwarded this package to HOD.' 
+                : (facultyStatus === 'REJECTED' ? 'Supervisor requested corrections.' : `Awaiting verification from supervisor (${thesis?.supervisorId?.name || 'Assigned Guide'}).`)}
+            </div>
+          </div>
+        </div>
+        
+        {/* Step 3: HOD final clearance */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ 
+              width: 24, 
+              height: 24, 
+              borderRadius: '50%', 
+              background: hodStatus === 'APPROVED' ? '#10B981' : (hodStatus === 'REJECTED' ? '#EF4444' : (hodStatus === 'LOCKED' ? '#94A3B8' : '#3B82F6')), 
+              color: 'white', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontSize: '0.8rem', 
+              fontWeight: 700 
+            }}>
+              {hodStatus === 'APPROVED' ? '✓' : (hodStatus === 'REJECTED' ? '✗' : (hodStatus === 'LOCKED' ? '🔒' : '3'))}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>HOD Final Clearance</span>
+              <span style={{ 
+                fontSize: '0.7rem', 
+                padding: '2px 8px', 
+                borderRadius: 4, 
+                fontWeight: 700,
+                background: hodStatus === 'APPROVED' ? '#D1FAE5' : (hodStatus === 'REJECTED' ? '#FEE2E2' : (hodStatus === 'LOCKED' ? '#F1F5F9' : '#DBEAFE')),
+                color: hodStatus === 'APPROVED' ? '#065F46' : (hodStatus === 'REJECTED' ? '#991B1B' : (hodStatus === 'LOCKED' ? '#64748B' : '#1E40AF'))
+              }}>
+                {hodStatus === 'APPROVED' ? 'Approved' : (hodStatus === 'REJECTED' ? 'Revision Requested' : (hodStatus === 'LOCKED' ? 'Locked' : 'Awaiting Clearance'))}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+              {hodStatus === 'APPROVED' 
+                ? 'HOD has approved and cleared this deliverable.' 
+                : (hodStatus === 'REJECTED' ? 'HOD requested revisions.' : (hodStatus === 'LOCKED' ? 'Awaiting Supervisor verification first.' : 'Awaiting final clearance from Head of Department.'))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const getPublicationVirtualHistory = (p) => {
+  if (!p) return [];
+  const list = [
+    {
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Submitted ${p.type === 'IPR' ? (p.iprType || 'IPR') : p.type}: "${p.title}"`,
+      timestamp: p.createdAt,
+      documentUrl: p.documentUrl
+    }
+  ];
+  
+  if (p.status === 'UNDER_REVIEW_HOD' || p.status === 'VERIFIED' || p.status === 'REJECTED_BY_HOD') {
+    list.push({
+      action: 'SUPERVISOR_APPROVED',
+      actorName: 'Supervisor',
+      actorRole: 'SUPERVISOR',
+      remarks: 'Verified & forwarded to HOD.',
+      timestamp: p.updatedAt
+    });
+  } else if (p.status === 'REJECTED_BY_SUPERVISOR') {
+    list.push({
+      action: 'SUPERVISOR_REJECTED',
+      actorName: 'Supervisor',
+      actorRole: 'SUPERVISOR',
+      remarks: p.remarks || 'Revision requested.',
+      timestamp: p.updatedAt
+    });
+  }
+  
+  if (p.status === 'VERIFIED') {
+    list.push({
+      action: 'HOD_APPROVED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: p.remarks || 'Cleared by HOD.',
+      timestamp: p.updatedAt
+    });
+  } else if (p.status === 'REJECTED_BY_HOD') {
+    list.push({
+      action: 'HOD_REJECTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: p.remarks || 'Revision requested.',
+      timestamp: p.updatedAt
+    });
+  }
+  return list;
+};
+
+const getChangeRequestVirtualHistory = (r, thesis, faculty = []) => {
+  if (!r) return [];
+  const list = [
+    {
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Requested change: Proposed "${r.type === 'GUIDE_CHANGE' ? (faculty.find(f => f._id === r.proposedValue)?.name || 'New Faculty') : r.proposedValue}" for ${r.type?.replace('_', ' ')?.toLowerCase()}`,
+      timestamp: r.createdAt
+    }
+  ];
+  if (r.status === 'APPROVED') {
+    list.push({
+      action: 'HOD_APPROVED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: r.remarks || 'Approved.',
+      timestamp: r.updatedAt
+    });
+  } else if (r.status === 'REJECTED') {
+    list.push({
+      action: 'HOD_REJECTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: r.remarks || 'Rejected.',
+      timestamp: r.updatedAt
+    });
+  }
+  return list;
+};
+
+const getDocumentVirtualHistory = (d) => {
+  if (!d) return [];
+  const list = [
+    {
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Uploaded: "${d.title}" - ${d.description || 'No description.'}`,
+      timestamp: d.createdAt,
+      documentUrl: d.documentUrl
+    }
+  ];
+  if (d.status === 'REVIEWED') {
+    list.push({
+      action: 'HOD_APPROVED',
+      actorName: d.forwardedTo?.name || (d.forwardedRole === 'SUPERVISOR' ? 'Supervisor' : 'HOD'),
+      actorRole: d.forwardedRole,
+      remarks: d.remarks || 'Reviewed.',
+      timestamp: d.updatedAt
+    });
+  }
+  return list;
+};
+
+const getMeetingVirtualHistory = (m) => {
+  if (!m) return [];
+  const list = [
+    {
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: `Requested guidance meeting: "${m.reason}"`,
+      timestamp: m.createdAt
+    }
+  ];
+  if (m.status === 'APPROVED') {
+    list.push({
+      action: 'HOD_APPROVED',
+      actorName: 'HOD/Supervisor',
+      actorRole: 'FACULTY',
+      remarks: m.remarks || 'Approved.',
+      timestamp: m.updatedAt
+    });
+  } else if (m.status === 'REJECTED') {
+    list.push({
+      action: 'HOD_REJECTED',
+      actorName: 'HOD/Supervisor',
+      actorRole: 'FACULTY',
+      remarks: m.remarks || 'Rejected.',
+      timestamp: m.updatedAt
+    });
+  }
+  return list;
+};
+
+const getDrcMeetingVirtualHistory = (m) => {
+  if (!m) return [];
+  const list = [
+    {
+      action: 'SUBMITTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: `Scheduled DRC Meeting. Agenda: "${m.agenda || 'N/A'}"`,
+      timestamp: m.createdAt
+    }
+  ];
+  if (m.status === 'APPROVED') {
+    list.push({
+      action: 'HOD_APPROVED',
+      actorName: 'DRC Committee',
+      actorRole: 'HOD',
+      remarks: m.remarks || 'Approved.',
+      timestamp: m.updatedAt
+    });
+  } else if (m.status === 'REVISION_REQUIRED') {
+    list.push({
+      action: 'HOD_REJECTED',
+      actorName: 'DRC Committee',
+      actorRole: 'HOD',
+      remarks: m.remarks || 'Revision Required.',
+      timestamp: m.updatedAt
+    });
+  }
+  return list;
+};
+
 const getLastRejectionRemark = (m, thesis) => {
   if (!m) return 'Corrections requested.';
   const hist = getMilestoneHistory(m, thesis);
@@ -1734,7 +2035,7 @@ const CourseworkPhase = ({ thesis }) => {
   const isLocked = ['PENDING_FACULTY', 'PENDING_HOD', 'APPROVED'].includes(thesis.courseworkStatus);
 
   return (
-    <div ref={cardRef} className={`card ${shake ? 'shake-on-error' : ''}`} style={{ maxWidth: 700, margin: '0 auto', padding: 32 }}>
+    <div ref={cardRef} className={`card ${shake ? 'shake-on-error' : ''}`} style={{ padding: 32 }}>
       <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
@@ -5037,6 +5338,9 @@ const ResearchOutputsTab = ({ thesis }) => {
                           <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> "{p.remarks}"
                         </div>
                       )}
+                      {/* Timeline & History Logs */}
+                      {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type)}
+                      {renderHistoryTable(getPublicationVirtualHistory(p))}
                     </div>
                   ))}
                 </div>
@@ -5180,6 +5484,9 @@ const ResearchOutputsTab = ({ thesis }) => {
                           <strong>{p.status === 'REJECTED_BY_HOD' ? 'HOD Remarks' : 'Supervisor Remarks'}:</strong> "{p.remarks}"
                         </div>
                       )}
+                      {/* Timeline & History Logs */}
+                      {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type)}
+                      {renderHistoryTable(getPublicationVirtualHistory(p))}
                     </div>
                   ))}
                 </div>
@@ -5461,6 +5768,9 @@ const MeetingsTab = ({ thesis }) => {
                         <strong>HOD Remarks:</strong> "{meeting.remarks}"
                       </div>
                     )}
+                    {/* Timeline & History Logs */}
+                    {renderEvaluationTimelineGeneric(meeting, thesis, 'Meeting Request')}
+                    {renderHistoryTable(getMeetingVirtualHistory(meeting))}
                   </div>
                 );
               })}
@@ -5555,21 +5865,24 @@ const MeetingsTab = ({ thesis }) => {
                       </div>
                     )}
 
-                    {drc.remarks && (
-                      <div style={{
-                        background: drc.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                        borderLeft: `3px solid ${statusStyle.text}`,
-                        padding: '10px 14px',
-                        borderRadius: '0 8px 8px 0',
-                        fontSize: '0.8rem',
-                        color: 'var(--color-text, #334155)',
-                        marginTop: 4
-                      }}>
-                        <strong>Committee Remarks:</strong> "{drc.remarks}"
-                      </div>
-                    )}
-                  </div>
-                );
+                      {drc.remarks && (
+                        <div style={{
+                          background: drc.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                          borderLeft: `3px solid ${statusStyle.text}`,
+                          padding: '10px 14px',
+                          borderRadius: '0 8px 8px 0',
+                          fontSize: '0.8rem',
+                          color: 'var(--color-text, #334155)',
+                          marginTop: 4
+                        }}>
+                          <strong>Committee Remarks:</strong> "{drc.remarks}"
+                        </div>
+                      )}
+                      {/* Timeline & History Logs */}
+                      {renderEvaluationTimelineGeneric(drc, thesis, 'DRC Meeting Schedule')}
+                      {renderHistoryTable(getDrcMeetingVirtualHistory(drc))}
+                    </div>
+                  );
               })}
             </div>
           )}
@@ -6004,6 +6317,9 @@ const DocumentsTab = ({ thesis }) => {
                     <FileText size={14} /> View File Proof
                   </a>
                 </div>
+                {/* Timeline & History Logs */}
+                {renderEvaluationTimelineGeneric(doc, thesis, 'Additional Document')}
+                {renderHistoryTable(getDocumentVirtualHistory(doc))}
               </div>
             ))}
           </div>
@@ -6263,26 +6579,13 @@ const RequestChangesTab = ({ thesis }) => {
           No guide or title modification requests logged yet.
         </div>
       ) : (
-        <div className="file-list">
-          <div className="file-header">
-            <div style={{ flex: 1.5 }}>Type</div>
-            <div style={{ flex: 2 }}>Current Value</div>
-            <div style={{ flex: 2.5 }}>Proposed Value</div>
-            <div style={{ flex: 2.5 }}>Reason</div>
-            <div style={{ flex: 1.2 }}>Status</div>
-            <div style={{ flex: 2 }}>Remarks</div>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {requests.map(r => (
-            <div key={r._id} className="file-item">
-              <div style={{ flex: 1.5, fontWeight: 600, fontSize: '0.85rem', color: '#1E3A8A' }}>
-                {r.type === 'TITLE_CHANGE' ? '📝 Title Change' : '🤝 Guide Change'}
-              </div>
-              <div style={{ flex: 2, fontSize: '0.85rem', color: '#64748B' }}>{r.currentValue}</div>
-              <div style={{ flex: 2.5, fontSize: '0.85rem', fontWeight: 600 }}>
-                {r.type === 'GUIDE_CHANGE' ? (faculty.find(f => f._id === r.proposedValue)?.name || 'New Faculty') : r.proposedValue}
-              </div>
-              <div style={{ flex: 2.5, fontSize: '0.85rem' }}>{r.reason}</div>
-              <div style={{ flex: 1.2 }}>
+            <div key={r._id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1E3A8A' }}>
+                  {r.type === 'TITLE_CHANGE' ? '📝 Thesis Title Modification' : '🤝 Supervisor Reallocation'}
+                </span>
                 <span style={{ 
                   padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
                   background: r.status === 'APPROVED' ? '#D1FAE5' : r.status === 'REJECTED' ? '#FEE2E2' : '#FEF3C7',
@@ -6291,7 +6594,29 @@ const RequestChangesTab = ({ thesis }) => {
                   {r.status}
                 </span>
               </div>
-              <div style={{ flex: 2, fontSize: '0.85rem', color: '#475569' }}>{r.remarks || '—'}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: 12, fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: '#64748B', fontWeight: 600 }}>Current Value:</span>
+                  <div style={{ color: '#1F2937', marginTop: 2 }}>{r.currentValue}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', fontWeight: 600 }}>Proposed Value:</span>
+                  <div style={{ color: '#1F2937', marginTop: 2 }}>
+                    {r.type === 'GUIDE_CHANGE' ? (faculty.find(f => f._id === r.proposedValue)?.name || 'New Faculty') : r.proposedValue}
+                  </div>
+                </div>
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: 12 }}>
+                <strong>Rationale/Reason:</strong> "{r.reason}"
+              </div>
+              {r.remarks && (
+                <div style={{ background: 'rgba(239, 68, 68, 0.05)', borderLeft: '3px solid #EF4444', padding: '8px 10px', borderRadius: '0 6px 6px 0', fontSize: '0.8rem', color: '#991B1B', marginBottom: 12 }}>
+                  <strong>Remarks:</strong> "{r.remarks}"
+                </div>
+              )}
+              {/* Timeline & History Logs */}
+              {renderEvaluationTimelineGeneric(r, thesis, r.type === 'TITLE_CHANGE' ? 'Title Change Request' : 'Supervisor Allocation Request')}
+              {renderHistoryTable(getChangeRequestVirtualHistory(r, thesis, faculty))}
             </div>
           ))}
         </div>
@@ -6778,6 +7103,9 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
                       )}
                     </div>
                   )}
+                  {/* Timeline & History Logs */}
+                  {renderEvaluationTimelineGeneric(report, thesis, 'Progress Report')}
+                  {renderHistoryTable(getMilestoneHistory(report, thesis))}
                 </div>
               </div>
             );
@@ -6960,6 +7288,9 @@ const ChapterDraftsTab = ({ thesis, milestones = [], onSubmit }) => {
                   ))}
                 </div>
               )}
+              {/* Timeline & History Logs */}
+              {renderEvaluationTimelineGeneric(d, thesis, 'Chapter Draft')}
+              {renderHistoryTable(getMilestoneHistory(d, thesis))}
             </div>
           ))}
         </div>
@@ -11068,7 +11399,10 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     if (thesis && thesis.status !== 'REGISTRATION_PENDING' && !hasRedirected.current) {
-      setActiveTab('overview');
+      const stored = sessionStorage.getItem('sync_student_tab');
+      if (!stored || (stored === 'profile' && thesis.status !== 'REGISTRATION_PENDING')) {
+        setActiveTab('overview');
+      }
       hasRedirected.current = true;
     }
   }, [thesis]);
