@@ -406,6 +406,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
     { key: 'overview', label: 'Dashboard', Icon: Home },
     { key: 'profile', label: 'Profile', Icon: User },
     { key: 'workspace', label: 'Workspace', Icon: Flag },
+    { key: 'coursework', label: 'Coursework', Icon: BookOpen },
     { key: 'synopsis', label: 'Synopsis', Icon: ClipboardList },
     { key: 'rac', label: 'RAC Progress', Icon: Layers },
     { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
@@ -429,11 +430,15 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
       <div className="sidebar-nav" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 160px)' }}>
         {items.map(({ key, label, Icon }) => {
           const disabled = (() => {
-            if (key === 'overview' || key === 'profile') return false;
+            if (key === 'profile') return false;
             if (!thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
             
             const status = thesis.status;
+            if (key === 'overview') return false;
             if (key === 'workspace' || key === 'certificates') {
+              return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
+            }
+            if (key === 'coursework') {
               return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
             }
             if (key === 'synopsis') {
@@ -456,8 +461,9 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
               return !(['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
             }
             if (key === 'finalSubmission') {
-              const hasFinalMilestone = milestones && milestones.some(m => m.type === 'FINAL_SUBMISSION');
-              return !(['PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status) || hasFinalMilestone);
+              const preMilestone = milestones && milestones.find(m => m.type === 'PRE_SUBMISSION');
+              const isPreApproved = preMilestone && preMilestone.status === 'APPROVED';
+              return !(isPreApproved || ['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status));
             }
             return true;
           })();
@@ -2820,6 +2826,45 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
   const [publications, setPublications] = useState([]);
   const theme = useThemeStyles();
 
+  const isTabDisabled = (key) => {
+    if (key === 'profile') return false;
+    if (!thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
+    
+    const status = thesis.status;
+    if (key === 'overview') return false;
+    if (key === 'workspace' || key === 'certificates') {
+      return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
+    }
+    if (key === 'coursework') {
+      return !['COURSEWORK', 'SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
+    }
+    if (key === 'synopsis') {
+      const hasSynopsisMilestone = milestones && milestones.some(m => m.type === 'SYNOPSIS');
+      return !(['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status) || hasSynopsisMilestone);
+    }
+    if ([
+      'rac', 
+      'sixMonthReports', 
+      'chapterDrafts', 
+      'publications', 
+      'meetings', 
+      'documents', 
+      'changes'
+    ].includes(key)) {
+      return !['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status);
+    }
+    if (key === 'preSubmission') {
+      const hasPreMilestone = milestones && milestones.some(m => m.type === 'PRE_SUBMISSION');
+      return !(['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
+    }
+    if (key === 'finalSubmission') {
+      const preMilestone = milestones && milestones.find(m => m.type === 'PRE_SUBMISSION');
+      const isPreApproved = preMilestone && preMilestone.status === 'APPROVED';
+      return !(isPreApproved || ['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status));
+    }
+    return true;
+  };
+
   useEffect(() => {
     if (thesis) {
       axios.get(`${API}/lifecycle/drc/thesis/${thesis._id}`, getAuthHeader())
@@ -3025,16 +3070,28 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
                 ['Research Advisor', thesis.supervisorId?.name || 'Awaiting Allocation'],
                 ['Assigned Co-Supervisor', thesis.coSupervisorId?.name || 'None Assigned']
               ].map(([k, v]) => (
-                <div key={k} style={{ background: 'var(--color-sidebar-hover, #F8FAFC)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border, #F1F5F9)' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted, #64748B)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>{k}</div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-primary, #0F172A)' }}>{v}</div>
+                <div key={k} style={{ 
+                  background: theme.surfaceHover, 
+                  padding: '12px', 
+                  borderRadius: '8px', 
+                  border: `1px solid ${theme.border}` 
+                }}>
+                  <div style={{ fontSize: '0.72rem', color: theme.textMuted, fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>{k}</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: theme.textPrimary }}>{v}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ background: 'rgba(22, 101, 52, 0.1)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(22, 101, 52, 0.2)' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary, #166534)', textTransform: 'uppercase', marginBottom: '4px' }}>Next Action Required</div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--color-primary, #15803D)', lineHeight: 1.5 }}>{s.nextAction}</div>
+            <div style={{ 
+              background: 'linear-gradient(135deg, rgba(26, 90, 59, 0.04) 0%, rgba(26, 90, 59, 0.01) 100%)', 
+              borderRadius: '12px', 
+              padding: '16px', 
+              border: '1px solid rgba(26, 90, 59, 0.12)' 
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary, #1A5A3B)', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                ⚡ Next Action Required
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #475569)', lineHeight: 1.5 }}>{s.nextAction}</div>
             </div>
           </div>
 
@@ -3094,30 +3151,39 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
                 { key: 'rac', label: '📆 Submit RAC Progress Report' },
                 { key: 'publications', label: '🏆 Log Research Output' },
                 { key: 'profile', label: '👤 Complete/Edit Profile Details' }
-              ].map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    textAlign: 'left',
-                    background: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '8px',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    color: '#334155',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    outline: 'none'
-                  }}
-                  onMouseOver={e => { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
-                  onMouseOut={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-                >
-                  {label}
-                </button>
-              ))}
+              ].map(({ key, label }) => {
+                const disabled = isTabDisabled(key);
+                return (
+                  <button
+                    key={key}
+                    disabled={disabled}
+                    onClick={() => { if (!disabled) setActiveTab(key); }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      textAlign: 'left',
+                      background: disabled ? '#F1F5F9' : '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: disabled ? '#94A3B8' : '#334155',
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                      opacity: disabled ? 0.6 : 1,
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                    onMouseOver={e => { if (!disabled) { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.borderColor = '#CBD5E1'; } }}
+                    onMouseOut={e => { if (!disabled) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#E2E8F0'; } }}
+                  >
+                    <span>{label}</span>
+                    {disabled && <span>🔒</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -10124,6 +10190,9 @@ const StudentDashboard = () => {
 
   const titles = { 
     overview: 'Student Dashboard', 
+    profile: 'Profile',
+    workspace: 'Workspace', 
+    coursework: 'Coursework Milestone',
     synopsis: 'Research Synopsis',
     rac: 'RAC Progress', 
     publications: 'Research Outputs', 
@@ -10132,10 +10201,8 @@ const StudentDashboard = () => {
     preSubmission: 'Pre-Submission Package',
     changes: 'Request Changes', 
     certificates: 'Certificates', 
-    workspace: 'Workspace', 
     documents: 'Documents', 
-    meetings: 'Meetings', 
-    profile: 'Profile' 
+    meetings: 'Meetings'
   };
 
   const renderStatusContent = () => {
@@ -10195,6 +10262,7 @@ const StudentDashboard = () => {
 
     switch (activeTab) {
       case 'overview': return <OverviewPage thesis={thesis} milestones={milestones} setActiveTab={setActiveTab} user={user} />;
+      case 'coursework': return <CourseworkPhase thesis={thesis} />;
       case 'synopsis': return <SynopsisPhase thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'rac': return <RACProgressTab thesis={thesis} />;
       case 'publications': return <ResearchOutputsTab thesis={thesis} />;
