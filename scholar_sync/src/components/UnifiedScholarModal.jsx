@@ -23,6 +23,314 @@ const formatMonthYear = (val) => {
   return val;
 };
 
+const getMilestoneHistory = (m, thesis) => {
+  if (!m) return [];
+  
+  // If the backend has proper history entries, use them directly
+  if (m.history && m.history.length > 0) {
+    return [...m.history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }
+  
+  // Fallback: history is empty (milestone was processed before history tracking was added).
+  // We reconstruct the history list from comments and status.
+  const list = [];
+  const supervisorId = thesis?.supervisorId?._id || thesis?.supervisorId;
+
+  // Sort comments by time
+  const sortedComments = [...(m.comments || [])].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+  // Group comments into cycles
+  let currentCycleComments = [];
+  const cyclesOfComments = [];
+
+  for (const c of sortedComments) {
+    currentCycleComments.push(c);
+    const txt = (c.text || '').toLowerCase();
+    const isRejection = txt.includes('reject') || txt.includes('revision') || txt.includes('change') || txt.includes('correct') || txt.includes('modify') || txt.includes('work');
+    const isHOD = (c.authorName || '').toLowerCase().includes('hod') || (c.authorName || '').toLowerCase().includes('head') || (c.authorName || '').toLowerCase().includes('kumar') || (c.authorName || '').toLowerCase().includes('mahinder');
+    
+    if (isRejection || (isHOD && !txt.includes('approve') && !txt.includes('ok') && !txt.includes('forward') && !txt.includes('schedule'))) {
+      cyclesOfComments.push(currentCycleComments);
+      currentCycleComments = [];
+    }
+  }
+  if (currentCycleComments.length > 0) {
+    cyclesOfComments.push(currentCycleComments);
+  }
+
+  // Build entries for each comments cycle
+  cyclesOfComments.forEach((cycleComments, index) => {
+    if (cycleComments.length === 0) return;
+
+    const earliestCommentTime = new Date(cycleComments[0].createdAt);
+    const virtualSubmitTime = (m.submittedAt && new Date(m.submittedAt) < earliestCommentTime) 
+      ? new Date(m.submittedAt) 
+      : new Date(earliestCommentTime.getTime() - 5 * 60 * 1000);
+
+    list.push({
+      action: 'SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: 'Uploaded package.',
+      timestamp: virtualSubmitTime,
+      documentUrl: m.documentUrl,
+      plagiarismReportUrl: m.plagiarismReportUrl
+    });
+
+    cycleComments.forEach(c => {
+      const txt = (c.text || '').toLowerCase();
+      const isRejection = txt.includes('reject') || txt.includes('revision') || txt.includes('change') || txt.includes('correct') || txt.includes('modify') || txt.includes('work');
+      const isHOD = (c.authorName || '').toLowerCase().includes('hod') || (c.authorName || '').toLowerCase().includes('head') || (c.authorName || '').toLowerCase().includes('kumar') || (c.authorName || '').toLowerCase().includes('mahinder');
+
+      let actionLabel = '';
+      let role = 'SUPERVISOR';
+
+      if (isHOD) {
+        role = 'HOD';
+        actionLabel = isRejection ? 'HOD_REJECTED' : 'HOD_APPROVED';
+      } else {
+        actionLabel = isRejection ? 'SUPERVISOR_REJECTED' : 'SUPERVISOR_APPROVED';
+      }
+
+      list.push({
+        action: actionLabel,
+        actorName: c.authorName,
+        actorRole: role,
+        remarks: c.text,
+        timestamp: new Date(c.createdAt),
+        documentUrl: m.documentUrl,
+        plagiarismReportUrl: m.plagiarismReportUrl
+      });
+    });
+
+    const latestCommentTime = new Date(cycleComments[cycleComments.length - 1].createdAt);
+    const isLastCycle = index === cyclesOfComments.length - 1;
+    const isCurrentlyRejected = ['REVISION_REQUIRED', 'REJECTED_BY_SUPERVISOR', 'REJECTED_BY_HOD'].includes(m.status);
+    const needsRejectionEntry = !isLastCycle || isCurrentlyRejected || (isLastCycle && m.submittedAt && new Date(m.submittedAt) > latestCommentTime);
+
+    if (needsRejectionEntry) {
+      const hasRejection = cycleComments.some(c => {
+        const txt = (c.text || '').toLowerCase();
+        return txt.includes('reject') || txt.includes('revision') || txt.includes('change') || txt.includes('correct') || txt.includes('modify') || txt.includes('work');
+      });
+      if (!hasRejection) {
+        list.push({
+          action: m.status === 'REJECTED_BY_HOD' ? 'HOD_REJECTED' : (m.status === 'REJECTED_BY_SUPERVISOR' ? 'SUPERVISOR_REJECTED' : 'REVISION_REQUIRED'),
+          actorName: m.status === 'REJECTED_BY_HOD' ? 'HOD' : (m.status === 'REJECTED_BY_SUPERVISOR' ? 'Supervisor' : 'Supervisor/HOD'),
+          actorRole: m.status === 'REJECTED_BY_HOD' ? 'HOD' : (m.status === 'REJECTED_BY_SUPERVISOR' ? 'SUPERVISOR' : 'FACULTY'),
+          remarks: 'Corrections requested.',
+          timestamp: m.reviewedAt || m.updatedAt || new Date(latestCommentTime.getTime() + 1000),
+          documentUrl: m.documentUrl,
+          plagiarismReportUrl: m.plagiarismReportUrl
+        });
+      }
+    }
+  });
+
+  const hasComments = m.comments && m.comments.length > 0;
+  if (m.submittedAt) {
+    const latestCommentTime = hasComments 
+      ? new Date([...m.comments].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0].createdAt)
+      : null;
+    
+    if (!latestCommentTime || new Date(m.submittedAt) > latestCommentTime) {
+      list.push({
+        action: 'SUBMITTED',
+        actorName: 'Scholar',
+        actorRole: 'STUDENT',
+        remarks: 'Uploaded package.',
+        timestamp: new Date(m.submittedAt),
+        documentUrl: m.documentUrl,
+        plagiarismReportUrl: m.plagiarismReportUrl
+      });
+    }
+  }
+
+  // If the milestone is currently APPROVED or VERIFIED, make sure history ends with HOD_APPROVED
+  if (m.status === 'APPROVED' || m.status === 'VERIFIED') {
+    const hasFinalApproval = list.some(h => h.action === 'HOD_APPROVED' || h.action === 'APPROVED' || h.action === 'COURSEWORK_HOD_APPROVED');
+    if (!hasFinalApproval) {
+      list.push({
+        action: 'HOD_APPROVED',
+        actorName: 'HOD',
+        actorRole: 'HOD',
+        remarks: 'Approved.',
+        timestamp: m.reviewedAt || m.updatedAt || new Date(),
+        documentUrl: m.documentUrl,
+        plagiarismReportUrl: m.plagiarismReportUrl
+      });
+    }
+  }
+
+  return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+
+const getLastRejectionRemark = (m, thesis) => {
+  if (!m) return 'Corrections requested.';
+  const hist = getMilestoneHistory(m, thesis);
+  const lastRejection = [...hist].reverse().find(h => h.action.includes('REJECTED') || h.action === 'REVISION_REQUIRED' || h.action.includes('REJECT'));
+  if (lastRejection && lastRejection.remarks && !['ok', 'approved', 'yes'].includes(lastRejection.remarks.toLowerCase().trim())) {
+    return `"${lastRejection.remarks.trim()}" — ${lastRejection.actorName} (${lastRejection.actorRole})`;
+  }
+  // Try finding a comment that looks like a rejection
+  const revComment = [...(m.comments || [])].reverse().find(c => {
+    const txt = (c.text || '').toLowerCase();
+    return txt.includes('reject') || txt.includes('revision') || txt.includes('change') || txt.includes('correct') || txt.includes('modify') || txt.includes('work') || txt.includes('update') || txt.includes('fix');
+  });
+  if (revComment) {
+    return `"${revComment.text.trim()}" — ${revComment.authorName}`;
+  }
+  return 'Supervisor/HOD has requested corrections.';
+};
+
+// Split history into submission cycles: each cycle starts at SUBMITTED and ends at REJECTED or final APPROVED
+const splitIntoCycles = (history) => {
+  if (!history || history.length === 0) return [];
+  const sorted = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const cycles = [];
+  let current = [];
+  const terminalActions = ['SUPERVISOR_REJECTED', 'HOD_REJECTED', 'REVISION_REQUIRED', 'HOD_APPROVED', 'APPROVED', 'COURSEWORK_FACULTY_REJECTED', 'COURSEWORK_HOD_REJECTED', 'COURSEWORK_HOD_APPROVED'];
+  const startActions = ['SUBMITTED', 'COURSEWORK_SUBMITTED'];
+  
+  for (const entry of sorted) {
+    if (startActions.includes(entry.action) && current.length > 0) {
+      cycles.push(current);
+      current = [];
+    }
+    current.push(entry);
+    if (terminalActions.includes(entry.action)) {
+      cycles.push(current);
+      current = [];
+    }
+  }
+  if (current.length > 0) cycles.push(current);
+  return cycles;
+};
+
+const getActionDisplayName = (action) => {
+  const a = (action || '').toUpperCase();
+  if (a === 'SUBMITTED' || a === 'COURSEWORK_SUBMITTED') {
+    return 'Submitted';
+  }
+  if (a === 'SUPERVISOR_APPROVED' || a === 'COURSEWORK_FACULTY_APPROVED') {
+    return 'Approved by Supervisor / Pending at HOD for approval';
+  }
+  if (a === 'SUPERVISOR_REJECTED' || a === 'COURSEWORK_FACULTY_REJECTED') {
+    return 'Rejected by Supervisor';
+  }
+  if (a === 'HOD_APPROVED' || a === 'APPROVED' || a === 'COURSEWORK_HOD_APPROVED') {
+    return 'Approved by HOD';
+  }
+  if (a === 'HOD_REJECTED' || a === 'REVISION_REQUIRED' || a === 'COURSEWORK_HOD_REJECTED') {
+    return 'Rejected by HOD';
+  }
+  return action;
+};
+
+const renderHistoryRow = (h, i, total) => {
+  let badgeColor = '#64748B';
+  let badgeBg = '#F1F5F9';
+  if (h.action.includes('APPROVED') || h.action === 'APPROVED' || h.action.includes('CLEARED')) {
+    badgeColor = '#059669';
+    badgeBg = '#ECFDF5';
+  } else if (h.action.includes('REJECTED') || h.action === 'REVISION_REQUIRED' || h.action.includes('REJECT')) {
+    badgeColor = '#DC2626';
+    badgeBg = '#FEF2F2';
+  } else if (h.action === 'SUBMITTED' || h.action === 'COURSEWORK_SUBMITTED') {
+    badgeColor = '#2563EB';
+    badgeBg = '#EFF6FF';
+  }
+  
+  const files = [];
+  if (h.documentUrl) {
+    const name = h.fileName || (h.documentUrl.toLowerCase().includes('plagiarism') ? 'Plagiarism Report' : 'Draft Thesis');
+    files.push(
+      <a key="doc" href={`${API_BASE_URL || ''}${h.documentUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB', textDecoration: 'underline', marginRight: 8, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+        📄 {name}
+      </a>
+    );
+  }
+  if (h.plagiarismReportUrl) {
+    files.push(
+      <a key="plag" href={`${API_BASE_URL || ''}${h.plagiarismReportUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: '#EA580C', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+        📊 Plagiarism
+      </a>
+    );
+  }
+
+  return (
+    <tr key={i} style={{ borderBottom: i < total - 1 ? '1px solid #F1F5F9' : 'none' }}>
+      <td style={{ padding: '10px 12px', color: '#64748B', whiteSpace: 'nowrap' }}>
+        {new Date(h.timestamp).toLocaleString()}
+      </td>
+      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#334155' }}>
+        {h.actorName} <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748B' }}>({h.actorRole})</span>
+      </td>
+      <td style={{ padding: '10px 12px' }}>
+        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, color: badgeColor, backgroundColor: badgeBg }}>
+          {getActionDisplayName(h.action)}
+        </span>
+      </td>
+      <td style={{ padding: '10px 12px', color: '#475569', fontStyle: 'italic', maxWidth: '300px', wordBreak: 'break-word' }}>
+        "{h.remarks || 'No remarks.'}"
+      </td>
+      <td style={{ padding: '10px 12px' }}>
+        {files.length > 0 ? files : <span style={{ color: '#94A3B8' }}>N/A</span>}
+      </td>
+    </tr>
+  );
+};
+
+const renderHistoryTable = (history) => {
+  if (!history || history.length === 0) return null;
+  
+  const cycles = splitIntoCycles(history);
+  
+  return (
+    <div style={{ marginTop: 24, borderTop: '1px solid #E2E8F0', paddingTop: 20 }}>
+      <h5 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 800, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span>📜</span> Submission & Review History Logs
+      </h5>
+      {[...cycles].reverse().map((cycle, ci) => {
+        const cycleNum = cycles.length - ci;
+        const lastEntry = cycle[cycle.length - 1];
+        const isRejected = lastEntry && (lastEntry.action.includes('REJECTED') || lastEntry.action === 'REVISION_REQUIRED');
+        const isApproved = lastEntry && (lastEntry.action.includes('APPROVED') || lastEntry.action === 'APPROVED');
+        const outcomeColor = isRejected ? '#DC2626' : isApproved ? '#059669' : '#2563EB';
+        const outcomeBg = isRejected ? '#FEF2F2' : isApproved ? '#ECFDF5' : '#EFF6FF';
+        const outcomeText = isRejected ? 'Rejected' : isApproved ? 'Approved' : 'In Progress';
+        
+        return (
+          <div key={ci} style={{ marginBottom: 16, borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+            <div style={{ background: outcomeBg, padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#1E293B' }}>Submission #{cycleNum}</span>
+              <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, color: outcomeColor, background: 'rgba(255,255,255,0.7)' }}>
+                {outcomeText}
+              </span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left', background: '#FFFFFF' }}>
+                <thead>
+                  <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Timestamp</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>User</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Action</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Remarks</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Files</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cycle.map((h, i) => renderHistoryRow(h, i, cycle.length))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ── Status resolver (shared) ──
 const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
@@ -767,7 +1075,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     const semStatus = thesis.preSubmissionSeminar?.status || 'NOT_REQUESTED';
     const preMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
     
-    if (subRole !== 'HOD' && thesis.supervisorId?._id === user._id) {
+    if (subRole !== 'HOD' && isSupervisor) {
       if (preMilestone?.status === 'SUBMITTED') return 1;
     }
     if (subRole === 'HOD') {
@@ -1155,7 +1463,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             )}
 
             {/* Approval / Rejection box for Supervisor */}
-            {!isReadOnly && subRole !== 'HOD' && thesis.supervisorId?._id === user._id && thesis.courseworkStatus === 'PENDING_FACULTY' && (
+            {!isReadOnly && subRole !== 'HOD' && isSupervisor && thesis.courseworkStatus === 'PENDING_FACULTY' && (
               <div className="usm-card" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: 20 }}>
                 <h4 style={{ margin: '0 0 10px', color: '#166534', fontSize: '0.9rem', fontWeight: 800 }}>🤝 Supervisor Coursework Review Action</h4>
                 <p style={{ fontSize: '0.8rem', color: '#166534', marginBottom: 12 }}>
@@ -1237,11 +1545,85 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 </div>
               </div>
             )}
+
+            {(() => {
+              const cwLogs = (thesis.auditLog || []).filter(l => [
+                'COURSEWORK_SUBMITTED', 
+                'COURSEWORK_FACULTY_APPROVED', 
+                'COURSEWORK_APPROVED_FACULTY',
+                'COURSEWORK_FACULTY_REJECTED', 
+                'COURSEWORK_APPROVED_FACULTY_REJECTED',
+                'COURSEWORK_HOD_APPROVED', 
+                'COURSEWORK_APPROVED_HOD',
+                'COURSEWORK_HOD_REJECTED',
+                'COURSEWORK_APPROVED_HOD_REJECTED'
+              ].includes(l.action));
+              
+              if (cwLogs.length === 0) return null;
+              
+              const cwHistory = cwLogs.map(l => {
+                let actionLabel = '';
+                let actorRole = '';
+                let actorName = '';
+                let remarks = '';
+                let fileUrl = '';
+                let fileName = '';
+
+                if (l.action === 'COURSEWORK_SUBMITTED') {
+                  actionLabel = 'SUBMITTED';
+                  actorRole = 'STUDENT';
+                  actorName = thesis.scholarName || 'Student';
+                  remarks = 'Coursework details submitted.';
+                  fileUrl = thesis.courseworkUploadProof;
+                  const match = l.note?.match(/File:\s*(.*)/);
+                  fileName = match ? match[1] : 'Coursework Proof';
+                } else if (l.action === 'COURSEWORK_FACULTY_APPROVED' || l.action === 'COURSEWORK_APPROVED_FACULTY') {
+                  actionLabel = 'SUPERVISOR_APPROVED';
+                  actorRole = 'SUPERVISOR';
+                  const match = l.note?.match(/Approved by supervisor (.*?)\.(?:\s*Remarks:\s*(.*))?$/);
+                  actorName = match ? match[1] : 'Supervisor';
+                  remarks = match && match[2] ? match[2] : 'Approved by Supervisor.';
+                } else if (l.action === 'COURSEWORK_FACULTY_REJECTED' || l.action === 'COURSEWORK_APPROVED_FACULTY_REJECTED') {
+                  actionLabel = 'SUPERVISOR_REJECTED';
+                  actorRole = 'SUPERVISOR';
+                  const match = l.note?.match(/Rejected by supervisor (.*?)\.(?:\s*Remarks:\s*(.*))?$/);
+                  actorName = match ? match[1] : 'Supervisor';
+                  remarks = match && match[2] ? match[2] : 'Revision requested.';
+                } else if (l.action === 'COURSEWORK_HOD_APPROVED' || l.action === 'COURSEWORK_APPROVED_HOD') {
+                  actionLabel = 'HOD_APPROVED';
+                  actorRole = 'HOD';
+                  const match = l.note?.match(/Approved by HOD (.*?)\.(?:\s*Remarks:\s*(.*))?$/);
+                  actorName = match ? match[1] : 'HOD';
+                  remarks = match && match[2] ? match[2] : 'Cleared by HOD.';
+                } else if (l.action === 'COURSEWORK_HOD_REJECTED' || l.action === 'COURSEWORK_APPROVED_HOD_REJECTED') {
+                  actionLabel = 'HOD_REJECTED';
+                  actorRole = 'HOD';
+                  const match = l.note?.match(/Rejected by HOD (.*?)\.(?:\s*Remarks:\s*(.*))?$/);
+                  actorName = match ? match[1] : 'HOD';
+                  remarks = match && match[2] ? match[2] : 'Revision requested.';
+                }
+
+                return {
+                  timestamp: l.date,
+                  actorName,
+                  actorRole,
+                  action: actionLabel,
+                  remarks,
+                  documentUrl: fileUrl,
+                  fileName: fileName
+                };
+              });
+
+              return renderHistoryTable(cwHistory);
+            })()}
           </>
         )}
       </div>
     );
   };
+
+  const preM = milestones && milestones.find(m => m.type === 'PRE_SUBMISSION');
+  const isPreApproved = preM && preM.status === 'APPROVED';
 
   // ── Tab definitions ──
   const tabs = [
@@ -1255,7 +1637,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     { key: 'chapters', label: 'Chapters', icon: '📖', badge: pendingChaptersCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'publications', label: 'Research Outputs', icon: '🏆', badge: pendingOutputsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'preSubmission', label: 'Pre-Submission', icon: '🚀', badge: preSubmissionBadge || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'PRE_SUBMISSION') },
-    { key: 'finalSubmission', label: 'Final Submission and Defense', icon: '📁', show: ['PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'FINAL_SUBMISSION') },
+    { key: 'finalSubmission', label: 'Final Submission and Defense', icon: '📁', show: isPreApproved || ['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'awardDegree', label: 'Award Degree', icon: '🎓', show: ['SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'documents', label: 'Documents', icon: '📄', badge: pendingDocCount || null },
     { key: 'changes', label: 'Changes', icon: '🔄' },
@@ -1372,7 +1754,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     };
 
     const canReview = !isReadOnly && (
-      (isSubmitted && subRole !== 'HOD' && thesis.supervisorId?._id === user._id) ||
+      (isSubmitted && subRole !== 'HOD' && isSupervisor) ||
       (isPendingHOD && subRole === 'HOD')
     );
 
@@ -1594,20 +1976,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </div>
         )}
 
-        {/* Action log / Feedback History */}
-        {synopsisMilestone.comments?.length > 0 && (
-          <div className="usm-card" style={{ padding: 16 }}>
-            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#334155', borderBottom: '1px solid #E2E8F0', paddingBottom: 6, marginBottom: 12 }}>
-              📜 Action & Feedback Log
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {synopsisMilestone.comments.map((c, idx) => (
-                <div key={idx} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, fontSize: '0.8rem' }}>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {renderHistoryTable(getMilestoneHistory(synopsisMilestone, thesis))}
         {subRole === 'HOD' && thesis.status === 'SYNOPSIS_PENDING' && !thesis.synopsisProvisionallyCleared && (
           <div className="usm-card" style={{ background: 'rgba(234, 88, 12, 0.05)', border: '1px solid rgba(234, 88, 12, 0.2)', padding: 20, borderRadius: 12 }}>
             <h4 style={{ margin: '0 0 8px 0', color: '#C2410C', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1772,30 +2141,25 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 </tbody>
               </table>
 
-              {/* Feedback log */}
-              {preMilestone.comments?.length > 0 && (
-                <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: 10, borderRadius: 6, marginBottom: 16, fontSize: '0.82rem' }}>
-                  <div style={{ fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Review Feedback History:</div>
-                  {preMilestone.comments.map((c, i) => (
-                    <div key={i} style={{ color: '#78350F', marginTop: 2 }}>
-                      "{c.text}" — <em>{c.authorName}</em>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {renderHistoryTable(getMilestoneHistory(preMilestone, thesis))}
 
               {/* Review actions */}
               {!isReadOnly && (
                 <div>
                   {/* Faculty approval check: status is SUBMITTED and reviewer is Faculty */}
-                  {preMilestone.status === 'SUBMITTED' && subRole !== 'HOD' && thesis.supervisorId?._id === user._id && (
+                  {preMilestone.status === 'SUBMITTED' && subRole !== 'HOD' && isSupervisor && (
                     <div>
                       <textarea className="form-input" placeholder="Add evaluation remarks..." rows="2" value={remarks[preMilestone._id] || ''} onChange={e => setRemarks(r => ({ ...r, [preMilestone._id]: e.target.value }))} style={{ marginBottom: 10, resize: 'vertical' }} />
                       <div style={{ display: 'flex', gap: 10 }}>
                         <button className="btn-primary" onClick={() => act(() => onReview(preMilestone._id, 'APPROVE', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', background: '#059669' }}>
                           <CheckCircle2 size={14} style={{ marginRight: 4 }} /> Approve Draft (Forward to HOD)
                         </button>
-                        <button className="btn-outline" onClick={() => act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
+                        <button className="btn-outline" onClick={() => {
+                          if (!(remarks[preMilestone._id] || '').trim()) {
+                            return toast.warning('Remarks are required to request revision.');
+                          }
+                          act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]));
+                        }} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
                           <XCircle size={14} style={{ marginRight: 4 }} /> Request Revision
                         </button>
                       </div>
@@ -1810,7 +2174,12 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                         <button className="btn-primary" onClick={() => act(() => onReview(preMilestone._id, 'APPROVE', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', background: '#059669' }}>
                           <CheckCircle2 size={14} style={{ marginRight: 4 }} /> Grant Final HOD Approval
                         </button>
-                        <button className="btn-outline" onClick={() => act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]))} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
+                        <button className="btn-outline" onClick={() => {
+                          if (!(remarks[preMilestone._id] || '').trim()) {
+                            return toast.warning('Remarks are required to request revision.');
+                          }
+                          act(() => onReview(preMilestone._id, 'REVISION', remarks[preMilestone._id]));
+                        }} disabled={loading} style={{ flex: 1, padding: '8px', fontSize: '0.82rem', borderColor: '#EF4444', color: '#EF4444' }}>
                           <XCircle size={14} style={{ marginRight: 4 }} /> Request Revision
                         </button>
                       </div>
@@ -3133,13 +3502,16 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </tbody>
             </table>
 
-            {m.comments?.length > 0 && <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: 8, borderRadius: 6, marginBottom: 8, fontSize: '0.8rem', color: '#92400E' }}>Previous feedback: "{m.comments[m.comments.length - 1].text}"</div>}
+            {renderHistoryTable(getMilestoneHistory(m, thesis))}
             {!isReadOnly && (
               <>
                 <textarea className="form-input" placeholder="Add evaluation remarks..." rows="2" value={remarks[m._id] || ''} onChange={e => setRemarks(r => ({ ...r, [m._id]: e.target.value }))} style={{ marginBottom: 8, resize: 'vertical' }} disabled={m.status === 'REVISION_REQUIRED'} />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn-primary" onClick={() => act(() => onReview(m._id, 'APPROVE', remarks[m._id]))} disabled={loading || m.status === 'REVISION_REQUIRED'} style={{ flex: 1, padding: '6px', fontSize: '0.82rem', background: '#059669', ...(m.status === 'REVISION_REQUIRED' ? { opacity: 0.5, cursor: 'not-allowed' } : {}) }}><CheckCircle2 size={14} style={{ marginRight: 4 }} />Approve</button>
-                  <button onClick={() => act(() => onReview(m._id, 'REVISION', remarks[m._id]))} disabled={loading || m.status === 'REVISION_REQUIRED'} style={{ flex: 1, padding: '6px', fontSize: '0.82rem', border: '1px solid #F87171', color: '#DC2626', background: 'none', borderRadius: 6, cursor: m.status === 'REVISION_REQUIRED' ? 'not-allowed' : 'pointer', ...(m.status === 'REVISION_REQUIRED' ? { opacity: 0.5 } : {}) }}><XCircle size={14} style={{ marginRight: 4 }} />Request Revision</button>
+                  <button onClick={() => {
+                    if (!(remarks[m._id] || '').trim()) return toast.warning('Remarks are required to request revision.');
+                    act(() => onReview(m._id, 'REVISION', remarks[m._id]));
+                  }} disabled={loading || m.status === 'REVISION_REQUIRED'} style={{ flex: 1, padding: '6px', fontSize: '0.82rem', border: '1px solid #F87171', color: '#DC2626', background: 'none', borderRadius: 6, cursor: m.status === 'REVISION_REQUIRED' ? 'not-allowed' : 'pointer', ...(m.status === 'REVISION_REQUIRED' ? { opacity: 0.5 } : {}) }}><XCircle size={14} style={{ marginRight: 4 }} />Request Revision</button>
                 </div>
               </>
             )}
@@ -3215,7 +3587,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       <div className="usm-section-title">🔄 Change Requests & Transfer History</div>
 
       {/* Transfer button */}
-      {!isReadOnly && thesis.supervisorId?._id === user._id && !['SUBMITTED', 'AWARDED'].includes(thesis.status) && (
+      {!isReadOnly && isSupervisor && !['SUBMITTED', 'AWARDED'].includes(thesis.status) && (
         <div className="usm-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div><div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Transfer Supervision</div><div style={{ fontSize: '0.72rem', color: '#64748B' }}>Permanently transfer to another faculty in {thesis.department}.</div></div>
           <button onClick={() => setShowTransferModal(true)} className="btn-outline" style={{ borderColor: '#F59E0B', color: '#B45309', padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700 }}>Transfer</button>
@@ -3261,7 +3633,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
   const renderFinalSubmission = () => {
     const finalSub = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-    const isSupervisor = thesis.supervisorId?._id === user._id;
+    const isSupervisor = thesis.supervisorId && (thesis.supervisorId._id === user?._id || thesis.supervisorId === user?._id);
     const isHOD = subRole === 'HOD';
     const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
     const isDispatched = !!thesis.dispatchDate;
@@ -3828,7 +4200,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
             </div>
             <div className="usm-header-actions">
-              {!isReadOnly && thesis.supervisorId?._id === user._id && !['SUBMITTED', 'AWARDED'].includes(thesis.status) && (
+              {!isReadOnly && isSupervisor && !['SUBMITTED', 'AWARDED'].includes(thesis.status) && (
                 <button onClick={() => setShowTransferModal(true)} className="btn-outline" style={{ borderColor: '#F59E0B', color: '#B45309', padding: '5px 10px', fontSize: '0.75rem', fontWeight: 700 }}>Transfer</button>
               )}
               <button className="usm-close-btn" onClick={onClose}>✕</button>
@@ -3851,7 +4223,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     />
                   )}
                   {tab.key === 'coursework' && !isReadOnly && (
-                    (user.role === 'FACULTY' && thesis.supervisorId?._id === user._id && thesis.courseworkStatus === 'PENDING_FACULTY') ||
+                    (user.role === 'FACULTY' && isSupervisor && thesis.courseworkStatus === 'PENDING_FACULTY') ||
                     (subRole === 'HOD' && thesis.courseworkStatus === 'PENDING_HOD')
                   ) && (
                     <AlertTriangle 
@@ -3864,7 +4236,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     const status = milestones.find(m => m.type === 'SYNOPSIS')?.status;
                     return (
                       (subRole === 'HOD' && status === 'PENDING_HOD') ||
-                      (subRole !== 'HOD' && thesis.supervisorId?._id === user._id && status === 'SUBMITTED')
+                      (subRole !== 'HOD' && isSupervisor && status === 'SUBMITTED')
                     );
                   })() && (
                     <AlertTriangle 

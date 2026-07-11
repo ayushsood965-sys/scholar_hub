@@ -1561,9 +1561,10 @@ const submitCourseworkDetails = async (req, res) => {
       hodApprovedAt: null
     };
 
+    const uploadedProofFile = req.file ? req.file.originalname : 'None';
     thesis.auditLog.push({
       action: 'COURSEWORK_SUBMITTED',
-      note: 'Coursework details submitted by student for supervisor approval.'
+      note: `Coursework details submitted by student for supervisor approval. File: ${uploadedProofFile}`
     });
 
     await thesis.save();

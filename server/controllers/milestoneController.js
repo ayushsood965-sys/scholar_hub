@@ -175,6 +175,18 @@ const submitDocument = async (req, res) => {
       milestone.status = 'SUBMITTED';
     }
     milestone.submittedAt = new Date();
+
+    milestone.history = milestone.history || [];
+    milestone.history.push({
+      action: 'SUBMITTED',
+      actorName: req.user.name,
+      actorRole: 'STUDENT',
+      documentUrl: milestone.documentUrl,
+      plagiarismReportUrl: milestone.plagiarismReportUrl,
+      remarks: 'Uploaded package files.',
+      timestamp: new Date()
+    });
+
     await milestone.save();
 
     if (milestone.type === 'FINAL_SUBMISSION') {
@@ -328,6 +340,9 @@ const reviewMilestone = async (req, res) => {
     let isPreSubmission = milestone.type === 'PRE_SUBMISSION';
     let isTwoStep = isSynopsis || isPreSubmission;
 
+    const previousStatus = milestone.status;
+    const isHOD = req.user.role === 'HOD' || req.user.subRole === 'HOD';
+
     if (isTwoStep) {
       if (action === 'APPROVE') {
         if (milestone.status === 'PENDING_HOD') {
@@ -350,6 +365,36 @@ const reviewMilestone = async (req, res) => {
         text: comment,
       });
     }
+
+    let histAction = '';
+    if (action === 'APPROVE') {
+      if (isTwoStep) {
+        if (previousStatus === 'PENDING_HOD') {
+          histAction = 'HOD_APPROVED';
+        } else {
+          histAction = 'SUPERVISOR_APPROVED';
+        }
+      } else {
+        histAction = 'APPROVED';
+      }
+    } else {
+      if (isTwoStep) {
+        histAction = isHOD ? 'HOD_REJECTED' : 'SUPERVISOR_REJECTED';
+      } else {
+        histAction = 'REVISION_REQUIRED';
+      }
+    }
+
+    milestone.history = milestone.history || [];
+    milestone.history.push({
+      action: histAction,
+      actorName: req.user.name,
+      actorRole: isHOD ? 'HOD' : (isSupervisor ? 'SUPERVISOR' : req.user.role),
+      documentUrl: milestone.documentUrl,
+      plagiarismReportUrl: milestone.plagiarismReportUrl,
+      remarks: comment || (action === 'APPROVE' ? 'Approved.' : 'Revision requested.'),
+      timestamp: new Date()
+    });
 
     await milestone.save();
 

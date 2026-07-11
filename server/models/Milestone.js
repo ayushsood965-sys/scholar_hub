@@ -38,7 +38,18 @@ const milestoneSchema = new mongoose.Schema(
       totalFeeDeposited: { type: String, default: '' },
       remarks: { type: String, default: '' },
       feeReceiptUrl: { type: String, default: null }
-    }
+    },
+    history: [
+      {
+        action: { type: String, required: true }, // 'SUBMITTED', 'SUPERVISOR_APPROVED', 'SUPERVISOR_REJECTED', 'HOD_APPROVED', 'HOD_REJECTED'
+        actorName: { type: String, required: true },
+        actorRole: { type: String, required: true },
+        documentUrl: { type: String, default: null },
+        plagiarismReportUrl: { type: String, default: null },
+        remarks: { type: String, default: '' },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ]
   },
   { timestamps: true }
 );
