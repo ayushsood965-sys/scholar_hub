@@ -385,25 +385,52 @@ const getPublicationVirtualHistory = (p) => {
 
 const getMeetingVirtualHistory = (m) => {
   if (!m) return [];
-  const list = [];
-  if (m.createdAt) {
-    list.push({
+  const list = [
+    {
       action: 'SUBMITTED',
       actorName: 'Scholar',
       actorRole: 'STUDENT',
       remarks: `Requested consultation meeting. Agenda: "${m.reason}"`,
-      timestamp: new Date(m.createdAt)
+      timestamp: m.createdAt
+    }
+  ];
+
+  if (m.responseLogs && m.responseLogs.length > 0) {
+    m.responseLogs.forEach(log => {
+      const u = log.user || {};
+      const name = u.name || 'Faculty Member';
+      const role = u.subRole || u.role || 'FACULTY';
+      list.push({
+        action: log.action === 'ACCEPT' ? 'SUPERVISOR_APPROVED' : 'SUPERVISOR_REJECTED',
+        actorName: name,
+        actorRole: role,
+        remarks: log.action === 'ACCEPT' ? 'Accepted the meeting request.' : 'Rejected the meeting request.',
+        timestamp: log.timestamp
+      });
     });
   }
-  if (m.status === 'APPROVED' || m.status === 'REJECTED') {
-    list.push({
-      action: m.status === 'APPROVED' ? 'HOD_APPROVED' : 'HOD_REJECTED',
-      actorName: 'HOD',
-      actorRole: 'HOD',
-      remarks: m.remarks || (m.status === 'APPROVED' ? 'Meeting approved and scheduled.' : 'Meeting request rejected.'),
-      timestamp: m.updatedAt ? new Date(m.updatedAt) : new Date(new Date(m.createdAt).getTime() + 10 * 60 * 1000)
-    });
+
+  const hasResponseLogs = m.responseLogs && m.responseLogs.length > 0;
+  if (!hasResponseLogs) {
+    if (m.status === 'APPROVED') {
+      list.push({
+        action: 'HOD_APPROVED',
+        actorName: 'Faculty/HOD',
+        actorRole: 'FACULTY',
+        remarks: m.remarks || 'Accepted meeting request.',
+        timestamp: m.updatedAt
+      });
+    } else if (m.status === 'REJECTED') {
+      list.push({
+        action: 'HOD_REJECTED',
+        actorName: 'Faculty/HOD',
+        actorRole: 'FACULTY',
+        remarks: m.remarks || 'Rejected meeting request.',
+        timestamp: m.updatedAt
+      });
+    }
   }
+
   return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 };
 

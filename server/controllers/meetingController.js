@@ -55,6 +55,7 @@ const getMyMeetings = async (req, res) => {
       .populate('invitedAttendees', 'name email username role subRole')
       .populate('attendees', 'name email username role subRole')
       .populate('rejectedAttendees', 'name email username role subRole')
+      .populate('responseLogs.user', 'name role subRole')
       .sort({ createdAt: -1 });
 
     const meetings = await paginate(mongoQuery, req.query);
@@ -85,6 +86,7 @@ const getDeptMeetings = async (req, res) => {
       .populate('invitedAttendees', 'name email username role subRole')
       .populate('attendees', 'name email username role subRole')
       .populate('rejectedAttendees', 'name email username role subRole')
+      .populate('responseLogs.user', 'name role subRole')
       .sort({ createdAt: -1 });
 
     const meetings = await paginate(mongoQuery, req.query);
@@ -117,6 +119,7 @@ const getFacultyMeetings = async (req, res) => {
       .populate('invitedAttendees', 'name email username role subRole')
       .populate('attendees', 'name email username role subRole')
       .populate('rejectedAttendees', 'name email username role subRole')
+      .populate('responseLogs.user', 'name role subRole')
       .sort({ createdAt: -1 });
 
     const meetings = await paginate(mongoQuery, req.query);
@@ -214,6 +217,15 @@ const respondMeeting = async (req, res) => {
         link: 'meetings'
       });
     }
+
+    if (!meeting.responseLogs) {
+      meeting.responseLogs = [];
+    }
+    meeting.responseLogs.push({
+      user: req.user._id,
+      action: response,
+      timestamp: new Date()
+    });
 
     await meeting.save();
     res.json(meeting);

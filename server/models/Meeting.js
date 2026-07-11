@@ -17,6 +17,13 @@ const meetingSchema = new mongoose.Schema(
       default: 'PENDING',
     },
     remarks: { type: String, default: '' },
+    responseLogs: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        action: { type: String, enum: ['ACCEPT', 'REJECT'] },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ],
   },
   { timestamps: true }
 );
