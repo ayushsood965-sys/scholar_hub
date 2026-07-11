@@ -487,6 +487,96 @@ const getDocumentVirtualHistory = (doc) => {
 const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Milestone') => {
   if (!milestone) return null;
   const status = milestone.status;
+  
+  const titleUpper = titlePrefix.toUpperCase();
+  const isSingleStage = 
+    titleUpper.includes('MEETING') || 
+    titleUpper.includes('REALLOCATION') || 
+    titleUpper.includes('CHANGE') || 
+    titleUpper.includes('DOCUMENT') || 
+    titleUpper.includes('DRC') || 
+    titleUpper.startsWith('RAC');
+
+  if (isSingleStage) {
+    const isUnderReview = ['PENDING', 'SUBMITTED', 'SCHEDULED'].includes(status);
+    const isRejected = ['REJECTED', 'REJECTED_BY_SUPERVISOR', 'REJECTED_BY_HOD', 'REVISION_REQUIRED', 'UNSATISFACTORY'].includes(status);
+    const isApproved = ['APPROVED', 'VERIFIED', 'CLEARED', 'REVIEWED', 'SATISFACTORY'].includes(status);
+
+    let reviewerStatus = 'PENDING';
+    if (isUnderReview) reviewerStatus = 'PENDING';
+    else if (isRejected) reviewerStatus = 'REJECTED';
+    else if (isApproved) reviewerStatus = 'APPROVED';
+
+    let initiatorLabel = `${titlePrefix} Submitted`;
+    let reviewerLabel = 'Review & Evaluation';
+    let reviewerDescription = 'Awaiting review from the assigned authority.';
+
+    if (titleUpper.includes('MEETING') || titleUpper.includes('DRC') || titleUpper.startsWith('RAC')) {
+      initiatorLabel = 'Session Scheduled';
+      reviewerLabel = 'Meeting Outcome Recorded';
+      reviewerDescription = 'Outcome details and recommendations from the committee.';
+    } else if (titleUpper.includes('CHANGE') || titleUpper.includes('REALLOCATION')) {
+      initiatorLabel = 'Request Filed';
+      reviewerLabel = 'HOD Approval';
+      reviewerDescription = 'Head of Department decision on reallocation / modification.';
+    } else if (titleUpper.includes('DOCUMENT')) {
+      const role = milestone.forwardedRole || 'Recipient';
+      initiatorLabel = 'Document Uploaded';
+      reviewerLabel = `${role} Verification`;
+      reviewerDescription = `Verification and validation of the submitted proof by the ${role.toLowerCase()}.`;
+    }
+
+    const getStepStyles = (stepStatus) => {
+      if (stepStatus === 'complete') return { bg: '#ECFDF5', border: '#10B981', color: '#065F46', text: '✓ Cleared' };
+      if (stepStatus === 'current') return { bg: '#EFF6FF', border: '#3B82F6', color: '#1D4ED8', text: '⟳ Under Review' };
+      if (stepStatus === 'rejected') return { bg: '#FEF2F2', border: '#EF4444', color: '#991B1B', text: '✗ Rejected / Revision Required' };
+      return { bg: '#F8FAFC', border: '#E2E8F0', color: '#64748B', text: '○ Pending' };
+    };
+
+    let step1Status = 'complete'; // Initiated
+    let step2Status = 'pending';  // Review / Outcome
+
+    if (isUnderReview) {
+      step2Status = 'current';
+    } else if (isRejected) {
+      step2Status = 'rejected';
+    } else if (isApproved) {
+      step2Status = 'complete';
+    }
+
+    const s1 = getStepStyles(step1Status);
+    const s2 = getStepStyles(step2Status);
+
+    return (
+      <div style={{ marginTop: 20, padding: 16, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h6 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#1E293B' }}>
+            {titlePrefix} Evaluation Status
+          </h6>
+          <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 500 }}>
+            Current Status: <strong style={{ color: isApproved ? '#059669' : '#1E293B' }}>{status}</strong>
+          </span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 12px 1fr', alignItems: 'center', gap: 6 }}>
+          {/* Step 1 */}
+          <div style={{ background: s1.bg, border: `1px solid ${s1.border}`, borderRadius: 6, padding: '10px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', marginBottom: 4 }}>Step 1</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: s1.color }}>{initiatorLabel}</div>
+            <div style={{ fontSize: '0.72rem', color: s1.color, marginTop: 4, fontWeight: 500 }}>{s1.text}</div>
+          </div>
+          {/* Connector */}
+          <div style={{ textAlign: 'center', color: '#CBD5E1', fontSize: '1rem', fontWeight: 700 }}>➔</div>
+          {/* Step 2 */}
+          <div style={{ background: s2.bg, border: `1px solid ${s2.border}`, borderRadius: 6, padding: '10px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', marginBottom: 4 }}>Step 2</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: s2.color }}>{reviewerLabel}</div>
+            <div style={{ fontSize: '0.72rem', color: s2.color, marginTop: 4, fontWeight: 500 }}>{s2.text}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isUnderReviewSupervisor = status === 'PENDING' || status === 'SUBMITTED';
   const isRejectedSupervisor = status === 'REJECTED_BY_SUPERVISOR';
   const isUnderReviewHod = status === 'UNDER_REVIEW_HOD';

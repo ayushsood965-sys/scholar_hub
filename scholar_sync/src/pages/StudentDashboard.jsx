@@ -181,6 +181,110 @@ const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Draft
   if (!milestone || ['DRAFT', 'NOT_SUBMITTED'].includes(milestone.status) || !milestone.status) return null;
   const status = milestone.status;
   
+  const titleUpper = titlePrefix.toUpperCase();
+  const isSingleStage = 
+    titleUpper.includes('MEETING') || 
+    titleUpper.includes('REALLOCATION') || 
+    titleUpper.includes('CHANGE') || 
+    titleUpper.includes('DOCUMENT') || 
+    titleUpper.includes('DRC') || 
+    titleUpper.startsWith('RAC');
+
+  if (isSingleStage) {
+    const isUnderReview = ['PENDING', 'SUBMITTED', 'SCHEDULED'].includes(status);
+    const isRejected = ['REJECTED', 'REJECTED_BY_SUPERVISOR', 'REJECTED_BY_HOD', 'REVISION_REQUIRED', 'UNSATISFACTORY'].includes(status);
+    const isApproved = ['APPROVED', 'VERIFIED', 'CLEARED', 'REVIEWED', 'SATISFACTORY'].includes(status);
+
+    let reviewerStatus = 'PENDING';
+    if (isUnderReview) reviewerStatus = 'PENDING';
+    else if (isRejected) reviewerStatus = 'REJECTED';
+    else if (isApproved) reviewerStatus = 'APPROVED';
+
+    let initiatorLabel = `${titlePrefix} Submitted`;
+    let reviewerLabel = 'Review & Evaluation';
+    let reviewerDescription = 'Awaiting review from the assigned authority.';
+
+    if (titleUpper.includes('MEETING') || titleUpper.includes('DRC') || titleUpper.startsWith('RAC')) {
+      initiatorLabel = 'Session Scheduled';
+      reviewerLabel = 'Meeting Outcome Recorded';
+      reviewerDescription = 'Outcome details and recommendations from the committee.';
+    } else if (titleUpper.includes('CHANGE') || titleUpper.includes('REALLOCATION')) {
+      initiatorLabel = 'Request Filed';
+      reviewerLabel = 'HOD Approval';
+      reviewerDescription = 'Head of Department decision on reallocation / modification.';
+    } else if (titleUpper.includes('DOCUMENT')) {
+      const role = milestone.forwardedRole || 'Recipient';
+      initiatorLabel = 'Document Uploaded';
+      reviewerLabel = `${role} Verification`;
+      reviewerDescription = `Verification and validation of the submitted proof by the ${role.toLowerCase()}.`;
+    }
+
+    return (
+      <div style={{ marginTop: 24, borderTop: '1px solid #E2E8F0', paddingTop: 20 }}>
+        <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>📊</span> Evaluation Progress Timeline
+        </h4>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Step 1: Initiated */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#10B981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>✓</div>
+              <div style={{ width: 2, flex: 1, background: '#10B981', minHeight: 20 }} />
+            </div>
+            <div style={{ flex: 1, paddingBottom: 8 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1E293B' }}>{initiatorLabel}</div>
+              <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                Completed on {milestone.submittedAt || milestone.createdAt || milestone.scheduledDate || milestone.conductedDate ? new Date(milestone.submittedAt || milestone.createdAt || milestone.scheduledDate || milestone.conductedDate).toLocaleDateString() : 'N/A'}
+              </div>
+            </div>
+          </div>
+          
+          {/* Step 2: Single-level Review */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ 
+                width: 24, 
+                height: 24, 
+                borderRadius: '50%', 
+                background: reviewerStatus === 'APPROVED' ? '#10B981' : (reviewerStatus === 'REJECTED' ? '#EF4444' : '#3B82F6'), 
+                color: 'white', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontSize: '0.8rem', 
+                fontWeight: 700 
+              }}>
+                {reviewerStatus === 'APPROVED' ? '✓' : (reviewerStatus === 'REJECTED' ? '✗' : '2')}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{reviewerLabel}</span>
+                <span style={{ 
+                  fontSize: '0.7rem', 
+                  padding: '2px 8px', 
+                  borderRadius: 4, 
+                  fontWeight: 700,
+                  background: reviewerStatus === 'APPROVED' ? '#D1FAE5' : (reviewerStatus === 'REJECTED' ? '#FEE2E2' : '#DBEAFE'),
+                  color: reviewerStatus === 'APPROVED' ? '#065F46' : (reviewerStatus === 'REJECTED' ? '#991B1B' : '#1E40AF')
+                }}>
+                  {reviewerStatus === 'APPROVED' ? 'Cleared' : (reviewerStatus === 'REJECTED' ? 'Revision / Reject' : 'Awaiting Review')}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                {reviewerStatus === 'APPROVED' 
+                  ? 'Evaluation marked as cleared and resolved.' 
+                  : (reviewerStatus === 'REJECTED' ? 'Corrections / Revision requested.' : reviewerDescription)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Two-stage workflow: Student -> Faculty Supervisor -> HOD
   let facultyStatus = 'PENDING'; // PENDING, APPROVED, REJECTED
   let hodStatus = 'LOCKED'; // LOCKED, PENDING, APPROVED, REJECTED
   
