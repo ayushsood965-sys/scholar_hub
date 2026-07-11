@@ -4478,6 +4478,75 @@ const FacultyDashboard = () => {
           {renderContent()}
         </div>
       </div>
+      {selectedThesisId && !selectedThesisData && createPortal(
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          fontFamily: "'Inter', sans-serif"
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '40px 60px',
+            borderRadius: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '24px',
+            border: '1px solid rgba(226, 232, 240, 0.8)'
+          }}>
+            <div style={{ position: 'relative', width: '80px', height: '80px' }}>
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                border: '6px solid #EFF6FF',
+                borderTopColor: '#2563EB',
+                animation: 'spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite'
+              }} />
+              <div style={{
+                position: 'absolute',
+                top: '12px',
+                left: '12px',
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                border: '4px solid #FDF2F8',
+                borderBottomColor: '#DB2777',
+                animation: 'spin 0.8s linear infinite reverse'
+              }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <h4 style={{ margin: 0, color: '#1E293B', fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.025em' }}>
+                Fetching Scholar Portfolio
+              </h4>
+              <p style={{ margin: 0, color: '#64748B', fontSize: '0.875rem', fontWeight: 500 }}>
+                Loading academic progress details...
+              </p>
+            </div>
+          </div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>,
+        document.body
+      )}
       {selectedThesisId && selectedThesisData && createPortal(
         <UnifiedScholarModal
           thesis={selectedThesisData.thesis}

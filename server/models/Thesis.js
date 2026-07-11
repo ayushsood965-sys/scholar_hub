@@ -99,6 +99,18 @@ const thesisSchema = new mongoose.Schema(
       outcomeRecordedAt: { type: Date, default: null },
       outcomeRemarks: { type: String, default: '' }
     },
+    preSubmissionSeminarHistory: [
+      {
+        scheduledDate: { type: Date, default: null },
+        scheduledTime: { type: String, default: '' },
+        venue: { type: String, default: '' },
+        committeeMembers: { type: String, default: '' },
+        remarks: { type: String, default: '' },
+        outcomeRecordedAt: { type: Date, default: null },
+        outcomeRemarks: { type: String, default: '' },
+        status: { type: String, default: '' }
+      }
+    ],
     enrollmentVerified: { type: Boolean, default: false },
     synopsisProvisionallyCleared: { type: Boolean, default: false },
     activeResearchBypassed: { type: Boolean, default: false },

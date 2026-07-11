@@ -1768,9 +1768,9 @@ const schedulePreSubmissionSeminar = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized. This scholar belongs to another department.' });
     }
 
-    // Ensure the PRE_SUBMISSION milestone draft is APPROVED
+    // Ensure the PRE_SUBMISSION milestone draft is VERIFIED or APPROVED
     const preMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
-    if (!preMilestone || preMilestone.status !== 'APPROVED') {
+    if (!preMilestone || (preMilestone.status !== 'VERIFIED' && preMilestone.status !== 'APPROVED')) {
       return res.status(400).json({ message: 'Pre-Submission Thesis Draft package must be approved by Supervisor and HOD before scheduling the seminar.' });
     }
 
@@ -1791,6 +1791,8 @@ const schedulePreSubmissionSeminar = async (req, res) => {
     thesis.preSubmissionSeminar.remarks = remarks || '';
     thesis.preSubmissionSeminar.hodApprovedAt = new Date();
     thesis.preSubmissionSeminar.hodApproverId = req.user._id;
+    thesis.preSubmissionSeminar.outcomeRecordedAt = null;
+    thesis.preSubmissionSeminar.outcomeRemarks = '';
 
     thesis.auditLog.push({
       action: 'PRE_SUBMISSION_SEMINAR_SCHEDULED',
@@ -1850,6 +1852,22 @@ const recordPreSubmissionSeminarOutcome = async (req, res) => {
     thesis.preSubmissionSeminar.outcomeRecordedAt = new Date();
     thesis.preSubmissionSeminar.outcomeRemarks = remarks || '';
 
+    const preSub = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
+    if (preSub) {
+      preSub.comments.push({
+        authorId: req.user._id,
+        authorName: req.user.name,
+        text: `Seminar Outcome: ${status === 'CLEARED' ? 'CLEARED (Satisfactory)' : 'UNCLEARED (Unsatisfactory)'}. Remarks: ${remarks || 'None'}`
+      });
+      preSub.history.push({
+        action: status === 'CLEARED' ? 'HOD_APPROVED' : 'HOD_REJECTED',
+        actorName: req.user.name,
+        actorRole: 'HOD',
+        remarks: `Pre-submission Seminar ${status === 'CLEARED' ? 'CLEARED' : 'UNCLEARED'}. Feedback: ${remarks || 'None'}`,
+        timestamp: new Date()
+      });
+    }
+
     if (status === 'CLEARED') {
       thesis.status = 'PRE_SUBMISSION';
       thesis.auditLog.push({
@@ -1857,12 +1875,9 @@ const recordPreSubmissionSeminarOutcome = async (req, res) => {
         note: `Pre-submission seminar evaluated CLEARED by HOD. Remarks: ${remarks || 'None'}`
       });
 
-      // Mark pre-submission milestone as APPROVED
-      const preSub = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
       if (preSub) {
         preSub.status = 'APPROVED';
         preSub.reviewedAt = new Date();
-        await preSub.save();
       }
 
       // Auto-create final submission milestone (sequence 100) if it doesn't exist
@@ -1881,6 +1896,23 @@ const recordPreSubmissionSeminarOutcome = async (req, res) => {
         action: 'SEMINAR_FAILED',
         note: `Pre-submission seminar evaluated UNCLEARED by HOD. Remarks: ${remarks || 'None'}`
       });
+      if (!thesis.preSubmissionSeminarHistory) {
+        thesis.preSubmissionSeminarHistory = [];
+      }
+      thesis.preSubmissionSeminarHistory.push({
+        scheduledDate: thesis.preSubmissionSeminar.scheduledDate,
+        scheduledTime: thesis.preSubmissionSeminar.scheduledTime,
+        venue: thesis.preSubmissionSeminar.venue,
+        committeeMembers: thesis.preSubmissionSeminar.committeeMembers,
+        remarks: thesis.preSubmissionSeminar.remarks,
+        outcomeRecordedAt: new Date(),
+        outcomeRemarks: remarks || '',
+        status: 'UNCLEARED'
+      });
+    }
+
+    if (preSub) {
+      await preSub.save();
     }
 
     await thesis.save();

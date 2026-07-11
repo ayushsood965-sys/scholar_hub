@@ -34,7 +34,11 @@ const getMilestoneHistory = (m, thesis) => {
   
   // If the backend has proper history entries, use them directly
   if (m.history && m.history.length > 0) {
-    return [...m.history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    let hist = [...m.history];
+    if (m.type === 'PRE_SUBMISSION') {
+      hist = hist.filter(h => !h.remarks?.includes('Seminar') && !h.remarks?.includes('seminar'));
+    }
+    return hist.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
   
   // Fallback: history is empty (milestone was processed before history tracking was added).
@@ -43,7 +47,9 @@ const getMilestoneHistory = (m, thesis) => {
   const supervisorId = thesis?.supervisorId?._id || thesis?.supervisorId;
 
   // Sort comments by time
-  const sortedComments = [...(m.comments || [])].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const sortedComments = [...(m.comments || [])]
+    .filter(c => !c.text?.includes('Seminar') && !c.text?.includes('seminar'))
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
   // Group comments into cycles
   let currentCycleComments = [];
@@ -768,9 +774,8 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
               return !(['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status) || hasPreMilestone);
             }
             if (key === 'finalSubmission') {
-              const preMilestone = milestones && milestones.find(m => m.type === 'PRE_SUBMISSION');
-              const isPreApproved = preMilestone && preMilestone.status === 'APPROVED';
-              return !(isPreApproved || ['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status));
+              const isCleared = thesis.preSubmissionSeminar?.status === 'CLEARED';
+              return !(isCleared || ['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(status));
             }
             return true;
           })();
@@ -3192,88 +3197,16 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
               </button>
             </div>
           </form>
-          {renderEvaluationTimeline(preMilestone)}
-          {renderHistoryTable(getMilestoneHistory(preMilestone, thesis))}
         </div>
       )}
 
-      {/* 3. Draft Submitted & Awaiting Review */}
-      {preMilestone && isSubmitted && (
-        <div className="card">
-          <h3 className="card-title">⏳ Draft Under Evaluation</h3>
-          <div style={{ textAlign: 'center', padding: '24px 16px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, color: '#1E40AF', marginBottom: 16 }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⏳</div>
-            <h4 style={{ margin: '0 0 6px 0', fontWeight: 700 }}>
-              {preMilestone.status === 'PENDING_HOD' ? 'Approved & Forwarded to HOD' : 'Draft Submitted Successfully'}
-            </h4>
-            <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.4 }}>
-              {preMilestone.status === 'PENDING_HOD'
-                ? 'Your rough draft thesis has been verified and approved by your supervisor, and forwarded to the HOD for final sign-off.'
-                : 'Your rough draft thesis and plagiarism report are under review. Faculty Supervisor must verify them first, followed by HOD final sign-off.'}
-            </p>
-          </div>
-          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Uploaded Files:</div>
-            {preMilestone.documentUrl && (
-              <div style={{ marginBottom: 6 }}>
-                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Rough Thesis Draft
-                </a>
-              </div>
-            )}
-            {preMilestone.plagiarismReportUrl && (
-              <div>
-                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Plagiarism Clearance Report
-                </a>
-              </div>
-            )}
-          </div>
-          {renderEvaluationTimeline(preMilestone)}
-          {renderHistoryTable(getMilestoneHistory(preMilestone, thesis))}
-        </div>
-      )}
-
-      {/* 4. Draft Approved & Awaiting Seminar Schedule */}
-      {preMilestone && isApproved && semStatus === 'NOT_SCHEDULED' && (
-        <div className="card">
-          <h3 className="card-title">📅 Seminar Scheduling Pending</h3>
-          <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
-              ✅ Thesis Draft & Plagiarism Certificate Approved
-            </h4>
-            <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
-              Your complete rough thesis draft and Turnitin report have been approved by both the Faculty Supervisor and HOD. 
-              The HOD of the department has been notified to schedule your Pre-Submission Seminar defense colloquium.
-            </p>
-          </div>
-          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Approved Files:</div>
-            {preMilestone.documentUrl && (
-              <div style={{ marginBottom: 6 }}>
-                <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Approved Thesis Draft
-                </a>
-              </div>
-            )}
-            {preMilestone.plagiarismReportUrl && (
-              <div>
-                <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', textDecoration: 'underline', fontWeight: 600 }}>
-                  📄 Approved Plagiarism Clearance Certificate
-                </a>
-              </div>
-            )}
-          </div>
-          {renderEvaluationTimeline(preMilestone)}
-          {renderHistoryTable(getMilestoneHistory(preMilestone, thesis))}
-        </div>
-      )}
-
-      {/* 5. Seminar Scheduled */}
-      {semStatus === 'SCHEDULED' && (
-        <div className="card">
-          <h3 className="card-title">📆 Pre-Submission Seminar Confirmed</h3>
-          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+      {/* 3. Pre-Submission Seminar Status Banners (Scheduled, Cleared, Uncleared) */}
+      {preMilestone && isApproved && semStatus === 'SCHEDULED' && (
+        <div className="card" style={{ borderLeft: '4px solid #D97706' }}>
+          <h3 className="card-title" style={{ color: '#D97706', display: 'flex', alignItems: 'center', gap: 8 }}>
+            📆 Pre-Submission Seminar Confirmed
+          </h3>
+          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: 20 }}>
             <h4 style={{ margin: '0 0 12px 0', color: '#92400E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>📆</span> Seminar Schedule Details:
             </h4>
@@ -3291,11 +3224,12 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
         </div>
       )}
 
-      {/* 6. Seminar Uncleared */}
-      {semStatus === 'UNCLEARED' && (
-        <div className="card">
-          <h3 className="card-title" style={{ color: '#DC2626' }}>⚠️ Seminar Outcome: Uncleared</h3>
-          <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem', marginBottom: 16 }}>
+      {preMilestone && isApproved && semStatus === 'UNCLEARED' && (
+        <div className="card" style={{ borderLeft: '4px solid #DC2626' }}>
+          <h3 className="card-title" style={{ color: '#DC2626', display: 'flex', alignItems: 'center', gap: 8 }}>
+            ⚠️ Seminar Outcome: Uncleared
+          </h3>
+          <div style={{ padding: 14, background: '#FEE2E2', borderLeft: '4px solid #EF4444', borderRadius: 8, color: '#991B1B', fontSize: '0.85rem' }}>
             <strong>⚠️ Seminar Defense Evaluated as Unsatisfactory</strong>
             <div style={{ marginTop: 4 }}><strong>HOD Feedback Remarks:</strong> {thesis.preSubmissionSeminar.outcomeRemarks || 'None'}</div>
             <div style={{ marginTop: 6, color: '#7F1D1D' }}>Please discuss the corrections with your supervisor. HOD will reschedule the seminar defense in this portal once ready.</div>
@@ -3303,10 +3237,11 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
         </div>
       )}
 
-      {/* 7. Seminar Cleared -> Notification */}
-      {semStatus === 'CLEARED' && (
-        <div className="card">
-          <h3 className="card-title" style={{ color: '#059669' }}>🎉 Seminar Outcome: Cleared</h3>
+      {preMilestone && isApproved && semStatus === 'CLEARED' && (
+        <div className="card" style={{ borderLeft: '4px solid #10B981' }}>
+          <h3 className="card-title" style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: 8 }}>
+            🎉 Seminar Outcome: Cleared
+          </h3>
           <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20 }}>
             <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
               🎉 Pre-Submission Seminar Successfully Cleared!
@@ -3318,6 +3253,95 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
               Please navigate to the <strong>Final Submission</strong> tab in the sidebar to upload your final bound thesis document.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* 4. Active Pre-Submission Milestone Package Details Card */}
+      {preMilestone && (
+        <div className="card">
+          <h3 className="card-title">📦 Draft & Plagiarism Evaluation</h3>
+
+          {/* Banner inside card depending on status */}
+          {isSubmitted && (
+            <div style={{ textAlign: 'center', padding: '24px 16px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, color: '#1E40AF', marginBottom: 16 }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>⏳</div>
+              <h4 style={{ margin: '0 0 6px 0', fontWeight: 700 }}>
+                {preMilestone.status === 'PENDING_HOD' ? 'Approved & Forwarded to HOD' : 'Draft Submitted Successfully'}
+              </h4>
+              <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.4 }}>
+                {preMilestone.status === 'PENDING_HOD'
+                  ? 'Your rough draft thesis has been verified and approved by your supervisor, and forwarded to the HOD for final sign-off.'
+                  : 'Your rough draft thesis and plagiarism report are under review. Faculty Supervisor must verify them first, followed by HOD final sign-off.'}
+              </p>
+            </div>
+          )}
+
+          {isApproved && semStatus === 'NOT_SCHEDULED' && (
+            <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+              <h4 style={{ margin: '0 0 8px 0', color: '#065F46', fontWeight: 800 }}>
+                ✅ Thesis Draft & Plagiarism Certificate Approved
+              </h4>
+              <p style={{ fontSize: '0.85rem', color: '#065F46', margin: 0, lineHeight: 1.5 }}>
+                Your complete rough thesis draft and Turnitin report have been approved by both the Faculty Supervisor and HOD. 
+                The HOD of the department has been notified to schedule your Pre-Submission Seminar defense colloquium.
+              </p>
+            </div>
+          )}
+
+          {/* Files List Section */}
+          {(isSubmitted || isApproved) && (
+            <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.85rem', marginBottom: 20 }}>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>{isApproved ? 'Approved Files:' : 'Uploaded Files:'}</div>
+              {preMilestone.documentUrl && (
+                <div style={{ marginBottom: 6 }}>
+                  <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: isApproved ? '#10B981' : '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
+                    📄 {isApproved ? 'Approved Thesis Draft' : 'Rough Thesis Draft'}
+                  </a>
+                </div>
+              )}
+              {preMilestone.plagiarismReportUrl && (
+                <div>
+                  <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: isApproved ? '#10B981' : '#EA580C', textDecoration: 'underline', fontWeight: 600 }}>
+                    📄 {isApproved ? 'Approved Plagiarism Clearance Certificate' : 'Plagiarism Clearance Report'}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          {renderEvaluationTimeline(preMilestone)}
+          {renderHistoryTable(getMilestoneHistory(preMilestone, thesis))}
+
+          {/* Pre-Submission Seminar History Logs Subsection */}
+          {thesis.preSubmissionSeminarHistory && thesis.preSubmissionSeminarHistory.length > 0 && (
+            <div style={{ marginTop: 24, borderTop: '1px solid #E2E8F0', paddingTop: 20 }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 800, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📜</span> Pre-Submission Seminar History Logs
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {thesis.preSubmissionSeminarHistory.map((h, idx) => (
+                  <div key={idx} style={{ background: '#F8FAFC', borderRadius: 10, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.82rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                      <span style={{ fontWeight: 700, color: '#475569' }}>Colloquium Run #{idx + 1}</span>
+                      <span style={{ padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontSize: '0.7rem', background: '#FEE2E2', color: '#991B1B' }}>
+                        UNCLEARED (Unsatisfactory)
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', color: '#475569', marginBottom: 8 }}>
+                      <div><strong>Scheduled Date:</strong> {h.scheduledDate ? new Date(h.scheduledDate).toLocaleDateString() : 'N/A'}</div>
+                      <div><strong>Scheduled Time:</strong> {h.scheduledTime}</div>
+                      <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {h.venue}</div>
+                      {h.committeeMembers && <div style={{ gridColumn: 'span 2' }}><strong>Panel:</strong> {h.committeeMembers}</div>}
+                    </div>
+                    <div style={{ background: 'white', padding: 10, borderRadius: 6, borderLeft: '3px solid #EF4444' }}>
+                      <div><strong>Outcome Remarks:</strong> "{h.outcomeRemarks || 'None'}"</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 4 }}>Conducted on {h.outcomeRecordedAt ? new Date(h.outcomeRecordedAt).toLocaleDateString() : 'N/A'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

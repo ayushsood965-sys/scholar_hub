@@ -28,7 +28,11 @@ const getMilestoneHistory = (m, thesis) => {
   
   // If the backend has proper history entries, use them directly
   if (m.history && m.history.length > 0) {
-    return [...m.history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    let hist = [...m.history];
+    if (m.type === 'PRE_SUBMISSION') {
+      hist = hist.filter(h => !h.remarks?.includes('Seminar') && !h.remarks?.includes('seminar'));
+    }
+    return hist.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
   
   // Fallback: history is empty (milestone was processed before history tracking was added).
@@ -37,7 +41,9 @@ const getMilestoneHistory = (m, thesis) => {
   const supervisorId = thesis?.supervisorId?._id || thesis?.supervisorId;
 
   // Sort comments by time
-  const sortedComments = [...(m.comments || [])].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const sortedComments = [...(m.comments || [])]
+    .filter(c => !c.text?.includes('Seminar') && !c.text?.includes('seminar'))
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
   // Group comments into cycles
   let currentCycleComments = [];
@@ -1637,7 +1643,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     { key: 'chapters', label: 'Chapters', icon: '📖', badge: pendingChaptersCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'publications', label: 'Research Outputs', icon: '🏆', badge: pendingOutputsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'preSubmission', label: 'Pre-Submission', icon: '🚀', badge: preSubmissionBadge || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'PRE_SUBMISSION') },
-    { key: 'finalSubmission', label: 'Final Submission and Defense', icon: '📁', show: isPreApproved || ['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'finalSubmission', label: 'Final Submission and Defense', icon: '📁', show: (thesis.preSubmissionSeminar?.status === 'CLEARED') || ['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'awardDegree', label: 'Award Degree', icon: '🎓', show: ['SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'documents', label: 'Documents', icon: '📄', badge: pendingDocCount || null },
     { key: 'changes', label: 'Changes', icon: '🔄' },
@@ -2370,6 +2376,37 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             </div>
           )}
         </div>
+
+        {/* Previously Held Seminar History Logs */}
+        {thesis.preSubmissionSeminarHistory && thesis.preSubmissionSeminarHistory.length > 0 && (
+          <div className="usm-card" style={{ padding: 16, marginTop: 16 }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>📜</span> Pre-Submission Seminar History Logs
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {thesis.preSubmissionSeminarHistory.map((h, idx) => (
+                <div key={idx} style={{ background: '#F8FAFC', borderRadius: 10, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.82rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                    <span style={{ fontWeight: 700, color: '#475569' }}>Colloquium Run #{idx + 1}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontSize: '0.7rem', background: '#FEE2E2', color: '#991B1B' }}>
+                      UNCLEARED (Unsatisfactory)
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', color: '#475569', marginBottom: 8 }}>
+                    <div><strong>Scheduled Date:</strong> {h.scheduledDate ? new Date(h.scheduledDate).toLocaleDateString() : 'N/A'}</div>
+                    <div><strong>Time:</strong> {h.scheduledTime}</div>
+                    <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {h.venue}</div>
+                    {h.committeeMembers && <div style={{ gridColumn: 'span 2' }}><strong>Panel:</strong> {h.committeeMembers}</div>}
+                  </div>
+                  <div style={{ background: 'white', padding: 10, borderRadius: 6, borderLeft: '3px solid #EF4444' }}>
+                    <div><strong>Outcome Remarks:</strong> "{h.outcomeRemarks || 'None'}"</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 4 }}>Conducted on {h.outcomeRecordedAt ? new Date(h.outcomeRecordedAt).toLocaleDateString() : 'N/A'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };

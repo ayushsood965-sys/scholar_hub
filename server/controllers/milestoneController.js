@@ -346,7 +346,11 @@ const reviewMilestone = async (req, res) => {
     if (isTwoStep) {
       if (action === 'APPROVE') {
         if (milestone.status === 'PENDING_HOD') {
-          milestone.status = 'APPROVED';
+          if (milestone.type === 'PRE_SUBMISSION') {
+            milestone.status = 'VERIFIED';
+          } else {
+            milestone.status = 'APPROVED';
+          }
         } else {
           milestone.status = 'PENDING_HOD';
         }
