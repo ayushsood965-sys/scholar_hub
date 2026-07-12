@@ -115,7 +115,7 @@ const Footer = () => {
                   boxSizing: 'border-box'
                 }}
               >
-                <span>🌐</span> <span><strong>ScholarHub</strong></span>
+                <span>🌐</span> <span><strong>Scholar Hub HPU</strong></span>
               </a>
               <a 
                 href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true`}
@@ -137,7 +137,7 @@ const Footer = () => {
                   boxSizing: 'border-box'
                 }}
               >
-                <span>🎓</span> <span><strong>ScholarSync Portal</strong></span>
+                <span>🎓</span> <span><strong>Scholar Sync HPU</strong></span>
               </a>
               <a 
                 href="#" 
@@ -161,7 +161,7 @@ const Footer = () => {
                   cursor: 'pointer'
                 }}
               >
-                <span>📊</span> <span><strong>ScholarTrack Portal</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
+                <span>📊</span> <span><strong>Scholar Track HPU</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
               </a>
             </div>
           </div>

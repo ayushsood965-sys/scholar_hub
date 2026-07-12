@@ -969,7 +969,7 @@ const Landing = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  <span>🌐</span> <span><strong>ScholarHub</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
+                  <span>🌐</span> <span><strong>Scholar Hub HPU</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
                 </a>
                 <a 
                   href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true`}
@@ -991,7 +991,7 @@ const Landing = () => {
                     boxSizing: 'border-box'
                   }}
                 >
-                  <span>🎓</span> <span><strong>ScholarSync Portal</strong></span>
+                  <span>🎓</span> <span><strong>Scholar Sync HPU</strong></span>
                 </a>
                 <a 
                   href={`${SCHOLAR_TRACK_URL || 'http://localhost:5174'}?install=true`}
@@ -1013,7 +1013,7 @@ const Landing = () => {
                     boxSizing: 'border-box'
                   }}
                 >
-                  <span>📊</span> <span><strong>ScholarTrack Portal</strong></span>
+                  <span>📊</span> <span><strong>Scholar Track HPU</strong></span>
                 </a>
               </div>
             </div>
