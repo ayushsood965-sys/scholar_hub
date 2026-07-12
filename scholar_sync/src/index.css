@@ -2489,26 +2489,19 @@ body {
     height: 100vh;
     width: 270px;
     z-index: 1000;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
+    display: none !important;
   }
   
   body.sidebar-mobile-open .sidebar {
-    transform: translateX(0);
+    display: none !important;
   }
   
   .mobile-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 990;
+    display: none !important;
   }
   
   body.sidebar-mobile-open .mobile-overlay {
-    display: block !important;
+    display: none !important;
   }
   
   /* Mobile sticky header and actions */
@@ -2523,16 +2516,12 @@ body {
   }
   
   .mobile-menu-toggle {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-sidebar) !important;
-    margin-right: 12px;
+    display: none !important;
   }
   
   /* Dashboard content areas margins */
   .dashboard-area {
-    padding: 16px;
+    padding: 16px 16px 80px 16px !important;
   }
   
   .welcome-banner {

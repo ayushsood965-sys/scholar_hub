@@ -141,8 +141,8 @@ const DashboardShell = ({
   const bellRef = useRef(null);
 
   React.useEffect(() => {
-    if (isLocked && activeTab !== "profile") {
-      onTabChange("profile");
+    if (isLocked && activeTab !== "profile" && activeTab !== "overview") {
+      onTabChange("overview");
     }
   }, [isLocked, activeTab, onTabChange]);
 
@@ -217,7 +217,7 @@ const DashboardShell = ({
                 </div>
               );
             }
-            const isDisabled = isLocked && item.key !== "profile";
+            const isDisabled = isLocked && item.key !== "profile" && item.key !== "overview";
             return (
               <button
                 key={item.key}

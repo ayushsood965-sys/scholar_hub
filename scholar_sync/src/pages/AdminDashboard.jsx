@@ -4750,7 +4750,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
             );
           }
           const { key, label, Icon } = item;
-          const disabled = !isVerified && key !== 'profile';
+          const disabled = !isVerified && key !== 'profile' && key !== 'overview';
           return (
             <button 
               key={key} 

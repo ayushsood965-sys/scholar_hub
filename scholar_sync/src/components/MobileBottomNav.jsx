@@ -10,6 +10,7 @@ const MobileBottomNav = ({
   thesis,
   milestones,
   onLogout,
+  isStudent = false,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -18,11 +19,11 @@ const MobileBottomNav = ({
   const homeKey = homeItem ? homeItem.key : "overview";
 
   const getIsDisabled = (key) => {
-    if (key === "profile") return false;
+    if (key === "profile" || key === "overview") return false;
 
     // Student (PhD) dashboard specific checks
-    if (thesis) {
-      if (thesis.status === "REGISTRATION_PENDING" || thesis.status === "REJECTED") return true;
+    if (isStudent) {
+      if (!thesis || thesis.status === "REGISTRATION_PENDING" || thesis.status === "REJECTED") return true;
       const status = thesis.status;
       if (key === "overview") return false;
       if (key === "workspace" || key === "certificates") {
@@ -123,11 +124,11 @@ const MobileBottomNav = ({
         {/* Home */}
         <button
           onClick={() => handleTabClick(homeKey)}
-          className={`mobile-nav-btn ${!menuOpen && activeTab === homeKey ? "active" : ""}`}
+          className={`mobile-nav-btn ${!menuOpen && activeTab === homeKey ? "active" : ""} ${getIsDisabled(homeKey) ? "disabled" : ""}`}
           disabled={getIsDisabled(homeKey)}
         >
           <Home size={22} />
-          <span>Home</span>
+          <span>Home {getIsDisabled(homeKey) && " 🔒"}</span>
         </button>
 
         {/* Profile */}

@@ -1319,7 +1319,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
           }
           const { key, label, Icon } = item;
           const disabled = (() => {
-            if (key === 'profile') return false;
+            if (key === 'profile' || key === 'overview') return false;
             if (!thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
             
             const status = thesis.status;
@@ -7728,6 +7728,7 @@ const ProfileTab = () => {
   ];
 
   const profileLayoutCSS = `
+    .profile-tab-wrapper { padding: 24px; }
     .profile-layout-container { display:flex; gap:28px; max-width:1280px; margin:0 auto; padding:12px; position:relative; }
     .card.active-card { border-color:#133A26 !important; box-shadow:0 6px 20px rgba(19,58,38,0.12) !important; }
     .timeline-sidebar-panel {
@@ -7788,22 +7789,23 @@ const ProfileTab = () => {
       border-color: #133A26 !important;
       box-shadow: 0 4px 10px rgba(19, 58, 38, 0.25);
     }
-    @media (max-width: 992px) {
-      .timeline-sidebar-panel {
-        width: 200px;
-      }
-    }
     @media (max-width: 768px) {
+      .profile-tab-wrapper {
+        padding: 8px 0 !important;
+      }
       .profile-layout-container {
         flex-direction: column;
         gap: 16px;
-        padding: 8px;
+        padding: 8px 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
       .timeline-sidebar-panel {
         display: none !important;
       }
       .mobile-milestones-bar {
         display: flex !important;
+        margin: 8px 4px 16px 4px !important;
       }
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
@@ -9419,7 +9421,7 @@ const ProfileTab = () => {
   const canSubmit = isGeneralInfoComplete() && isAcademicQualificationsComplete() && !!preferredGuideId;
 
   return (
-    <div style={{ padding: '24px', position: 'relative' }}>
+    <div className="profile-tab-wrapper" style={{ position: 'relative' }}>
       <style>{profileLayoutCSS}</style>
 
       {/* Dynamic Profile Registration Status Banner */}
@@ -12038,6 +12040,7 @@ const StudentDashboard = () => {
         thesis={thesis}
         milestones={milestones}
         onLogout={() => { window.location.href = "/logout-bridge?toast=Logged%20out%20successfully"; }}
+        isStudent={true}
       />
     </div>
   );

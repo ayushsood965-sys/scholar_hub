@@ -40,7 +40,7 @@ const MobileBottomNav = ({
               }
               const Icon = item.icon || item.Icon || Home;
               const isItemActive = activeTab === item.key;
-              const isDisabled = isLocked && item.key !== "profile";
+              const isDisabled = isLocked && item.key !== "profile" && item.key !== "overview";
 
               return (
                 <button
@@ -73,11 +73,11 @@ const MobileBottomNav = ({
         {/* Home */}
         <button
           onClick={() => handleTabClick(homeKey)}
-          className={`mobile-nav-btn ${!menuOpen && activeTab === homeKey ? "active" : ""}`}
-          disabled={isLocked && homeKey !== "profile"}
+          className={`mobile-nav-btn ${!menuOpen && activeTab === homeKey ? "active" : ""} ${isLocked && homeKey !== "profile" && homeKey !== "overview" ? "disabled" : ""}`}
+          disabled={isLocked && homeKey !== "profile" && homeKey !== "overview"}
         >
           <Home size={22} />
-          <span>Home</span>
+          <span>Home {isLocked && homeKey !== "profile" && homeKey !== "overview" && " 🔒"}</span>
         </button>
 
         {/* Profile */}
