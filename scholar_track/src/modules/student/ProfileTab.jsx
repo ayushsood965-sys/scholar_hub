@@ -62,6 +62,23 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [genders, setGenders] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [preferredGuideId, setPreferredGuideId] = useState('');
+  const [headerHeight, setHeaderHeight] = useState(68);
+
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+      if (headerEl) {
+        setHeaderHeight(headerEl.offsetHeight);
+      }
+    };
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+    window.addEventListener('scroll', updateHeaderHeight);
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+      window.removeEventListener('scroll', updateHeaderHeight);
+    };
+  }, []);
 
   // PhD Qualifications edit modes
   const [editModes, setEditModes] = useState({
@@ -1300,9 +1317,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
-        // Dynamic sticky boundary checks the active portal header height
-        const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
-        const headerHeight = headerEl ? headerEl.offsetHeight : 68;
         setIsStuck(rect.top <= headerHeight + 2);
       }
     };
@@ -1323,7 +1337,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       window.removeEventListener('scroll', checkSticky);
       window.removeEventListener('resize', checkSticky);
     };
-  }, []);
+  }, [headerHeight]);
 
   // Auto-scroll mobile milestones navigation row to keep active tab centered
   useEffect(() => {
@@ -1448,10 +1462,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           width: '100%', 
           maxWidth: '100%', 
           boxSizing: 'border-box',
-          '--header-height': (() => {
-            const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
-            return headerEl ? `${headerEl.offsetHeight}px` : '68px';
-          })()
+          '--header-height': `${headerHeight}px`
         }}
       >
       <style>{responsiveStyles}</style>

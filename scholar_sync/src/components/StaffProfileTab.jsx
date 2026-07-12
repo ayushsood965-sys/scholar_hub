@@ -17,6 +17,23 @@ const StaffProfileTab = ({ thesis }) => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [uploadingDocKey, setUploadingDocKey] = useState(null);
+  const [headerHeight, setHeaderHeight] = useState(64);
+
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+      if (headerEl) {
+        setHeaderHeight(headerEl.offsetHeight);
+      }
+    };
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+    window.addEventListener('scroll', updateHeaderHeight);
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+      window.removeEventListener('scroll', updateHeaderHeight);
+    };
+  }, []);
 
   // States and hooks to load candidate's verified publications & IPRs from the research outputs collection
   const [verifiedPubs, setVerifiedPubs] = useState([]);
@@ -567,9 +584,6 @@ const StaffProfileTab = ({ thesis }) => {
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
-        // Dynamic sticky boundary checks the active portal header height
-        const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
-        const headerHeight = headerEl ? headerEl.offsetHeight : 64;
         setIsStuck(rect.top <= headerHeight + 2);
       }
     };
@@ -705,7 +719,7 @@ const StaffProfileTab = ({ thesis }) => {
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSection]);
+  }, [activeSection, headerHeight]);
 
   // Premium micro-interaction: Auto-scroll mobile milestones navigation row to keep active tab centered
   useEffect(() => {
@@ -1247,10 +1261,7 @@ const StaffProfileTab = ({ thesis }) => {
       <div 
         className="profile-layout-container" 
         style={{ 
-          '--header-height': (() => {
-            const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
-            return headerEl ? `${headerEl.offsetHeight}px` : '64px';
-          })()
+          '--header-height': `${headerHeight}px`
         }}
       >
         <style>{responsiveStyles}</style>

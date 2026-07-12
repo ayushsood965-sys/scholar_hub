@@ -7682,6 +7682,23 @@ const ProfileTab = () => {
   const [guideUnlocked, setGuideUnlocked] = useState(false);
   const [isStuck, setIsStuck] = useState(false);
   const theme = useThemeStyles();
+  const [headerHeight, setHeaderHeight] = useState(64);
+
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+      if (headerEl) {
+        setHeaderHeight(headerEl.offsetHeight);
+      }
+    };
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+    window.addEventListener('scroll', updateHeaderHeight);
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+      window.removeEventListener('scroll', updateHeaderHeight);
+    };
+  }, []);
 
   const [isPersonalInfoSavedState, setIsPersonalInfoSavedState] = useState(false);
   useEffect(() => {
@@ -7787,7 +7804,7 @@ const ProfileTab = () => {
       }
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
-        top: 64px !important;
+        top: var(--header-height, 64px) !important;
         left: 0 !important;
         width: 100% !important;
         height: 50px !important;
@@ -7823,8 +7840,7 @@ const ProfileTab = () => {
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
-        // Sticky boundary in ScholarSync is 64px from viewport top
-        setIsStuck(rect.top <= 64);
+        setIsStuck(rect.top <= headerHeight + 2);
       }
     };
 
@@ -7844,7 +7860,7 @@ const ProfileTab = () => {
       window.removeEventListener('scroll', checkSticky);
       window.removeEventListener('resize', checkSticky);
     };
-  }, []);
+  }, [headerHeight]);
 
   // Highlight active card border
   useEffect(() => {
@@ -9556,7 +9572,12 @@ const ProfileTab = () => {
         </div>
       </div>
       {/* Main Split Layout Container */}
-      <div className="profile-layout-container">
+      <div 
+        className="profile-layout-container" 
+        style={{ 
+          '--header-height': `${headerHeight}px`
+        }}
+      >
 
         {/* Left Side: Milestones Sidebar Panel */}
         <div className="timeline-sidebar-panel">
