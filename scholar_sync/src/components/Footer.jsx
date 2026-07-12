@@ -102,7 +102,7 @@ const Footer = () => {
                   alignItems: 'center',
                   gap: '8px',
                   padding: '10px 16px',
-                  background: 'rgba(15, 23, 42, 0.05)',
+                  background: 'rgba(15, 23, 42, 0.08)',
                   border: '1px solid rgba(15, 23, 42, 0.15)',
                   borderRadius: '12px',
                   color: '#0f172a',
@@ -125,10 +125,10 @@ const Footer = () => {
                   alignItems: 'center',
                   gap: '8px',
                   padding: '10px 16px',
-                  background: 'rgba(19, 58, 38, 0.06)',
-                  border: '1px solid rgba(19, 58, 38, 0.15)',
+                  background: 'rgba(15, 23, 42, 0.08)',
+                  border: '1px solid rgba(15, 23, 42, 0.15)',
                   borderRadius: '12px',
-                  color: '#133A26',
+                  color: '#0f172a',
                   fontSize: '0.85rem',
                   textDecoration: 'none',
                   fontWeight: 600,
@@ -148,20 +148,20 @@ const Footer = () => {
                   alignItems: 'center',
                   gap: '8px',
                   padding: '10px 16px',
-                  background: 'rgba(2, 132, 199, 0.05)',
-                  border: '1px solid rgba(2, 132, 199, 0.15)',
+                  background: 'rgba(15, 23, 42, 0.08)',
+                  border: '1px solid rgba(15, 23, 42, 0.15)',
                   borderRadius: '12px',
-                  color: '#0284c7',
+                  color: '#0f172a',
                   fontSize: '0.85rem',
                   textDecoration: 'none',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   width: '100%',
                   maxWidth: '280px',
                   justifyContent: 'center',
                   boxSizing: 'border-box'
                 }}
               >
-                <span>📊</span> <span>ScholarTrack Portal</span>
+                <span>📊</span> <span><strong>ScholarTrack Portal</strong></span>
               </a>
             </div>
           </div>
