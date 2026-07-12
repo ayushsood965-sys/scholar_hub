@@ -816,21 +816,103 @@ const getStageIndex = (status) => {
 const StatusPipeline = ({ status }) => {
   const currentIdx = getStageIndex(status);
   return (
-    <div className="usm-pipeline">
-      {PIPELINE_STAGES.map((stage, idx) => (
-        <div className="usm-pipeline-step" key={stage.key}>
-          <div className="usm-pipeline-node">
-            <div className={`usm-pipeline-dot ${idx < currentIdx ? 'completed' : idx === currentIdx ? 'current' : ''}`}>
-              {idx < currentIdx ? '✓' : idx + 1}
+    <>
+      {/* Desktop view */}
+      <div className="desktop-timeline-view usm-pipeline">
+        {PIPELINE_STAGES.map((stage, idx) => (
+          <div className="usm-pipeline-step" key={stage.key}>
+            <div className="usm-pipeline-node">
+              <div className={`usm-pipeline-dot ${idx < currentIdx ? 'completed' : idx === currentIdx ? 'current' : ''}`}>
+                {idx < currentIdx ? '✓' : idx + 1}
+              </div>
+              <div className="usm-pipeline-label">{stage.label}</div>
             </div>
-            <div className="usm-pipeline-label">{stage.label}</div>
+            {idx < PIPELINE_STAGES.length - 1 && (
+              <div className={`usm-pipeline-line ${idx < currentIdx ? 'completed' : ''}`} />
+            )}
           </div>
-          {idx < PIPELINE_STAGES.length - 1 && (
-            <div className={`usm-pipeline-line ${idx < currentIdx ? 'completed' : ''}`} />
-          )}
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* Mobile view: Vertical list of cards */}
+      <div className="mobile-timeline-view" style={{ flexDirection: 'column', gap: '10px', width: '100%' }}>
+        {PIPELINE_STAGES.map((stage, idx) => {
+          const isCompleted = idx < currentIdx;
+          const isActive = idx === currentIdx;
+          const isPending = idx > currentIdx;
+
+          let bg = '#FFFFFF';
+          let border = '1px solid #E2E8F0';
+          let indicatorBg = '#E2E8F0';
+          let indicatorColor = '#94A3B8';
+          let titleColor = '#475569';
+          let textWeight = '500';
+
+          if (isCompleted) {
+            bg = '#F0FDF4';
+            border = '1px solid #BBF7D0';
+            indicatorBg = '#059669';
+            indicatorColor = '#FFFFFF';
+            titleColor = '#166534';
+            textWeight = '700';
+          } else if (isActive) {
+            bg = '#EFF6FF';
+            border = '1px solid #BFDBFE';
+            indicatorBg = '#3B82F6';
+            indicatorColor = '#FFFFFF';
+            titleColor = '#1E40AF';
+            textWeight = '800';
+          }
+
+          return (
+            <div
+              key={stage.key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 14px',
+                background: bg,
+                border: border,
+                borderRadius: '10px',
+                transition: 'all 0.3s ease',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Dot */}
+              <div style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: indicatorBg,
+                color: indicatorColor,
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                flexShrink: 0
+              }}>
+                {isCompleted ? '✓' : idx + 1}
+              </div>
+
+              {/* Title */}
+              <div style={{ flex: 1, textAlign: 'left', fontSize: '0.8rem', fontWeight: textWeight, color: titleColor }}>
+                {stage.label}
+              </div>
+
+              {/* Active badge */}
+              {isActive && (
+                <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '2px 6px', background: '#DBEAFE', color: '#1E40AF', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Current Phase
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 };
 
@@ -1356,6 +1438,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [supervisorRejectComment, setSupervisorRejectComment] = useState('');
   const [hodRejectComment, setHodRejectComment] = useState('');
   const [evalRemarks, setEvalRemarks] = useState('');
+  const [mobileTabDropdownOpen, setMobileTabDropdownOpen] = useState(false);
 
   const fetchEligibility = async () => {
     setEligibilityLoading(true);
@@ -3315,7 +3398,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             ) : (
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
                 <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Action:</span>
-                {(!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING') ? (
+                {thesis.status === 'REGISTRATION_PENDING' ? (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
@@ -4657,8 +4740,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
           {/* Body */}
           <div className="usm-body">
-            {/* Left Tabs */}
-            <div className="usm-tabs">
+            {/* Left Tabs (Desktop View) */}
+            <div className="usm-tabs-desktop usm-tabs">
               {tabs.map(tab => (
                 <button key={tab.key} className={`usm-tab ${activeTab === tab.key ? 'active' : ''}`} onClick={() => setActiveTab(tab.key)}>
                   <span className="usm-tab-icon">{tab.icon}</span>
@@ -4697,6 +4780,78 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 </button>
               ))}
             </div>
+
+            {/* Mobile Tab Selector Dropdown */}
+            {(() => {
+              const activeTabItem = tabs.find(t => t.key === activeTab) || tabs[0];
+              const hasActiveWarning = (() => {
+                if (activeTab === 'profile') return !isReadOnly && subRole === 'HOD' && (!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING');
+                if (activeTab === 'coursework') return !isReadOnly && ((user.role === 'FACULTY' && isSupervisor && thesis.courseworkStatus === 'PENDING_FACULTY') || (subRole === 'HOD' && thesis.courseworkStatus === 'PENDING_HOD'));
+                if (activeTab === 'synopsis') {
+                  const status = milestones.find(m => m.type === 'SYNOPSIS')?.status;
+                  return !isReadOnly && ((subRole === 'HOD' && status === 'PENDING_HOD') || (subRole !== 'HOD' && isSupervisor && status === 'SUBMITTED'));
+                }
+                return false;
+              })();
+
+              return (
+                <div className="usm-tabs-mobile">
+                  <button 
+                    type="button"
+                    className="usm-mobile-tab-selector" 
+                    onClick={() => setMobileTabDropdownOpen(!mobileTabDropdownOpen)}
+                  >
+                    <span className="usm-tab-icon">{activeTabItem?.icon}</span>
+                    <span style={{ fontWeight: 800 }}>{activeTabItem?.label}</span>
+                    {hasActiveWarning && (
+                      <AlertTriangle 
+                        size={16} 
+                        style={{ marginLeft: '6px', color: '#EF4444', fill: '#FEE2E2' }}
+                      />
+                    )}
+                    <span className="usm-chevron">▼</span>
+                  </button>
+
+                  {mobileTabDropdownOpen && (
+                    <div className="usm-mobile-dropdown-menu">
+                      {tabs.map(tab => {
+                        const hasWarning = (() => {
+                          if (tab.key === 'profile') return !isReadOnly && subRole === 'HOD' && (!thesis.enrollmentVerified || thesis.status === 'REGISTRATION_PENDING');
+                          if (tab.key === 'coursework') return !isReadOnly && ((user.role === 'FACULTY' && isSupervisor && thesis.courseworkStatus === 'PENDING_FACULTY') || (subRole === 'HOD' && thesis.courseworkStatus === 'PENDING_HOD'));
+                          if (tab.key === 'synopsis') {
+                            const status = milestones.find(m => m.type === 'SYNOPSIS')?.status;
+                            return !isReadOnly && ((subRole === 'HOD' && status === 'PENDING_HOD') || (subRole !== 'HOD' && isSupervisor && status === 'SUBMITTED'));
+                          }
+                          return false;
+                        })();
+
+                        return (
+                          <button 
+                            key={tab.key} 
+                            type="button"
+                            className={`usm-mobile-dropdown-item ${activeTab === tab.key ? 'active' : ''}`}
+                            onClick={() => {
+                              setActiveTab(tab.key);
+                              setMobileTabDropdownOpen(false);
+                            }}
+                          >
+                            <span className="usm-tab-icon">{tab.icon}</span>
+                            <span style={{ flex: 1, textAlign: 'left' }}>{tab.label}</span>
+                            {hasWarning && (
+                              <AlertTriangle 
+                                size={14} 
+                                style={{ color: '#EF4444', fill: '#FEE2E2', marginRight: '6px' }}
+                              />
+                            )}
+                            {tab.badge && <span className="usm-tab-badge">{tab.badge}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Content */}
             <div className="usm-content">

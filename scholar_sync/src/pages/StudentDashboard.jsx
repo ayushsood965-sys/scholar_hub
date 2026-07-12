@@ -1190,8 +1190,8 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
         <span>🎓 Ph.D. Research Progression Timeline</span>
       </h3>
       
-      {/* Horizontal timeline bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', overflowX: 'auto', paddingBottom: '10px', gap: '12px' }}>
+      {/* Desktop view: Horizontal timeline bar */}
+      <div className="desktop-timeline-view" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', overflowX: 'auto', paddingBottom: '10px', gap: '12px' }}>
         {/* Connecting background line */}
         <div style={{
           position: 'absolute',
@@ -1258,6 +1258,95 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
                   Current Phase
                 </span>
               )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Mobile view: Vertical list of cards */}
+      <div className="mobile-timeline-view" style={{ flexDirection: 'column', gap: '12px', width: '100%' }}>
+        {PHASES.map((phase, idx) => {
+          const isCompleted = idx < activeStepIndex;
+          const isActive = idx === activeStepIndex;
+          const isPending = idx > activeStepIndex;
+
+          let cardBg = '#FFFFFF';
+          let borderStyle = '1px solid #E2E8F0';
+          let indicatorBg = '#E2E8F0';
+          let indicatorColor = '#64748B';
+          let titleColor = '#475569';
+          let descColor = '#94A3B8';
+          let shadow = 'none';
+
+          if (isCompleted) {
+            cardBg = '#F0FDF4';
+            borderStyle = '1px solid #BBF7D0';
+            indicatorBg = '#10B981';
+            indicatorColor = '#FFFFFF';
+            titleColor = '#166534';
+            descColor = '#15803D';
+          } else if (isActive) {
+            cardBg = '#EFF6FF';
+            borderStyle = '1px solid #BFDBFE';
+            indicatorBg = '#3B82F6';
+            indicatorColor = '#FFFFFF';
+            titleColor = '#1E40AF';
+            descColor = '#2563EB';
+            shadow = '0 4px 12px rgba(59, 130, 246, 0.08)';
+          }
+
+          return (
+            <div
+              key={phase.key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                padding: '12px 16px',
+                background: cardBg,
+                border: borderStyle,
+                borderRadius: '12px',
+                boxShadow: shadow,
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Left Indicator */}
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: indicatorBg,
+                color: indicatorColor,
+                fontWeight: 'bold',
+                fontSize: '0.8rem',
+                flexShrink: 0
+              }}>
+                {isCompleted ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : (
+                  idx + 1
+                )}
+              </div>
+
+              {/* Text Info */}
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: isActive ? 800 : 700, color: titleColor, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {phase.label}
+                  {isActive && (
+                    <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '2px 6px', background: '#DBEAFE', color: '#1E40AF', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Current
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: descColor, marginTop: '2px' }}>
+                  {phase.desc}
+                </div>
+              </div>
             </div>
           );
         })}
