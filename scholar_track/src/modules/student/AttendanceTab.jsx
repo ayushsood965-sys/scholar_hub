@@ -62,7 +62,7 @@ const AttendanceTab = () => {
   if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
-    <div className="glass-panel p-xl">
+    <div className="glass-panel p-xl" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
       <div className="mb-lg">
         <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>My Attendance</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -72,7 +72,7 @@ const AttendanceTab = () => {
 
       {data?.isPhD ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <div>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overall Check-in Percentage</span>
               <h3 style={{ margin: '4px 0 0 0', fontSize: '1.8rem', color: 'var(--color-primary)', fontWeight: '800', fontFamily: 'Outfit' }}>
