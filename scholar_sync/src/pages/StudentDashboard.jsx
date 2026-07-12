@@ -1141,20 +1141,29 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const items = [
+    { kind: 'section', label: '📊 General' },
     { key: 'overview', label: 'Dashboard', Icon: Home },
     { key: 'profile', label: 'Profile', Icon: User },
+
+    { kind: 'section', label: '🌱 Early Stage' },
     { key: 'workspace', label: 'Workspace', Icon: Flag },
     { key: 'coursework', label: 'Coursework', Icon: BookOpen },
     { key: 'synopsis', label: 'Synopsis', Icon: ClipboardList },
+
+    { kind: 'section', label: '🔬 Research & Progress' },
     { key: 'rac', label: 'RAC Progress', Icon: Layers },
     { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
     { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
     { key: 'publications', label: 'Research Outputs', Icon: Award },
+    { key: 'meetings', label: 'Meetings', Icon: Calendar },
+
+    { kind: 'section', label: '🎓 Thesis Submission' },
     { key: 'preSubmission', label: 'Pre-Submission', Icon: ClipboardList },
     { key: 'finalSubmission', label: 'Final Submission', Icon: BookOpen },
-    { key: 'meetings', label: 'Meetings', Icon: Calendar },
-    { key: 'documents', label: 'Documents', Icon: FileText },
+
+    { kind: 'section', label: '📋 Requests & Certificates' },
     { key: 'changes', label: 'Request Changes', Icon: Edit },
+    { key: 'documents', label: 'Documents', Icon: FileText },
     { key: 'certificates', label: 'Certificates', Icon: Award },
   ];
   return (
@@ -1166,7 +1175,15 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
         <h2>Scholar Sync</h2>
       </div>
       <div className="sidebar-nav" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 160px)' }}>
-        {items.map(({ key, label, Icon }) => {
+        {items.map((item) => {
+          if (item.kind === 'section') {
+            return (
+              <div key={item.label} className="sidebar-section-label">
+                {item.label}
+              </div>
+            );
+          }
+          const { key, label, Icon } = item;
           const disabled = (() => {
             if (key === 'profile') return false;
             if (!thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
