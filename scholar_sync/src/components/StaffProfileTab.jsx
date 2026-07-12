@@ -18,30 +18,35 @@ const StaffProfileTab = ({ thesis }) => {
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [uploadingDocKey, setUploadingDocKey] = useState(null);
 
-  // States and hooks to load candidate's verified IPRs from the research outputs collection
+  // States and hooks to load candidate's verified publications & IPRs from the research outputs collection
+  const [verifiedPubs, setVerifiedPubs] = useState([]);
   const [verifiedIprs, setVerifiedIprs] = useState([]);
-  const [loadingIprs, setLoadingIprs] = useState(false);
+  const [loadingPubsAndIprs, setLoadingPubsAndIprs] = useState(false);
 
   useEffect(() => {
     if (user?.role === 'STUDENT' && thesis?._id) {
-      const fetchVerifiedIprs = async () => {
-        setLoadingIprs(true);
+      const fetchVerifiedData = async () => {
+        setLoadingPubsAndIprs(true);
         try {
           const token = localStorage.getItem('token');
           const res = await axios.get(`${API_URL}/publications/thesis/${thesis._id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          const approved = res.data.filter(p => 
+          const ips = res.data.filter(p => 
             (p.type === 'IPR' || p.type === 'PATENT') && p.status === 'VERIFIED'
           );
-          setVerifiedIprs(approved);
+          const pubs = res.data.filter(p => 
+            (p.type === 'JOURNAL' || p.type === 'CONFERENCE') && p.status === 'VERIFIED'
+          );
+          setVerifiedIprs(ips);
+          setVerifiedPubs(pubs);
         } catch (err) {
-          console.error("Error fetching candidate verified IPRs:", err);
+          console.error("Error fetching candidate verified publications and IPRs:", err);
         } finally {
-          setLoadingIprs(false);
+          setLoadingPubsAndIprs(false);
         }
       };
-      fetchVerifiedIprs();
+      fetchVerifiedData();
     }
   }, [user, thesis]);
 
@@ -2857,18 +2862,20 @@ const StaffProfileTab = ({ thesis }) => {
               <BookOpen size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Research Publications</h3>
             </div>
-            <div className="section-header-buttons">
-              {publicationsList.length > 0 && (
-                <button onClick={clearAllPublications} style={btnDangerStyle}>
-                  <Trash2 size={14} /> Clear All
-                </button>
-              )}
-              {!showPubForm && (
-                <button onClick={() => { setShowPubForm(true); setEditingPubIndex(-1); }} style={btnPrimaryStyle}>
-                  <Plus size={14} /> Add Entry
-                </button>
-              )}
-            </div>
+            {user?.role !== 'STUDENT' && (
+              <div className="section-header-buttons">
+                {publicationsList.length > 0 && (
+                  <button onClick={clearAllPublications} style={btnDangerStyle}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showPubForm && (
+                  <button onClick={() => { setShowPubForm(true); setEditingPubIndex(-1); }} style={btnPrimaryStyle}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Form */}
@@ -2906,46 +2913,85 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {publicationsList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publications logged yet.</span>
+            {user?.role === 'STUDENT' ? (
+              loadingPubsAndIprs ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified publication entries...</span>
+              ) : verifiedPubs.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publication found.</span>
+              ) : (
+                verifiedPubs.map((p, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{p.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{p.journalName} ({p.type})</span>
+                      {p.type === 'JOURNAL' ? (
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                          Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Issue: {p.issue || 'N/A'} | Pages: {p.pages || 'N/A'}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                          Organized by: {p.volume || 'N/A'} | Location: {p.issn || 'N/A'}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block', marginTop: '2px' }}>
+                        Date of Publication: {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}
+                      </span>
+                      {p.paperLink && (
+                        <a 
+                          href={p.paperLink.startsWith('http') ? p.paperLink : `https://${p.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Paper Link / DOI
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )
             ) : (
-              publicationsList.map((pb, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                  <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pb.title}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
-                    {pb.doi && (
-                      <a 
-                        href={pb.doi.startsWith('http') ? pb.doi : `https://${pb.doi}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+              publicationsList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publications logged yet.</span>
+              ) : (
+                publicationsList.map((pb, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pb.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
+                      {pb.doi && (
+                        <a 
+                          href={pb.doi.startsWith('http') ? pb.doi : `https://${pb.doi}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Paper Link / DOI
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        onClick={() => {
+                          setEditingPubIndex(i);
+                          setPubForm(pb);
+                          setShowPubForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                       >
-                        <ExternalLink size={12} /> Paper Link / DOI
-                      </a>
-                    )}
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        onClick={() => deletePub(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
-                    <button 
-                      onClick={() => {
-                        setEditingPubIndex(i);
-                        setPubForm(pb);
-                        setShowPubForm(true);
-                      }} 
-                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button 
-                      onClick={() => deletePub(i)} 
-                      style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))
+              )
             )}
           </div>
         </section>
@@ -3060,7 +3106,7 @@ const StaffProfileTab = ({ thesis }) => {
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {user?.role === 'STUDENT' ? (
-              loadingIprs ? (
+              loadingPubsAndIprs ? (
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified IPR entries...</span>
               ) : verifiedIprs.length === 0 ? (
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No IPR found.</span>
