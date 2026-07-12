@@ -34,7 +34,7 @@ import NotificationDropdown from "./NotificationDropdown";
 import { SCHOLAR_SYNC_URL } from "../config";
 
 const roleNavConfig = {
-  STUDENT: [
+    STUDENT: [
     { key: "overview", icon: Home, label: "Overview" },
     { key: "attendance", icon: Clock, label: "My Attendance" },
     { key: "leave", icon: CalendarRange, label: "Leave Management" },
@@ -42,54 +42,80 @@ const roleNavConfig = {
     { key: "profile", icon: User, label: "Profile" },
   ],
   FACULTY: [
+    { kind: "section", label: "📊 GENERAL" },
     { key: "overview", icon: Home, label: "Overview" },
+
+    { kind: "section", label: "⏰ ATTENDANCE MANAGEMENT" },
     { key: "mark", icon: ClipboardCheck, label: "Mark Attendance" },
     { key: "records", icon: Clock, label: "Attendance Records" },
+
+    { kind: "section", label: "📬 LEAVES & CORRECTIONS" },
     { key: "leaves", icon: CalendarRange, label: "Leave Approvals" },
     { key: "leaveLogs", icon: ClipboardList, label: "Leave Logs" },
     { key: "corrections", icon: FileCheck, label: "Corrections Queue" },
+
+    { kind: "section", label: "🗺️ ACADEMIC MAPPING" },
     { key: "mapping", icon: Layers, label: "Student Mapping" },
     { key: "mappingDetails", icon: ClipboardList, label: "Mapping Details" },
+
+    { kind: "section", label: "👤 ACCOUNT" },
     { key: "profile", icon: User, label: "Profile" },
   ],
   HOD: [
+    { kind: "section", label: "📊 GENERAL" },
     { key: "overview", icon: Home, label: "Department Overview" },
+
+    { kind: "section", label: "📅 TIMETABLE MANAGEMENT" },
     { key: "timetable", icon: Calendar, label: "Timetable Builder" },
     { key: "cloneTimetable", icon: CalendarRange, label: "Clone Timetable" },
+
+    { kind: "section", label: "⚖️ APPROVALS & VERIFICATIONS" },
     { key: "approvals", icon: Gavel, label: "Leave & Correction Queue" },
     { key: "verifyAttendance", icon: ClipboardCheck, label: "Verify Attendance" },
+    { key: "students", icon: Users, label: "Verify Student Registration" },
+
+    { kind: "section", label: "📈 ATTENDANCE & DEFAULTERS" },
     { key: "records", icon: Clock, label: "Attendance Records" },
     { key: "defaulters", icon: AlertTriangle, label: "Defaulters" },
-    { key: "students", icon: Users, label: "Verify Student Registration" },
+
+    { kind: "section", label: "🗺️ ACADEMIC MAPPING" },
     { key: "mapping", icon: Layers, label: "Student Mapping" },
     { key: "mappingDetails", icon: ClipboardList, label: "Mapping Details" },
+
+    { kind: "section", label: "📋 SYSTEM AUDIT" },
     { key: "audit", icon: BookOpen, label: "Audit Trail" },
+
+    { kind: "section", label: "👤 ACCOUNT" },
     { key: "profile", icon: User, label: "Profile" },
   ],
   SUPER_ADMIN: [
     { kind: "section", label: "📊 SYSTEM OVERVIEW" },
     { key: "overview", icon: Home, label: "System Overview" },
 
-    { kind: "section", label: "📋 MASTERS & MAPPING" },
+    { kind: "section", label: "🏢 INSTITUTION MANAGEMENT" },
     { key: "univFaculties", icon: Building, label: "University Faculty Master" },
     { key: "departments", icon: Building, label: "Department Master" },
+
+    { kind: "section", label: "📅 ACADEMIC CONFIGURATION" },
     { key: "sessions", icon: CalendarRange, label: "Academic Sessions" },
     { key: "degreeTypes", icon: Settings, label: "Degree Types" },
     { key: "degreeNames", icon: Settings, label: "Degree Names" },
     { key: "semesters", icon: Settings, label: "Semesters" },
     { key: "semesterDegreeMap", icon: Shield, label: "Semester-Degree Map" },
-    { key: "holidays", icon: Calendar, label: "Holiday Calendar" },
-    { key: "categoryGender", icon: Layers, label: "Category & Gender Master" },
+
+    { kind: "section", label: "⚖️ POLICY & LEAVE CONFIG" },
     { key: "policies", icon: Shield, label: "Policy Configuration" },
     { key: "leaveRules", icon: Settings, label: "Leave Rules" },
+    { key: "holidays", icon: Calendar, label: "Holiday Calendar" },
+    { key: "categoryGender", icon: Layers, label: "Category & Gender Master" },
 
-    { kind: "section", label: "🎓 SCHOLAR SYNC" },
+    { kind: "section", label: "🎓 SCHOLAR SYNC MANAGERS" },
     { key: "faculty", icon: Users, label: "Faculty Master" },
     { key: "hod", icon: Shield, label: "HOD Master" },
 
-    { kind: "section", label: "📋 SCHOLAR TRACK" },
+    { kind: "section", label: "📋 SCHOLAR TRACK MANAGERS" },
     { key: "users", icon: ClipboardList, label: "User Verification" },
-    { key: "searchEditStudent", icon: UserCog, label: "Search/Edit student details" },
+    { key: "searchEditStudent", icon: UserCog, label: "Search/Edit Student Details" },
 
     { kind: "section", label: "👤 ACCOUNT" },
     { key: "profile", icon: UserCog, label: "My Credentials" },

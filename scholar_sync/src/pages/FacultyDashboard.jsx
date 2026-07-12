@@ -27,28 +27,37 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const supervisorItems = [
+    { kind: 'section', label: '📊 General' },
     { key: 'overview', label: 'Dashboard', Icon: Home },
     { key: 'profile', label: 'Profile', Icon: User },
+    { kind: 'section', label: '🎓 Scholar Management' },
     { key: 'scholars', label: 'My Scholars', Icon: Users },
     { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
+    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+    { kind: 'section', label: '📅 Academic Activities' },
     { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
     { key: 'reviews', label: 'Pending Reviews', Icon: FileText },
-    { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
-    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
     { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
+    { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
+    { kind: 'section', label: '⚙️ Portal Settings' },
     { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
   ];
   const hodItems = [
+    { kind: 'section', label: '📊 General' },
     { key: 'overview', label: 'Dashboard', Icon: Home },
     { key: 'profile', label: 'Profile', Icon: User },
+    { kind: 'section', label: '🎓 Scholar Management' },
+    { key: 'dept', label: 'Department Scholars', Icon: Users },
     { key: 'registrations', label: 'Registration Requests', Icon: ShieldCheck },
     { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
-    { key: 'dept', label: 'Department Scholars', Icon: Users },
-    { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
-    { key: 'requests', label: 'Change Requests', Icon: Edit },
-    { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
     { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+    { kind: 'section', label: '📅 Academic Activities' },
+    { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
     { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
+    { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
+    { kind: 'section', label: '📬 Requests & Actions' },
+    { key: 'requests', label: 'Change Requests', Icon: Edit },
+    { kind: 'section', label: '⚙️ Portal Settings' },
     { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
   ];
   const items = subRole === 'HOD' ? hodItems : supervisorItems;
@@ -62,7 +71,15 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
         {subRole && <div style={{ textAlign: 'center', fontSize: '0.7rem', background: subRole === 'HOD' ? '#FEF3C7' : '#DBEAFE', color: subRole === 'HOD' ? '#D97706' : '#1D4ED8', borderRadius: 6, padding: '2px 8px', margin: '4px auto', width: 'fit-content' }}>{subRole}</div>}
       </div>
       <div className="sidebar-nav">
-        {items.map(({ key, label, Icon }) => {
+        {items.map((item) => {
+          if (item.kind === 'section') {
+            return (
+              <div key={item.label} className="sidebar-section-label">
+                {item.label}
+              </div>
+            );
+          }
+          const { key, label, Icon } = item;
           const disabled = !isVerified && key !== 'profile';
           return (
             <button 

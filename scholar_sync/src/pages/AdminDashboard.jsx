@@ -4693,18 +4693,37 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
 const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
   const { logout = (() => {}), user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
-  const items = [
-    { key: 'overview', label: user?.role === 'ADMIN' ? 'System Overview' : 'Department Overview', Icon: Home },
+  const items = user?.role === 'ADMIN' ? [
+    { kind: 'section', label: '📊 General' },
+    { key: 'overview', label: 'System Overview', Icon: Home },
     { key: 'profile', label: 'My Profile', Icon: User },
+    { kind: 'section', label: '🎓 Scholar Management' },
     { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
-    ...(user?.role === 'HOD' ? [{ key: 'meetings', label: 'Guidance Meetings', Icon: Calendar }] : []),
-    ...(user?.role === 'HOD' ? [{ key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen }] : []),
-    ...(user?.role === 'HOD' || user?.role === 'ADMIN' ? [{ key: 'scholar_search', label: 'Search Scholars', Icon: Search }] : []),
-    ...(user?.role === 'HOD' ? [{ key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText }] : []),
-    ...(user?.role === 'ADMIN' ? [{ key: 'global_transfers', label: 'Global Transfers', Icon: Layers }] : []),
+    { key: 'global_transfers', label: 'Global Transfers', Icon: Layers },
+    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+    { kind: 'section', label: '👁️ Monitoring & Approvals' },
     { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
     { key: 'requests', label: 'Change Requests', Icon: Edit },
     { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
+    { kind: 'section', label: '⚙️ User & Portal Settings' },
+    { key: 'users', label: 'Manage Users', Icon: Users },
+    { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
+  ] : [
+    { kind: 'section', label: '📊 General' },
+    { key: 'overview', label: 'Department Overview', Icon: Home },
+    { key: 'profile', label: 'My Profile', Icon: User },
+    { kind: 'section', label: '🎓 Scholar Management' },
+    { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
+    { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
+    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+    { kind: 'section', label: '📅 Academic Activities' },
+    { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
+    { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
+    { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
+    { kind: 'section', label: '⚖️ Requests & Evaluations' },
+    { key: 'requests', label: 'Change Requests', Icon: Edit },
+    { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
+    { kind: 'section', label: '⚙️ User & Portal Settings' },
     { key: 'users', label: 'Manage Users', Icon: Users },
     { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
   ];
@@ -4717,7 +4736,15 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
         <h2>Scholar Sync</h2>
       </div>
       <div className="sidebar-nav">
-        {items.map(({ key, label, Icon }) => {
+        {items.map((item) => {
+          if (item.kind === 'section') {
+            return (
+              <div key={item.label} className="sidebar-section-label">
+                {item.label}
+              </div>
+            );
+          }
+          const { key, label, Icon } = item;
           const disabled = !isVerified && key !== 'profile';
           return (
             <button 

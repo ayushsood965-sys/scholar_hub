@@ -529,7 +529,21 @@ exports.cloneTimetable = async (req, res) => {
   try {
     const { sourceSessionId, targetSessionId } = req.body;
     const departmentId = req.user.departmentId;
+
+    if (!sourceSessionId || !targetSessionId) {
+      return res.status(400).json({ message: 'Source and target sessions are required' });
+    }
+    if (sourceSessionId === targetSessionId) {
+      return res.status(400).json({ message: 'Source and target sessions cannot be the same' });
+    }
+
+    // 1. Fetch source slots
     const slots = await TimetableMaster.find({ sessionId: sourceSessionId, departmentId, isActive: true });
+
+    // 2. Clean up target session's existing slots to avoid duplicates
+    await TimetableMaster.deleteMany({ sessionId: targetSessionId, departmentId });
+
+    // 3. Clone slots
     const newSlots = slots.map(s => ({
       sessionId: targetSessionId,
       departmentId: s.departmentId,
@@ -542,13 +556,20 @@ exports.cloneTimetable = async (req, res) => {
       dayOfWeek: s.dayOfWeek,
       startTime: s.startTime,
       endTime: s.endTime,
-      totalClassesInSemester: s.totalClassesInSemester || 90
+      totalClassesInSemester: s.totalClassesInSemester || 90,
+      isActive: true
     }));
+
     if (newSlots.length > 0) {
       await TimetableMaster.insertMany(newSlots);
     }
-    res.status(200).json({ message: `Cloned ${newSlots.length} slots` });
-  } catch (error) { res.status(500).json({ message: error.message }); }
+
+    res.status(200).json({
+      message: `Successfully cloned ${newSlots.length} timetable slots to the target session.`
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // ==========================================

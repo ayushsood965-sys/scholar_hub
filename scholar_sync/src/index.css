@@ -1051,6 +1051,21 @@ body {
   overflow-y: auto;
 }
 
+.sidebar-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 16px 16px 6px;
+  cursor: default;
+  pointer-events: none;
+}
+
+[data-theme='dark'] .sidebar-section-label {
+  color: #4B5563;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
