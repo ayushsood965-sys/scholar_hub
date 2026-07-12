@@ -10,6 +10,7 @@ import FacultyDashboard from "./pages/FacultyDashboard";
 import HodDashboard from "./pages/HodDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import InstallPrompt from "./components/InstallPrompt";
 
 const App = () => {
   useEffect(() => {
@@ -49,6 +50,7 @@ const App = () => {
 
   return (
     <BrowserRouter>
+      <InstallPrompt />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />
