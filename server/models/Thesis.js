@@ -132,6 +132,7 @@ const thesisSchema = new mongoose.Schema(
     dispatchDate: { type: Date, default: null },
     dispatchMethod: { type: String, default: '' },
     dispatchTrackingNumber: { type: String, default: '' },
+    externalEvaluationSentTo: { type: String, default: '' },
     externalEvaluationStatus: {
       type: String,
       enum: ['PENDING', 'SUCCESSFUL', 'FAILED'],
@@ -144,6 +145,8 @@ const thesisSchema = new mongoose.Schema(
     vivaTime: { type: String, default: '' },
     vivaVenue: { type: String, default: '' },
     vivaPanel: { type: String, default: '' },
+    vivaMeetingLink: { type: String, default: '' },
+    vivaCoordinator: { type: String, default: '' },
     vivaStatus: {
       type: String,
       enum: ['NOT_SCHEDULED', 'SCHEDULED', 'SUCCESSFUL', 'UNSUCCESSFUL'],

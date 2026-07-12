@@ -4753,3 +4753,114 @@ body {
   }
 }
 
+/* Final bound thesis submission mobile responsive overrides */
+:root {
+  --final-sub-padding: 24px;
+  --final-sub-grid-cols: 1fr 1fr;
+  --final-sub-gap: 20px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --final-sub-padding: 14px;
+    --final-sub-grid-cols: 1fr;
+    --final-sub-gap: 12px;
+  }
+}
+
+/* Progress Stepper Styling */
+.progress-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 24px 0;
+  padding: 16px 20px;
+  background: var(--color-bg, #F8FAFC);
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.progress-stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.progress-stepper-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
+}
+
+.progress-stepper-step-label {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  word-wrap: break-word;
+  word-break: keep-all;
+}
+
+.progress-stepper-divider {
+  flex: 0.5;
+  height: 2px;
+  min-width: 10px;
+  align-self: center;
+  position: relative;
+  top: -8px;
+  flex-shrink: 1;
+}
+
+.progress-stepper-divider-arrow {
+  position: absolute;
+  right: 0;
+  top: -4px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+/* Mobile Stepper Adjustments: stays horizontal, just gets compact */
+@media (max-width: 768px) {
+  .progress-stepper {
+    padding: 12px 8px !important;
+    gap: 4px !important;
+  }
+  
+  .progress-stepper-step-circle {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 0.72rem !important;
+  }
+  
+  .progress-stepper-step-label {
+    margin-top: 4px !important;
+    font-size: 0.58rem !important;
+    font-weight: 700 !important;
+  }
+  
+  .progress-stepper-divider {
+    flex: 0.25 !important;
+    min-width: 5px !important;
+    top: -10px !important;
+  }
+  
+  .progress-stepper-divider-arrow {
+    border-top-width: 3px !important;
+    border-bottom-width: 3px !important;
+    border-left-width: 4px !important;
+    top: -2px !important;
+  }
+}

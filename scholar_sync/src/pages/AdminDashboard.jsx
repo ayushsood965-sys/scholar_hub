@@ -223,7 +223,8 @@ const Header = ({ title }) => {
   );
 };
 
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus, externalEvaluationStatus, vivaStatus) => {
+  if (status === 'PENDING_HOD') return { text: 'Final Thesis Approval Pending at HOD', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
   if (status === 'SYNOPSIS_PENDING') {
@@ -275,6 +276,21 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
       return { text: 'Final Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
     }
     if (finalSubStatus === 'APPROVED') {
+      if (externalEvaluationStatus === 'PENDING') {
+        return { text: 'External Evaluation Under Process', color: '#2563EB', bg: '#DBEAFE' };
+      }
+      if (externalEvaluationStatus === 'FAILED') {
+        return { text: 'External Evaluation Failed', color: '#DC2626', bg: '#FEE2E2' };
+      }
+      if (externalEvaluationStatus === 'SUCCESSFUL') {
+        if (vivaStatus === 'SUCCESSFUL') {
+          return { text: 'Viva-Voce Cleared', color: '#059669', bg: '#ECFDF5' };
+        }
+        if (vivaStatus === 'UNSUCCESSFUL') {
+          return { text: 'Viva-Voce Uncleared / Revision Required', color: '#DC2626', bg: '#FEE2E2' };
+        }
+        return { text: 'Viva-Voce Under Process', color: '#7C3AED', bg: '#EDE9FE' };
+      }
       return { text: 'Thesis Approved (Under Evaluation)', color: '#10B981', bg: '#ECFDF5' };
     }
     return { text: 'Thesis Submission Phase (Awaiting Upload)', color: '#D97706', bg: '#FFFBEB' };
@@ -1991,7 +2007,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
                     <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#6b7280' }}>{t.supervisorId?.name || '—'}</div>
                     <div style={{ flex: 1 }}>
                       {(() => {
-                        const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
+                        const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status, t.externalEvaluationStatus, t.vivaStatus);
                         return (
                           <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
                             {badge.text}
@@ -5309,7 +5325,6 @@ const AdminDashboard = () => {
             fetchAllTheses();
           }}
           onSeminar={() => handleHODAction(seminarClear)}
-          onFinalApprove={() => handleHODAction(finalApprove)}
           onClearCoursework={() => handleHODAction(clearCoursework)}
           onVerify={() => handleHODAction(verifyEnrollment)}
           onAssign={(supervisorId) => handleHODAction(() => assignSupervisor(selectedThesisId, supervisorId))}

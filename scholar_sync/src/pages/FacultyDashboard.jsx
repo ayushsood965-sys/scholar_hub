@@ -310,7 +310,8 @@ const Header = ({ title, user }) => {
   );
 };
 
-const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus) => {
+const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, preSubMilestoneStatus, preSubSeminarStatus, externalEvaluationStatus, vivaStatus) => {
+  if (status === 'PENDING_HOD') return { text: 'Final Thesis Approval Pending at HOD', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'REJECTED') return { text: 'Rejected (Awaiting Re-submission)', color: '#DC2626', bg: '#FEE2E2' };
   if (status === 'REGISTRATION_PENDING') return { text: 'Awaiting Verification', color: '#D97706', bg: '#FFF3CD' };
   if (status === 'COURSEWORK') return { text: 'Coursework Phase', color: '#0284C7', bg: '#E0F2FE' };
@@ -363,6 +364,21 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
       return { text: 'Final Thesis Revision Required', color: '#DC2626', bg: '#FEE2E2' };
     }
     if (finalSubStatus === 'APPROVED') {
+      if (externalEvaluationStatus === 'PENDING') {
+        return { text: 'External Evaluation Under Process', color: '#2563EB', bg: '#DBEAFE' };
+      }
+      if (externalEvaluationStatus === 'FAILED') {
+        return { text: 'External Evaluation Failed', color: '#DC2626', bg: '#FEE2E2' };
+      }
+      if (externalEvaluationStatus === 'SUCCESSFUL') {
+        if (vivaStatus === 'SUCCESSFUL') {
+          return { text: 'Viva-Voce Cleared', color: '#059669', bg: '#ECFDF5' };
+        }
+        if (vivaStatus === 'UNSUCCESSFUL') {
+          return { text: 'Viva-Voce Uncleared / Revision Required', color: '#DC2626', bg: '#FEE2E2' };
+        }
+        return { text: 'Viva-Voce Under Process', color: '#7C3AED', bg: '#EDE9FE' };
+      }
       return { text: 'Thesis Approved (Under Evaluation)', color: '#10B981', bg: '#ECFDF5' };
     }
     return { text: 'Thesis Submission Phase (Awaiting Upload)', color: '#D97706', bg: '#FFFBEB' };
@@ -635,7 +651,7 @@ const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
 };
 
 // ── Thesis Detail + Milestone Review Panel ──
-const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onFinalApprove, onClearCoursework, onVerify, onAssign, subRole, onClose, onRefresh, selectedEvalDoc, setSelectedEvalDoc }) => {
+const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onClearCoursework, onVerify, onAssign, subRole, onClose, onRefresh, selectedEvalDoc, setSelectedEvalDoc }) => {
   const toast = useToast();
   const { user } = useContext(AuthContext);
   const { transferScholar } = useContext(ThesisContext);
@@ -1276,7 +1292,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
             const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
             const finalSubMilestone = milestones.find(m => m.type === 'FINAL_SUBMISSION');
             const preSubMilestone = milestones.find(m => m.type === 'PRE_SUBMISSION');
-            const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole, preSubMilestone?.status, thesis.preSubmissionSeminar?.status);
+            const badge = resolveDetailedStatus(thesis.status, synopsisMilestone?.status, finalSubMilestone?.status, subRole, preSubMilestone?.status, thesis.preSubmissionSeminar?.status, thesis.externalEvaluationStatus, thesis.vivaStatus);
             return (
               <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
                 {badge.text}
@@ -1643,9 +1659,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onF
               })()}
             </div>
           )}
-          {subRole !== 'HOD' && thesis.status === 'SUBMITTED' && milestones.find(m => m.type === 'FINAL_SUBMISSION' && (m.status === 'SUBMITTED' || m.status === 'APPROVED')) && (
-            <button className="btn-primary" onClick={() => act(onFinalApprove)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.85rem', background: '#8B5CF6' }}>✓ Final Digital Approval → SUBMITTED</button>
-          )}
+
 
           {/* Core Pending Documents for Review (Synopsis/Final Thesis) rendered at the top level for research phases */}
           {showProgressTabs && corePendingMilestones.length > 0 && (
@@ -2488,7 +2502,7 @@ const ScholarList = ({ theses, onSelect, title, subRole }) => {
                   <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 40)}...</div>
                   <div style={{ flex: 1.2 }}>
                     {(() => {
-                      const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
+                      const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status, t.externalEvaluationStatus, t.vivaStatus);
                       return (
                         <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
                           {badge.text}
@@ -3117,7 +3131,7 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {theses.slice(0, 6).map(t => {
-                const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, user?.subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status);
+                const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, user?.subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status, t.externalEvaluationStatus, t.vivaStatus);
                 return (
                   <div
                     key={t._id}
@@ -4578,7 +4592,6 @@ const FacultyDashboard = () => {
             if (subRole === 'HOD') fetchDeptTheses(); else fetchAssignedTheses();
           }}
           onSeminar={() => handleHODAction(seminarClear)}
-          onFinalApprove={() => handleHODAction(finalApprove)}
           onClearCoursework={() => handleHODAction(clearCoursework)}
           onForcePreSubmission={() => handleHODAction(forcePreSubmission)}
           onVerify={() => handleHODAction(verifyEnrollment)}

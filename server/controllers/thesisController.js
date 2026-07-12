@@ -558,8 +558,8 @@ const getEligibilityDetails = async (req, res) => {
     const vivaCleared = thesis.vivaStatus === 'SUCCESSFUL';
 
     const checklist = [
-      { name: 'Doctoral Coursework Cleared', status: courseworkCleared, details: courseworkCleared ? 'Verified' : 'Coursework must be cleared by department' },
       { name: 'Scholar Enrollment Verified', status: enrollmentVerified, details: enrollmentVerified ? 'Verified' : 'Enrollment registration must be verified by HOD' },
+      { name: 'Doctoral Coursework Cleared', status: courseworkCleared, details: courseworkCleared ? 'Verified' : 'Coursework must be cleared by department' },
       { name: 'Research Synopsis Approved', status: synopsisApproved, details: synopsisApproved ? 'Approved' : 'Synopsis document review must be approved' },
       { name: 'DRC Evaluation Cleared', status: drcCleared, details: drcCleared ? 'Approved' : 'Department Research Committee must approve synopsis' },
       { name: `Active Research Duration (Min ${requiredMonths} Months)`, status: durationCleared, details: `${activeMonths} months completed (Required: ${requiredMonths} months for ${hasMphil ? 'M.Phil holder' : 'regular Ph.D.'})` },
@@ -1037,7 +1037,7 @@ const finalRejectHOD = async (req, res) => {
 // PUT /api/thesis/:id/dispatch — HOD/Admin logs dispatch to external examiners
 const dispatchThesis = async (req, res) => {
   try {
-    const { dispatchDate, dispatchMethod, dispatchTrackingNumber } = req.body;
+    const { dispatchDate, dispatchMethod, dispatchTrackingNumber, externalEvaluationSentTo } = req.body;
     if (!dispatchDate || !dispatchMethod) {
       return res.status(400).json({ message: 'Dispatch date and method are required' });
     }
@@ -1053,13 +1053,33 @@ const dispatchThesis = async (req, res) => {
     thesis.dispatchDate = new Date(dispatchDate);
     thesis.dispatchMethod = dispatchMethod;
     thesis.dispatchTrackingNumber = dispatchTrackingNumber || '';
+    thesis.externalEvaluationSentTo = externalEvaluationSentTo || '';
     
     thesis.auditLog.push({ 
       action: 'THESIS_DISPATCHED', 
-      note: `Thesis dispatched to external examiners via ${dispatchMethod} (Ref: ${dispatchTrackingNumber || 'N/A'})` 
+      note: `Thesis dispatched to external examiners via ${dispatchMethod} (Ref: ${dispatchTrackingNumber || 'N/A'}, Sent To: ${externalEvaluationSentTo || 'N/A'})` 
     });
     
     await thesis.save();
+
+    // Log to milestone history
+    const Milestone = require('../models/Milestone');
+    let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    if (milestone) {
+      milestone.history = milestone.history || [];
+      milestone.history.push({
+        action: 'EXTERNAL_EVALUATION_DISPATCHED',
+        actorName: req.user.name,
+        actorRole: req.user.role || 'HOD',
+        remarks: `Thesis package dispatched to external examiners.\n` +
+                 `• Dispatched To: ${externalEvaluationSentTo || 'Standard external examiners'}\n` +
+                 `• Dispatch Method: ${dispatchMethod}\n` +
+                 `• Date Dispatched: ${new Date(dispatchDate).toLocaleDateString()}\n` +
+                 `• Tracking Reference Code: ${dispatchTrackingNumber || 'N/A'}`,
+        timestamp: new Date()
+      });
+      await milestone.save();
+    }
 
     await createNotification({
       recipient: thesis.scholarId,
@@ -1103,6 +1123,25 @@ const logExternalEvaluation = async (req, res) => {
       });
       await thesis.save();
 
+      // Log to milestone history
+      const Milestone = require('../models/Milestone');
+      let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+      if (milestone) {
+        milestone.history = milestone.history || [];
+        milestone.history.push({
+          action: 'EXTERNAL_EVALUATION_SUCCESSFUL',
+          actorName: req.user.name,
+          actorRole: req.user.role || 'HOD',
+          remarks: `External evaluation reports successfully logged.\n` +
+                   `• Result: PASSED (Clear & Satisfactory)\n` +
+                   `• Dispatched To: ${thesis.externalEvaluationSentTo || 'Standard external examiners'}\n` +
+                   `• Date Dispatched: ${thesis.dispatchDate ? new Date(thesis.dispatchDate).toLocaleDateString() : 'N/A'}\n` +
+                   `• Evaluator Remarks & Feedback: ${remarks || 'None'}`,
+          timestamp: new Date()
+        });
+        await milestone.save();
+      }
+
       // Notify Student
       await createNotification({
         recipient: thesis.scholarId,
@@ -1130,6 +1169,18 @@ const logExternalEvaluation = async (req, res) => {
           authorName: req.user.name,
           text: `External evaluation failed: ${remarks || 'Needs corrections.'}`
         });
+        milestone.history = milestone.history || [];
+        milestone.history.push({
+          action: 'EXTERNAL_EVALUATION_FAILED',
+          actorName: req.user.name,
+          actorRole: req.user.role || 'HOD',
+          remarks: `External evaluation reports logged.\n` +
+                   `• Result: FAILED (Revisions Required / Returned to Scholar)\n` +
+                   `• Dispatched To: ${thesis.externalEvaluationSentTo || 'Standard external examiners'}\n` +
+                   `• Date Dispatched: ${thesis.dispatchDate ? new Date(thesis.dispatchDate).toLocaleDateString() : 'N/A'}\n` +
+                   `• Evaluator Remarks & Feedback: ${remarks || 'None'}`,
+          timestamp: new Date()
+        });
         await milestone.save();
       }
 
@@ -1152,7 +1203,7 @@ const logExternalEvaluation = async (req, res) => {
 // PUT /api/thesis/:id/schedule-viva — HOD/Admin schedules offline Viva-Voce defense
 const scheduleViva = async (req, res) => {
   try {
-    const { vivaDate, vivaTime, vivaVenue, vivaPanel } = req.body;
+    const { vivaDate, vivaTime, vivaVenue, vivaPanel, vivaMeetingLink, vivaCoordinator } = req.body;
     if (!vivaDate || !vivaTime || !vivaVenue) {
       return res.status(400).json({ message: 'Viva date, time, and venue are required' });
     }
@@ -1173,14 +1224,37 @@ const scheduleViva = async (req, res) => {
     thesis.vivaTime = vivaTime;
     thesis.vivaVenue = vivaVenue;
     thesis.vivaPanel = vivaPanel || '';
+    thesis.vivaMeetingLink = vivaMeetingLink || '';
+    thesis.vivaCoordinator = vivaCoordinator || '';
     thesis.vivaStatus = 'SCHEDULED';
 
     thesis.auditLog.push({ 
       action: 'VIVA_SCHEDULED', 
-      note: `Viva-Voce scheduled for ${new Date(vivaDate).toLocaleDateString()} at ${vivaTime} in ${vivaVenue}` 
+      note: `Viva-Voce scheduled for ${new Date(vivaDate).toLocaleDateString()} at ${vivaTime} in ${vivaVenue} (Coordinator: ${vivaCoordinator || 'N/A'})` 
     });
 
     await thesis.save();
+
+    // Log to milestone history
+    const Milestone = require('../models/Milestone');
+    let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    if (milestone) {
+      milestone.history = milestone.history || [];
+      milestone.history.push({
+        action: 'VIVA_SCHEDULED',
+        actorName: req.user.name,
+        actorRole: req.user.role || 'HOD',
+        remarks: `Viva-Voce scheduled to be conducted.\n` +
+                 `• Date: ${new Date(vivaDate).toLocaleDateString()}\n` +
+                 `• Time: ${vivaTime}\n` +
+                 `• Venue: ${vivaVenue}\n` +
+                 `• Convenor/Coordinator: ${vivaCoordinator || 'N/A'}\n` +
+                 `• Panel Members: ${vivaPanel || 'N/A'}\n` +
+                 `• Meeting Link: ${vivaMeetingLink || 'N/A'}`,
+        timestamp: new Date()
+      });
+      await milestone.save();
+    }
 
     await createNotification({
       recipient: thesis.scholarId,
@@ -1221,6 +1295,35 @@ const recordViva = async (req, res) => {
     });
 
     await thesis.save();
+
+    // Log to milestone history and update status
+    const Milestone = require('../models/Milestone');
+    let milestone = await Milestone.findOne({ thesisId: thesis._id, type: 'FINAL_SUBMISSION' });
+    if (milestone) {
+      const dateStr = thesis.vivaDate ? new Date(thesis.vivaDate).toLocaleDateString() : 'N/A';
+      milestone.history = milestone.history || [];
+      milestone.history.push({
+        action: vivaStatus === 'SUCCESSFUL' ? 'VIVA_SUCCESSFUL' : 'VIVA_FAILED',
+        actorName: req.user.name,
+        actorRole: req.user.role || 'HOD',
+        remarks: `Viva-Voce outcome recorded.\n` +
+                 `• Outcome: ${vivaStatus === 'SUCCESSFUL' ? 'PASSED (Clear & Pass)' : 'FAILED (Unsatisfactory / Uncleared)'}\n` +
+                 `• Date Conducted: ${dateStr}\n` +
+                 `• Time: ${thesis.vivaTime || 'N/A'}\n` +
+                 `• Venue: ${thesis.vivaVenue || 'N/A'}\n` +
+                 `• Convenor/Coordinator: ${thesis.vivaCoordinator || 'N/A'}\n` +
+                 `• Panel Members: ${thesis.vivaPanel || 'N/A'}\n` +
+                 `• Meeting Link: ${thesis.vivaMeetingLink || 'N/A'}\n` +
+                 `• Board Decision Notes: ${remarks || 'None'}`,
+        timestamp: new Date()
+      });
+      if (vivaStatus === 'SUCCESSFUL') {
+        milestone.status = 'APPROVED';
+      } else {
+        milestone.status = 'APPROVED';
+      }
+      await milestone.save();
+    }
 
     await createNotification({
       recipient: thesis.scholarId,

@@ -191,6 +191,26 @@ const submitDocument = async (req, res) => {
 
     if (milestone.type === 'FINAL_SUBMISSION') {
       thesis.status = 'THESIS_SUBMITTED';
+      
+      // Reset external evaluation and viva fields for a fresh evaluation cycle
+      thesis.externalEvaluationStatus = 'PENDING';
+      thesis.dispatchDate = null;
+      thesis.dispatchMethod = '';
+      thesis.dispatchTrackingNumber = '';
+      thesis.externalEvaluationSentTo = '';
+      thesis.externalEvaluationRemarks = '';
+      thesis.externalEvaluationLoggedAt = null;
+      thesis.externalEvaluationLoggedBy = null;
+      
+      thesis.vivaStatus = 'NOT_SCHEDULED';
+      thesis.vivaDate = null;
+      thesis.vivaTime = '';
+      thesis.vivaVenue = '';
+      thesis.vivaRemarks = '';
+      thesis.vivaPanel = '';
+      thesis.vivaCoordinator = '';
+      thesis.vivaMeetingLink = '';
+      
       await thesis.save();
     }
 

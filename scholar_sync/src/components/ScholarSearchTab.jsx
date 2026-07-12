@@ -437,7 +437,6 @@ const ScholarSearchTab = ({ user }) => {
             setResults(prev => prev.map(r => r._id === selectedThesisId ? data.thesis : r));
           }}
           onSeminar={() => handleHODAction(seminarClear)}
-          onFinalApprove={() => handleHODAction(finalApprove)}
           onClearCoursework={() => handleHODAction(clearCoursework)}
           onVerify={() => handleHODAction(verifyEnrollment)}
           onAssign={(supervisorId) => handleHODAction(() => assignSupervisor(selectedThesisId, supervisorId))}
