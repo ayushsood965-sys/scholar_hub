@@ -2218,9 +2218,20 @@ body {
     background-color: rgba(0,0,0,0.05);
   }
 
+  .main-content {
+    padding-top: 70px !important;
+  }
   .header {
     padding: 0 16px;
     gap: 12px;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 70px !important;
+    z-index: 1000 !important;
+    background: var(--color-surface, #ffffff) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
   }
   .header-title {
     font-size: 1.05rem;
