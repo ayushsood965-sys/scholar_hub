@@ -177,8 +177,8 @@ const getMilestoneHistory = (m, thesis) => {
   return list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 };
 
-const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Draft') => {
-  if (!milestone || ['DRAFT', 'NOT_SUBMITTED'].includes(milestone.status) || !milestone.status) return null;
+const EvaluationTimelineWrapper = ({ milestone, thesis, titlePrefix, history }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const status = milestone.status;
   
   const titleUpper = titlePrefix.toUpperCase();
@@ -190,41 +190,37 @@ const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Draft
     titleUpper.includes('DRC') || 
     titleUpper.startsWith('RAC');
 
-  if (isSingleStage) {
-    const isUnderReview = ['PENDING', 'SUBMITTED', 'SCHEDULED'].includes(status);
-    const isRejected = ['REJECTED', 'REJECTED_BY_SUPERVISOR', 'REJECTED_BY_HOD', 'REVISION_REQUIRED', 'UNSATISFACTORY'].includes(status);
-    const isApproved = ['APPROVED', 'VERIFIED', 'CLEARED', 'REVIEWED', 'SATISFACTORY'].includes(status);
+  const renderContent = () => {
+    if (isSingleStage) {
+      const isUnderReview = ['PENDING', 'SUBMITTED', 'SCHEDULED'].includes(status);
+      const isRejected = ['REJECTED', 'REJECTED_BY_SUPERVISOR', 'REJECTED_BY_HOD', 'REVISION_REQUIRED', 'UNSATISFACTORY'].includes(status);
+      const isApproved = ['APPROVED', 'VERIFIED', 'CLEARED', 'REVIEWED', 'SATISFACTORY'].includes(status);
 
-    let reviewerStatus = 'PENDING';
-    if (isUnderReview) reviewerStatus = 'PENDING';
-    else if (isRejected) reviewerStatus = 'REJECTED';
-    else if (isApproved) reviewerStatus = 'APPROVED';
+      let reviewerStatus = 'PENDING';
+      if (isUnderReview) reviewerStatus = 'PENDING';
+      else if (isRejected) reviewerStatus = 'REJECTED';
+      else if (isApproved) reviewerStatus = 'APPROVED';
 
-    let initiatorLabel = `${titlePrefix} Submitted`;
-    let reviewerLabel = 'Review & Evaluation';
-    let reviewerDescription = 'Awaiting review from the assigned authority.';
+      let initiatorLabel = `${titlePrefix} Submitted`;
+      let reviewerLabel = 'Review & Evaluation';
+      let reviewerDescription = 'Awaiting review from the assigned authority.';
 
-    if (titleUpper.includes('MEETING') || titleUpper.includes('DRC') || titleUpper.startsWith('RAC')) {
-      initiatorLabel = 'Session Scheduled';
-      reviewerLabel = 'Meeting Outcome Recorded';
-      reviewerDescription = 'Outcome details and recommendations from the committee.';
-    } else if (titleUpper.includes('CHANGE') || titleUpper.includes('REALLOCATION')) {
-      initiatorLabel = 'Request Filed';
-      reviewerLabel = 'HOD Approval';
-      reviewerDescription = 'Head of Department decision on reallocation / modification.';
-    } else if (titleUpper.includes('DOCUMENT')) {
-      const role = milestone.forwardedRole || 'Recipient';
-      initiatorLabel = 'Document Uploaded';
-      reviewerLabel = `${role} Verification`;
-      reviewerDescription = `Verification and validation of the submitted proof by the ${role.toLowerCase()}.`;
-    }
+      if (titleUpper.includes('MEETING') || titleUpper.includes('DRC') || titleUpper.startsWith('RAC')) {
+        initiatorLabel = 'Session Scheduled';
+        reviewerLabel = 'Meeting Outcome Recorded';
+        reviewerDescription = 'Outcome details and recommendations from the committee.';
+      } else if (titleUpper.includes('CHANGE') || titleUpper.includes('REALLOCATION')) {
+        initiatorLabel = 'Request Filed';
+        reviewerLabel = 'HOD Approval';
+        reviewerDescription = 'Head of Department decision on reallocation / modification.';
+      } else if (titleUpper.includes('DOCUMENT')) {
+        const role = milestone.forwardedRole || 'Recipient';
+        initiatorLabel = 'Document Uploaded';
+        reviewerLabel = `${role} Verification`;
+        reviewerDescription = `Verification and validation of the submitted proof by the ${role.toLowerCase()}.`;
+      }
 
-    return (
-      <div style={{ marginTop: 24, borderTop: '1px solid #E2E8F0', paddingTop: 20 }}>
-        <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span>📊</span> Evaluation Progress Timeline
-        </h4>
-        
+      return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Step 1: Initiated */}
           <div style={{ display: 'flex', gap: 12 }}>
@@ -280,40 +276,34 @@ const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Draft
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // Two-stage workflow: Student -> Faculty Supervisor -> HOD
-  let facultyStatus = 'PENDING'; // PENDING, APPROVED, REJECTED
-  let hodStatus = 'LOCKED'; // LOCKED, PENDING, APPROVED, REJECTED
-  
-  if (status === 'PENDING_HOD' || status === 'UNDER_REVIEW_HOD') {
-    facultyStatus = 'APPROVED';
-    hodStatus = 'PENDING';
-  } else if (status === 'APPROVED' || status === 'VERIFIED') {
-    facultyStatus = 'APPROVED';
-    hodStatus = 'APPROVED';
-  } else if (status === 'REVISION_REQUIRED' || status === 'REJECTED_BY_SUPERVISOR' || status === 'REJECTED_BY_HOD' || status === 'REJECTED') {
-    const isHODRejection = status === 'REJECTED_BY_HOD' || status === 'REJECTED';
-    if (isHODRejection) {
+    // Two-stage workflow: Student -> Faculty Supervisor -> HOD
+    let facultyStatus = 'PENDING'; // PENDING, APPROVED, REJECTED
+    let hodStatus = 'LOCKED'; // LOCKED, PENDING, APPROVED, REJECTED
+    
+    if (status === 'PENDING_HOD' || status === 'UNDER_REVIEW_HOD') {
       facultyStatus = 'APPROVED';
-      hodStatus = 'REJECTED';
-    } else {
-      facultyStatus = 'REJECTED';
+      hodStatus = 'PENDING';
+    } else if (status === 'APPROVED' || status === 'VERIFIED') {
+      facultyStatus = 'APPROVED';
+      hodStatus = 'APPROVED';
+    } else if (status === 'REVISION_REQUIRED' || status === 'REJECTED_BY_SUPERVISOR' || status === 'REJECTED_BY_HOD' || status === 'REJECTED') {
+      const isHODRejection = status === 'REJECTED_BY_HOD' || status === 'REJECTED';
+      if (isHODRejection) {
+        facultyStatus = 'APPROVED';
+        hodStatus = 'REJECTED';
+      } else {
+        facultyStatus = 'REJECTED';
+        hodStatus = 'LOCKED';
+      }
+    } else if (status === 'SUBMITTED' || status === 'PENDING') {
+      facultyStatus = 'PENDING';
       hodStatus = 'LOCKED';
     }
-  } else if (status === 'SUBMITTED' || status === 'PENDING') {
-    facultyStatus = 'PENDING';
-    hodStatus = 'LOCKED';
-  }
-  
-  return (
-    <div style={{ marginTop: 24, borderTop: '1px solid #E2E8F0', paddingTop: 20 }}>
-      <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span>📊</span> Evaluation Progress Timeline
-      </h4>
-      
+
+    return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Step 1: Submission */}
         <div style={{ display: 'flex', gap: 12 }}>
@@ -410,8 +400,113 @@ const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Draft
           </div>
         </div>
       </div>
+    );
+  };
+
+  return (
+    <div style={{ marginTop: 20, borderTop: '1px solid #E2E8F0', paddingTop: 16 }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .history-table table, 
+          .history-table tbody, 
+          .history-table tr {
+            display: block !important;
+            width: 100% !important;
+          }
+          
+          .history-table thead {
+            display: none !important;
+          }
+          
+          .history-table tr {
+            border: 1px solid var(--color-border, #E2E8F0) !important;
+            border-radius: 12px !important;
+            margin-bottom: 16px !important;
+            padding: 16px !important;
+            background: var(--color-surface, #FFFFFF) !important;
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05)) !important;
+          }
+
+          [data-theme='dark'] .history-table tr {
+            background: var(--color-surface, #1e1e20) !important;
+            border-color: var(--color-border, #2d2d30) !important;
+          }
+          
+          .history-table td {
+            border: none !important;
+            padding: 8px 0 !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            text-align: right !important;
+            border-bottom: 1px dashed var(--color-border, #E2E8F0) !important;
+            font-size: 0.85rem !important;
+            white-space: normal !important;
+          }
+
+          [data-theme='dark'] .history-table td {
+            border-bottom-color: var(--color-border, #2d2d30) !important;
+          }
+          
+          .history-table td:last-child {
+            border-bottom: none !important;
+          }
+          
+          .history-table td::before {
+            content: attr(data-label) ": " !important;
+            font-weight: 700 !important;
+            color: var(--color-text-secondary, #475569) !important;
+            text-align: left !important;
+            padding-right: 16px !important;
+            flex-shrink: 0 !important;
+          }
+        }
+      `}</style>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isOpen ? 12 : 0 }}>
+        <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>📊</span> {titlePrefix} Evaluation Progress
+        </h4>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--color-primary, #6366f1)',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'background 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.target.style.background = '#F1F5F9'}
+          onMouseLeave={(e) => e.target.style.background = 'none'}
+        >
+          {isOpen ? 'Hide History Logs ▴' : 'View History Logs ▾'}
+        </button>
+      </div>
+
+      <div style={{
+        maxHeight: isOpen ? '2500px' : '0px',
+        opacity: isOpen ? 1 : 0,
+        overflow: 'hidden',
+        transition: 'max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, padding 0.4s ease-in-out',
+        paddingTop: isOpen ? 12 : 0
+      }}>
+        {renderContent()}
+        {history && history.length > 0 && renderHistoryTable(history)}
+      </div>
     </div>
   );
+};
+
+const renderEvaluationTimelineGeneric = (milestone, thesis, titlePrefix = 'Draft', history = null) => {
+  if (!milestone || ['DRAFT', 'NOT_SUBMITTED'].includes(milestone.status) || !milestone.status) return null;
+  return <EvaluationTimelineWrapper milestone={milestone} thesis={thesis} titlePrefix={titlePrefix} history={history} />;
 };
 
 const getPublicationVirtualHistory = (p) => {
@@ -731,21 +826,21 @@ const renderHistoryRow = (h, i, total) => {
 
   return (
     <tr key={i} style={{ borderBottom: i < total - 1 ? '1px solid #F1F5F9' : 'none' }}>
-      <td style={{ padding: '10px 12px', color: '#64748B', whiteSpace: 'nowrap' }}>
+      <td data-label="Time" style={{ padding: '10px 12px', color: '#64748B', whiteSpace: 'nowrap' }}>
         {new Date(h.timestamp).toLocaleString()}
       </td>
-      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#334155' }}>
+      <td data-label="User" style={{ padding: '10px 12px', fontWeight: 600, color: '#334155' }}>
         {h.actorName} <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748B' }}>({h.actorRole})</span>
       </td>
-      <td style={{ padding: '10px 12px' }}>
+      <td data-label="Action" style={{ padding: '10px 12px' }}>
         <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, color: badgeColor, backgroundColor: badgeBg }}>
           {getActionDisplayName(h.action)}
         </span>
       </td>
-      <td style={{ padding: '10px 12px', color: '#475569', fontStyle: 'italic', maxWidth: '300px', wordBreak: 'break-word' }}>
+      <td data-label="Remarks" style={{ padding: '10px 12px', color: '#475569', fontStyle: 'italic', maxWidth: '300px', wordBreak: 'break-word' }}>
         "{h.remarks || 'No remarks.'}"
       </td>
-      <td style={{ padding: '10px 12px' }}>
+      <td data-label="Files" style={{ padding: '10px 12px' }}>
         {files.length > 0 ? files : <span style={{ color: '#94A3B8' }}>N/A</span>}
       </td>
     </tr>
@@ -779,7 +874,7 @@ const renderHistoryTable = (history) => {
                 {outcomeText}
               </span>
             </div>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="history-table" style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left', background: '#FFFFFF' }}>
                 <thead>
                   <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
@@ -4983,6 +5078,111 @@ const ResearchOutputsTab = ({ thesis }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`
+        .research-list-container {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .research-header-row {
+          display: flex;
+          font-size: 0.8rem;
+          color: var(--color-text-muted, #64748B);
+          padding-bottom: 8px;
+          border-bottom: 1px solid var(--color-border, #E2E8F0);
+        }
+        .research-item-card {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          padding: 20px !important;
+          background: var(--color-surface, #FFFFFF) !important;
+          border: 1px solid var(--color-border, #E2E8F0) !important;
+          border-radius: 12px !important;
+          margin-bottom: 20px !important;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        }
+        [data-theme='dark'] .research-item-card {
+          background: var(--color-surface, #1e1e20) !important;
+          border-color: var(--color-border, #2d2d30) !important;
+        }
+
+        @media (max-width: 768px) {
+          .research-list-container {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            overflow-x: visible !important;
+          }
+          .research-header-row {
+            display: none !important;
+          }
+          .research-item-card {
+            min-width: 0 !important;
+            background: var(--color-surface, #ffffff) !important;
+            border: 1px solid var(--color-border, #E2E8F0) !important;
+            border-radius: 12px !important;
+            padding: 16px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            align-items: stretch !important;
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05)) !important;
+            margin-bottom: 16px !important;
+          }
+          .research-row-primary {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+          .research-cell-title {
+            flex: none !important;
+            font-size: 0.95rem !important;
+            font-weight: 800 !important;
+            color: var(--color-text-primary, #0F172A) !important;
+          }
+          .research-cell-publisher {
+            flex: none !important;
+            font-size: 0.85rem !important;
+            color: var(--color-text-secondary, #475569) !important;
+            margin-top: -4px !important;
+          }
+          .research-cell-type {
+            flex: none !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            border-top: 1px dashed var(--color-border, #E2E8F0) !important;
+            padding-top: 10px !important;
+          }
+          .research-cell-date {
+            flex: none !important;
+            font-size: 0.8rem !important;
+            color: var(--color-text-muted, #64748B) !important;
+          }
+          .research-cell-status {
+            flex: none !important;
+            display: inline-flex !important;
+          }
+          .research-cell-links {
+            flex: none !important;
+            display: flex !important;
+            justify-content: flex-start !important;
+            gap: 12px !important;
+            border-top: 1px dashed var(--color-border, #E2E8F0) !important;
+            padding-top: 10px !important;
+          }
+          .research-cell-actions {
+            flex: none !important;
+            display: flex !important;
+            justify-content: flex-start !important;
+            gap: 12px !important;
+            border-top: 1px dashed var(--color-border, #E2E8F0) !important;
+            padding-top: 10px !important;
+          }
+        }
+      `}</style>
       {/* Target Progress Summary widget */}
       <div className="card" style={{ 
         padding: 24, 
@@ -5390,8 +5590,8 @@ const ResearchOutputsTab = ({ thesis }) => {
                   No active or draft research outputs logged.
                 </div>
               ) : (
-                <div className="file-list" style={{ overflowX: 'auto' }}>
-                  <div className="file-header" style={{ minWidth: 800 }}>
+                <div className="research-list-container" style={{ overflowX: 'auto' }}>
+                  <div className="research-header-row" style={{ minWidth: 800 }}>
                     <div style={{ flex: 2.2 }}>Title</div>
                     <div style={{ flex: 1.5 }}>Journal/Publisher/Office</div>
                     <div style={{ flex: 1 }}>Type</div>
@@ -5401,11 +5601,11 @@ const ResearchOutputsTab = ({ thesis }) => {
                     <div style={{ flex: 1.5, textAlign: 'center' }}>Actions</div>
                   </div>
                   {activePubs.map(p => (
-                    <div key={p._id} className="file-item" style={{ minWidth: 800, flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <div style={{ flex: 2.2, fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</div>
-                        <div style={{ flex: 1.5, fontSize: '0.9rem' }}>{p.journalName}</div>
-                        <div style={{ flex: 1 }}>
+                    <div key={p._id} className="research-item-card" style={{ minWidth: 800, flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                      <div className="research-row-primary" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <div className="research-cell-title" style={{ flex: 2.2, fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</div>
+                        <div className="research-cell-publisher" style={{ flex: 1.5, fontSize: '0.9rem' }}>{p.journalName}</div>
+                        <div className="research-cell-type" style={{ flex: 1 }}>
                           <span style={{ 
                             padding: '2px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 700,
                             background: p.type === 'JOURNAL' ? 'rgba(59, 130, 246, 0.1)' : p.type === 'CONFERENCE' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
@@ -5415,8 +5615,8 @@ const ResearchOutputsTab = ({ thesis }) => {
                           </span>
                           {p.itemStatus && <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
                         </div>
-                        <div style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
-                        <div style={{ flex: 1 }}>
+                        <div className="research-cell-date" style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
+                        <div className="research-cell-status" style={{ flex: 1 }}>
                           {(() => {
                             const display = getStatusDisplay(p.status);
                             return (
@@ -5431,11 +5631,11 @@ const ResearchOutputsTab = ({ thesis }) => {
                             );
                           })()}
                         </div>
-                        <div style={{ flex: 1.2, display: 'flex', gap: 12, justifyContent: 'center' }}>
+                        <div className="research-cell-links" style={{ flex: 1.2, display: 'flex', gap: 12, justifyContent: 'center' }}>
                           {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" title={p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Publisher Page'} style={{ fontSize: '0.82rem', color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><File size={16} /> Link</a>}
                           {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" title="View Proof PDF" style={{ fontSize: '0.82rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Upload size={16} /> PDF</a>}
                         </div>
-                        <div style={{ flex: 1.5, display: 'flex', gap: 8, justifyContent: 'center' }}>
+                        <div className="research-cell-actions" style={{ flex: 1.5, display: 'flex', gap: 8, justifyContent: 'center' }}>
                           <button
                             onClick={() => handleEditClick(p)}
                             disabled={p.status === 'PENDING' || p.status === 'UNDER_REVIEW_HOD'}
@@ -5518,8 +5718,7 @@ const ResearchOutputsTab = ({ thesis }) => {
                         </div>
                       )}
                       {/* Timeline & History Logs */}
-                      {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type)}
-                      {renderHistoryTable(getPublicationVirtualHistory(p))}
+                      {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type, getPublicationVirtualHistory(p))}
                     </div>
                   ))}
                 </div>
@@ -5566,8 +5765,8 @@ const ResearchOutputsTab = ({ thesis }) => {
                   No reviewed research outputs yet.
                 </div>
               ) : (
-                <div className="file-list" style={{ overflowX: 'auto' }}>
-                  <div className="file-header" style={{ minWidth: 800 }}>
+                <div className="research-list-container" style={{ overflowX: 'auto' }}>
+                  <div className="research-header-row" style={{ minWidth: 800 }}>
                     <div style={{ flex: 2.2 }}>Title</div>
                     <div style={{ flex: 1.5 }}>Journal/Publisher/Office</div>
                     <div style={{ flex: 1 }}>Type</div>
@@ -5577,11 +5776,11 @@ const ResearchOutputsTab = ({ thesis }) => {
                     <div style={{ flex: 1.5, textAlign: 'center' }}>Actions</div>
                   </div>
                   {reviewedPubs.map(p => (
-                    <div key={p._id} className="file-item" style={{ minWidth: 800, flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <div style={{ flex: 2.2, fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</div>
-                        <div style={{ flex: 1.5, fontSize: '0.9rem' }}>{p.journalName}</div>
-                        <div style={{ flex: 1 }}>
+                    <div key={p._id} className="research-item-card" style={{ minWidth: 800, flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                      <div className="research-row-primary" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <div className="research-cell-title" style={{ flex: 2.2, fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>{p.title}</div>
+                        <div className="research-cell-publisher" style={{ flex: 1.5, fontSize: '0.9rem' }}>{p.journalName}</div>
+                        <div className="research-cell-type" style={{ flex: 1 }}>
                           <span style={{ 
                             padding: '2px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 700,
                             background: p.type === 'JOURNAL' ? 'rgba(59, 130, 246, 0.1)' : p.type === 'CONFERENCE' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
@@ -5591,8 +5790,8 @@ const ResearchOutputsTab = ({ thesis }) => {
                           </span>
                           {p.itemStatus && <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
                         </div>
-                        <div style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
-                        <div style={{ flex: 1 }}>
+                        <div className="research-cell-date" style={{ flex: 1, fontSize: '0.85rem' }}>{new Date(p.publicationDate).toLocaleDateString()}</div>
+                        <div className="research-cell-status" style={{ flex: 1 }}>
                           {(() => {
                             const display = getStatusDisplay(p.status);
                             return (
@@ -5607,11 +5806,11 @@ const ResearchOutputsTab = ({ thesis }) => {
                             );
                           })()}
                         </div>
-                        <div style={{ flex: 1.2, display: 'flex', gap: 12, justifyContent: 'center' }}>
+                        <div className="research-cell-links" style={{ flex: 1.2, display: 'flex', gap: 12, justifyContent: 'center' }}>
                           {p.paperLink && <a href={p.paperLink} target="_blank" rel="noreferrer" title={p.type === 'PATENT' || p.type === 'IPR' ? 'View IPR URL' : 'View Publisher Page'} style={{ fontSize: '0.82rem', color: '#2563EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><File size={16} /> Link</a>}
                           {p.documentUrl && <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" title="View Proof PDF" style={{ fontSize: '0.82rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Upload size={16} /> PDF</a>}
                         </div>
-                        <div style={{ flex: 1.5, display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
+                        <div className="research-cell-actions" style={{ flex: 1.5, display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
                           {p.status === 'VERIFIED' ? (
                             <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                               <span>✅</span> approved
@@ -5664,8 +5863,7 @@ const ResearchOutputsTab = ({ thesis }) => {
                         </div>
                       )}
                       {/* Timeline & History Logs */}
-                      {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type)}
-                      {renderHistoryTable(getPublicationVirtualHistory(p))}
+                      {renderEvaluationTimelineGeneric(p, thesis, p.type === 'IPR' ? (p.iprType || 'IPR') : p.type, getPublicationVirtualHistory(p))}
                     </div>
                   ))}
                 </div>
@@ -5948,8 +6146,7 @@ const MeetingsTab = ({ thesis }) => {
                       </div>
                     )}
                     {/* Timeline & History Logs */}
-                    {renderEvaluationTimelineGeneric(meeting, thesis, 'Meeting Request')}
-                    {renderHistoryTable(getMeetingVirtualHistory(meeting))}
+                    {renderEvaluationTimelineGeneric(meeting, thesis, 'Meeting Request', getMeetingVirtualHistory(meeting))}
                   </div>
                 );
               })}
@@ -6058,8 +6255,7 @@ const MeetingsTab = ({ thesis }) => {
                         </div>
                       )}
                       {/* Timeline & History Logs */}
-                      {renderEvaluationTimelineGeneric(drc, thesis, 'DRC Meeting Schedule')}
-                      {renderHistoryTable(getDrcMeetingVirtualHistory(drc))}
+                      {renderEvaluationTimelineGeneric(drc, thesis, 'DRC Meeting Schedule', getDrcMeetingVirtualHistory(drc))}
                     </div>
                   );
               })}
@@ -6497,8 +6693,7 @@ const DocumentsTab = ({ thesis }) => {
                   </a>
                 </div>
                 {/* Timeline & History Logs */}
-                {renderEvaluationTimelineGeneric(doc, thesis, 'Additional Document')}
-                {renderHistoryTable(getDocumentVirtualHistory(doc))}
+                {renderEvaluationTimelineGeneric(doc, thesis, 'Additional Document', getDocumentVirtualHistory(doc))}
               </div>
             ))}
           </div>
@@ -6794,8 +6989,7 @@ const RequestChangesTab = ({ thesis }) => {
                 </div>
               )}
               {/* Timeline & History Logs */}
-              {renderEvaluationTimelineGeneric(r, thesis, r.type === 'TITLE_CHANGE' ? 'Title Change Request' : 'Supervisor Allocation Request')}
-              {renderHistoryTable(getChangeRequestVirtualHistory(r, thesis, faculty))}
+              {renderEvaluationTimelineGeneric(r, thesis, r.type === 'TITLE_CHANGE' ? 'Title Change Request' : 'Supervisor Allocation Request', getChangeRequestVirtualHistory(r, thesis, faculty))}
             </div>
           ))}
         </div>
@@ -7283,8 +7477,7 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
                     </div>
                   )}
                   {/* Timeline & History Logs */}
-                  {renderEvaluationTimelineGeneric(report, thesis, 'Progress Report')}
-                  {renderHistoryTable(getMilestoneHistory(report, thesis))}
+                  {renderEvaluationTimelineGeneric(report, thesis, 'Progress Report', getMilestoneHistory(report, thesis))}
                 </div>
               </div>
             );
@@ -7468,8 +7661,7 @@ const ChapterDraftsTab = ({ thesis, milestones = [], onSubmit }) => {
                 </div>
               )}
               {/* Timeline & History Logs */}
-              {renderEvaluationTimelineGeneric(d, thesis, 'Chapter Draft')}
-              {renderHistoryTable(getMilestoneHistory(d, thesis))}
+              {renderEvaluationTimelineGeneric(d, thesis, 'Chapter Draft', getMilestoneHistory(d, thesis))}
             </div>
           ))}
         </div>
