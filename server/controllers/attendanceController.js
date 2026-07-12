@@ -3979,7 +3979,7 @@ exports.getStudentAttendanceRecords = async (req, res) => {
 
     const list = [];
     records.forEach(r => {
-      const isRecordPhD = r.courseCode === 'DAILY';
+      const isRecordPhD = r.courseCode === 'DAILY' && (!r.classes || r.classes.length === 0);
       if (isRecordPhD) {
         if (!status || r.status === status) {
           list.push({

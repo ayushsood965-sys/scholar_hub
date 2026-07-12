@@ -71,29 +71,21 @@ const AttendanceLogsTab = () => {
   const selectedDegreeType = degreeTypes.find(d => d._id === filters.degreeTypeId);
   const isPhD = selectedDegreeType?.code?.toUpperCase() === 'PHD';
 
-  const availableDegreeNames = useMemo(() => {
-    return degreeNames.filter(d => {
-      const matchType = d.degreeTypeId?._id === filters.degreeTypeId;
-      const matchDept = !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
-      return matchType && matchDept;
-    });
-  }, [degreeNames, filters.degreeTypeId, user]);
-
   const availableDegreeTypes = useMemo(() => {
-    const departmentDegreeNames = degreeNames.filter(d => {
-      return !user?.departmentId || !d.departmentId?._id || d.departmentId._id === user.departmentId;
-    });
-    return [...new Map(departmentDegreeNames.filter(d => d.degreeTypeId).map(d => [d.degreeTypeId._id, d.degreeTypeId])).values()];
+    if (!user?.profile?.degreeTypeId) return [];
+    return degreeTypes.filter(dt => dt._id === user.profile.degreeTypeId);
+  }, [degreeTypes, user]);
+
+  const availableDegreeNames = useMemo(() => {
+    if (!user?.profile?.degreeNameId) return [];
+    return degreeNames.filter(dn => dn._id === user.profile.degreeNameId);
   }, [degreeNames, user]);
 
   const availableSemesters = useMemo(() => {
-    if (!filters.degreeNameId || !Array.isArray(semesterDegreeMappings)) return [];
-    const mappedIds = semesterDegreeMappings
-      .filter(m => m && (m.degreeNameId?._id || m.degreeNameId) === filters.degreeNameId)
-      .map(m => m.semesterId?._id || m.semesterId)
-      .filter(Boolean);
-    return semesters.filter(s => s && mappedIds.includes(s._id));
-  }, [filters.degreeNameId, semesters, semesterDegreeMappings]);
+    if (isPhD) return [];
+    if (!user?.profile?.semesterId) return [];
+    return semesters.filter(s => s._id === user.profile.semesterId);
+  }, [semesters, user, isPhD]);
 
   // Load mapped subjects checklist whenever program parameter filters change
   useEffect(() => {
@@ -148,8 +140,30 @@ const AttendanceLogsTab = () => {
 
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
-    if (!filters.sessionId || !filters.degreeTypeId || !filters.degreeNameId || (!isPhD && !filters.semesterId)) {
-      return toast.error('Please select all filters first');
+    
+    if (!filters.sessionId) {
+      return toast.error('Academic Session is mandatory');
+    }
+    if (!filters.degreeTypeId) {
+      return toast.error('Degree Type is mandatory');
+    }
+    if (!filters.degreeNameId) {
+      return toast.error('Degree Name is mandatory');
+    }
+    if (!isPhD && !filters.semesterId) {
+      return toast.error('Semester is mandatory');
+    }
+    if (!filters.startDate) {
+      return toast.error('From Date is mandatory');
+    }
+    if (!filters.endDate) {
+      return toast.error('To Date is mandatory');
+    }
+    
+    // Validate that at least one subject is checked
+    const selectedCount = Object.values(selectedSubjects).filter(Boolean).length;
+    if (selectedCount === 0) {
+      return toast.error('At least one subject must be selected from the checklist');
     }
     
     setLoadingLogs(true);
@@ -159,10 +173,10 @@ const AttendanceLogsTab = () => {
         sessionId: filters.sessionId,
         degreeTypeId: filters.degreeTypeId,
         degreeNameId: filters.degreeNameId,
-        semesterId: isPhD ? '' : filters.semesterId
+        semesterId: isPhD ? '' : filters.semesterId,
+        startDate: filters.startDate,
+        endDate: filters.endDate
       });
-      if (filters.startDate) params.append('startDate', filters.startDate);
-      if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.status) params.append('status', filters.status);
 
       const res = await api.get(`/attendance/student/marked-records?${params.toString()}`);
