@@ -365,7 +365,7 @@ const StaffProfileTab = ({ thesis }) => {
     { key: 'publications', label: 'Publications', Icon: BookOpen },
     { key: 'ipr', label: 'Intellectual Property Rights', Icon: Copyright },
     { key: 'settings', label: 'Privacy Settings', Icon: Settings }
-  ];
+  ].filter(item => !(user?.role === 'STUDENT' && item.key === 'theses'));
 
   // Forms State
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
@@ -2479,7 +2479,8 @@ const StaffProfileTab = ({ thesis }) => {
         </section>
 
         {/* 6. DOCTORAL THESES */}
-        <section ref={sectionRefs.theses} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {user?.role !== 'STUDENT' && (
+          <section ref={sectionRefs.theses} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FileText size={20} style={{ color: '#1A5A3B' }} />
@@ -2569,6 +2570,7 @@ const StaffProfileTab = ({ thesis }) => {
             )}
           </div>
         </section>
+        )}
 
         {/* 7. PROFESSIONAL BODIES */}
         <section ref={sectionRefs.memberships} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
