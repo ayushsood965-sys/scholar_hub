@@ -7,6 +7,7 @@ import { ThesisContext } from '../context/ThesisContext';
 import { useToast } from '../context/ToastContext';
 import { useThemeStyles } from '../context/ThemeContext';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
+import StaffProfileTab from '../components/StaffProfileTab';
 import NotificationPanel from '../components/NotificationPanel';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
@@ -11942,7 +11943,11 @@ const StudentDashboard = () => {
           </div>
         );
 
-      case 'profile': return <ProfileTab />;
+      case 'profile':
+        if (thesis && thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED') {
+          return <StaffProfileTab thesis={thesis} />;
+        }
+        return <ProfileTab />;
       default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: '#6b7280', marginTop: 8 }}>Content coming soon.</p></div>;
     }
   };

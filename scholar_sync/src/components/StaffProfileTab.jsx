@@ -6,10 +6,10 @@ import {
   User, Lightbulb, Briefcase, GraduationCap, Award, FileText, 
   Users, Bookmark, Folder, BookOpen, Settings, Plus, Edit, 
   Trash2, Upload, ExternalLink, ShieldCheck, ShieldAlert, 
-  RefreshCw, Camera, Eye, Trash, Check, X, EyeOff, Copyright
+  RefreshCw, Camera, Eye, Trash, Check, X, EyeOff, Copyright, Lock
 } from 'lucide-react';
 
-const StaffProfileTab = () => {
+const StaffProfileTab = ({ thesis }) => {
   const { user, updateProfile, uploadAvatar, uploadProfileDocument, fetchMe } = useContext(AuthContext);
   const toast = useToast();
   const [loading, setLoading] = useState(false);
@@ -434,6 +434,34 @@ const StaffProfileTab = () => {
       setOtherQualsDraft(profile.qualifications?.otherQuals || []);
     }
   }, [user]);
+
+  const renderStudentDocBadge = (certUrl) => {
+    if (certUrl) {
+      return (
+        <a 
+          href={`${API_BASE_URL}${certUrl}`} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ 
+            fontSize: '0.75rem', 
+            color: '#2563EB', 
+            fontWeight: 600, 
+            textDecoration: 'none', 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '4px',
+            background: '#EFF6FF',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            border: '1px solid #BFDBFE'
+          }}
+        >
+          <FileText size={12} /> View File
+        </a>
+      );
+    }
+    return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: '#6B7280', fontWeight: 600 }}>Pending Upload</span>;
+  };
 
   // Dynamic Scroll Sentinel & Snap Scroll Hook
   useEffect(() => {
@@ -1092,8 +1120,33 @@ const StaffProfileTab = () => {
   };
 
   return (
-    <div className="profile-layout-container">
-      <style>{responsiveStyles}</style>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      {user?.role === 'STUDENT' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #E5E7EB' }}>
+          {user?.avatarUrl ? (
+            <img 
+              src={`${API_BASE_URL}${user.avatarUrl}`} 
+              alt="Avatar Preview" 
+              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #133A26', background: '#F8FAFC' }} 
+            />
+          ) : (
+            <svg viewBox="0 0 100 100" style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#e2e8f0', display: 'block', border: '3px solid #133A26' }}>
+              <circle cx="50" cy="35" r="20" fill="#133A26" />
+              <path d="M15 85c0-13.8 11.2-25 25-25h20c13.8 0 25 11.2 25 25z" fill="#133A26" />
+            </svg>
+          )}
+          <div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#111827', margin: 0 }}>{user?.name}</h2>
+            <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '4px 0 12px' }}>Ph.D. Scholar • {user?.department}</p>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#133A26', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+              {avatarLoading ? 'Uploading...' : '📷 Change Profile Picture'}
+              <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={avatarLoading} />
+            </label>
+          </div>
+        </div>
+      )}
+      <div className="profile-layout-container">
+        <style>{responsiveStyles}</style>
       
       {/* LEFT: Sticky Timeline Side Panel */}
       <div className="timeline-sidebar-panel">
@@ -1245,304 +1298,409 @@ const StaffProfileTab = () => {
               <User size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Personal Information</h3>
             </div>
-            {!isEditingPersonal && (
+            {user?.role !== 'STUDENT' && !isEditingPersonal && (
               <button onClick={() => setIsEditingPersonal(true)} style={btnSecondaryStyle}>
                 <Edit size={14} /> Edit Info
               </button>
             )}
           </div>
 
-          <div className="personal-info-header">
-            {/* Avatar block */}
-            <div className="avatar-wrapper">
-              <div style={{ position: 'relative', width: '100px', height: '100px' }}>
-                {user?.avatarUrl ? (
-                  <img 
-                    src={`${API_BASE_URL}${user.avatarUrl}`} 
-                    alt="Avatar" 
-                    style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #1A5A3B' }} 
-                  />
-                ) : (
-                  <div style={{ 
-                    width: '100px', 
-                    height: '100px', 
-                    borderRadius: '50%', 
-                    background: 'linear-gradient(135deg, #1A5A3B, #0f4028)', 
+          {user?.role === 'STUDENT' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Full Name</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.name || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Email</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.username || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Birth</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.dob || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Gender</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.gender || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Social Category</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.category || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Nationality</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.nationality || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Father's Name</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.fatherName || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Mother's Name</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.motherName || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Phone Number</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.phoneNumber || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Residential Address</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.address || '—'}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
+                <div style={{ gridColumn: 'span 2', borderBottom: '1px solid #BBF7D0', paddingBottom: '8px', marginBottom: '4px' }}>
+                  <h4 style={{ margin: 0, color: '#133A26', fontSize: '0.95rem', fontWeight: 700 }}>Thesis & Research Details</h4>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Academic Session</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.academicSession || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree Type</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.degreeType || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Department</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.department || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>SH no.</span>
+                  <strong style={{ color: '#059669', fontSize: '0.9rem', fontWeight: 700 }}>{user?.profile?.shNo || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Enrollment Number</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.enrollmentNumber || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Admission</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.admissionDate || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Ph.D. Mode</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.phdMode || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Specialization</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.specialization || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Area of Research Interest</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.areaOfInterest || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Assigned Supervisor / Guide</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{thesis?.supervisorId?.name || 'Awaiting Allocation'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Thesis Title</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.thesisTitle || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Thesis Summary / Abstract</span>
+                  <strong style={{ color: '#334155', fontSize: '0.88rem', fontWeight: 500, display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.5, marginTop: 4 }}>{user?.profile?.thesisSummary || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Keywords</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.thesisKeywords || '—'}</strong>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="personal-info-header">
+              {/* Avatar block */}
+              <div className="avatar-wrapper">
+                <div style={{ position: 'relative', width: '100px', height: '100px' }}>
+                  {user?.avatarUrl ? (
+                    <img 
+                      src={`${API_BASE_URL}${user.avatarUrl}`} 
+                      alt="Avatar" 
+                      style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #1A5A3B' }} 
+                    />
+                  ) : (
+                    <div style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(135deg, #1A5A3B, #0f4028)', 
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '2.5rem',
+                      fontWeight: 700,
+                      border: '3px solid #1A5A3B'
+                    }}>
+                      {user?.name?.[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <label style={{
+                    position: 'absolute',
+                    bottom: '2px',
+                    right: '2px',
+                    background: '#1A5A3B',
                     color: 'white',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '2.5rem',
-                    fontWeight: 700,
-                    border: '3px solid #1A5A3B'
+                    cursor: 'pointer',
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}>
-                    {user?.name?.[0]?.toUpperCase()}
-                  </div>
-                )}
-                <label style={{
-                  position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  background: '#1A5A3B',
-                  color: 'white',
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  border: '2px solid #ffffff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  <Camera size={14} />
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={avatarLoading} />
-                </label>
+                    <Camera size={14} />
+                    <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={avatarLoading} />
+                  </label>
+                </div>
+                <span className="badge badge-neutral" style={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                  {user?.role === 'HOD' ? 'HOD' : user?.subRole || 'Faculty'}
+                </span>
               </div>
-              <span className="badge badge-neutral" style={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                {user?.role === 'HOD' ? 'HOD' : user?.subRole || 'Faculty'}
-              </span>
-            </div>
 
-            {/* Fields Listing/Form */}
-            <div style={{ flex: 1, minWidth: '280px' }}>
-              {isEditingPersonal ? (
-                <form onSubmit={savePersonalInfo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              {/* Fields Listing/Form */}
+              <div style={{ flex: 1, minWidth: '280px' }}>
+                {isEditingPersonal ? (
+                  <form onSubmit={savePersonalInfo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Phone Number</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.phoneNumber} 
+                          onChange={e => setPersonalForm({ ...personalForm, phoneNumber: e.target.value })} 
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Email ID</label>
+                        <input 
+                          type="email" 
+                          className="form-input" 
+                          value={personalForm.email} 
+                          onChange={e => setPersonalForm({ ...personalForm, email: e.target.value })} 
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Designation</label>
+                        <select 
+                          className="form-input" 
+                          value={personalForm.designation} 
+                          onChange={e => setPersonalForm({ ...personalForm, designation: e.target.value })}
+                          required
+                        >
+                          <option value="">Select...</option>
+                          <option value="Assistant Professor">Assistant Professor</option>
+                          <option value="Associate Professor">Associate Professor</option>
+                          <option value="Professor">Professor</option>
+                          <option value="Professor Emeritus">Professor Emeritus</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Specialization</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.specialization} 
+                          onChange={e => setPersonalForm({ ...personalForm, specialization: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Date of Birth</label>
+                        <input 
+                          type="date" 
+                          className="form-input" 
+                          value={personalForm.dob} 
+                          onChange={e => setPersonalForm({ ...personalForm, dob: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Gender</label>
+                        <select 
+                          className="form-input" 
+                          value={personalForm.gender} 
+                          onChange={e => setPersonalForm({ ...personalForm, gender: e.target.value })}
+                        >
+                          <option value="">Select...</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Category</label>
+                        <select 
+                          className="form-input" 
+                          value={personalForm.category} 
+                          onChange={e => setPersonalForm({ ...personalForm, category: e.target.value })}
+                        >
+                          <option value="">Select...</option>
+                          <option value="General">General</option>
+                          <option value="OBC">OBC</option>
+                          <option value="SC">SC</option>
+                          <option value="ST">ST</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Nationality</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.nationality} 
+                          onChange={e => setPersonalForm({ ...personalForm, nationality: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Father's Name</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.fatherName} 
+                          onChange={e => setPersonalForm({ ...personalForm, fatherName: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Mother's Name</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.motherName} 
+                          onChange={e => setPersonalForm({ ...personalForm, motherName: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Office Room</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.officeRoom} 
+                          onChange={e => setPersonalForm({ ...personalForm, officeRoom: e.target.value })} 
+                        />
+                      </div>
+                      {user?.role === 'HOD' && (
+                        <>
+                          <div className="form-group">
+                            <label className="form-label">Years of Service</label>
+                            <input 
+                              type="number" 
+                              className="form-input" 
+                              value={personalForm.yearsOfService} 
+                              onChange={e => setPersonalForm({ ...personalForm, yearsOfService: e.target.value })} 
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Additional Responsibilities</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              value={personalForm.additionalResponsibilities} 
+                              onChange={e => setPersonalForm({ ...personalForm, additionalResponsibilities: e.target.value })} 
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
                     <div className="form-group">
-                      <label className="form-label">Phone Number</label>
-                      <input 
-                        type="text" 
+                      <label className="form-label">Residential Address</label>
+                      <textarea 
                         className="form-input" 
-                        value={personalForm.phoneNumber} 
-                        onChange={e => setPersonalForm({ ...personalForm, phoneNumber: e.target.value })} 
-                        required
+                        style={{ height: '70px', resize: 'vertical' }}
+                        value={personalForm.address} 
+                        onChange={e => setPersonalForm({ ...personalForm, address: e.target.value })} 
                       />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Email ID</label>
-                      <input 
-                        type="email" 
-                        className="form-input" 
-                        value={personalForm.email} 
-                        onChange={e => setPersonalForm({ ...personalForm, email: e.target.value })} 
-                        required
-                      />
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button type="button" onClick={clearPersonalInfo} style={btnDangerStyle}>
+                        Clear Info
+                      </button>
+                      <button type="button" onClick={() => setIsEditingPersonal(false)} style={btnSecondaryStyle}>
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={loading} style={btnPrimaryStyle}>
+                        {loading ? 'Saving...' : 'Save Info'}
+                      </button>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Designation</label>
-                      <select 
-                        className="form-input" 
-                        value={personalForm.designation} 
-                        onChange={e => setPersonalForm({ ...personalForm, designation: e.target.value })}
-                        required
-                      >
-                        <option value="">Select...</option>
-                        <option value="Assistant Professor">Assistant Professor</option>
-                        <option value="Associate Professor">Associate Professor</option>
-                        <option value="Professor">Professor</option>
-                        <option value="Professor Emeritus">Professor Emeritus</option>
-                      </select>
+                  </form>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Faculty Name</span>
+                      <strong style={{ color: '#1F2937' }}>{user?.name}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Specialization</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.specialization} 
-                        onChange={e => setPersonalForm({ ...personalForm, specialization: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Designation</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.designation || 'Supervisor'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Date of Birth</label>
-                      <input 
-                        type="date" 
-                        className="form-input" 
-                        value={personalForm.dob} 
-                        onChange={e => setPersonalForm({ ...personalForm, dob: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Department</span>
+                      <strong style={{ color: '#1F2937' }}>{user?.department}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Gender</label>
-                      <select 
-                        className="form-input" 
-                        value={personalForm.gender} 
-                        onChange={e => setPersonalForm({ ...personalForm, gender: e.target.value })}
-                      >
-                        <option value="">Select...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Specialization</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.specialization || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Category</label>
-                      <select 
-                        className="form-input" 
-                        value={personalForm.category} 
-                        onChange={e => setPersonalForm({ ...personalForm, category: e.target.value })}
-                      >
-                        <option value="">Select...</option>
-                        <option value="General">General</option>
-                        <option value="OBC">OBC</option>
-                        <option value="SC">SC</option>
-                        <option value="ST">ST</option>
-                      </select>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Email ID</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.email || user?.username}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Nationality</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.nationality} 
-                        onChange={e => setPersonalForm({ ...personalForm, nationality: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Contact Phone</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.phoneNumber || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Father's Name</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.fatherName} 
-                        onChange={e => setPersonalForm({ ...personalForm, fatherName: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Date of Birth</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.dob || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Mother's Name</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.motherName} 
-                        onChange={e => setPersonalForm({ ...personalForm, motherName: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Gender</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.gender || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Office Room</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.officeRoom} 
-                        onChange={e => setPersonalForm({ ...personalForm, officeRoom: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Category</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.category || 'N/A'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Nationality</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.nationality || 'Indian'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Father's Name</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.fatherName || 'N/A'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Mother's Name</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.motherName || 'N/A'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Office Room</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.officeRoom || 'N/A'}</strong>
                     </div>
                     {user?.role === 'HOD' && (
                       <>
-                        <div className="form-group">
-                          <label className="form-label">Years of Service</label>
-                          <input 
-                            type="number" 
-                            className="form-input" 
-                            value={personalForm.yearsOfService} 
-                            onChange={e => setPersonalForm({ ...personalForm, yearsOfService: e.target.value })} 
-                          />
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block' }}>Years of Service</span>
+                          <strong style={{ color: '#1F2937' }}>{profile.yearsOfService || 'N/A'}</strong>
                         </div>
-                        <div className="form-group">
-                          <label className="form-label">Additional Responsibilities</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            value={personalForm.additionalResponsibilities} 
-                            onChange={e => setPersonalForm({ ...personalForm, additionalResponsibilities: e.target.value })} 
-                          />
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block' }}>Additional Responsibilities</span>
+                          <strong style={{ color: '#1F2937' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
                         </div>
                       </>
                     )}
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <span style={{ color: '#64748B', display: 'block' }}>Residential Address</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.address || 'N/A'}</strong>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Residential Address</label>
-                    <textarea 
-                      className="form-input" 
-                      style={{ height: '70px', resize: 'vertical' }}
-                      value={personalForm.address} 
-                      onChange={e => setPersonalForm({ ...personalForm, address: e.target.value })} 
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={clearPersonalInfo} style={btnDangerStyle}>
-                      Clear Info
-                    </button>
-                    <button type="button" onClick={() => setIsEditingPersonal(false)} style={btnSecondaryStyle}>
-                      Cancel
-                    </button>
-                    <button type="submit" disabled={loading} style={btnPrimaryStyle}>
-                      {loading ? 'Saving...' : 'Save Info'}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Faculty Name</span>
-                    <strong style={{ color: '#1F2937' }}>{user?.name}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Designation</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.designation || 'Supervisor'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Department</span>
-                    <strong style={{ color: '#1F2937' }}>{user?.department}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Specialization</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.specialization || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Email ID</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.email || user?.username}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Contact Phone</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.phoneNumber || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Date of Birth</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.dob || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Gender</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.gender || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Category</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.category || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Nationality</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.nationality || 'Indian'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Father's Name</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.fatherName || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Mother's Name</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.motherName || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Office Room</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.officeRoom || 'N/A'}</strong>
-                  </div>
-                  {user?.role === 'HOD' && (
-                    <>
-                      <div>
-                        <span style={{ color: '#64748B', display: 'block' }}>Years of Service</span>
-                        <strong style={{ color: '#1F2937' }}>{profile.yearsOfService || 'N/A'}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: '#64748B', display: 'block' }}>Additional Responsibilities</span>
-                        <strong style={{ color: '#1F2937' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
-                      </div>
-                    </>
-                  )}
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <span style={{ color: '#64748B', display: 'block' }}>Residential Address</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.address || 'N/A'}</strong>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         {/* 2. AREA OF EXPERTISE */}
@@ -1710,264 +1868,494 @@ const StaffProfileTab = () => {
               <GraduationCap size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Educational Qualifications</h3>
             </div>
-            {(Object.keys(qualifications).length > 0 || otherQualsDraft.length > 0) && (
+            {user?.role !== 'STUDENT' && (Object.keys(qualifications).length > 0 || otherQualsDraft.length > 0) && (
               <button onClick={clearAllQualifications} style={btnDangerStyle}>
                 <Trash2 size={14} /> Clear All
               </button>
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {eduKeys.map(({ key, label }) => {
-              const info = eduDrafts[key] || {};
-              const originalInfo = qualifications[key] || {};
-              return (
-                <div key={key} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                  <div className="edu-card-header">
-                    <strong style={{ fontSize: '0.88rem', color: '#1F2937' }}>{label}</strong>
-                    
-                    {/* Document status or upload controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {originalInfo.certificateUrl ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <a 
-                            href={`${API_BASE_URL}${originalInfo.certificateUrl}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            style={btnSecondaryStyle}
-                          >
-                            <Eye size={12} /> View Doc
-                          </a>
-                          <button 
-                            onClick={() => deleteEduFile(key)}
-                            style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                            title="Delete certificate document"
-                            type="button"
-                          >
-                            <Trash size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <label style={{ ...btnSecondaryStyle, margin: 0 }}>
-                          <Upload size={12} /> {uploadingDocKey === key ? 'Uploading...' : 'Upload Doc'}
-                          <input 
-                            type="file" 
-                            accept=".pdf,image/*" 
-                            onChange={(e) => handleEduFileChange(e, key)} 
-                            style={{ display: 'none' }} 
-                            disabled={uploadingDocKey !== null} 
-                          />
-                        </label>
-                      )}
-                    </div>
+          {user?.role === 'STUDENT' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Class 10 Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Class 10 (Secondary) Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.class10?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.rollNo || '—'}</strong>
                   </div>
-
-                  {/* Details forms inside */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Board or University"
-                        value={info.boardOrUniv || ''} 
-                        onChange={e => handleEduDraftChange(key, 'boardOrUniv', e.target.value)} 
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Year of Passing"
-                        value={info.yearOfPassing || ''} 
-                        onChange={e => handleEduDraftChange(key, 'yearOfPassing', e.target.value)}
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Subject / Stream"
-                        value={info.subject || ''} 
-                        onChange={e => handleEduDraftChange(key, 'subject', e.target.value)}
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Marks / CGPA"
-                        value={info.percentage || ''} 
-                        onChange={e => handleEduDraftChange(key, 'percentage', e.target.value)}
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board of Examination</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.board || '—'}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => clearQualification(key)} 
-                      style={btnDangerStyle}
-                    >
-                      Clear details
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => saveQualification(key)} 
-                      disabled={loading}
-                      style={btnPrimaryStyle}
-                    >
-                      Save {label}
-                    </button>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>School Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.school || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.marksObtained || '0'} / {user?.profile?.qualifications?.class10?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.percentage || '0%'}</strong>
                   </div>
                 </div>
-              );
-            })}
-
-            {/* Other Qualifications Header */}
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px', marginTop: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }} className="section-header">
-                <h4 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: '#1A5A3B' }}>Other Qualifications</h4>
-                <button 
-                  type="button" 
-                  onClick={addOtherQualRow} 
-                  style={btnPrimaryStyle}
-                >
-                  <Plus size={14} /> Add More Row
-                </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {otherQualsDraft.map((qual, index) => {
-                  const originalQual = (qualifications.otherQuals && qualifications.otherQuals[index]) || {};
-                  return (
-                    <div key={index} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: '#F8FAFC' }}>
-                      <div className="edu-card-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, width: '100%' }}>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Degree/Certificate Name (e.g. PG Diploma)"
-                            value={qual.degree || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'degree', e.target.value)}
-                            style={{ fontSize: '0.85rem', padding: '4px 8px', fontWeight: 600, maxWidth: '280px', width: '100%' }}
-                          />
-                        </div>
-                        
-                        {/* File Upload/View for Other Qualification */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          {originalQual.certificateUrl ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <a 
-                                href={`${API_BASE_URL}${originalQual.certificateUrl}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={btnSecondaryStyle}
-                              >
-                                <Eye size={12} /> View Doc
-                              </a>
-                              <button 
-                                onClick={() => deleteOtherQualFile(index)}
-                                style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                                title="Delete certificate document"
-                                type="button"
-                              >
-                                <Trash size={14} />
-                              </button>
-                            </div>
-                          ) : (
-                            <label style={{ ...btnSecondaryStyle, margin: 0 }}>
-                              <Upload size={12} /> {uploadingDocKey === `otherQuals_${index}` ? 'Uploading...' : 'Upload Doc'}
-                              <input 
-                                type="file" 
-                                accept=".pdf,image/*" 
-                                onChange={(e) => handleOtherQualFileChange(e, index)} 
-                                style={{ display: 'none' }} 
-                                disabled={uploadingDocKey !== null} 
-                              />
-                            </label>
-                          )}
-                        </div>
-                      </div>
+              {/* Class 12 Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Class 12 (Higher Secondary) Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.class12?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.rollNo || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board of Examination</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.board || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>School Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.school || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.marksObtained || '0'} / {user?.profile?.qualifications?.class12?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.percentage || '0%'}</strong>
+                  </div>
+                </div>
+              </div>
 
-                      {/* Fields */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Board or University"
-                            value={qual.boardOrUniv || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'boardOrUniv', e.target.value)} 
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Year of Passing"
-                            value={qual.yearOfPassing || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'yearOfPassing', e.target.value)}
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Subject / Stream"
-                            value={qual.subject || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'subject', e.target.value)}
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Marks / CGPA"
-                            value={qual.percentage || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'percentage', e.target.value)}
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                      </div>
+              {/* Graduation Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Graduation Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.graduation?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll No / Enroll No</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.rollNo || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.degree || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>College Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.college || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.university || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>CGPA / Marks Obtained</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.marksObtained || '0'} / {user?.profile?.qualifications?.graduation?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage / CGPA (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.percentage || '—'}</strong>
+                  </div>
+                </div>
+              </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                        <button 
-                          type="button" 
-                          onClick={() => deleteOtherQual(index)} 
-                          style={btnDangerStyle}
-                        >
-                          Delete Row
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={() => saveOtherQual(index)} 
-                          disabled={loading}
-                          style={btnPrimaryStyle}
-                        >
-                          Save Qualification
-                        </button>
+              {/* Post Graduation Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Post-Graduation Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.postGraduation?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll No / Enroll No</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.rollNo || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.degree || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>College Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.college || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.university || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>CGPA / Marks Obtained</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.marksObtained || '0'} / {user?.profile?.qualifications?.postGraduation?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage / CGPA (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.percentage || '—'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* M.Phil Card (Optional) */}
+              {user?.profile?.qualifications?.mphil?.done === true && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>M.Phil Details</h4>
+                    {renderStudentDocBadge(user?.profile?.qualifications?.mphil?.certificateUrl)}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.university || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Passing Year</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.passingYear || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.marksObtained || '0'} / {user?.profile?.qualifications?.mphil?.totalMarks || '0'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.percentage || '—'}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* NET JRF Card (Optional) */}
+              {user?.profile?.qualifications?.netJrf?.qualified === true && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>UGC NET / JRF Qualification Details</h4>
+                    {renderStudentDocBadge(user?.profile?.qualifications?.netJrf?.certificateUrl)}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Certificate Number</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.certNumber || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rollNo || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Rank (if any)</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rank || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Score / Percentile</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.score || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Issue</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.issueDate ? user.profile.qualifications.netJrf.issueDate.split('T')[0] : '—'}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Other Qualifications (Optional) */}
+              {user?.profile?.qualifications?.otherQuals?.length > 0 && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', marginBottom: '12px' }}>Other Qualifications</h4>
+                  {user.profile.qualifications.otherQuals.map((o, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '12px' }}>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Qualification Type</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.type === 'Other' ? o.otherType : o.type || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.rollNo || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board / University</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.board || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Institution / School</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.school || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.marksObtained || '0'} / {o.totalMarks || '0'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
+                      </div>
+                      <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center' }}>
+                        {renderStudentDocBadge(o.certificateUrl)}
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {eduKeys.map(({ key, label }) => {
+                const info = eduDrafts[key] || {};
+                const originalInfo = qualifications[key] || {};
+                return (
+                  <div key={key} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div className="edu-card-header">
+                      <strong style={{ fontSize: '0.88rem', color: '#1F2937' }}>{label}</strong>
+                      
+                      {/* Document status or upload controls */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {originalInfo.certificateUrl ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <a 
+                              href={`${API_BASE_URL}${originalInfo.certificateUrl}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={btnSecondaryStyle}
+                            >
+                              <Eye size={12} /> View Doc
+                            </a>
+                            <button 
+                              onClick={() => deleteEduFile(key)}
+                              style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                              title="Delete certificate document"
+                              type="button"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label style={{ ...btnSecondaryStyle, margin: 0 }}>
+                            <Upload size={12} /> {uploadingDocKey === key ? 'Uploading...' : 'Upload Doc'}
+                            <input 
+                              type="file" 
+                              accept=".pdf,image/*" 
+                              onChange={(e) => handleEduFileChange(e, key)} 
+                              style={{ display: 'none' }} 
+                              disabled={uploadingDocKey !== null} 
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Details forms inside */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Board or University"
+                          value={info.boardOrUniv || ''} 
+                          onChange={e => handleEduDraftChange(key, 'boardOrUniv', e.target.value)} 
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Year of Passing"
+                          value={info.yearOfPassing || ''} 
+                          onChange={e => handleEduDraftChange(key, 'yearOfPassing', e.target.value)}
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Subject / Stream"
+                          value={info.subject || ''} 
+                          onChange={e => handleEduDraftChange(key, 'subject', e.target.value)}
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Marks / CGPA"
+                          value={info.percentage || ''} 
+                          onChange={e => handleEduDraftChange(key, 'percentage', e.target.value)}
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => clearQualification(key)} 
+                        style={btnDangerStyle}
+                      >
+                        Clear details
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => saveQualification(key)} 
+                        disabled={loading}
+                        style={btnPrimaryStyle}
+                      >
+                        Save {label}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Other Qualifications Header */}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px', marginTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }} className="section-header">
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: '#1A5A3B' }}>Other Qualifications</h4>
+                  <button 
+                    type="button" 
+                    onClick={addOtherQualRow} 
+                    style={btnPrimaryStyle}
+                  >
+                    <Plus size={14} /> Add More Row
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {otherQualsDraft.map((qual, index) => {
+                    const originalQual = (qualifications.otherQuals && qualifications.otherQuals[index]) || {};
+                    return (
+                      <div key={index} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: '#F8FAFC' }}>
+                        <div className="edu-card-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, width: '100%' }}>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Degree/Certificate Name (e.g. PG Diploma)"
+                              value={qual.degree || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'degree', e.target.value)}
+                              style={{ fontSize: '0.85rem', padding: '4px 8px', fontWeight: 600, maxWidth: '280px', width: '100%' }}
+                            />
+                          </div>
+                          
+                          {/* File Upload/View for Other Qualification */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {originalQual.certificateUrl ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <a 
+                                  href={`${API_BASE_URL}${originalQual.certificateUrl}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  style={btnSecondaryStyle}
+                                >
+                                  <Eye size={12} /> View Doc
+                                </a>
+                                <button 
+                                  onClick={() => deleteOtherQualFile(index)}
+                                  style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                  title="Delete certificate document"
+                                  type="button"
+                                >
+                                  <Trash size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <label style={{ ...btnSecondaryStyle, margin: 0 }}>
+                                <Upload size={12} /> {uploadingDocKey === `otherQuals_${index}` ? 'Uploading...' : 'Upload Doc'}
+                                <input 
+                                  type="file" 
+                                  accept=".pdf,image/*" 
+                                  onChange={(e) => handleOtherQualFileChange(e, index)} 
+                                  style={{ display: 'none' }} 
+                                  disabled={uploadingDocKey !== null} 
+                                />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Fields */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Board or University"
+                              value={qual.boardOrUniv || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'boardOrUniv', e.target.value)} 
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Year of Passing"
+                              value={qual.yearOfPassing || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'yearOfPassing', e.target.value)}
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Subject / Stream"
+                              value={qual.subject || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'subject', e.target.value)}
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Marks / CGPA"
+                              value={qual.percentage || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'percentage', e.target.value)}
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                          <button 
+                            type="button" 
+                            onClick={() => deleteOtherQual(index)} 
+                            style={btnDangerStyle}
+                          >
+                            Delete Row
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => saveOtherQual(index)} 
+                            disabled={loading}
+                            style={btnPrimaryStyle}
+                          >
+                            Save Qualification
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-
-          </div>
+          )}
         </section>
 
         {/* 5. HONOURS & AWARDS */}
@@ -2770,6 +3158,7 @@ const StaffProfileTab = () => {
         </section>
 
       </div>
+    </div>
     </div>
   );
 };
