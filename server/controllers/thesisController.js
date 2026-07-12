@@ -840,6 +840,14 @@ const finalApprove = async (req, res) => {
         authorName: req.user.name,
         text: `Approved and signed off by supervisor ${req.user.name}. Sent to HOD for final sign-off.`
       });
+      milestone.history = milestone.history || [];
+      milestone.history.push({
+        action: 'SUPERVISOR_APPROVED',
+        actorName: req.user.name,
+        actorRole: 'SUPERVISOR',
+        remarks: 'Approved and signed off final bound thesis package.',
+        timestamp: new Date()
+      });
       await milestone.save();
     }
 
@@ -892,6 +900,14 @@ const finalReject = async (req, res) => {
         authorName: req.user.name,
         text: comment || 'Supervisor requested corrections.'
       });
+      milestone.history = milestone.history || [];
+      milestone.history.push({
+        action: 'SUPERVISOR_REJECTED',
+        actorName: req.user.name,
+        actorRole: 'SUPERVISOR',
+        remarks: comment || 'Supervisor requested corrections.',
+        timestamp: new Date()
+      });
       await milestone.save();
     }
 
@@ -936,6 +952,14 @@ const finalApproveHOD = async (req, res) => {
         authorId: req.user._id,
         authorName: req.user.name,
         text: `Approved and signed off by HOD ${req.user.name}. Ready for examiner dispatch.`
+      });
+      milestone.history = milestone.history || [];
+      milestone.history.push({
+        action: 'HOD_APPROVED',
+        actorName: req.user.name,
+        actorRole: 'HOD',
+        remarks: 'Approved and signed off final bound thesis package.',
+        timestamp: new Date()
       });
       await milestone.save();
     }
@@ -983,6 +1007,14 @@ const finalRejectHOD = async (req, res) => {
         authorId: req.user._id,
         authorName: req.user.name,
         text: comment || 'HOD requested corrections.'
+      });
+      milestone.history = milestone.history || [];
+      milestone.history.push({
+        action: 'HOD_REJECTED',
+        actorName: req.user.name,
+        actorRole: 'HOD',
+        remarks: comment || 'HOD requested corrections.',
+        timestamp: new Date()
       });
       await milestone.save();
     }
@@ -1918,6 +1950,20 @@ const recordPreSubmissionSeminarOutcome = async (req, res) => {
           sequence: 100,
         });
       }
+
+      if (!thesis.preSubmissionSeminarHistory) {
+        thesis.preSubmissionSeminarHistory = [];
+      }
+      thesis.preSubmissionSeminarHistory.push({
+        scheduledDate: thesis.preSubmissionSeminar.scheduledDate,
+        scheduledTime: thesis.preSubmissionSeminar.scheduledTime,
+        venue: thesis.preSubmissionSeminar.venue,
+        committeeMembers: thesis.preSubmissionSeminar.committeeMembers,
+        remarks: thesis.preSubmissionSeminar.remarks,
+        outcomeRecordedAt: new Date(),
+        outcomeRemarks: remarks || '',
+        status: 'CLEARED'
+      });
     } else {
       thesis.auditLog.push({
         action: 'SEMINAR_FAILED',

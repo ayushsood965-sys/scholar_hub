@@ -2847,9 +2847,15 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <div key={idx} style={{ background: '#F8FAFC', borderRadius: 10, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.82rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                     <span style={{ fontWeight: 700, color: '#475569' }}>Colloquium Run #{idx + 1}</span>
-                    <span style={{ padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontSize: '0.7rem', background: '#FEE2E2', color: '#991B1B' }}>
-                      UNCLEARED (Unsatisfactory)
-                    </span>
+                    {h.status === 'CLEARED' ? (
+                      <span style={{ padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontSize: '0.7rem', background: '#D1FAE5', color: '#065F46' }}>
+                        CLEARED (Satisfactory)
+                      </span>
+                    ) : (
+                      <span style={{ padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontSize: '0.7rem', background: '#FEE2E2', color: '#991B1B' }}>
+                        UNCLEARED (Unsatisfactory)
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', color: '#475569', marginBottom: 8 }}>
                     <div><strong>Scheduled Date:</strong> {h.scheduledDate ? new Date(h.scheduledDate).toLocaleDateString() : 'N/A'}</div>
@@ -2857,7 +2863,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {h.venue}</div>
                     {h.committeeMembers && <div style={{ gridColumn: 'span 2' }}><strong>Panel:</strong> {h.committeeMembers}</div>}
                   </div>
-                  <div style={{ background: 'white', padding: 10, borderRadius: 6, borderLeft: '3px solid #EF4444' }}>
+                  <div style={{ background: 'white', padding: 10, borderRadius: 6, borderLeft: h.status === 'CLEARED' ? '3px solid #10B981' : '3px solid #EF4444' }}>
                     <div><strong>Outcome Remarks:</strong> "{h.outcomeRemarks || 'None'}"</div>
                     <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 4 }}>Conducted on {h.outcomeRecordedAt ? new Date(h.outcomeRecordedAt).toLocaleDateString() : 'N/A'}</div>
                   </div>
@@ -4538,6 +4544,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 )}
               </div>
             )}
+            {renderEvaluationTimelineGeneric(finalSub, thesis, 'Final Submission')}
+            {renderHistoryTable(getMilestoneHistory(finalSub, thesis))}
           </div>
         )}
       </div>
