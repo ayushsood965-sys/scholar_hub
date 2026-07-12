@@ -620,13 +620,48 @@ const getLastRejectionRemark = (m, thesis) => {
   return 'Supervisor/HOD has requested corrections.';
 };
 
+const getRegistrationHistory = (thesis) => {
+  if (!thesis) return [];
+  if (thesis.registrationHistory && thesis.registrationHistory.length > 0) {
+    return thesis.registrationHistory;
+  }
+  // Virtual fallback
+  const list = [
+    {
+      action: 'REGISTRATION_SUBMITTED',
+      actorName: 'Scholar',
+      actorRole: 'STUDENT',
+      remarks: 'Submitted profile details for HOD registration approval.',
+      timestamp: thesis.createdAt
+    }
+  ];
+  if (thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED') {
+    list.push({
+      action: 'REGISTRATION_APPROVED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: 'Profile verified and registration approved.',
+      timestamp: thesis.updatedAt
+    });
+  } else if (thesis.status === 'REJECTED') {
+    list.push({
+      action: 'REGISTRATION_REJECTED',
+      actorName: 'HOD',
+      actorRole: 'HOD',
+      remarks: 'Profile verification rejected.',
+      timestamp: thesis.updatedAt
+    });
+  }
+  return list;
+};
+
 const splitIntoCycles = (history) => {
   if (!history || history.length === 0) return [];
   const sorted = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   const cycles = [];
   let current = [];
-  const terminalActions = ['SUPERVISOR_REJECTED', 'HOD_REJECTED', 'REVISION_REQUIRED', 'HOD_APPROVED', 'APPROVED', 'COURSEWORK_FACULTY_REJECTED', 'COURSEWORK_HOD_REJECTED', 'COURSEWORK_HOD_APPROVED'];
-  const startActions = ['SUBMITTED', 'COURSEWORK_SUBMITTED'];
+  const terminalActions = ['SUPERVISOR_REJECTED', 'HOD_REJECTED', 'REVISION_REQUIRED', 'HOD_APPROVED', 'APPROVED', 'COURSEWORK_FACULTY_REJECTED', 'COURSEWORK_HOD_REJECTED', 'COURSEWORK_HOD_APPROVED', 'REGISTRATION_APPROVED', 'REGISTRATION_REJECTED'];
+  const startActions = ['SUBMITTED', 'COURSEWORK_SUBMITTED', 'REGISTRATION_SUBMITTED'];
   
   for (const entry of sorted) {
     if (startActions.includes(entry.action) && current.length > 0) {
@@ -645,7 +680,7 @@ const splitIntoCycles = (history) => {
 
 const getActionDisplayName = (action) => {
   const a = (action || '').toUpperCase();
-  if (a === 'SUBMITTED' || a === 'COURSEWORK_SUBMITTED') {
+  if (a === 'SUBMITTED' || a === 'COURSEWORK_SUBMITTED' || a === 'REGISTRATION_SUBMITTED') {
     return 'Submitted';
   }
   if (a === 'SUPERVISOR_APPROVED' || a === 'COURSEWORK_FACULTY_APPROVED') {
@@ -654,10 +689,10 @@ const getActionDisplayName = (action) => {
   if (a === 'SUPERVISOR_REJECTED' || a === 'COURSEWORK_FACULTY_REJECTED') {
     return 'Rejected by Supervisor';
   }
-  if (a === 'HOD_APPROVED' || a === 'APPROVED' || a === 'COURSEWORK_HOD_APPROVED') {
+  if (a === 'HOD_APPROVED' || a === 'APPROVED' || a === 'COURSEWORK_HOD_APPROVED' || a === 'REGISTRATION_APPROVED') {
     return 'Approved by HOD';
   }
-  if (a === 'HOD_REJECTED' || a === 'REVISION_REQUIRED' || a === 'COURSEWORK_HOD_REJECTED') {
+  if (a === 'HOD_REJECTED' || a === 'REVISION_REQUIRED' || a === 'COURSEWORK_HOD_REJECTED' || a === 'REGISTRATION_REJECTED') {
     return 'Rejected by HOD';
   }
   return action;
@@ -1531,7 +1566,7 @@ const WaitingRoom = ({ thesis }) => (
     <Clock size={64} color="#F59E0B" style={{ margin: '0 auto 16px' }} />
     <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Awaiting Admin Verification</h3>
     <p style={{ color: '#6b7280', marginBottom: 24 }}>Your registration has been submitted. The admin will verify your enrollment and assign a supervisor. All uploads are locked until verification is complete.</p>
-    <div style={{ background: '#FEF3C7', borderRadius: 12, padding: 16, textAlign: 'left' }}>
+    <div style={{ background: '#FEF3C7', borderRadius: 12, padding: 16, textAlign: 'left', marginBottom: 24 }}>
       <div style={{ fontWeight: 600, marginBottom: 8, color: '#92400E' }}>Submitted Details:</div>
       <div style={{ fontSize: '0.9rem', color: '#78350F' }}>
         <div>📋 Enrollment: <strong>{thesis.enrollmentNumber}</strong></div>
@@ -1539,7 +1574,10 @@ const WaitingRoom = ({ thesis }) => (
         <div>📌 Title: <strong>{thesis.title}</strong></div>
       </div>
     </div>
-    <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#6b7280', fontSize: '0.85rem' }}>
+
+    {renderHistoryTable(getRegistrationHistory(thesis))}
+
+    <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#6b7280', fontSize: '0.85rem' }}>
       <Lock size={16} /> Uploads disabled until admin verification
     </div>
   </div>
@@ -10904,6 +10942,7 @@ const ProfileTab = () => {
         </div>
 
       </form>
+      {thesis && renderHistoryTable(getRegistrationHistory(thesis))}
         </div>
       </div>
     </div>

@@ -738,7 +738,19 @@ const rejectUser = async (req, res) => {
     // Update associated Thesis record to REJECTED so the student can resubmit their registration
     if (targetUser.role === 'STUDENT') {
       const Thesis = require('../models/Thesis');
-      await Thesis.updateOne({ scholarId: targetUser._id }, { status: 'REJECTED' });
+      const thesis = await Thesis.findOne({ scholarId: targetUser._id });
+      if (thesis) {
+        thesis.status = 'REJECTED';
+        if (!thesis.registrationHistory) thesis.registrationHistory = [];
+        thesis.registrationHistory.push({
+          action: 'REGISTRATION_REJECTED',
+          actorName: req.user.name,
+          actorRole: req.user.role || 'HOD',
+          remarks: remarks,
+          timestamp: new Date()
+        });
+        await thesis.save();
+      }
     }
 
     // Notify the student that their profile verification has been rejected

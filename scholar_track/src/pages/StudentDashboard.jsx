@@ -8,6 +8,7 @@ import OverviewTab from '../modules/student/OverviewTab';
 import AttendanceTab from '../modules/student/AttendanceTab';
 import LeaveTab from '../modules/student/LeaveTab';
 import CorrectionsTab from '../modules/student/CorrectionsTab';
+import AttendanceLogsTab from '../modules/student/AttendanceLogsTab';
 import ProfileTab from '../modules/student/ProfileTab';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import SkeletonLoader from '../components/ui/SkeletonLoader';
@@ -60,6 +61,7 @@ const StudentDashboard = () => {
   const tabTitles = {
     overview: 'Profile Overview',
     attendance: 'My Attendance',
+    records: 'Attendance Logs',
     leave: 'Leave Management',
     corrections: 'Correction Requests',
     profile: 'My Profile',
@@ -97,6 +99,7 @@ const StudentDashboard = () => {
       >
         {activeTab === 'overview' && <OverviewTab thesis={thesis} />}
         {activeTab === 'attendance' && <AttendanceTab />}
+        {activeTab === 'records' && <AttendanceLogsTab />}
         {activeTab === 'leave' && <LeaveTab />}
         {activeTab === 'corrections' && <CorrectionsTab />}
         {activeTab === 'profile' && <ProfileTab thesis={thesis} onRefreshThesis={fetchThesis} />}

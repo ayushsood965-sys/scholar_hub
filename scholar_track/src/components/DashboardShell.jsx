@@ -37,6 +37,7 @@ const roleNavConfig = {
     STUDENT: [
     { key: "overview", icon: Home, label: "Overview" },
     { key: "attendance", icon: Clock, label: "My Attendance" },
+    { key: "records", icon: ClipboardList, label: "Attendance Logs" },
     { key: "leave", icon: CalendarRange, label: "Leave Management" },
     { key: "corrections", icon: FileCheck, label: "Corrections" },
     { key: "profile", icon: User, label: "Profile" },

@@ -452,8 +452,26 @@ exports.getFacultyTimetables = async (req, res) => {
 };
 exports.createTimetableSlot = async (req, res) => {
   try {
-    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime } = req.body;
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime, subjectCode, subjectName } = req.body;
     
+    // Validate subject code uniqueness
+    if (subjectCode && subjectName) {
+      const duplicateCodeSlot = await TimetableMaster.findOne({
+        sessionId,
+        degreeTypeId,
+        degreeNameId,
+        semesterId,
+        isActive: true,
+        subjectCode: { $regex: new RegExp(`^${subjectCode.trim()}$`, 'i') },
+        subjectName: { $ne: subjectName.trim() }
+      });
+      if (duplicateCodeSlot) {
+        return res.status(400).json({
+          message: `Subject code "${subjectCode}" is already mapped to a different subject: "${duplicateCodeSlot.subjectName}". Each subject must have a unique subject code.`
+        });
+      }
+    }
+
     // Validate time overlap
     const newStart = timeToMinutes(startTime);
     const newEnd = timeToMinutes(endTime);
@@ -491,8 +509,27 @@ exports.deleteTimetableSlot = async (req, res) => {
 };
 exports.updateTimetableSlot = async (req, res) => {
   try {
-    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime } = req.body;
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime, subjectCode, subjectName } = req.body;
     
+    // Validate subject code uniqueness
+    if (subjectCode && subjectName) {
+      const duplicateCodeSlot = await TimetableMaster.findOne({
+        sessionId,
+        degreeTypeId,
+        degreeNameId,
+        semesterId,
+        isActive: true,
+        _id: { $ne: req.params.id },
+        subjectCode: { $regex: new RegExp(`^${subjectCode.trim()}$`, 'i') },
+        subjectName: { $ne: subjectName.trim() }
+      });
+      if (duplicateCodeSlot) {
+        return res.status(400).json({
+          message: `Subject code "${subjectCode}" is already mapped to a different subject: "${duplicateCodeSlot.subjectName}". Each subject must have a unique subject code.`
+        });
+      }
+    }
+
     // Validate time overlap (exclude current slot from check)
     const newStart = timeToMinutes(startTime);
     const newEnd = timeToMinutes(endTime);
@@ -3890,6 +3927,186 @@ exports.getHodCorrectionHistory = async (req, res) => {
     .sort({ updatedAt: -1 });
 
     res.status(200).json(corrections);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getStudentAttendanceRecords = async (req, res) => {
+  try {
+    const studentId = req.user._id;
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, startDate, endDate, status } = req.query;
+    
+    if (!sessionId || !degreeTypeId || !degreeNameId) {
+      return res.status(400).json({ message: 'Missing required filters' });
+    }
+
+    const dt = await DegreeTypeMaster.findById(degreeTypeId);
+    const isPhD = dt && dt.code === 'PHD';
+
+    if (!isPhD && !semesterId) {
+      return res.status(400).json({ message: 'Missing required filter: semesterId is required for UG/PG' });
+    }
+
+    const query = { 
+      studentId,
+      sessionId,
+      degreeTypeId,
+      degreeNameId
+    };
+
+    if (!isPhD) {
+      query.semesterId = semesterId;
+    }
+    
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
+    
+    const records = await AttendanceRecord.find(query)
+      .populate('markedBy', 'name profile')
+      .populate('lastEditedBy', 'name profile')
+      .populate('hodApprovedBy', 'name profile')
+      .populate('facultyId', 'name profile')
+      .populate('sessionId', 'sessionName')
+      .populate({
+        path: 'classes.timetableSlotId',
+        select: 'subjectCode subjectName'
+      })
+      .sort({ date: -1, createdAt: -1 });
+
+    const list = [];
+    records.forEach(r => {
+      const isRecordPhD = r.courseCode === 'DAILY';
+      if (isRecordPhD) {
+        if (!status || r.status === status) {
+          list.push({
+            _id: `${r._id}_daily`,
+            recordId: r._id,
+            date: r.date,
+            subjectCode: 'DAILY',
+            subjectName: 'Daily Check-In',
+            facultyName: r.facultyId?.name || 'Biometric System',
+            status: r.status,
+            markedBy: r.markedBy,
+            markedAt: r.markedAt,
+            lastEditedBy: r.lastEditedBy,
+            lastEditedAt: r.lastEditedAt,
+            hodApprovedBy: r.hodApprovedBy,
+            hodApprovedAt: r.hodApprovedAt,
+            forwardedToHOD: r.forwardedToHOD,
+            approvalStatus: r.approvalStatus,
+            remarks: r.remarks
+          });
+        }
+      } else {
+        (r.classes || []).forEach(c => {
+          const slotId = c.timetableSlotId?._id || c.timetableSlotId;
+          const classStatus = c.isCancelled ? 'CANCELLED' : (c.selected ? 'PRESENT' : 'ABSENT');
+          const finalStatus = r.status === 'ON_LEAVE' ? 'ON_LEAVE' : classStatus;
+          
+          if (!status || finalStatus === status) {
+            list.push({
+              _id: `${r._id}_${slotId}`,
+              recordId: r._id,
+              date: r.date,
+              subjectCode: c.timetableSlotId?.subjectCode || '',
+              subjectName: c.subjectName,
+              facultyName: r.facultyId?.name || 'Faculty',
+              status: finalStatus,
+              markedBy: r.markedBy,
+              markedAt: r.markedAt,
+              lastEditedBy: r.lastEditedBy,
+              lastEditedAt: r.lastEditedAt,
+              hodApprovedBy: r.hodApprovedBy,
+              hodApprovedAt: r.hodApprovedAt,
+              forwardedToHOD: r.forwardedToHOD,
+              approvalStatus: r.approvalStatus,
+              remarks: r.remarks
+            });
+          }
+        });
+      }
+    });
+
+    res.status(200).json(list);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getStudentMappedSubjects = async (req, res) => {
+  try {
+    const studentId = req.user._id;
+    const { sessionId, degreeTypeId, degreeNameId, semesterId } = req.query;
+
+    if (!sessionId || !degreeTypeId || !degreeNameId) {
+      return res.status(400).json({ message: 'Missing required filters' });
+    }
+
+    const dt = await DegreeTypeMaster.findById(degreeTypeId);
+    const isPhD = dt && dt.code === 'PHD';
+
+    if (!isPhD && !semesterId) {
+      return res.status(400).json({ message: 'Missing required filter: semesterId is required for UG/PG' });
+    }
+
+    let mappedSubjects = [];
+
+    const mapping = await StudentSemesterMapping.findOne({
+      studentId,
+      sessionId,
+      degreeTypeId,
+      degreeNameId,
+      semesterId: isPhD ? null : semesterId
+    });
+
+    if (mapping && mapping.mappedSubjects && mapping.mappedSubjects.length > 0) {
+      const seen = new Set();
+      mapping.mappedSubjects.forEach(ms => {
+        const key = `${ms.subjectCode}_${ms.subjectName}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          mappedSubjects.push({
+            timetableSlotId: ms.timetableSlotId,
+            subjectCode: ms.subjectCode,
+            subjectName: ms.subjectName
+          });
+        }
+      });
+    } else {
+      const timetables = await TimetableMaster.find({
+        sessionId,
+        degreeTypeId,
+        degreeNameId,
+        semesterId: isPhD ? null : semesterId,
+        isActive: true
+      });
+      const seen = new Set();
+      timetables.forEach(t => {
+        const key = `${t.subjectCode}_${t.subjectName}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          mappedSubjects.push({
+            timetableSlotId: t._id,
+            subjectCode: t.subjectCode,
+            subjectName: t.subjectName
+          });
+        }
+      });
+    }
+
+    if (isPhD || mappedSubjects.length === 0) {
+      mappedSubjects.push({
+        timetableSlotId: null,
+        subjectCode: 'DAILY',
+        subjectName: 'Daily Check-In'
+      });
+    }
+
+    res.status(200).json(mappedSubjects);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

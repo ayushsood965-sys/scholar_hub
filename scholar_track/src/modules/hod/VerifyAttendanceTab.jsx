@@ -515,6 +515,7 @@ const VerifyAttendanceTab = () => {
                         <th>Marked By (Faculty)</th>
                         <th>Marked Status</th>
                         <th>Approval Status</th>
+                        <th>Verification Logs</th>
                         <th style={{ width: '120px', textAlign: 'center' }}>Action</th>
                       </tr>
                     </thead>
@@ -633,6 +634,57 @@ const VerifyAttendanceTab = () => {
                           <td>
                             <StatusBadge status={r.approvalStatus} />
                           </td>
+                          <td>
+                             {(() => {
+                               const formatTimestamp = (ts) => {
+                                 if (!ts) return 'N/A';
+                                 return new Date(ts).toLocaleString('en-IN', {
+                                   day: '2-digit', month: '2-digit', year: 'numeric',
+                                   hour: '2-digit', minute: '2-digit', hour12: true
+                                 });
+                               };
+
+                               const facultyName = r.markedBy?.name || 'Faculty';
+                               const facultyDesignation = r.markedBy?.profile?.designation || 'Faculty';
+                               const markedTime = formatTimestamp(r.markedAt || r.originalRecord?.createdAt);
+
+                               const hodName = r.hodApprovedBy?.name || r.lastEditedBy?.name || r.departmentHod?.name || 'HOD';
+                               const hodDesignation = r.hodApprovedBy?.profile?.designation || r.lastEditedBy?.profile?.designation || r.departmentHod?.profile?.designation || 'Professor & Head';
+                               const hodTime = formatTimestamp(r.hodApprovedAt || r.lastEditedAt || r.originalRecord?.updatedAt);
+
+                               const editorName = r.lastEditedBy?.name;
+                               const editorDesignation = r.lastEditedBy?.profile?.designation || 'HOD';
+                               const editTime = formatTimestamp(r.lastEditedAt);
+                               const isEditedByHod = r.lastEditedBy && r.lastEditedBy.role === 'HOD';
+
+                               return r.forwardedToHOD ? (
+                                 r.approvalStatus === 'PENDING_HOD' ? (
+                                   <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                                     <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+                                     {isEditedByHod && (
+                                       <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+                                     )}
+                                     <div><strong>Forwarded To:</strong> HOD {hodName} ({hodDesignation})</div>
+                                   </div>
+                                 ) : (
+                                   <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                                     <div><strong>Forwarded By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+                                     {isEditedByHod && (
+                                       <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+                                     )}
+                                     <div><strong>Approved By HOD:</strong> {hodName} ({hodDesignation}) at {hodTime}</div>
+                                   </div>
+                                 )
+                               ) : (
+                                 <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                                   <div><strong>Approved By:</strong> {facultyName} ({facultyDesignation}) at {markedTime}</div>
+                                   {isEditedByHod && (
+                                     <div><strong>Modified By HOD:</strong> {editorName} ({editorDesignation}) at {editTime}</div>
+                                   )}
+                                 </div>
+                               );
+                             })()}
+                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {editingStudentId === r._id ? (
                               <div className="flex gap-xs justify-center">

@@ -80,6 +80,16 @@ const createThesis = async (req, res) => {
         existing.enrollmentNumber = user.profile.enrollmentNumber;
         existing.abstract = user.profile.thesisSummary || `Specialization: ${user.profile.specialization || "N/A"}. Mode: ${user.profile.phdMode || "N/A"}. Candidate has completed and submitted their academic profile details for HOD registration review.`;
         existing.keywords = user.profile.thesisKeywords || '';
+
+        if (!existing.registrationHistory) existing.registrationHistory = [];
+        existing.registrationHistory.push({
+          action: 'REGISTRATION_SUBMITTED',
+          actorName: user.name,
+          actorRole: 'STUDENT',
+          remarks: 'Re-submitted profile details for HOD registration review.',
+          timestamp: new Date()
+        });
+        
         await existing.save();
 
         await createNotification({
@@ -104,6 +114,13 @@ const createThesis = async (req, res) => {
       abstract: user.profile.thesisSummary || `Specialization: ${user.profile.specialization || "N/A"}. Mode: ${user.profile.phdMode || "N/A"}. Candidate has completed and submitted their academic profile details for HOD registration review.`,
       keywords: user.profile.thesisKeywords || '',
       status: 'REGISTRATION_PENDING',
+      registrationHistory: [{
+        action: 'REGISTRATION_SUBMITTED',
+        actorName: user.name,
+        actorRole: 'STUDENT',
+        remarks: 'Submitted profile details for HOD registration approval.',
+        timestamp: new Date()
+      }]
     });
 
     await createNotification({
@@ -253,6 +270,16 @@ const verifyEnrollment = async (req, res) => {
       hodApproverId: null,
       hodApprovedAt: null
     };
+
+    if (!thesis.registrationHistory) thesis.registrationHistory = [];
+    thesis.registrationHistory.push({
+      action: 'REGISTRATION_APPROVED',
+      actorName: req.user.name,
+      actorRole: req.user.role || 'HOD',
+      remarks: 'Profile verified and registration approved.',
+      timestamp: new Date()
+    });
+
     thesis.auditLog.push({ action: 'ENROLLMENT_VERIFIED', note: `Verified by HOD on ${new Date().toDateString()}` });
     await thesis.save();
 

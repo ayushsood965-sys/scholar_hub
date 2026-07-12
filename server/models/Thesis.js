@@ -150,6 +150,15 @@ const thesisSchema = new mongoose.Schema(
       default: 'NOT_SCHEDULED',
     },
     vivaRemarks: { type: String, default: '' },
+    registrationHistory: [
+      {
+        action: { type: String, required: true },
+        actorName: { type: String, required: true },
+        actorRole: { type: String, required: true },
+        remarks: { type: String, default: '' },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ],
     auditLog: [
       {
         action: String,
