@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Search, Beaker, Users, FileText, Banknote } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from './context/ToastContext';
+import { AuthContext } from './context/AuthContext';
 import { API_URL, API_BASE_URL } from './config';
 
 import Navbar from './components/Navbar';
@@ -14,6 +15,22 @@ const Landing = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
   const toastShown = useRef(null);
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'SUPER_ADMIN') {
+        navigate('/super-dashboard', { replace: true });
+      } else if (user.role === 'ADMIN' || user.role === 'HOD') {
+        navigate('/admin-dashboard', { replace: true });
+      } else if (user.role === 'FACULTY') {
+        navigate('/faculty-dashboard', { replace: true });
+      } else {
+        navigate('/student-dashboard', { replace: true });
+      }
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const toastMsg = searchParams.get('toast');
@@ -57,6 +74,15 @@ const Landing = () => {
     }
     return 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=400&q=80';
   };
+
+  if (authLoading) {
+    return (
+      <div className="premium-preloader-container" style={{ minHeight: '100vh', justifyContent: 'center' }}>
+        <div className="premium-preloader-spinner"></div>
+        <div className="premium-preloader-text">Authenticating session...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="landing-page">

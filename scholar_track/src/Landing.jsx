@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useRef, useContext } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from './context/ToastContext';
+import { AuthContext } from './context/AuthContext';
 import { motion } from 'framer-motion';
 import {
   BarChart3, Shield, Clock, CalendarRange, ArrowRight, ArrowUpRight,
@@ -75,6 +76,21 @@ const Landing = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
   const toastShown = useRef(null);
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      const dashMap = {
+        SUPER_ADMIN: '/super-dashboard',
+        HOD: '/hod-dashboard',
+        ADMIN: '/hod-dashboard',
+        FACULTY: '/faculty-dashboard',
+        STUDENT: '/student-dashboard',
+      };
+      navigate(dashMap[user.role] ?? '/student-dashboard', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const toastMsg = searchParams.get('toast');
@@ -104,6 +120,15 @@ const Landing = () => {
 
   const roles = ['student', 'faculty', 'hod', 'admin'];
   const roleLabels = { student: 'Student', faculty: 'Faculty', hod: 'HOD', admin: 'Admin' };
+
+  if (authLoading) {
+    return (
+      <div className="premium-preloader-container" style={{ minHeight: '100vh', justifyContent: 'center' }}>
+        <div className="premium-preloader-spinner" />
+        <div className="premium-preloader-text">Authenticating session...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="st-landing">
