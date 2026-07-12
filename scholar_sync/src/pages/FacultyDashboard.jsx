@@ -14,6 +14,7 @@ import { useToast } from '../context/ToastContext';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
 import { useTabPersistence } from '../hooks/useTabPersistence';
+import MobileBottomNav from '../components/MobileBottomNav';
 import { progressiveFetch } from '../utils/progressiveFetch';
 import ThemeToggle from '../components/ThemeToggle';
 import UnifiedScholarModal from '../components/UnifiedScholarModal';
@@ -23,44 +24,46 @@ import ScholarSearchTab from '../components/ScholarSearchTab';
 import { useGridControl } from '../hooks/useGridControl';
 import StaffProfileTab from '../components/StaffProfileTab';
 
+const supervisorNavItems = [
+  { kind: 'section', label: '📊 General' },
+  { key: 'overview', label: 'Dashboard', Icon: Home },
+  { key: 'profile', label: 'Profile', Icon: User },
+  { kind: 'section', label: '🎓 Scholar Management' },
+  { key: 'scholars', label: 'My Scholars', Icon: Users },
+  { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
+  { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+  { kind: 'section', label: '📅 Academic Activities' },
+  { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
+  { key: 'reviews', label: 'Pending Reviews', Icon: FileText },
+  { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
+  { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
+  { kind: 'section', label: '⚙️ Portal Settings' },
+  { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
+];
+
+const hodNavItems = [
+  { kind: 'section', label: '📊 General' },
+  { key: 'overview', label: 'Dashboard', Icon: Home },
+  { key: 'profile', label: 'Profile', Icon: User },
+  { kind: 'section', label: '🎓 Scholar Management' },
+  { key: 'dept', label: 'Department Scholars', Icon: Users },
+  { key: 'registrations', label: 'Registration Requests', Icon: ShieldCheck },
+  { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
+  { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+  { kind: 'section', label: '📅 Academic Activities' },
+  { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
+  { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
+  { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
+  { kind: 'section', label: '📬 Requests & Actions' },
+  { key: 'requests', label: 'Change Requests', Icon: Edit },
+  { kind: 'section', label: '⚙️ Portal Settings' },
+  { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
+];
+
 const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
-  const supervisorItems = [
-    { kind: 'section', label: '📊 General' },
-    { key: 'overview', label: 'Dashboard', Icon: Home },
-    { key: 'profile', label: 'Profile', Icon: User },
-    { kind: 'section', label: '🎓 Scholar Management' },
-    { key: 'scholars', label: 'My Scholars', Icon: Users },
-    { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
-    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
-    { kind: 'section', label: '📅 Academic Activities' },
-    { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
-    { key: 'reviews', label: 'Pending Reviews', Icon: FileText },
-    { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
-    { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
-    { kind: 'section', label: '⚙️ Portal Settings' },
-    { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
-  ];
-  const hodItems = [
-    { kind: 'section', label: '📊 General' },
-    { key: 'overview', label: 'Dashboard', Icon: Home },
-    { key: 'profile', label: 'Profile', Icon: User },
-    { kind: 'section', label: '🎓 Scholar Management' },
-    { key: 'dept', label: 'Department Scholars', Icon: Users },
-    { key: 'registrations', label: 'Registration Requests', Icon: ShieldCheck },
-    { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
-    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
-    { kind: 'section', label: '📅 Academic Activities' },
-    { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
-    { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
-    { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
-    { kind: 'section', label: '📬 Requests & Actions' },
-    { key: 'requests', label: 'Change Requests', Icon: Edit },
-    { kind: 'section', label: '⚙️ Portal Settings' },
-    { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
-  ];
-  const items = subRole === 'HOD' ? hodItems : supervisorItems;
+  const items = subRole === 'HOD' ? hodNavItems : supervisorNavItems;
   return (
     <div className="sidebar">
       <div className="sidebar-logo">
@@ -4595,6 +4598,13 @@ const FacultyDashboard = () => {
         isOpen={isOnboardingOpen} 
         onClose={() => setIsOnboardingOpen(false)} 
         onGo={() => { setActiveTab('profile'); setIsOnboardingOpen(false); }} 
+      />
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        navItems={subRole === 'HOD' ? hodNavItems : supervisorNavItems}
+        isVerified={user?.isVerified}
+        onLogout={() => { window.location.href = "/logout-bridge?toast=Logged%20out%20successfully"; }}
       />
     </div>
   );

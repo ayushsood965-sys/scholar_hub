@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 import { useTabPersistence } from '../hooks/useTabPersistence';
+import MobileBottomNav from '../components/MobileBottomNav';
 import { progressiveFetch } from '../utils/progressiveFetch';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
@@ -4690,43 +4691,47 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
   );
 };
 
+const adminNavItems = [
+  { kind: 'section', label: '📊 General' },
+  { key: 'overview', label: 'System Overview', Icon: Home },
+  { key: 'profile', label: 'My Profile', Icon: User },
+  { kind: 'section', label: '🎓 Scholar Management' },
+  { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
+  { key: 'global_transfers', label: 'Global Transfers', Icon: Layers },
+  { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+  { kind: 'section', label: '👁️ Monitoring & Approvals' },
+  { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
+  { key: 'requests', label: 'Change Requests', Icon: Edit },
+  { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
+  { kind: 'section', label: '⚙️ User & Portal Settings' },
+  { key: 'users', label: 'Manage Users', Icon: Users },
+  { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
+];
+
+const adminHODNavItems = [
+  { kind: 'section', label: '📊 General' },
+  { key: 'overview', label: 'Department Overview', Icon: Home },
+  { key: 'profile', label: 'My Profile', Icon: User },
+  { kind: 'section', label: '🎓 Scholar Management' },
+  { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
+  { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
+  { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+  { kind: 'section', label: '📅 Academic Activities' },
+  { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
+  { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
+  { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
+  { kind: 'section', label: '⚖️ Requests & Evaluations' },
+  { key: 'requests', label: 'Change Requests', Icon: Edit },
+  { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
+  { kind: 'section', label: '⚙️ User & Portal Settings' },
+  { key: 'users', label: 'Manage Users', Icon: Users },
+  { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
+];
+
 const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
   const { logout = (() => {}), user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
-  const items = user?.role === 'ADMIN' ? [
-    { kind: 'section', label: '📊 General' },
-    { key: 'overview', label: 'System Overview', Icon: Home },
-    { key: 'profile', label: 'My Profile', Icon: User },
-    { kind: 'section', label: '🎓 Scholar Management' },
-    { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
-    { key: 'global_transfers', label: 'Global Transfers', Icon: Layers },
-    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
-    { kind: 'section', label: '👁️ Monitoring & Approvals' },
-    { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
-    { key: 'requests', label: 'Change Requests', Icon: Edit },
-    { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
-    { kind: 'section', label: '⚙️ User & Portal Settings' },
-    { key: 'users', label: 'Manage Users', Icon: Users },
-    { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
-  ] : [
-    { kind: 'section', label: '📊 General' },
-    { key: 'overview', label: 'Department Overview', Icon: Home },
-    { key: 'profile', label: 'My Profile', Icon: User },
-    { kind: 'section', label: '🎓 Scholar Management' },
-    { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
-    { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
-    { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
-    { kind: 'section', label: '📅 Academic Activities' },
-    { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
-    { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
-    { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
-    { kind: 'section', label: '⚖️ Requests & Evaluations' },
-    { key: 'requests', label: 'Change Requests', Icon: Edit },
-    { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
-    { kind: 'section', label: '⚙️ User & Portal Settings' },
-    { key: 'users', label: 'Manage Users', Icon: Users },
-    { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
-  ];
+  const items = user?.role === 'ADMIN' ? adminNavItems : adminHODNavItems;
   return (
     <div className="sidebar">
       <div className="sidebar-logo">
@@ -5323,6 +5328,13 @@ const AdminDashboard = () => {
         isOpen={isOnboardingOpen} 
         onClose={() => setIsOnboardingOpen(false)} 
         onGo={() => { setActiveTab('profile'); setIsOnboardingOpen(false); }} 
+      />
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        navItems={user?.role === 'ADMIN' ? adminNavItems : adminHODNavItems}
+        isVerified={user?.isVerified}
+        onLogout={() => { window.location.href = "/logout-bridge?toast=Logged%20out%20successfully"; }}
       />
     </div>
   );

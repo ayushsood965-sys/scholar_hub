@@ -2172,50 +2172,28 @@ body {
     flex-direction: column;
   }
 
-  /* Dashboard mobile sidebar sliding drawer */
+  /* Dashboard mobile sidebar: hidden in favor of bottom nav */
   .sidebar {
-    position: fixed;
-    top: 0;
-    left: -250px;
-    width: 250px;
-    height: 100vh;
-    z-index: 1000;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+    display: none !important;
   }
   body.sidebar-mobile-open .sidebar {
-    left: 0;
+    display: none !important;
   }
 
   /* Clickable overlay background */
   .mobile-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    z-index: 999;
+    display: none !important;
   }
   body.sidebar-mobile-open .mobile-overlay {
-    display: block;
+    display: none !important;
   }
 
   /* Mobile menu button toggle on header */
   .mobile-menu-toggle {
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-sidebar);
-    padding: 8px;
-    border-radius: 8px;
-    transition: background-color 0.2s;
+    display: none !important;
   }
   .mobile-menu-toggle:hover {
-    background-color: rgba(0,0,0,0.05);
+    display: none !important;
   }
 
   .header {
@@ -2243,7 +2221,7 @@ body {
 
   /* Dashboard responsive grid systems */
   .dashboard-area {
-    padding: calc(70px + 16px) 16px 16px 16px !important;
+    padding: calc(70px + 16px) 16px 80px 16px !important;
   }
   .dashboard-grid {
     grid-template-columns: 1fr !important;

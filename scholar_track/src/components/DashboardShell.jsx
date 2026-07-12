@@ -32,6 +32,7 @@ import { NotificationContext } from "../context/NotificationContext";
 import ThemeToggle from "./ThemeToggle";
 import NotificationDropdown from "./NotificationDropdown";
 import { SCHOLAR_SYNC_URL } from "../config";
+import MobileBottomNav from "./MobileBottomNav";
 
 const roleNavConfig = {
     STUDENT: [
@@ -328,6 +329,14 @@ const DashboardShell = ({
           </AnimatePresence>
         </div>
       </div>
+
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        navItems={navItems}
+        isLocked={isLocked}
+        onLogout={handleLogout}
+      />
     </div>
   );
 };

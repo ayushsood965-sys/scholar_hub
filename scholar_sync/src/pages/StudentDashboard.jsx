@@ -13,6 +13,7 @@ import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 import ThemeToggle from '../components/ThemeToggle';
 import { useTabPersistence } from '../hooks/useTabPersistence';
+import MobileBottomNav from '../components/MobileBottomNav';
 
 const API = API_URL;
 const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
@@ -1268,35 +1269,37 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
   );
 };
 
+const studentNavItems = [
+  { kind: 'section', label: '📊 General' },
+  { key: 'overview', label: 'Dashboard', Icon: Home },
+  { key: 'profile', label: 'Profile', Icon: User },
+
+  { kind: 'section', label: '🌱 Early Stage' },
+  { key: 'workspace', label: 'Workspace', Icon: Flag },
+  { key: 'coursework', label: 'Coursework', Icon: BookOpen },
+  { key: 'synopsis', label: 'Synopsis', Icon: ClipboardList },
+
+  { kind: 'section', label: '🔬 Research & Progress' },
+  { key: 'rac', label: 'RAC Progress', Icon: Layers },
+  { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
+  { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
+  { key: 'publications', label: 'Research Outputs', Icon: Award },
+  { key: 'meetings', label: 'Meetings', Icon: Calendar },
+
+  { kind: 'section', label: '🎓 Thesis Submission' },
+  { key: 'preSubmission', label: 'Pre-Submission', Icon: ClipboardList },
+  { key: 'finalSubmission', label: 'Final Submission', Icon: BookOpen },
+
+  { kind: 'section', label: '📋 Requests & Certificates' },
+  { key: 'changes', label: 'Request Changes', Icon: Edit },
+  { key: 'documents', label: 'Documents', Icon: FileText },
+  { key: 'certificates', label: 'Certificates', Icon: Award },
+];
+
 const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) => {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
-  const items = [
-    { kind: 'section', label: '📊 General' },
-    { key: 'overview', label: 'Dashboard', Icon: Home },
-    { key: 'profile', label: 'Profile', Icon: User },
-
-    { kind: 'section', label: '🌱 Early Stage' },
-    { key: 'workspace', label: 'Workspace', Icon: Flag },
-    { key: 'coursework', label: 'Coursework', Icon: BookOpen },
-    { key: 'synopsis', label: 'Synopsis', Icon: ClipboardList },
-
-    { kind: 'section', label: '🔬 Research & Progress' },
-    { key: 'rac', label: 'RAC Progress', Icon: Layers },
-    { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
-    { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
-    { key: 'publications', label: 'Research Outputs', Icon: Award },
-    { key: 'meetings', label: 'Meetings', Icon: Calendar },
-
-    { kind: 'section', label: '🎓 Thesis Submission' },
-    { key: 'preSubmission', label: 'Pre-Submission', Icon: ClipboardList },
-    { key: 'finalSubmission', label: 'Final Submission', Icon: BookOpen },
-
-    { kind: 'section', label: '📋 Requests & Certificates' },
-    { key: 'changes', label: 'Request Changes', Icon: Edit },
-    { key: 'documents', label: 'Documents', Icon: FileText },
-    { key: 'certificates', label: 'Certificates', Icon: Award },
-  ];
+  const items = studentNavItems;
   return (
     <div className="sidebar">
       <div className="sidebar-logo">
@@ -12026,6 +12029,15 @@ const StudentDashboard = () => {
         isOpen={isOnboardingOpen} 
         onClose={() => setIsOnboardingOpen(false)} 
         onGo={() => { setActiveTab('profile'); setIsOnboardingOpen(false); }} 
+      />
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        navItems={studentNavItems}
+        isVerified={thesis && thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED'}
+        thesis={thesis}
+        milestones={milestones}
+        onLogout={() => { window.location.href = "/logout-bridge?toast=Logged%20out%20successfully"; }}
       />
     </div>
   );

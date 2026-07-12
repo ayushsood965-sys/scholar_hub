@@ -2148,19 +2148,17 @@ img {
 
 /* ─── Responsive: Mobile (≤768px) ─── */
 @media (max-width: 768px) {
-  /* Sidebar: slide-in drawer */
+  /* Sidebar: hidden on mobile in favor of bottom nav */
   .sidebar {
-    transform: translateX(-100%);
-    width: 280px;
+    display: none !important;
   }
 
   .sidebar.open {
-    transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+    display: none !important;
   }
 
   .sidebar-mobile-overlay {
-    display: block !important;
+    display: none !important;
   }
 
   .main-content {
@@ -2197,12 +2195,12 @@ img {
   }
 
   #mobile-menu-btn {
-    display: flex !important;
+    display: none !important;
   }
 
-  /* Dashboard area */
+  /* Dashboard area - added bottom padding for bottom nav */
   .dashboard-area {
-    padding: calc(56px + 16px) 12px 16px 12px !important;
+    padding: calc(56px + 16px) 12px 80px 12px !important;
   }
 
   /* Landing page */
