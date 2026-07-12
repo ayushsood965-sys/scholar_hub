@@ -13,6 +13,7 @@ import LogoutBridge from './pages/LogoutBridge';
 import ProtectedRoute from './components/ProtectedRoute';
 import UtilityAction from './components/UtilityAction';
 import ErrorBoundary from './components/ErrorBoundary';
+import InstallPrompt from './components/InstallPrompt';
 
 // Premium landing pages
 import ResearchLabsPage from './pages/ResearchLabsPage';
@@ -85,6 +86,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <InstallPrompt />
         <Routes>
         <Route path="/" element={<Landing />} />
         
