@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, API_URL } from '../config';
 import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 import { useToast } from '../context/ToastContext';
 import { 
   User, Lightbulb, Briefcase, GraduationCap, Award, FileText, 
@@ -16,6 +17,33 @@ const StaffProfileTab = ({ thesis }) => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [uploadingDocKey, setUploadingDocKey] = useState(null);
+
+  // States and hooks to load candidate's verified IPRs from the research outputs collection
+  const [verifiedIprs, setVerifiedIprs] = useState([]);
+  const [loadingIprs, setLoadingIprs] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'STUDENT' && thesis?._id) {
+      const fetchVerifiedIprs = async () => {
+        setLoadingIprs(true);
+        try {
+          const token = localStorage.getItem('token');
+          const res = await axios.get(`${API_URL}/publications/thesis/${thesis._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const approved = res.data.filter(p => 
+            (p.type === 'IPR' || p.type === 'PATENT') && p.status === 'VERIFIED'
+          );
+          setVerifiedIprs(approved);
+        } catch (err) {
+          console.error("Error fetching candidate verified IPRs:", err);
+        } finally {
+          setLoadingIprs(false);
+        }
+      };
+      fetchVerifiedIprs();
+    }
+  }, [user, thesis]);
 
   // Active section track
   const [activeSection, setActiveSection] = useState('personal');
@@ -2929,18 +2957,20 @@ const StaffProfileTab = ({ thesis }) => {
               <Copyright size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Intellectual Property Rights (IPR)</h3>
             </div>
-            <div className="section-header-buttons">
-              {iprList.length > 0 && (
-                <button onClick={clearAllIprs} style={btnDangerStyle}>
-                  <Trash2 size={14} /> Clear All
-                </button>
-              )}
-              {!showIprForm && (
-                <button onClick={() => { setShowIprForm(true); setEditingIprIndex(-1); }} style={btnPrimaryStyle}>
-                  <Plus size={14} /> Add Entry
-                </button>
-              )}
-            </div>
+            {user?.role !== 'STUDENT' && (
+              <div className="section-header-buttons">
+                {iprList.length > 0 && (
+                  <button onClick={clearAllIprs} style={btnDangerStyle}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showIprForm && (
+                  <button onClick={() => { setShowIprForm(true); setEditingIprIndex(-1); }} style={btnPrimaryStyle}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Form */}
@@ -3029,48 +3059,78 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {iprList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No Intellectual Property Rights logged yet.</span>
+            {user?.role === 'STUDENT' ? (
+              loadingIprs ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified IPR entries...</span>
+              ) : verifiedIprs.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No IPR found.</span>
+              ) : (
+                verifiedIprs.map((ip, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType || (ip.type === 'PATENT' ? 'Patent' : 'IPR')} | Status: {ip.itemStatus} ({ip.journalName})</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
+                      {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
+                      {ip.paperLink && (
+                        <a 
+                          href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Registry Link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )
             ) : (
-              iprList.map((ip, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                  <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType} | Status: {ip.itemStatus} ({ip.journalName})</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
-                    {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
-                    {ip.paperLink && (
-                      <a 
-                        href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+              iprList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No Intellectual Property Rights logged yet.</span>
+              ) : (
+                iprList.map((ip, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType} | Status: {ip.itemStatus} ({ip.journalName})</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
+                      {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
+                      {ip.paperLink && (
+                        <a 
+                          href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Registry Link
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        onClick={() => {
+                          setEditingIprIndex(i);
+                          setIprForm(ip);
+                          setShowIprForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                       >
-                        <ExternalLink size={12} /> Registry Link
-                      </a>
-                    )}
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        onClick={() => deleteIpr(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
-                    <button 
-                      onClick={() => {
-                        setEditingIprIndex(i);
-                        setIprForm(ip);
-                        setShowIprForm(true);
-                      }} 
-                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button 
-                      onClick={() => deleteIpr(i)} 
-                      style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))
+              )
             )}
           </div>
         </section>
