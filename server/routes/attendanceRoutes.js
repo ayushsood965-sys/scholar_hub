@@ -105,6 +105,7 @@ router.delete('/holidays/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attenda
 router.post('/corrections', protect, authorize('STUDENT'), attendanceController.applyCorrection);
 router.get('/corrections/me', protect, authorize('STUDENT'), attendanceController.getMyCorrections);
 router.get('/corrections/pending', protect, authorize('FACULTY', 'HOD'), attendanceController.getPendingCorrections);
+router.get('/corrections/logs', protect, authorize('FACULTY', 'HOD'), attendanceController.getCorrectionLogs);
 router.put('/corrections/:id/action', protect, authorize('FACULTY', 'HOD'), attendanceController.actionCorrection);
 
 // ==========================================

@@ -3932,6 +3932,52 @@ exports.getHodCorrectionHistory = async (req, res) => {
   }
 };
 
+exports.getCorrectionLogs = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: 'Both fromDate and toDate are required (YYYY-MM-DD).' });
+    }
+
+    const from = new Date(fromDate + 'T00:00:00');
+    const to = new Date(toDate + 'T23:59:59');
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format. Use YYYY-MM-DD.' });
+    }
+
+    const dateFilter = {
+      createdAt: { $gte: from, $lte: to }
+    };
+
+    let query = {
+      ...dateFilter
+    };
+
+    if (req.user.role === 'FACULTY' || req.user.subRole === 'FACULTY') {
+      query.$or = [
+        { facultyId: req.user._id },
+        { auditLog: { $elemMatch: { actorId: req.user._id } } }
+      ];
+    } else if (req.user.role === 'HOD') {
+      const students = await User.find({ role: 'STUDENT', department: req.user.department });
+      const studentIds = students.map(s => s._id);
+      query.studentId = { $in: studentIds };
+    }
+
+    const logs = await AttendanceCorrection.find(query)
+      .populate('studentId', 'name username profile')
+      .populate('recordId')
+      .populate('facultyId', 'name')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(logs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.getStudentAttendanceRecords = async (req, res) => {
   try {
     const studentId = req.user._id;

@@ -54,6 +54,7 @@ const roleNavConfig = {
     { key: "leaves", icon: CalendarRange, label: "Leave Approvals" },
     { key: "leaveLogs", icon: ClipboardList, label: "Leave Logs" },
     { key: "corrections", icon: FileCheck, label: "Corrections Queue" },
+    { key: "correctionLogs", icon: ClipboardList, label: "Correction Logs" },
 
     { kind: "section", label: "🗺️ ACADEMIC MAPPING" },
     { key: "mapping", icon: Layers, label: "Student Mapping" },
