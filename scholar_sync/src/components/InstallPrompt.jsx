@@ -6,6 +6,10 @@ const InstallPrompt = () => {
   const [showIosInstructions, setShowIosInstructions] = useState(false);
 
   useEffect(() => {
+    // Check if ?install=true is present in the URL
+    const queryParams = new URLSearchParams(window.location.search);
+    const forceInstall = queryParams.get('install') === 'true';
+
     // 1. Standalone check
     const isStandalone = 
       window.matchMedia('(display-mode: standalone)').matches || 
@@ -23,14 +27,19 @@ const InstallPrompt = () => {
     // 4. iOS detection
     const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-    // If already installed, dismissed, or not on mobile, don't show prompt
-    if (isStandalone || isDismissed || !isMobileDevice) {
+    // If already installed, dismissed (and not forced), or not on mobile, don't show prompt
+    if (isStandalone || (isDismissed && !forceInstall) || !isMobileDevice) {
       return;
     }
 
     // iOS doesn't support 'beforeinstallprompt', so we show prompt directly for iOS Safari
     if (isIosDevice) {
       setIsVisible(true);
+      if (forceInstall) {
+        const url = new URL(window.location);
+        url.searchParams.delete('install');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+      }
     }
 
     const handleBeforeInstallPrompt = (e) => {
@@ -38,14 +47,35 @@ const InstallPrompt = () => {
       e.preventDefault();
       // Store the event for triggering later
       setDeferredPrompt(e);
+      window.deferredPWAEvent = e;
       // Show the install modal overlay
       setIsVisible(true);
+      if (forceInstall) {
+        const url = new URL(window.location);
+        url.searchParams.delete('install');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleTriggerModal = () => {
+      setIsVisible(true);
+      const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIosDevice) {
+        setShowIosInstructions(true);
+      }
+    };
+    
+    window.addEventListener('trigger-pwa-install-modal', handleTriggerModal);
+    return () => {
+      window.removeEventListener('trigger-pwa-install-modal', handleTriggerModal);
     };
   }, []);
 
