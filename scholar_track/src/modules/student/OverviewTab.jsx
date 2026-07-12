@@ -367,7 +367,7 @@ const OverviewTab = ({ thesis }) => {
       </div>
 
       {/* Main Body Grid */}
-      <div className="grid-2" style={{ gridTemplateColumns: '1.3fr 0.7fr', gap: '24px' }}>
+      <div className="responsive-overview-grid" style={{ gap: '24px' }}>
         {/* Left Hand: Course Cards or PhD Calendar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {isPhD ? (

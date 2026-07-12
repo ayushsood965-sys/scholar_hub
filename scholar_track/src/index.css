@@ -2171,6 +2171,10 @@ img {
   .app-header {
     height: 56px;
     padding: 0 16px;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    background: var(--color-surface) !important;
   }
 
   .header-title {
@@ -2263,8 +2267,9 @@ img {
   /* Grids */
   .grid-2,
   .grid-3,
-  .grid-4 {
-    grid-template-columns: 1fr;
+  .grid-4,
+  .responsive-overview-grid {
+    grid-template-columns: 1fr !important;
     gap: 16px;
   }
 
@@ -2673,6 +2678,11 @@ img {
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+.responsive-overview-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
   gap: 24px;
 }
 .grid-3 {
