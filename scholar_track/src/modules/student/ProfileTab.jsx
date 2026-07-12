@@ -1069,6 +1069,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   }
 
   const responsiveStyles = `
+    .profile-tab-wrapper-container {
+      padding: 24px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
     .profile-layout-container {
       display: flex;
       gap: 28px;
@@ -1076,11 +1083,67 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       margin: 0 auto;
       padding: 12px;
       position: relative;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .card, .clay-card, .glass-transparent {
       transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
       border: 2px solid #e5e7eb !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    .responsive-two-col-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 16px !important;
+    }
+    .responsive-two-col-grid > div {
+      min-width: 0 !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+    }
+
+    .responsive-three-col-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 20px !important;
+    }
+    .responsive-three-col-grid > div {
+      min-width: 0 !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+    }
+
+    .responsive-four-col-grid {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 10px !important;
+    }
+    .responsive-four-col-grid > div, .responsive-four-col-grid > input {
+      min-width: 0 !important;
+    }
+
+    .responsive-six-col-grid {
+      display: grid !important;
+      grid-template-columns: repeat(6, 1fr) !important;
+      gap: 10px !important;
+    }
+    .responsive-six-col-grid > div, .responsive-six-col-grid > input {
+      min-width: 0 !important;
+    }
+
+    .responsive-thesis-params-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 2fr !important;
+      gap: 20px !important;
+    }
+
+    .responsive-abstract-keywords-grid {
+      display: grid !important;
+      grid-template-columns: 2fr 1fr !important;
+      gap: 20px !important;
     }
 
     .card.active-card, .clay-card.active-card, .glass-transparent.active-card {
@@ -1141,32 +1204,93 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }
 
     @media (max-width: 1024px) {
+      .profile-tab-wrapper-container {
+        padding: 8px !important;
+      }
+
       .timeline-sidebar-panel {
-        display: none;
+        display: none !important;
       }
       
+      .profile-layout-container {
+        flex-direction: column !important;
+        gap: 16px !important;
+        padding: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+      }
+
       .mobile-milestones-bar {
-        display: flex;
-        position: sticky;
-        top: 68px;
-        background: #ffffff;
-        border-bottom: 1px solid #e5e7eb;
-        padding: 0 16px;
-        gap: 16px;
-        overflow-x: auto;
-        z-index: 100;
-        margin: -12px -12px 16px -12px;
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
+        display: flex !important;
+        position: sticky !important;
+        top: var(--header-height, 68px) !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        padding: 0 16px !important;
+        gap: 16px !important;
+        overflow-x: auto !important;
+        z-index: 100 !important;
+        margin: -12px -12px 16px -12px !important;
+        scroll-behavior: smooth !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: calc(100% + 24px) !important;
+        max-width: calc(100% + 24px) !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
 
       .mobile-milestones-bar.is-stuck {
-        position: fixed;
-        left: 0;
-        right: 0;
-        width: 100%;
-        margin: 0;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        position: fixed !important;
+        top: var(--header-height, 68px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: none !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.06) !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .responsive-two-col-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .responsive-two-col-grid > div {
+        grid-column: span 1 !important;
+      }
+
+      .responsive-three-col-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .responsive-three-col-grid > div {
+        grid-column: span 1 !important;
+      }
+
+      .responsive-four-col-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+      }
+
+      .responsive-six-col-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+      }
+
+      .responsive-thesis-params-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+
+      .responsive-abstract-keywords-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
       }
     }
   `;
@@ -1176,8 +1300,10 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
-        // Sticky boundary in ScholarTrack is 68px from viewport top
-        setIsStuck(rect.top <= 68);
+        // Dynamic sticky boundary checks the active portal header height
+        const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+        const headerHeight = headerEl ? headerEl.offsetHeight : 68;
+        setIsStuck(rect.top <= headerHeight + 2);
       }
     };
 
@@ -1314,7 +1440,20 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   if (loading) return <SkeletonLoader count={1} height={400} />;
 
   return (
-    <div style={{ padding: '24px', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
+      <div 
+        className="profile-tab-wrapper-container" 
+        style={{ 
+          position: 'relative', 
+          width: '100%', 
+          maxWidth: '100%', 
+          boxSizing: 'border-box',
+          '--header-height': (() => {
+            const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+            return headerEl ? `${headerEl.offsetHeight}px` : '68px';
+          })()
+        }}
+      >
       <style>{responsiveStyles}</style>
 
       {/* Registration/Verification Status Banner */}
@@ -1623,7 +1762,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   )}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                <div className="responsive-three-col-grid">
                   <div className="form-group">
                     <label className="form-label">Full Name</label>
                     <input className="form-input" disabled value={profile?.name || ''} />
@@ -1638,7 +1777,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
+                <div className="responsive-three-col-grid" style={{ marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Enrollment Number</label>
                     <input 
@@ -1672,7 +1811,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
+                <div className="responsive-three-col-grid" style={{ marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Degree Type</label>
                     {editModes.general && !isSubmitted && !degreeTypeId ? (
@@ -1734,7 +1873,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   )}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
+                <div className="responsive-three-col-grid" style={{ marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Date of Birth</label>
                     <input 
@@ -1755,7 +1894,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginTop: '12px' }}>
+                <div className="responsive-three-col-grid" style={{ marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Father's Name</label>
                     <input 
@@ -1785,7 +1924,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: isPhD ? '1fr 2fr' : '1fr', gap: '20px', marginTop: '12px' }}>
+                <div className="responsive-thesis-params-grid" style={{ gridTemplateColumns: isPhD ? '1fr 2fr' : '1fr', marginTop: '12px' }}>
                   {isPhD && (
                     <div className="form-group">
                       <label className="form-label">Specialization</label>
@@ -1824,7 +1963,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         placeholder="Enter research proposal title"
                       />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginTop: '12px' }}>
+                    <div className="responsive-abstract-keywords-grid" style={{ marginTop: '12px' }}>
                       <div className="form-group">
                         <label className="form-label">Short Abstract / Focus Area</label>
                         <textarea 
@@ -1932,7 +2071,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       </div>
                     ) : (
                       <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
+                        <div className="responsive-six-col-grid">
                           <input className="form-input" placeholder="Roll No" value={class10Roll} onChange={e => setClass10Roll(e.target.value)} />
                           <input className="form-input" placeholder="Board" value={class10Board} onChange={e => setClass10Board(e.target.value)} />
                           <input className="form-input" placeholder="School" value={class10School} onChange={e => setClass10School(e.target.value)} />
@@ -1991,7 +2130,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       </div>
                     ) : (
                       <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
+                        <div className="responsive-six-col-grid">
                           <input className="form-input" placeholder="Roll No" value={class12Roll} onChange={e => setClass12Roll(e.target.value)} />
                           <input className="form-input" placeholder="Board" value={class12Board} onChange={e => setClass12Board(e.target.value)} />
                           <input className="form-input" placeholder="School" value={class12School} onChange={e => setClass12School(e.target.value)} />
@@ -2050,13 +2189,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       </div>
                     ) : (
                       <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                        <div className="responsive-four-col-grid" style={{ marginBottom: '10px' }}>
                           <input className="form-input" placeholder="Roll No" value={gradRoll} onChange={e => setGradRoll(e.target.value)} />
                           <input className="form-input" placeholder="Degree (e.g. B.Tech)" value={gradDegree} onChange={e => setGradDegree(e.target.value)} />
                           <input className="form-input" placeholder="College" value={gradCollege} onChange={e => setGradCollege(e.target.value)} />
                           <input className="form-input" placeholder="University" value={gradUniversity} onChange={e => setGradUniversity(e.target.value)} />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                        <div className="responsive-three-col-grid">
                           <input className="form-input" placeholder="Marks / CGPA" type="number" step="0.01" value={gradMarks} onChange={e => setGradMarks(e.target.value)} />
                           <input className="form-input" placeholder="Total Max Marks" type="number" step="0.01" value={gradTotal} onChange={e => setGradTotal(e.target.value)} />
                           <input className="form-input" placeholder="Percentage / CGPA %" value={gradPercentage} onChange={e => setGradPercentage(e.target.value)} />
@@ -2112,13 +2251,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       </div>
                     ) : (
                       <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                        <div className="responsive-four-col-grid" style={{ marginBottom: '10px' }}>
                           <input className="form-input" placeholder="Roll No" value={pgRoll} onChange={e => setPgRoll(e.target.value)} />
                           <input className="form-input" placeholder="Degree (e.g. M.Tech)" value={pgDegree} onChange={e => setPgDegree(e.target.value)} />
                           <input className="form-input" placeholder="College" value={pgCollege} onChange={e => setPgCollege(e.target.value)} />
                           <input className="form-input" placeholder="University" value={pgUniversity} onChange={e => setPgUniversity(e.target.value)} />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                        <div className="responsive-three-col-grid">
                           <input className="form-input" placeholder="Marks / CGPA" type="number" step="0.01" value={pgMarks} onChange={e => setPgMarks(e.target.value)} />
                           <input className="form-input" placeholder="Total Max Marks" type="number" step="0.01" value={pgTotal} onChange={e => setPgTotal(e.target.value)} />
                           <input className="form-input" placeholder="Percentage / CGPA %" value={pgPercentage} onChange={e => setPgPercentage(e.target.value)} />
@@ -2211,7 +2350,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                               <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>Qualification #{i + 1}</strong>
                               <button className="btn btn-sm btn-danger" type="button" onClick={() => handleRemoveRow('otherQuals', i)} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}>Remove</button>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                            <div className="responsive-two-col-grid" style={{ gap: '12px', marginBottom: '12px' }}>
                               <div className="form-group">
                                 <label className="form-label">Qualification Type</label>
                                 <select className="form-input" value={o.type || ''} onChange={e => { const updated = [...otherQuals]; updated[i].type = e.target.value; setOtherQuals(updated); }}>
@@ -2228,7 +2367,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                                 </div>
                               )}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                            <div className="responsive-four-col-grid" style={{ gap: '12px', marginBottom: '12px' }}>
                               <div className="form-group">
                                 <label className="form-label">Roll Number</label>
                                 <input type="text" className="form-input" placeholder="Roll Number" value={o.rollNo || ''} onChange={e => { const updated = [...otherQuals]; updated[i].rollNo = e.target.value; setOtherQuals(updated); }} />
@@ -2246,7 +2385,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                                 <input type="number" step="0.01" className="form-input" placeholder="Marks" value={o.marksObtained || ''} onChange={e => { const updated = [...otherQuals]; updated[i].marksObtained = e.target.value; setOtherQuals(updated); }} />
                               </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'flex-end' }}>
+                            <div className="responsive-four-col-grid" style={{ gap: '12px', alignItems: 'flex-end' }}>
                               <div className="form-group">
                                 <label className="form-label">Total Max Marks</label>
                                 <input type="number" step="0.01" className="form-input" placeholder="Total scale" value={o.totalMarks || ''} onChange={e => { const updated = [...otherQuals]; updated[i].totalMarks = e.target.value; setOtherQuals(updated); }} />
@@ -2336,7 +2475,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         </div>
                       ) : (
                         <div>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                          <div className="responsive-three-col-grid" style={{ marginBottom: '10px' }}>
                             <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
                               <option value="">Qualified NET JRF?</option>
                               <option value="YES">Yes</option>
@@ -2350,7 +2489,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                             )}
                           </div>
                           {netJrfQualified === 'YES' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                            <div className="responsive-three-col-grid" style={{ marginBottom: '10px' }}>
                               <input className="form-input" placeholder="All India Rank" value={netJrfRank} onChange={e => setNetJrfRank(e.target.value)} />
                               <input className="form-input" placeholder="Normalized Score" value={netJrfScore} onChange={e => setNetJrfScore(e.target.value)} />
                               <input className="form-input" type="date" value={netJrfIssueDate} onChange={e => setNetJrfIssueDate(e.target.value)} />
@@ -2561,6 +2700,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
 export default ProfileTab;

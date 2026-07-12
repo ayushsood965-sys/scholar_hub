@@ -127,17 +127,23 @@ const StaffProfileTab = ({ thesis }) => {
   // Responsive design styles injected directly in the component
   const responsiveStyles = `
     .profile-layout-container {
-      display: flex;
-      gap: 28px;
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 12px;
-      position: relative;
+      display: flex !important;
+      gap: 28px !important;
+      max-width: 1280px !important;
+      margin: 0 auto !important;
+      padding: 12px !important;
+      position: relative !important;
     }
 
     .card, .clay-card {
-      transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
-      border: 2px solid #e5e7eb !important;
+      background-color: var(--color-surface, #FFFFFF) !important;
+      border-radius: 12px !important;
+      padding: 24px !important;
+      box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0,0,0,0.05)) !important;
+      border: 2px solid var(--color-border-solid, #e5e7eb) !important;
+      transition: all 0.25s ease-in-out !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
 
     .card.active-card, .clay-card.active-card {
@@ -146,49 +152,52 @@ const StaffProfileTab = ({ thesis }) => {
     }
     
     .timeline-sidebar-panel {
-      width: 260px;
-      position: sticky;
-      top: 90px;
-      height: fit-content;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex-shrink: 0;
+      width: 260px !important;
+      position: sticky !important;
+      top: 90px !important;
+      height: fit-content !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 4px !important;
+      flex-shrink: 0 !important;
     }
     
     .profile-details-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-      min-width: 0;
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 28px !important;
+      min-width: 0 !important;
     }
 
     .personal-info-header {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
+      display: flex !important;
+      gap: 24px !important;
+      flex-wrap: wrap !important;
     }
 
     .avatar-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      width: 120px;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 12px !important;
+      width: 120px !important;
     }
 
     .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--color-border-solid, #e5e7eb);
-      padding-bottom: 12px;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      border-bottom: 1px solid var(--color-border-solid, #e5e7eb) !important;
+      padding-bottom: 12px !important;
+      max-width: none !important;
+      margin: 0 0 16px 0 !important;
+      text-align: left !important;
     }
 
     .section-header-buttons {
-      display: flex;
-      gap: 8px;
+      display: flex !important;
+      gap: 8px !important;
     }
 
     .edu-card-header {
@@ -225,10 +234,37 @@ const StaffProfileTab = ({ thesis }) => {
       margin: 8px 0 16px 0;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
       scrollbar-width: none;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
     }
     
     .mobile-milestones-bar::-webkit-scrollbar {
       display: none;
+    }
+
+    .responsive-two-col-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 16px !important;
+    }
+    .responsive-two-col-grid > div {
+      min-width: 0 !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+    }
+
+    .student-profile-header-card {
+      display: flex !important;
+      align-items: center !important;
+      gap: 20px !important;
+      margin-bottom: 24px !important;
+      padding-bottom: 20px !important;
+      border-bottom: 1px solid #E5E7EB !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
     }
     
     .mobile-milestone-link {
@@ -261,15 +297,25 @@ const StaffProfileTab = ({ thesis }) => {
 
     @media (max-width: 992px) {
       .timeline-sidebar-panel {
-        width: 200px;
+        width: 200px !important;
+      }
+      .responsive-two-col-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .responsive-two-col-grid > div {
+        grid-column: span 1 !important;
       }
     }
 
     @media (max-width: 768px) {
       .profile-layout-container {
-        flex-direction: column;
-        gap: 16px;
-        padding: 8px;
+        flex-direction: column !important;
+        gap: 16px !important;
+        padding: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
       
       .timeline-sidebar-panel {
@@ -278,11 +324,15 @@ const StaffProfileTab = ({ thesis }) => {
 
       .mobile-milestones-bar {
         display: flex !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
 
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
-        top: 64px !important;
+        top: var(--header-height, 64px) !important;
         left: 0 !important;
         width: 100% !important;
         height: 50px !important;
@@ -333,6 +383,20 @@ const StaffProfileTab = ({ thesis }) => {
       
       .verification-banner button {
         width: 100% !important;
+      }
+
+      .responsive-two-col-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .responsive-two-col-grid > div {
+        grid-column: span 1 !important;
+      }
+
+      .student-profile-header-card {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 12px !important;
       }
     }
   `;
@@ -503,8 +567,10 @@ const StaffProfileTab = ({ thesis }) => {
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
-        // Sticky boundary in ScholarSync is 64px from viewport top
-        setIsStuck(rect.top <= 64);
+        // Dynamic sticky boundary checks the active portal header height
+        const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+        const headerHeight = headerEl ? headerEl.offsetHeight : 64;
+        setIsStuck(rect.top <= headerHeight + 2);
       }
     };
 
@@ -1153,9 +1219,9 @@ const StaffProfileTab = ({ thesis }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
       {user?.role === 'STUDENT' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #E5E7EB' }}>
+        <div className="student-profile-header-card">
           {user?.avatarUrl ? (
             <img 
               src={`${API_BASE_URL}${user.avatarUrl}`} 
@@ -1178,7 +1244,15 @@ const StaffProfileTab = ({ thesis }) => {
           </div>
         </div>
       )}
-      <div className="profile-layout-container">
+      <div 
+        className="profile-layout-container" 
+        style={{ 
+          '--header-height': (() => {
+            const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+            return headerEl ? `${headerEl.offsetHeight}px` : '64px';
+          })()
+        }}
+      >
         <style>{responsiveStyles}</style>
       
       {/* LEFT: Sticky Timeline Side Panel */}
@@ -1340,7 +1414,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {user?.role === 'STUDENT' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
+              <div className="responsive-two-col-grid" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Full Name</span>
                   <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.name || '—'}</strong>
@@ -1383,7 +1457,7 @@ const StaffProfileTab = ({ thesis }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
+              <div className="responsive-two-col-grid" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
                 <div style={{ gridColumn: 'span 2', borderBottom: '1px solid #BBF7D0', paddingBottom: '8px', marginBottom: '4px' }}>
                   <h4 style={{ margin: 0, color: '#133A26', fontSize: '0.95rem', fontWeight: 700 }}>Thesis & Research Details</h4>
                 </div>

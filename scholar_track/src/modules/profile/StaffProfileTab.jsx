@@ -1,21 +1,54 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../../config';
+import { API_BASE_URL, API_URL } from '../../config';
 import { AuthContext } from '../../context/AuthContext';
+import axios from 'axios';
 import { useToast } from '../../context/ToastContext';
 import { 
   User, Lightbulb, Briefcase, GraduationCap, Award, FileText, 
   Users, Bookmark, Folder, BookOpen, Settings, Plus, Edit, 
   Trash2, Upload, ExternalLink, ShieldCheck, ShieldAlert, 
-  RefreshCw, Camera, Eye, Trash, Check, X, EyeOff, Copyright
+  RefreshCw, Camera, Eye, Trash, Check, X, EyeOff, Copyright, Lock
 } from 'lucide-react';
 
-const StaffProfileTab = () => {
+const StaffProfileTab = ({ thesis }) => {
   const { user, updateProfile, uploadAvatar, uploadProfileDocument, fetchMe } = useContext(AuthContext);
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [uploadingDocKey, setUploadingDocKey] = useState(null);
+
+  // States and hooks to load candidate's verified publications & IPRs from the research outputs collection
+  const [verifiedPubs, setVerifiedPubs] = useState([]);
+  const [verifiedIprs, setVerifiedIprs] = useState([]);
+  const [loadingPubsAndIprs, setLoadingPubsAndIprs] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'STUDENT' && thesis?._id) {
+      const fetchVerifiedData = async () => {
+        setLoadingPubsAndIprs(true);
+        try {
+          const token = localStorage.getItem('token');
+          const res = await axios.get(`${API_URL}/publications/thesis/${thesis._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const ips = res.data.filter(p => 
+            (p.type === 'IPR' || p.type === 'PATENT') && p.status === 'VERIFIED'
+          );
+          const pubs = res.data.filter(p => 
+            (p.type === 'JOURNAL' || p.type === 'CONFERENCE') && p.status === 'VERIFIED'
+          );
+          setVerifiedIprs(ips);
+          setVerifiedPubs(pubs);
+        } catch (err) {
+          console.error("Error fetching candidate verified publications and IPRs:", err);
+        } finally {
+          setLoadingPubsAndIprs(false);
+        }
+      };
+      fetchVerifiedData();
+    }
+  }, [user, thesis]);
 
   // Active section track
   const [activeSection, setActiveSection] = useState('personal');
@@ -94,17 +127,23 @@ const StaffProfileTab = () => {
   // Responsive design styles injected directly in the component
   const responsiveStyles = `
     .profile-layout-container {
-      display: flex;
-      gap: 28px;
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 12px;
-      position: relative;
+      display: flex !important;
+      gap: 28px !important;
+      max-width: 1280px !important;
+      margin: 0 auto !important;
+      padding: 12px !important;
+      position: relative !important;
     }
 
     .card, .clay-card {
-      transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
-      border: 2px solid #e5e7eb !important;
+      background-color: var(--color-surface, #FFFFFF) !important;
+      border-radius: 12px !important;
+      padding: 24px !important;
+      box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0,0,0,0.05)) !important;
+      border: 2px solid var(--color-border-solid, #e5e7eb) !important;
+      transition: all 0.25s ease-in-out !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
 
     .card.active-card, .clay-card.active-card {
@@ -113,52 +152,52 @@ const StaffProfileTab = () => {
     }
     
     .timeline-sidebar-panel {
-      width: 260px;
+      width: 260px !important;
       position: sticky !important;
       top: 90px !important;
       height: fit-content !important;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex-shrink: 0;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 4px !important;
+      flex-shrink: 0 !important;
     }
     
     .profile-details-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-      min-width: 0;
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 28px !important;
+      min-width: 0 !important;
     }
 
     .personal-info-header {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
+      display: flex !important;
+      gap: 24px !important;
+      flex-wrap: wrap !important;
     }
 
     .avatar-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      width: 120px;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 12px !important;
+      width: 120px !important;
     }
 
-    .profile-layout-container .section-header {
+    .section-header {
       display: flex !important;
       justify-content: space-between !important;
       align-items: center !important;
       border-bottom: 1px solid var(--color-border-solid, #e5e7eb) !important;
       padding-bottom: 12px !important;
-      text-align: left !important;
       max-width: none !important;
-      margin: 0 0 20px 0 !important;
+      margin: 0 0 16px 0 !important;
+      text-align: left !important;
     }
 
     .section-header-buttons {
-      display: flex;
-      gap: 8px;
+      display: flex !important;
+      gap: 8px !important;
     }
 
     .edu-card-header {
@@ -195,10 +234,37 @@ const StaffProfileTab = () => {
       margin: 8px 0 16px 0;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
       scrollbar-width: none;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
     }
     
     .mobile-milestones-bar::-webkit-scrollbar {
       display: none;
+    }
+
+    .responsive-two-col-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 16px !important;
+    }
+    .responsive-two-col-grid > div {
+      min-width: 0 !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+    }
+
+    .student-profile-header-card {
+      display: flex !important;
+      align-items: center !important;
+      gap: 20px !important;
+      margin-bottom: 24px !important;
+      padding-bottom: 20px !important;
+      border-bottom: 1px solid #E5E7EB !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
     }
     
     .mobile-milestone-link {
@@ -231,15 +297,25 @@ const StaffProfileTab = () => {
 
     @media (max-width: 992px) {
       .timeline-sidebar-panel {
-        width: 200px;
+        width: 200px !important;
+      }
+      .responsive-two-col-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .responsive-two-col-grid > div {
+        grid-column: span 1 !important;
       }
     }
 
     @media (max-width: 768px) {
       .profile-layout-container {
-        flex-direction: column;
-        gap: 16px;
-        padding: 8px;
+        flex-direction: column !important;
+        gap: 16px !important;
+        padding: 8px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
       
       .timeline-sidebar-panel {
@@ -248,11 +324,15 @@ const StaffProfileTab = () => {
 
       .mobile-milestones-bar {
         display: flex !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
 
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
-        top: 56px !important;
+        top: var(--header-height, 64px) !important;
         left: 0 !important;
         width: 100% !important;
         height: 50px !important;
@@ -304,6 +384,20 @@ const StaffProfileTab = () => {
       .verification-banner button {
         width: 100% !important;
       }
+
+      .responsive-two-col-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .responsive-two-col-grid > div {
+        grid-column: span 1 !important;
+      }
+
+      .student-profile-header-card {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 12px !important;
+      }
     }
   `;
 
@@ -335,7 +429,7 @@ const StaffProfileTab = () => {
     { key: 'publications', label: 'Publications', Icon: BookOpen },
     { key: 'ipr', label: 'Intellectual Property Rights', Icon: Copyright },
     { key: 'settings', label: 'Privacy Settings', Icon: Settings }
-  ];
+  ].filter(item => !(user?.role === 'STUDENT' && item.key === 'theses'));
 
   // Forms State
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
@@ -438,59 +532,45 @@ const StaffProfileTab = () => {
     }
   }, [user]);
 
-  // Dynamic Scroll Sentinel & Active Section Tracker (No Scroll Hijacking)
+  const renderStudentDocBadge = (certUrl) => {
+    if (certUrl) {
+      return (
+        <a 
+          href={`${API_BASE_URL}${certUrl}`} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ 
+            fontSize: '0.75rem', 
+            color: '#2563EB', 
+            fontWeight: 600, 
+            textDecoration: 'none', 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '4px',
+            background: '#EFF6FF',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            border: '1px solid #BFDBFE'
+          }}
+        >
+          <FileText size={12} /> View File
+        </a>
+      );
+    }
+    return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: '#6B7280', fontWeight: 600 }}>Pending Upload</span>;
+  };
+
+  // Dynamic Scroll Sentinel & Snap Scroll Hook
   useEffect(() => {
+    let touchStartY = 0;
+
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
-        const headerHeight = window.innerWidth <= 768 ? 56 : 70;
-        setIsStuck(rect.top <= headerHeight);
-      }
-    };
-
-    const handleScrollActiveSection = () => {
-      const keys = Object.keys(sectionRefs);
-      const scrollContainer = document.querySelector('.dashboard-area') || window;
-      const containerTop = scrollContainer === window ? 0 : scrollContainer.getBoundingClientRect().top;
-
-      let currentSection = keys[0];
-      let minDistance = Infinity;
-
-      // Bottom scroll limit check
-      const isAtBottom = scrollContainer === window
-        ? window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 40
-        : Math.abs(scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) < 40;
-
-      if (isAtBottom) {
-        // If at the bottom, select the first visible section card from the end
-        for (let i = keys.length - 1; i >= 0; i--) {
-          const ref = sectionRefs[keys[i]];
-          if (ref.current) {
-            const rect = ref.current.getBoundingClientRect();
-            const containerHeight = scrollContainer === window ? window.innerHeight : scrollContainer.clientHeight;
-            if (rect.top - containerTop < containerHeight - 80) {
-              currentSection = keys[i];
-              break;
-            }
-          }
-        }
-      } else {
-        keys.forEach((key) => {
-          const ref = sectionRefs[key];
-          if (ref.current) {
-            const rect = ref.current.getBoundingClientRect();
-            // Find the section closest to the top of the viewport/container boundary
-            const distance = Math.abs(rect.top - containerTop - 20);
-            if (distance < minDistance) {
-              minDistance = distance;
-              currentSection = key;
-            }
-          }
-        });
-      }
-
-      if (currentSection && !isAutoScrollingRef.current) {
-        setActiveSection(currentSection);
+        // Dynamic sticky boundary checks the active portal header height
+        const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+        const headerHeight = headerEl ? headerEl.offsetHeight : 64;
+        setIsStuck(rect.top <= headerHeight + 2);
       }
     };
 
@@ -504,6 +584,7 @@ const StaffProfileTab = () => {
       if (isInput) return;
 
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
         const keys = Object.keys(sectionRefs);
         const currentIndex = keys.indexOf(activeSection);
         
@@ -515,35 +596,114 @@ const StaffProfileTab = () => {
         }
         
         if (nextIndex !== currentIndex) {
-          e.preventDefault();
           const nextKey = keys[nextIndex];
           scrollToSection(nextKey);
         }
       }
     };
 
-    const onScroll = () => {
-      checkSticky();
-      handleScrollActiveSection();
+    const handleWheel = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current < 900) {
+        e.preventDefault();
+        return;
+      }
+
+      const keys = Object.keys(sectionRefs);
+      const currentIndex = keys.indexOf(activeSection);
+      
+      let nextIndex = currentIndex;
+      if (e.deltaY > 0) {
+        nextIndex = Math.min(currentIndex + 1, keys.length - 1);
+      } else if (e.deltaY < 0) {
+        nextIndex = Math.max(currentIndex - 1, 0);
+      }
+      
+      if (nextIndex !== currentIndex) {
+        e.preventDefault();
+        lastWheelTimeRef.current = now;
+        const nextKey = keys[nextIndex];
+        scrollToSection(nextKey);
+      }
     };
 
-    onScroll();
+    const handleTouchStart = (e) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffY = touchStartY - touchEndY;
+      
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current < 900) {
+        return;
+      }
+      
+      if (Math.abs(diffY) > 50) {
+        const keys = Object.keys(sectionRefs);
+        const currentIndex = keys.indexOf(activeSection);
+        
+        let nextIndex = currentIndex;
+        if (diffY > 0) {
+          nextIndex = Math.min(currentIndex + 1, keys.length - 1);
+        } else {
+          nextIndex = Math.max(currentIndex - 1, 0);
+        }
+        
+        if (nextIndex !== currentIndex) {
+          lastWheelTimeRef.current = now;
+          const nextKey = keys[nextIndex];
+          scrollToSection(nextKey);
+        }
+      }
+    };
+
+    checkSticky();
 
     const dashboardArea = document.querySelector('.dashboard-area');
     if (dashboardArea) {
-      dashboardArea.addEventListener('scroll', onScroll);
+      dashboardArea.addEventListener('scroll', checkSticky);
+      dashboardArea.addEventListener('wheel', handleWheel, { passive: false });
+      dashboardArea.addEventListener('touchstart', handleTouchStart, { passive: true });
+      dashboardArea.addEventListener('touchend', handleTouchEnd, { passive: true });
     }
-    window.addEventListener('scroll', onScroll);
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('scroll', checkSticky);
+    window.addEventListener('resize', checkSticky);
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       if (dashboardArea) {
-        dashboardArea.removeEventListener('scroll', onScroll);
+        dashboardArea.removeEventListener('scroll', checkSticky);
+        dashboardArea.removeEventListener('wheel', handleWheel);
+        dashboardArea.removeEventListener('touchstart', handleTouchStart);
+        dashboardArea.removeEventListener('touchend', handleTouchEnd);
       }
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('scroll', checkSticky);
+      window.removeEventListener('resize', checkSticky);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [activeSection]);
 
@@ -1059,8 +1219,41 @@ const StaffProfileTab = () => {
   };
 
   return (
-    <div className="profile-layout-container">
-      <style>{responsiveStyles}</style>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
+      {user?.role === 'STUDENT' && (
+        <div className="student-profile-header-card">
+          {user?.avatarUrl ? (
+            <img 
+              src={`${API_BASE_URL}${user.avatarUrl}`} 
+              alt="Avatar Preview" 
+              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #133A26', background: '#F8FAFC' }} 
+            />
+          ) : (
+            <svg viewBox="0 0 100 100" style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#e2e8f0', display: 'block', border: '3px solid #133A26' }}>
+              <circle cx="50" cy="35" r="20" fill="#133A26" />
+              <path d="M15 85c0-13.8 11.2-25 25-25h20c13.8 0 25 11.2 25 25z" fill="#133A26" />
+            </svg>
+          )}
+          <div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#111827', margin: 0 }}>{user?.name}</h2>
+            <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '4px 0 12px' }}>Ph.D. Scholar • {user?.department}</p>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#133A26', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+              {avatarLoading ? 'Uploading...' : '📷 Change Profile Picture'}
+              <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={avatarLoading} />
+            </label>
+          </div>
+        </div>
+      )}
+      <div 
+        className="profile-layout-container" 
+        style={{ 
+          '--header-height': (() => {
+            const headerEl = document.querySelector('.app-header') || document.querySelector('.header');
+            return headerEl ? `${headerEl.offsetHeight}px` : '64px';
+          })()
+        }}
+      >
+        <style>{responsiveStyles}</style>
       
       {/* LEFT: Sticky Timeline Side Panel */}
       <div className="timeline-sidebar-panel">
@@ -1212,304 +1405,409 @@ const StaffProfileTab = () => {
               <User size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Personal Information</h3>
             </div>
-            {!isEditingPersonal && (
+            {user?.role !== 'STUDENT' && !isEditingPersonal && (
               <button onClick={() => setIsEditingPersonal(true)} style={btnSecondaryStyle}>
                 <Edit size={14} /> Edit Info
               </button>
             )}
           </div>
 
-          <div className="personal-info-header">
-            {/* Avatar block */}
-            <div className="avatar-wrapper">
-              <div style={{ position: 'relative', width: '100px', height: '100px' }}>
-                {user?.avatarUrl ? (
-                  <img 
-                    src={`${API_BASE_URL}${user.avatarUrl}`} 
-                    alt="Avatar" 
-                    style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #1A5A3B' }} 
-                  />
-                ) : (
-                  <div style={{ 
-                    width: '100px', 
-                    height: '100px', 
-                    borderRadius: '50%', 
-                    background: 'linear-gradient(135deg, #1A5A3B, #0f4028)', 
+          {user?.role === 'STUDENT' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="responsive-two-col-grid" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Full Name</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.name || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Email</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.username || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Birth</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.dob || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Gender</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.gender || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Social Category</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.category || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Nationality</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.nationality || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Father's Name</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.fatherName || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Mother's Name</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.motherName || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Phone Number</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.phoneNumber || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Residential Address</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.address || '—'}</strong>
+                </div>
+              </div>
+
+              <div className="responsive-two-col-grid" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
+                <div style={{ gridColumn: 'span 2', borderBottom: '1px solid #BBF7D0', paddingBottom: '8px', marginBottom: '4px' }}>
+                  <h4 style={{ margin: 0, color: '#133A26', fontSize: '0.95rem', fontWeight: 700 }}>Thesis & Research Details</h4>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Academic Session</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.academicSession || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree Type</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.degreeType || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Department</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.department || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>SH no.</span>
+                  <strong style={{ color: '#059669', fontSize: '0.9rem', fontWeight: 700 }}>{user?.profile?.shNo || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Enrollment Number</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.enrollmentNumber || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Admission</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.admissionDate || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Ph.D. Mode</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.phdMode || '—'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Specialization</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.specialization || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Area of Research Interest</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.areaOfInterest || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Assigned Supervisor / Guide</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{thesis?.supervisorId?.name || 'Awaiting Allocation'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Thesis Title</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.thesisTitle || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Thesis Summary / Abstract</span>
+                  <strong style={{ color: '#334155', fontSize: '0.88rem', fontWeight: 500, display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.5, marginTop: 4 }}>{user?.profile?.thesisSummary || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Keywords</span>
+                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.thesisKeywords || '—'}</strong>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="personal-info-header">
+              {/* Avatar block */}
+              <div className="avatar-wrapper">
+                <div style={{ position: 'relative', width: '100px', height: '100px' }}>
+                  {user?.avatarUrl ? (
+                    <img 
+                      src={`${API_BASE_URL}${user.avatarUrl}`} 
+                      alt="Avatar" 
+                      style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #1A5A3B' }} 
+                    />
+                  ) : (
+                    <div style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(135deg, #1A5A3B, #0f4028)', 
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '2.5rem',
+                      fontWeight: 700,
+                      border: '3px solid #1A5A3B'
+                    }}>
+                      {user?.name?.[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <label style={{
+                    position: 'absolute',
+                    bottom: '2px',
+                    right: '2px',
+                    background: '#1A5A3B',
                     color: 'white',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '2.5rem',
-                    fontWeight: 700,
-                    border: '3px solid #1A5A3B'
+                    cursor: 'pointer',
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}>
-                    {user?.name?.[0]?.toUpperCase()}
-                  </div>
-                )}
-                <label style={{
-                  position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  background: '#1A5A3B',
-                  color: 'white',
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  border: '2px solid #ffffff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  <Camera size={14} />
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={avatarLoading} />
-                </label>
+                    <Camera size={14} />
+                    <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={avatarLoading} />
+                  </label>
+                </div>
+                <span className="badge badge-neutral" style={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                  {user?.role === 'HOD' ? 'HOD' : user?.subRole || 'Faculty'}
+                </span>
               </div>
-              <span className="badge badge-neutral" style={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                {user?.role === 'HOD' ? 'HOD' : user?.subRole || 'Faculty'}
-              </span>
-            </div>
 
-            {/* Fields Listing/Form */}
-            <div style={{ flex: 1, minWidth: '280px' }}>
-              {isEditingPersonal ? (
-                <form onSubmit={savePersonalInfo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              {/* Fields Listing/Form */}
+              <div style={{ flex: 1, minWidth: '280px' }}>
+                {isEditingPersonal ? (
+                  <form onSubmit={savePersonalInfo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Phone Number</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.phoneNumber} 
+                          onChange={e => setPersonalForm({ ...personalForm, phoneNumber: e.target.value })} 
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Email ID</label>
+                        <input 
+                          type="email" 
+                          className="form-input" 
+                          value={personalForm.email} 
+                          onChange={e => setPersonalForm({ ...personalForm, email: e.target.value })} 
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Designation</label>
+                        <select 
+                          className="form-input" 
+                          value={personalForm.designation} 
+                          onChange={e => setPersonalForm({ ...personalForm, designation: e.target.value })}
+                          required
+                        >
+                          <option value="">Select...</option>
+                          <option value="Assistant Professor">Assistant Professor</option>
+                          <option value="Associate Professor">Associate Professor</option>
+                          <option value="Professor">Professor</option>
+                          <option value="Professor Emeritus">Professor Emeritus</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Specialization</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.specialization} 
+                          onChange={e => setPersonalForm({ ...personalForm, specialization: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Date of Birth</label>
+                        <input 
+                          type="date" 
+                          className="form-input" 
+                          value={personalForm.dob} 
+                          onChange={e => setPersonalForm({ ...personalForm, dob: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Gender</label>
+                        <select 
+                          className="form-input" 
+                          value={personalForm.gender} 
+                          onChange={e => setPersonalForm({ ...personalForm, gender: e.target.value })}
+                        >
+                          <option value="">Select...</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Category</label>
+                        <select 
+                          className="form-input" 
+                          value={personalForm.category} 
+                          onChange={e => setPersonalForm({ ...personalForm, category: e.target.value })}
+                        >
+                          <option value="">Select...</option>
+                          <option value="General">General</option>
+                          <option value="OBC">OBC</option>
+                          <option value="SC">SC</option>
+                          <option value="ST">ST</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Nationality</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.nationality} 
+                          onChange={e => setPersonalForm({ ...personalForm, nationality: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Father's Name</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.fatherName} 
+                          onChange={e => setPersonalForm({ ...personalForm, fatherName: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Mother's Name</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.motherName} 
+                          onChange={e => setPersonalForm({ ...personalForm, motherName: e.target.value })} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Office Room</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={personalForm.officeRoom} 
+                          onChange={e => setPersonalForm({ ...personalForm, officeRoom: e.target.value })} 
+                        />
+                      </div>
+                      {user?.role === 'HOD' && (
+                        <>
+                          <div className="form-group">
+                            <label className="form-label">Years of Service</label>
+                            <input 
+                              type="number" 
+                              className="form-input" 
+                              value={personalForm.yearsOfService} 
+                              onChange={e => setPersonalForm({ ...personalForm, yearsOfService: e.target.value })} 
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Additional Responsibilities</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              value={personalForm.additionalResponsibilities} 
+                              onChange={e => setPersonalForm({ ...personalForm, additionalResponsibilities: e.target.value })} 
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
                     <div className="form-group">
-                      <label className="form-label">Phone Number</label>
-                      <input 
-                        type="text" 
+                      <label className="form-label">Residential Address</label>
+                      <textarea 
                         className="form-input" 
-                        value={personalForm.phoneNumber} 
-                        onChange={e => setPersonalForm({ ...personalForm, phoneNumber: e.target.value })} 
-                        required
+                        style={{ height: '70px', resize: 'vertical' }}
+                        value={personalForm.address} 
+                        onChange={e => setPersonalForm({ ...personalForm, address: e.target.value })} 
                       />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Email ID</label>
-                      <input 
-                        type="email" 
-                        className="form-input" 
-                        value={personalForm.email} 
-                        onChange={e => setPersonalForm({ ...personalForm, email: e.target.value })} 
-                        required
-                      />
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button type="button" onClick={clearPersonalInfo} style={btnDangerStyle}>
+                        Clear Info
+                      </button>
+                      <button type="button" onClick={() => setIsEditingPersonal(false)} style={btnSecondaryStyle}>
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={loading} style={btnPrimaryStyle}>
+                        {loading ? 'Saving...' : 'Save Info'}
+                      </button>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Designation</label>
-                      <select 
-                        className="form-input" 
-                        value={personalForm.designation} 
-                        onChange={e => setPersonalForm({ ...personalForm, designation: e.target.value })}
-                        required
-                      >
-                        <option value="">Select...</option>
-                        <option value="Assistant Professor">Assistant Professor</option>
-                        <option value="Associate Professor">Associate Professor</option>
-                        <option value="Professor">Professor</option>
-                        <option value="Professor Emeritus">Professor Emeritus</option>
-                      </select>
+                  </form>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Faculty Name</span>
+                      <strong style={{ color: '#1F2937' }}>{user?.name}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Specialization</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.specialization} 
-                        onChange={e => setPersonalForm({ ...personalForm, specialization: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Designation</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.designation || 'Supervisor'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Date of Birth</label>
-                      <input 
-                        type="date" 
-                        className="form-input" 
-                        value={personalForm.dob} 
-                        onChange={e => setPersonalForm({ ...personalForm, dob: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Department</span>
+                      <strong style={{ color: '#1F2937' }}>{user?.department}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Gender</label>
-                      <select 
-                        className="form-input" 
-                        value={personalForm.gender} 
-                        onChange={e => setPersonalForm({ ...personalForm, gender: e.target.value })}
-                      >
-                        <option value="">Select...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Specialization</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.specialization || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Category</label>
-                      <select 
-                        className="form-input" 
-                        value={personalForm.category} 
-                        onChange={e => setPersonalForm({ ...personalForm, category: e.target.value })}
-                      >
-                        <option value="">Select...</option>
-                        <option value="General">General</option>
-                        <option value="OBC">OBC</option>
-                        <option value="SC">SC</option>
-                        <option value="ST">ST</option>
-                      </select>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Email ID</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.email || user?.username}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Nationality</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.nationality} 
-                        onChange={e => setPersonalForm({ ...personalForm, nationality: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Contact Phone</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.phoneNumber || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Father's Name</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.fatherName} 
-                        onChange={e => setPersonalForm({ ...personalForm, fatherName: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Date of Birth</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.dob || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Mother's Name</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.motherName} 
-                        onChange={e => setPersonalForm({ ...personalForm, motherName: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Gender</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.gender || 'N/A'}</strong>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Office Room</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={personalForm.officeRoom} 
-                        onChange={e => setPersonalForm({ ...personalForm, officeRoom: e.target.value })} 
-                      />
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Category</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.category || 'N/A'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Nationality</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.nationality || 'Indian'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Father's Name</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.fatherName || 'N/A'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Mother's Name</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.motherName || 'N/A'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block' }}>Office Room</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.officeRoom || 'N/A'}</strong>
                     </div>
                     {user?.role === 'HOD' && (
                       <>
-                        <div className="form-group">
-                          <label className="form-label">Years of Service</label>
-                          <input 
-                            type="number" 
-                            className="form-input" 
-                            value={personalForm.yearsOfService} 
-                            onChange={e => setPersonalForm({ ...personalForm, yearsOfService: e.target.value })} 
-                          />
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block' }}>Years of Service</span>
+                          <strong style={{ color: '#1F2937' }}>{profile.yearsOfService || 'N/A'}</strong>
                         </div>
-                        <div className="form-group">
-                          <label className="form-label">Additional Responsibilities</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            value={personalForm.additionalResponsibilities} 
-                            onChange={e => setPersonalForm({ ...personalForm, additionalResponsibilities: e.target.value })} 
-                          />
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block' }}>Additional Responsibilities</span>
+                          <strong style={{ color: '#1F2937' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
                         </div>
                       </>
                     )}
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <span style={{ color: '#64748B', display: 'block' }}>Residential Address</span>
+                      <strong style={{ color: '#1F2937' }}>{profile.address || 'N/A'}</strong>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Residential Address</label>
-                    <textarea 
-                      className="form-input" 
-                      style={{ height: '70px', resize: 'vertical' }}
-                      value={personalForm.address} 
-                      onChange={e => setPersonalForm({ ...personalForm, address: e.target.value })} 
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={clearPersonalInfo} style={btnDangerStyle}>
-                      Clear Info
-                    </button>
-                    <button type="button" onClick={() => setIsEditingPersonal(false)} style={btnSecondaryStyle}>
-                      Cancel
-                    </button>
-                    <button type="submit" disabled={loading} style={btnPrimaryStyle}>
-                      {loading ? 'Saving...' : 'Save Info'}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Faculty Name</span>
-                    <strong style={{ color: '#1F2937' }}>{user?.name}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Designation</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.designation || 'Supervisor'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Department</span>
-                    <strong style={{ color: '#1F2937' }}>{user?.department}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Specialization</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.specialization || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Email ID</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.email || user?.username}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Contact Phone</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.phoneNumber || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Date of Birth</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.dob || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Gender</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.gender || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Category</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.category || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Nationality</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.nationality || 'Indian'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Father's Name</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.fatherName || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Mother's Name</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.motherName || 'N/A'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748B', display: 'block' }}>Office Room</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.officeRoom || 'N/A'}</strong>
-                  </div>
-                  {user?.role === 'HOD' && (
-                    <>
-                      <div>
-                        <span style={{ color: '#64748B', display: 'block' }}>Years of Service</span>
-                        <strong style={{ color: '#1F2937' }}>{profile.yearsOfService || 'N/A'}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: '#64748B', display: 'block' }}>Additional Responsibilities</span>
-                        <strong style={{ color: '#1F2937' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
-                      </div>
-                    </>
-                  )}
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <span style={{ color: '#64748B', display: 'block' }}>Residential Address</span>
-                    <strong style={{ color: '#1F2937' }}>{profile.address || 'N/A'}</strong>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         {/* 2. AREA OF EXPERTISE */}
@@ -1677,264 +1975,494 @@ const StaffProfileTab = () => {
               <GraduationCap size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Educational Qualifications</h3>
             </div>
-            {(Object.keys(qualifications).length > 0 || otherQualsDraft.length > 0) && (
+            {user?.role !== 'STUDENT' && (Object.keys(qualifications).length > 0 || otherQualsDraft.length > 0) && (
               <button onClick={clearAllQualifications} style={btnDangerStyle}>
                 <Trash2 size={14} /> Clear All
               </button>
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {eduKeys.map(({ key, label }) => {
-              const info = eduDrafts[key] || {};
-              const originalInfo = qualifications[key] || {};
-              return (
-                <div key={key} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                  <div className="edu-card-header">
-                    <strong style={{ fontSize: '0.88rem', color: '#1F2937' }}>{label}</strong>
-                    
-                    {/* Document status or upload controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {originalInfo.certificateUrl ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <a 
-                            href={`${API_BASE_URL}${originalInfo.certificateUrl}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            style={btnSecondaryStyle}
-                          >
-                            <Eye size={12} /> View Doc
-                          </a>
-                          <button 
-                            onClick={() => deleteEduFile(key)}
-                            style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                            title="Delete certificate document"
-                            type="button"
-                          >
-                            <Trash size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <label style={{ ...btnSecondaryStyle, margin: 0 }}>
-                          <Upload size={12} /> {uploadingDocKey === key ? 'Uploading...' : 'Upload Doc'}
-                          <input 
-                            type="file" 
-                            accept=".pdf,image/*" 
-                            onChange={(e) => handleEduFileChange(e, key)} 
-                            style={{ display: 'none' }} 
-                            disabled={uploadingDocKey !== null} 
-                          />
-                        </label>
-                      )}
-                    </div>
+          {user?.role === 'STUDENT' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Class 10 Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Class 10 (Secondary) Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.class10?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.rollNo || '—'}</strong>
                   </div>
-
-                  {/* Details forms inside */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Board or University"
-                        value={info.boardOrUniv || ''} 
-                        onChange={e => handleEduDraftChange(key, 'boardOrUniv', e.target.value)} 
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Year of Passing"
-                        value={info.yearOfPassing || ''} 
-                        onChange={e => handleEduDraftChange(key, 'yearOfPassing', e.target.value)}
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Subject / Stream"
-                        value={info.subject || ''} 
-                        onChange={e => handleEduDraftChange(key, 'subject', e.target.value)}
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Marks / CGPA"
-                        value={info.percentage || ''} 
-                        onChange={e => handleEduDraftChange(key, 'percentage', e.target.value)}
-                        style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                      />
-                    </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board of Examination</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.board || '—'}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => clearQualification(key)} 
-                      style={btnDangerStyle}
-                    >
-                      Clear details
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => saveQualification(key)} 
-                      disabled={loading}
-                      style={btnPrimaryStyle}
-                    >
-                      Save {label}
-                    </button>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>School Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.school || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.marksObtained || '0'} / {user?.profile?.qualifications?.class10?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.percentage || '0%'}</strong>
                   </div>
                 </div>
-              );
-            })}
-
-            {/* Other Qualifications Header */}
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px', marginTop: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }} className="section-header">
-                <h4 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: '#1A5A3B' }}>Other Qualifications</h4>
-                <button 
-                  type="button" 
-                  onClick={addOtherQualRow} 
-                  style={btnPrimaryStyle}
-                >
-                  <Plus size={14} /> Add More Row
-                </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {otherQualsDraft.map((qual, index) => {
-                  const originalQual = (qualifications.otherQuals && qualifications.otherQuals[index]) || {};
-                  return (
-                    <div key={index} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: '#F8FAFC' }}>
-                      <div className="edu-card-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, width: '100%' }}>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Degree/Certificate Name (e.g. PG Diploma)"
-                            value={qual.degree || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'degree', e.target.value)}
-                            style={{ fontSize: '0.85rem', padding: '4px 8px', fontWeight: 600, maxWidth: '280px', width: '100%' }}
-                          />
-                        </div>
-                        
-                        {/* File Upload/View for Other Qualification */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          {originalQual.certificateUrl ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <a 
-                                href={`${API_BASE_URL}${originalQual.certificateUrl}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={btnSecondaryStyle}
-                              >
-                                <Eye size={12} /> View Doc
-                              </a>
-                              <button 
-                                onClick={() => deleteOtherQualFile(index)}
-                                style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                                title="Delete certificate document"
-                                type="button"
-                              >
-                                <Trash size={14} />
-                              </button>
-                            </div>
-                          ) : (
-                            <label style={{ ...btnSecondaryStyle, margin: 0 }}>
-                              <Upload size={12} /> {uploadingDocKey === `otherQuals_${index}` ? 'Uploading...' : 'Upload Doc'}
-                              <input 
-                                type="file" 
-                                accept=".pdf,image/*" 
-                                onChange={(e) => handleOtherQualFileChange(e, index)} 
-                                style={{ display: 'none' }} 
-                                disabled={uploadingDocKey !== null} 
-                              />
-                            </label>
-                          )}
-                        </div>
-                      </div>
+              {/* Class 12 Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Class 12 (Higher Secondary) Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.class12?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.rollNo || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board of Examination</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.board || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>School Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.school || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.marksObtained || '0'} / {user?.profile?.qualifications?.class12?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.percentage || '0%'}</strong>
+                  </div>
+                </div>
+              </div>
 
-                      {/* Fields */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Board or University"
-                            value={qual.boardOrUniv || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'boardOrUniv', e.target.value)} 
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Year of Passing"
-                            value={qual.yearOfPassing || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'yearOfPassing', e.target.value)}
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Subject / Stream"
-                            value={qual.subject || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'subject', e.target.value)}
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Marks / CGPA"
-                            value={qual.percentage || ''} 
-                            onChange={e => handleOtherQualFieldChange(index, 'percentage', e.target.value)}
-                            style={{ fontSize: '0.8rem', padding: '6px 10px' }}
-                          />
-                        </div>
-                      </div>
+              {/* Graduation Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Graduation Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.graduation?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll No / Enroll No</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.rollNo || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.degree || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>College Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.college || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.university || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>CGPA / Marks Obtained</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.marksObtained || '0'} / {user?.profile?.qualifications?.graduation?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage / CGPA (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.percentage || '—'}</strong>
+                  </div>
+                </div>
+              </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                        <button 
-                          type="button" 
-                          onClick={() => deleteOtherQual(index)} 
-                          style={btnDangerStyle}
-                        >
-                          Delete Row
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={() => saveOtherQual(index)} 
-                          disabled={loading}
-                          style={btnPrimaryStyle}
-                        >
-                          Save Qualification
-                        </button>
+              {/* Post Graduation Card */}
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Post-Graduation Details</h4>
+                  {renderStudentDocBadge(user?.profile?.qualifications?.postGraduation?.certificateUrl)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll No / Enroll No</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.rollNo || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.degree || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>College Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.college || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.university || '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>CGPA / Marks Obtained</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.marksObtained || '0'} / {user?.profile?.qualifications?.postGraduation?.totalMarks || '0'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage / CGPA (%)</span>
+                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.percentage || '—'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* M.Phil Card (Optional) */}
+              {user?.profile?.qualifications?.mphil?.done === true && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>M.Phil Details</h4>
+                    {renderStudentDocBadge(user?.profile?.qualifications?.mphil?.certificateUrl)}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.university || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Passing Year</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.passingYear || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.marksObtained || '0'} / {user?.profile?.qualifications?.mphil?.totalMarks || '0'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.percentage || '—'}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* NET JRF Card (Optional) */}
+              {user?.profile?.qualifications?.netJrf?.qualified === true && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>UGC NET / JRF Qualification Details</h4>
+                    {renderStudentDocBadge(user?.profile?.qualifications?.netJrf?.certificateUrl)}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Certificate Number</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.certNumber || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rollNo || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Rank (if any)</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rank || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Score / Percentile</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.score || '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Issue</span>
+                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.issueDate ? user.profile.qualifications.netJrf.issueDate.split('T')[0] : '—'}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Other Qualifications (Optional) */}
+              {user?.profile?.qualifications?.otherQuals?.length > 0 && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', marginBottom: '12px' }}>Other Qualifications</h4>
+                  {user.profile.qualifications.otherQuals.map((o, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '12px' }}>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Qualification Type</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.type === 'Other' ? o.otherType : o.type || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.rollNo || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board / University</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.board || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Institution / School</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.school || '—'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.marksObtained || '0'} / {o.totalMarks || '0'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
+                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
+                      </div>
+                      <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center' }}>
+                        {renderStudentDocBadge(o.certificateUrl)}
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {eduKeys.map(({ key, label }) => {
+                const info = eduDrafts[key] || {};
+                const originalInfo = qualifications[key] || {};
+                return (
+                  <div key={key} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div className="edu-card-header">
+                      <strong style={{ fontSize: '0.88rem', color: '#1F2937' }}>{label}</strong>
+                      
+                      {/* Document status or upload controls */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {originalInfo.certificateUrl ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <a 
+                              href={`${API_BASE_URL}${originalInfo.certificateUrl}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={btnSecondaryStyle}
+                            >
+                              <Eye size={12} /> View Doc
+                            </a>
+                            <button 
+                              onClick={() => deleteEduFile(key)}
+                              style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                              title="Delete certificate document"
+                              type="button"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label style={{ ...btnSecondaryStyle, margin: 0 }}>
+                            <Upload size={12} /> {uploadingDocKey === key ? 'Uploading...' : 'Upload Doc'}
+                            <input 
+                              type="file" 
+                              accept=".pdf,image/*" 
+                              onChange={(e) => handleEduFileChange(e, key)} 
+                              style={{ display: 'none' }} 
+                              disabled={uploadingDocKey !== null} 
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Details forms inside */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Board or University"
+                          value={info.boardOrUniv || ''} 
+                          onChange={e => handleEduDraftChange(key, 'boardOrUniv', e.target.value)} 
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Year of Passing"
+                          value={info.yearOfPassing || ''} 
+                          onChange={e => handleEduDraftChange(key, 'yearOfPassing', e.target.value)}
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Subject / Stream"
+                          value={info.subject || ''} 
+                          onChange={e => handleEduDraftChange(key, 'subject', e.target.value)}
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Marks / CGPA"
+                          value={info.percentage || ''} 
+                          onChange={e => handleEduDraftChange(key, 'percentage', e.target.value)}
+                          style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => clearQualification(key)} 
+                        style={btnDangerStyle}
+                      >
+                        Clear details
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => saveQualification(key)} 
+                        disabled={loading}
+                        style={btnPrimaryStyle}
+                      >
+                        Save {label}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Other Qualifications Header */}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px', marginTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }} className="section-header">
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: '#1A5A3B' }}>Other Qualifications</h4>
+                  <button 
+                    type="button" 
+                    onClick={addOtherQualRow} 
+                    style={btnPrimaryStyle}
+                  >
+                    <Plus size={14} /> Add More Row
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {otherQualsDraft.map((qual, index) => {
+                    const originalQual = (qualifications.otherQuals && qualifications.otherQuals[index]) || {};
+                    return (
+                      <div key={index} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: '#F8FAFC' }}>
+                        <div className="edu-card-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, width: '100%' }}>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Degree/Certificate Name (e.g. PG Diploma)"
+                              value={qual.degree || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'degree', e.target.value)}
+                              style={{ fontSize: '0.85rem', padding: '4px 8px', fontWeight: 600, maxWidth: '280px', width: '100%' }}
+                            />
+                          </div>
+                          
+                          {/* File Upload/View for Other Qualification */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {originalQual.certificateUrl ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <a 
+                                  href={`${API_BASE_URL}${originalQual.certificateUrl}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  style={btnSecondaryStyle}
+                                >
+                                  <Eye size={12} /> View Doc
+                                </a>
+                                <button 
+                                  onClick={() => deleteOtherQualFile(index)}
+                                  style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                  title="Delete certificate document"
+                                  type="button"
+                                >
+                                  <Trash size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <label style={{ ...btnSecondaryStyle, margin: 0 }}>
+                                <Upload size={12} /> {uploadingDocKey === `otherQuals_${index}` ? 'Uploading...' : 'Upload Doc'}
+                                <input 
+                                  type="file" 
+                                  accept=".pdf,image/*" 
+                                  onChange={(e) => handleOtherQualFileChange(e, index)} 
+                                  style={{ display: 'none' }} 
+                                  disabled={uploadingDocKey !== null} 
+                                />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Fields */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Board / University</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Board or University"
+                              value={qual.boardOrUniv || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'boardOrUniv', e.target.value)} 
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Year of Passing</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Year of Passing"
+                              value={qual.yearOfPassing || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'yearOfPassing', e.target.value)}
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Subject / Stream</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Subject / Stream"
+                              value={qual.subject || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'subject', e.target.value)}
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>Marks Obtained / CGPA</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              placeholder="Marks / CGPA"
+                              value={qual.percentage || ''} 
+                              onChange={e => handleOtherQualFieldChange(index, 'percentage', e.target.value)}
+                              style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                          <button 
+                            type="button" 
+                            onClick={() => deleteOtherQual(index)} 
+                            style={btnDangerStyle}
+                          >
+                            Delete Row
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => saveOtherQual(index)} 
+                            disabled={loading}
+                            style={btnPrimaryStyle}
+                          >
+                            Save Qualification
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-
-          </div>
+          )}
         </section>
 
         {/* 5. HONOURS & AWARDS */}
@@ -2025,7 +2553,8 @@ const StaffProfileTab = () => {
         </section>
 
         {/* 6. DOCTORAL THESES */}
-        <section ref={sectionRefs.theses} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {user?.role !== 'STUDENT' && (
+          <section ref={sectionRefs.theses} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FileText size={20} style={{ color: '#1A5A3B' }} />
@@ -2115,6 +2644,7 @@ const StaffProfileTab = () => {
             )}
           </div>
         </section>
+        )}
 
         {/* 7. PROFESSIONAL BODIES */}
         <section ref={sectionRefs.memberships} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -2408,18 +2938,20 @@ const StaffProfileTab = () => {
               <BookOpen size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Research Publications</h3>
             </div>
-            <div className="section-header-buttons">
-              {publicationsList.length > 0 && (
-                <button onClick={clearAllPublications} style={btnDangerStyle}>
-                  <Trash2 size={14} /> Clear All
-                </button>
-              )}
-              {!showPubForm && (
-                <button onClick={() => { setShowPubForm(true); setEditingPubIndex(-1); }} style={btnPrimaryStyle}>
-                  <Plus size={14} /> Add Entry
-                </button>
-              )}
-            </div>
+            {user?.role !== 'STUDENT' && (
+              <div className="section-header-buttons">
+                {publicationsList.length > 0 && (
+                  <button onClick={clearAllPublications} style={btnDangerStyle}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showPubForm && (
+                  <button onClick={() => { setShowPubForm(true); setEditingPubIndex(-1); }} style={btnPrimaryStyle}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Form */}
@@ -2457,46 +2989,85 @@ const StaffProfileTab = () => {
 
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {publicationsList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publications logged yet.</span>
+            {user?.role === 'STUDENT' ? (
+              loadingPubsAndIprs ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified publication entries...</span>
+              ) : verifiedPubs.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publication found.</span>
+              ) : (
+                verifiedPubs.map((p, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{p.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{p.journalName} ({p.type})</span>
+                      {p.type === 'JOURNAL' ? (
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                          Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Issue: {p.issue || 'N/A'} | Pages: {p.pages || 'N/A'}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                          Organized by: {p.volume || 'N/A'} | Location: {p.issn || 'N/A'}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block', marginTop: '2px' }}>
+                        Date of Publication: {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}
+                      </span>
+                      {p.paperLink && (
+                        <a 
+                          href={p.paperLink.startsWith('http') ? p.paperLink : `https://${p.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Paper Link / DOI
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )
             ) : (
-              publicationsList.map((pb, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                  <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pb.title}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
-                    {pb.doi && (
-                      <a 
-                        href={pb.doi.startsWith('http') ? pb.doi : `https://${pb.doi}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+              publicationsList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publications logged yet.</span>
+              ) : (
+                publicationsList.map((pb, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pb.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
+                      {pb.doi && (
+                        <a 
+                          href={pb.doi.startsWith('http') ? pb.doi : `https://${pb.doi}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Paper Link / DOI
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        onClick={() => {
+                          setEditingPubIndex(i);
+                          setPubForm(pb);
+                          setShowPubForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                       >
-                        <ExternalLink size={12} /> Paper Link / DOI
-                      </a>
-                    )}
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        onClick={() => deletePub(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
-                    <button 
-                      onClick={() => {
-                        setEditingPubIndex(i);
-                        setPubForm(pb);
-                        setShowPubForm(true);
-                      }} 
-                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button 
-                      onClick={() => deletePub(i)} 
-                      style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))
+              )
             )}
           </div>
         </section>
@@ -2508,18 +3079,20 @@ const StaffProfileTab = () => {
               <Copyright size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Intellectual Property Rights (IPR)</h3>
             </div>
-            <div className="section-header-buttons">
-              {iprList.length > 0 && (
-                <button onClick={clearAllIprs} style={btnDangerStyle}>
-                  <Trash2 size={14} /> Clear All
-                </button>
-              )}
-              {!showIprForm && (
-                <button onClick={() => { setShowIprForm(true); setEditingIprIndex(-1); }} style={btnPrimaryStyle}>
-                  <Plus size={14} /> Add Entry
-                </button>
-              )}
-            </div>
+            {user?.role !== 'STUDENT' && (
+              <div className="section-header-buttons">
+                {iprList.length > 0 && (
+                  <button onClick={clearAllIprs} style={btnDangerStyle}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showIprForm && (
+                  <button onClick={() => { setShowIprForm(true); setEditingIprIndex(-1); }} style={btnPrimaryStyle}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Form */}
@@ -2608,48 +3181,78 @@ const StaffProfileTab = () => {
 
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {iprList.length === 0 ? (
-              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No Intellectual Property Rights logged yet.</span>
+            {user?.role === 'STUDENT' ? (
+              loadingPubsAndIprs ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified IPR entries...</span>
+              ) : verifiedIprs.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No IPR found.</span>
+              ) : (
+                verifiedIprs.map((ip, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType || (ip.type === 'PATENT' ? 'Patent' : 'IPR')} | Status: {ip.itemStatus} ({ip.journalName})</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
+                      {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
+                      {ip.paperLink && (
+                        <a 
+                          href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Registry Link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )
             ) : (
-              iprList.map((ip, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                  <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType} | Status: {ip.itemStatus} ({ip.journalName})</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
-                    {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
-                    {ip.paperLink && (
-                      <a 
-                        href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+              iprList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No Intellectual Property Rights logged yet.</span>
+              ) : (
+                iprList.map((ip, i) => (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType} | Status: {ip.itemStatus} ({ip.journalName})</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
+                      {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
+                      {ip.paperLink && (
+                        <a 
+                          href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <ExternalLink size={12} /> Registry Link
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        onClick={() => {
+                          setEditingIprIndex(i);
+                          setIprForm(ip);
+                          setShowIprForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
                       >
-                        <ExternalLink size={12} /> Registry Link
-                      </a>
-                    )}
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        onClick={() => deleteIpr(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
-                    <button 
-                      onClick={() => {
-                        setEditingIprIndex(i);
-                        setIprForm(ip);
-                        setShowIprForm(true);
-                      }} 
-                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button 
-                      onClick={() => deleteIpr(i)} 
-                      style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))
+              )
             )}
           </div>
         </section>
@@ -2737,6 +3340,7 @@ const StaffProfileTab = () => {
         </section>
 
       </div>
+    </div>
     </div>
   );
 };

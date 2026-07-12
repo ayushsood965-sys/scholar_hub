@@ -10,6 +10,7 @@ import LeaveTab from '../modules/student/LeaveTab';
 import CorrectionsTab from '../modules/student/CorrectionsTab';
 import AttendanceLogsTab from '../modules/student/AttendanceLogsTab';
 import ProfileTab from '../modules/student/ProfileTab';
+import StaffProfileTab from '../modules/profile/StaffProfileTab';
 import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import SkeletonLoader from '../components/ui/SkeletonLoader';
 
@@ -102,7 +103,13 @@ const StudentDashboard = () => {
         {activeTab === 'records' && <AttendanceLogsTab />}
         {activeTab === 'leave' && <LeaveTab />}
         {activeTab === 'corrections' && <CorrectionsTab />}
-        {activeTab === 'profile' && <ProfileTab thesis={thesis} onRefreshThesis={fetchThesis} />}
+        {activeTab === 'profile' && (
+          user?.profile?.isPhD && thesis && thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED' ? (
+            <StaffProfileTab thesis={thesis} />
+          ) : (
+            <ProfileTab thesis={thesis} onRefreshThesis={fetchThesis} />
+          )
+        )}
       </DashboardShell>
 
       <ProfileOnboardingModal
