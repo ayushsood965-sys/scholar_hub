@@ -4605,6 +4605,13 @@ body {
   div[style*="overflowX:scroll"] {
     overflow-x: visible !important;
   }
+
+  .data-table-wrapper {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 4px 0 !important;
+  }
   
   table[style*="min-width"],
   table[style*="minWidth"] {

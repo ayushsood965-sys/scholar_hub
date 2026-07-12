@@ -2314,6 +2314,10 @@ img {
   .data-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    padding: 4px 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .data-table {
@@ -4300,8 +4304,11 @@ img {
   }
   
   table[style*="min-width"],
-  table[style*="minWidth"] {
+  table[style*="minWidth"],
+  .data-table,
+  table:not(.no-responsive) {
     min-width: 0px !important;
+    min-width: auto !important;
   }
   
   /* Convert tables to cards */
