@@ -4816,28 +4816,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
             </div>
           </div>
 
-          {/* Audit Log Card */}
-          {thesis.auditLog && thesis.auditLog.length > 0 && (
-            <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '16px' }}>
-                📜 Progression History
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {thesis.auditLog.slice().reverse().map((log, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6', marginTop: '6px' }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1E293B' }}>{log.action.replace(/_/g, ' ')}</div>
-                      {log.note && <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '2px' }}>{log.note}</div>}
-                      <div style={{ fontSize: '0.68rem', color: '#94A3B8', marginTop: '2px' }}>
-                        {new Date(log.timestamp).toLocaleDateString()} at {new Date(log.timestamp).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* Right Hand Column: Stats & Checklist */}

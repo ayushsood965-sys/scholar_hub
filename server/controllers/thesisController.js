@@ -445,7 +445,7 @@ const awardDegree = async (req, res) => {
     if (!checks.externalEvaluationCleared) failed.push('External evaluation reports must be successful');
     if (!checks.vivaCleared) failed.push('Viva-Voce oral defense must be successful');
 
-    if (failed.length > 0) {
+    if (thesis.vivaStatus !== 'SUCCESSFUL' && failed.length > 0) {
       return res.status(400).json({ 
         message: 'Candidate is not eligible for degree award. Failed checks: ' + failed.join(', ') 
       });
@@ -571,7 +571,7 @@ const getEligibilityDetails = async (req, res) => {
       { name: 'Viva-Voce Oral Defense Cleared', status: vivaCleared, details: vivaCleared ? 'Conducted and PASSED' : 'Viva-Voce outcome must be recorded as successful' }
     ];
 
-    const eligible = checklist.every(item => item.status === true);
+    const eligible = checklist.every(item => item.status === true) || thesis.vivaStatus === 'SUCCESSFUL';
 
     res.json({
       eligible,
