@@ -66,13 +66,13 @@ jobs:
           }
 
           # 1. ScholarSync
-          cancel_and_deploy "ScholarSync" "pi31rfjt4l7lxcu00jknq3ih"
+          cancel_and_deploy "ScholarSync" "v144s58g2wr1ppkigyjqkib7"
 
           # 2. ScholarServer
-          cancel_and_deploy "ScholarServer" "r2nng4qhlqrdbiu92y0vhx3v"
+          cancel_and_deploy "ScholarServer" "z6yvvn6x1l555x48nwoz8zdq"
 
           # 3. ScholarSync Portal
-          cancel_and_deploy "ScholarSync Portal" "ihy1xgml2cr2jifejljfb4qq"
+          cancel_and_deploy "ScholarSync Portal" "smjga68kbt0ouj9ulrmzt3ib"
 
           # 4. ScholarTrack Portal
-          cancel_and_deploy "ScholarTrack Portal" "my6tl6m9l380q8rc1vi5xy0f"
+          cancel_and_deploy "ScholarTrack Portal" "gmo2b0t8j5wtwmd96c0b8urq"
