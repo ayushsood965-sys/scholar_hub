@@ -6,7 +6,6 @@ import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
 import { useToast } from '../context/ToastContext';
 import { useThemeStyles } from '../context/ThemeContext';
-import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import StaffProfileTab from '../components/StaffProfileTab';
 import NotificationPanel from '../components/NotificationPanel';
 import axios from 'axios';
@@ -12023,7 +12022,6 @@ const StudentDashboard = () => {
   const [milestonesSubTab, setMilestonesSubTab] = useState('active');
   const { user } = useContext(AuthContext);
   const { thesis, milestones, loading, fetchMyThesis, submitMilestone } = useContext(ThesisContext);
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(user && !user.profileCompleted);
   const theme = useThemeStyles();
 
   useEffect(() => { 
@@ -12237,7 +12235,7 @@ const StudentDashboard = () => {
           }}>
             <span>⚠️ Please complete your profile first before proceeding further.</span>
             <button 
-              onClick={() => setIsOnboardingOpen(true)}
+              onClick={() => setActiveTab('profile')}
               style={{
                 background: '#DC2626',
                 color: 'white',
@@ -12263,11 +12261,6 @@ const StudentDashboard = () => {
           {renderStatusContent()}
         </div>
       </div>
-      <ProfileOnboardingModal 
-        isOpen={isOnboardingOpen} 
-        onClose={() => setIsOnboardingOpen(false)} 
-        onGo={() => { setActiveTab('profile'); setIsOnboardingOpen(false); }} 
-      />
       <MobileBottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}

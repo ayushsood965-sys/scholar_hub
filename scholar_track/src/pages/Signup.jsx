@@ -63,7 +63,7 @@ const Signup = () => {
   const [genderOptions, setGenderOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
 
-  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
@@ -212,57 +212,67 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setFieldErrors({});
+
+    const newErrors = {};
 
     if (!role) {
-      setError('Please select a role to continue.');
-      return;
+      newErrors.role = 'Please select a role to continue.';
     }
 
     // PhD block
     if (isPhdSelected) {
-      setError('PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.');
-      return;
+      newErrors.degreeTypeId = 'PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.';
     }
 
-    // Common validations
-    if (!username || !password || !confirmPassword || !department || !phoneNumber) {
-      setError('Please fill in all required fields.');
+    // Check required fields
+    if (!username) newErrors.username = 'Email address is required.';
+    if (!password) newErrors.password = 'Password is required.';
+    if (!confirmPassword) newErrors.confirmPassword = 'Confirm password is required.';
+    if (!department) newErrors.department = 'Department is required.';
+    if (!phoneNumber) newErrors.phoneNumber = 'Phone number is required.';
+
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+      newErrors.confirmPassword = 'Passwords do not match.';
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
+    if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long.';
+    } else {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/;
+      if (!passwordRegex.test(password)) {
+        newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.';
+      }
     }
 
     // Student-specific validations
     if (role === 'STUDENT') {
-      if (!name) {
-        setError('Please enter your full name.');
-        return;
-      }
-      if (!academicSession || !degreeTypeId || !degreeNameId || !gender || !category) {
-        setError('Please fill in all required fields (Session, Degree Type, Degree Name, Gender, Category).');
-        return;
-      }
+      if (!name) newErrors.name = 'Please enter your full name.';
+      if (!academicSession) newErrors.academicSession = 'Please select an academic session.';
+      if (!degreeTypeId) newErrors.degreeTypeId = 'Please select a degree type.';
+      if (!degreeNameId) newErrors.degreeNameId = 'Please select a degree name.';
+      if (!gender) newErrors.gender = 'Please select a gender.';
+      if (!category) newErrors.category = 'Please select a category.';
     }
 
     // Faculty/HOD validations
     if ((role === 'FACULTY' || role === 'HOD') && !name) {
-      setError('Please enter your full name.');
-      return;
+      newErrors.name = 'Please enter your full name.';
     }
 
     const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
     const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
     if (!indianPhoneRegex.test(cleanedPhone)) {
-      setError('Please enter a valid 10-digit Indian phone number (starts with 6-9).');
+      newErrors.phoneNumber = 'Please enter a valid 10-digit Indian phone number (starts with 6-9).';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
       return;
     }
 
@@ -291,10 +301,26 @@ const Signup = () => {
 
     const result = await register(userData);
     if (result.success) {
-      navigate(dashMap[result.role] ?? '/student-dashboard');
+      if (result.emailPending) {
+        navigate(`/verify-email-pending?email=${encodeURIComponent(userData.username)}`);
+      } else {
+        navigate(dashMap[result.role] ?? '/student-dashboard');
+      }
     } else {
-      setError(result.message ?? 'Registration failed.');
       setLoading(false);
+      const msg = result.message ?? 'Registration failed.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('password')) {
+        setFieldErrors({ password: msg });
+      } else if (lower.includes('phone') || lower.includes('mobile') || lower.includes('number')) {
+        setFieldErrors({ phoneNumber: msg });
+      } else if (lower.includes('registered') || lower.includes('email') || lower.includes('username') || lower.includes('credentials')) {
+        setFieldErrors({ username: msg });
+      } else if (lower.includes('hod') || lower.includes('department')) {
+        setFieldErrors({ department: msg });
+      } else {
+        setFieldErrors({ general: msg });
+      }
     }
   };
 
@@ -341,20 +367,20 @@ const Signup = () => {
           <h1 className="page-title">Create Account</h1>
           <p className="page-desc">Join ScholarTrack in just a few steps</p>
 
-          {error && (
+          {fieldErrors.general && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               style={{
                 padding: '12px 16px', borderRadius: 'var(--radius)',
-                background: error.includes('PhD') ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
-                border: `1px solid ${error.includes('PhD') ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.15)'}`,
-                color: '#EF4444', fontSize: '0.85rem', fontWeight: error.includes('PhD') ? 700 : 500,
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.15)',
+                color: '#EF4444', fontSize: '0.85rem', fontWeight: 500,
                 marginBottom: '20px', display: 'flex', alignItems: 'flex-start', gap: '8px'
               }}
             >
-              {error.includes('PhD') && <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />}
-              {error}
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+              {fieldErrors.general}
             </motion.div>
           )}
 
@@ -367,7 +393,7 @@ const Signup = () => {
                 value={role}
                 onChange={e => {
                   setRole(e.target.value);
-                  setError('');
+                  setFieldErrors({});
                   setDegreeTypeId('');
                   setDegreeNameId('');
                   setDegreeTypeOptions([]);
@@ -384,6 +410,11 @@ const Signup = () => {
                 <option value="FACULTY">Faculty / Supervisor</option>
                 <option value="HOD">Head of Department (HOD)</option>
               </select>
+              {fieldErrors.role && (
+                <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                  ⚠ {fieldErrors.role}
+                </span>
+              )}
             </div>
 
             {/* STUDENT FIELDS */}
@@ -399,6 +430,11 @@ const Signup = () => {
                     onChange={e => setName(e.target.value)}
                     required
                   />
+                  {fieldErrors.name && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -460,7 +496,7 @@ const Signup = () => {
                                       setDegreeNameId('');
                                       setDegreeTypeOptions([]);
                                       setDegreeNameOptions([]);
-                                      if (error.includes('PhD candidates')) setError('');
+                                      setFieldErrors(prev => ({ ...prev, department: null, degreeTypeId: null }));
                                     }}
                                     style={{
                                       paddingLeft: '24px',
@@ -481,6 +517,11 @@ const Signup = () => {
                       </div>
                     )}
                   </div>
+                  {fieldErrors.department && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.department}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -496,6 +537,11 @@ const Signup = () => {
                       <option key={s._id} value={s.sessionName}>{s.sessionName}</option>
                     ))}
                   </select>
+                  {fieldErrors.academicSession && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.academicSession}
+                    </span>
+                  )}
                 </div>
 
                 {/* Gender Dropdown */}
@@ -512,6 +558,11 @@ const Signup = () => {
                       <option key={g._id} value={g.value}>{g.label}</option>
                     ))}
                   </select>
+                  {fieldErrors.gender && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.gender}
+                    </span>
+                  )}
                 </div>
 
                 {/* Category Dropdown */}
@@ -528,6 +579,11 @@ const Signup = () => {
                       <option key={c._id} value={c.value}>{c.label}</option>
                     ))}
                   </select>
+                  {fieldErrors.category && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.category}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -606,6 +662,11 @@ const Signup = () => {
                       <span>PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.</span>
                     </div>
                   )}
+                  {fieldErrors.degreeTypeId && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.degreeTypeId}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -682,6 +743,11 @@ const Signup = () => {
                       No degree names available for this combination
                     </div>
                   )}
+                  {fieldErrors.degreeNameId && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.degreeNameId}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -691,9 +757,17 @@ const Signup = () => {
                     type="email"
                     placeholder="Enter your email id"
                     value={username}
-                    onChange={e => setUsername(e.target.value)}
+                    onChange={e => {
+                      setUsername(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, username: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.username && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.username}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -702,9 +776,17 @@ const Signup = () => {
                     className="form-input"
                     placeholder="Enter 10-digit mobile number e.g. 9876543210"
                     value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value)}
+                    onChange={e => {
+                      setPhoneNumber(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, phoneNumber: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.phoneNumber && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.phoneNumber}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -715,7 +797,10 @@ const Signup = () => {
                       type={showPwd ? 'text' : 'password'}
                       placeholder="Min. 6 characters"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={e => {
+                        setPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, password: null }));
+                      }}
                       required
                     />
                     <button
@@ -730,6 +815,11 @@ const Signup = () => {
                       {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {fieldErrors.password && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.password}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -740,7 +830,10 @@ const Signup = () => {
                       type={showConfirmPwd ? 'text' : 'password'}
                       placeholder="Re-enter your password"
                       value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
+                      onChange={e => {
+                        setConfirmPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, confirmPassword: null }));
+                      }}
                       required
                     />
                     <button
@@ -755,6 +848,11 @@ const Signup = () => {
                       {showConfirmPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {fieldErrors.confirmPassword && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.confirmPassword}
+                    </span>
+                  )}
                 </div>
               </>
             )}
@@ -816,6 +914,7 @@ const Signup = () => {
                                       setDepartment(d.name);
                                       setIsDropdownOpen(false);
                                       setSearchQuery('');
+                                      setFieldErrors(prev => ({ ...prev, department: null }));
                                     }}
                                     style={{
                                       paddingLeft: '24px',
@@ -836,6 +935,11 @@ const Signup = () => {
                       </div>
                     )}
                   </div>
+                  {fieldErrors.department && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.department}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -844,9 +948,17 @@ const Signup = () => {
                     className="form-input"
                     placeholder="Enter your full name"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => {
+                      setName(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, name: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.name && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -856,9 +968,17 @@ const Signup = () => {
                     type="email"
                     placeholder="Enter your email id"
                     value={username}
-                    onChange={e => setUsername(e.target.value)}
+                    onChange={e => {
+                      setUsername(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, username: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.username && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.username}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -867,9 +987,17 @@ const Signup = () => {
                     className="form-input"
                     placeholder="Enter 10-digit mobile number e.g. 9876543210"
                     value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value)}
+                    onChange={e => {
+                      setPhoneNumber(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, phoneNumber: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.phoneNumber && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.phoneNumber}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -880,7 +1008,10 @@ const Signup = () => {
                       type={showPwd ? 'text' : 'password'}
                       placeholder="Min. 6 characters"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={e => {
+                        setPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, password: null }));
+                      }}
                       required
                     />
                     <button
@@ -895,6 +1026,11 @@ const Signup = () => {
                       {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {fieldErrors.password && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.password}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -905,7 +1041,10 @@ const Signup = () => {
                       type={showConfirmPwd ? 'text' : 'password'}
                       placeholder="Re-enter your password"
                       value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
+                      onChange={e => {
+                        setConfirmPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, confirmPassword: null }));
+                      }}
                       required
                     />
                     <button
@@ -920,6 +1059,11 @@ const Signup = () => {
                       {showConfirmPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {fieldErrors.confirmPassword && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.confirmPassword}
+                    </span>
+                  )}
                 </div>
               </>
             )}

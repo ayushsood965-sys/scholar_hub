@@ -203,7 +203,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
     password: 'password',
     role: 'SUPER_ADMIN',
     isActive: true,
-    isVerified: true,
+    isVerified: true, isEmailVerified: true,
     profileCompleted: true,
     profile: {
       email: 'admin@scholarsync.com',
@@ -271,7 +271,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
       subRole: 'HOD',
       department: deptName,
       isActive: true,
-      isVerified: true,
+      isVerified: true, isEmailVerified: true,
       profileCompleted: true,
       profile: {
         phoneNumber: '+91 94180-11111',
@@ -311,7 +311,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
         subRole: 'SUPERVISOR',
         department: deptName,
         isActive: true,
-        isVerified: true,
+        isVerified: true, isEmailVerified: true,
         profileCompleted: true,
         profile: {
           phoneNumber: `+91 98160-2222${f}`,
@@ -390,7 +390,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
         role: 'STUDENT',
         department: deptName,
         isActive: true,
-        isVerified: true,
+        isVerified: true, isEmailVerified: true,
         profileCompleted: true,
         profile: {
           shNo,
@@ -436,7 +436,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
         role: 'STUDENT',
         department: deptName,
         isActive: true,
-        isVerified: true,
+        isVerified: true, isEmailVerified: true,
         profileCompleted: true,
         profile: {
           shNo: Math.floor(100000000 + Math.random() * 900000000).toString(),
@@ -478,7 +478,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
         role: 'STUDENT',
         department: deptName,
         isActive: true,
-        isVerified: true,
+        isVerified: true, isEmailVerified: true,
         profileCompleted: true,
         profile: {
           shNo: Math.floor(100000000 + Math.random() * 900000000).toString(),
@@ -514,7 +514,7 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
         role: 'STUDENT',
         department: deptName,
         isActive: true,
-        isVerified: true,
+        isVerified: true, isEmailVerified: true,
         profileCompleted: true,
         profile: {
           shNo: Math.floor(100000000 + Math.random() * 900000000).toString(),
@@ -1010,3 +1010,4 @@ async function seedUserData(selectedDepartments, studentCount = 10, facultyCount
 module.exports = {
   seedUserData
 };
+

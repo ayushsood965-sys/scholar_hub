@@ -11,7 +11,6 @@ import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
 import { useToast } from '../context/ToastContext';
-import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
 import { useTabPersistence } from '../hooks/useTabPersistence';
 import MobileBottomNav from '../components/MobileBottomNav';
@@ -4356,8 +4355,6 @@ const FacultyDashboard = () => {
   const [selectedThesisId, setSelectedThesisId] = useState(null);
   const [selectedThesisData, setSelectedThesisData] = useState(null);
 
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(user && !user.profileCompleted);
-
   const subRole = user?.role === 'HOD' ? 'HOD' : user?.subRole;
 
   const handleTabChange = (tab) => {
@@ -4486,7 +4483,7 @@ const FacultyDashboard = () => {
           }}>
             <span>⚠️ Please complete your profile first before proceeding further.</span>
             <button 
-              onClick={() => setIsOnboardingOpen(true)}
+              onClick={() => setActiveTab('profile')}
               style={{
                 background: '#DC2626',
                 color: 'white',
@@ -4607,11 +4604,6 @@ const FacultyDashboard = () => {
         />,
         document.body
       )}
-      <ProfileOnboardingModal 
-        isOpen={isOnboardingOpen} 
-        onClose={() => setIsOnboardingOpen(false)} 
-        onGo={() => { setActiveTab('profile'); setIsOnboardingOpen(false); }} 
-      />
       <MobileBottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}

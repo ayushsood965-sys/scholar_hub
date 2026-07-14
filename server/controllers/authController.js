@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
+const { sendVerificationEmail } = require('../utils/emailService');
 const Department = require('../models/Department');
 const { createNotification } = require('./notificationController');
 
@@ -44,6 +46,15 @@ const login = async (req, res) => {
     }
 
     if (await user.matchPassword(password)) {
+      // Check if email is verified
+      if (user.isEmailVerified === false) {
+        return res.status(403).json({
+          message: 'Please verify your email address before logging in.',
+          emailPending: true,
+          username: user.username
+        });
+      }
+
       // Proactively ensure seeded users have a welcome notification (if they don't already have one)
       const Notification = require('../models/Notification');
       const welcomeExists = await Notification.findOne({ recipient: user._id, type: 'WELCOME' });
@@ -86,10 +97,23 @@ const login = async (req, res) => {
 const register = async (req, res) => {
   const { name, username, password, role, department, phoneNumber, academicSession, degreeType, degreeName, degreeTypeId, degreeTypeName, degreeNameId, degreeNameLabel, gender, category } = req.body;
   try {
-    if (await User.findOne({ username })) {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      const portalName = existingUser.role === 'STUDENT' ? 'ScholarSync' : 'ScholarTrack';
       return res.status(400).json({ 
-        message: 'You are already registered on the ScholarSync or ScholarTrack portal. Please use your existing credentials to log in.'
+        message: `This email is already registered on the ${portalName} portal. Please use your existing credentials to log in.`
       });
+    }
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long.' });
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.' });
     }
 
     if (!phoneNumber) {
@@ -104,6 +128,14 @@ const register = async (req, res) => {
     }
     const tenDigits = cleanedPhone.slice(-10);
     const formattedPhone = `+91 ${tenDigits.slice(0, 5)}-${tenDigits.slice(5)}`;
+
+    const phoneExists = await User.findOne({ "profile.phoneNumber": formattedPhone });
+    if (phoneExists) {
+      const portalName = phoneExists.role === 'STUDENT' ? 'ScholarSync' : 'ScholarTrack';
+      return res.status(400).json({ 
+        message: `This mobile number is already registered on a ${portalName} account. Please use a unique mobile number.` 
+      });
+    }
 
     // Constraint: Only one HOD can exist per department
     if (role === 'HOD') {
@@ -135,8 +167,17 @@ const register = async (req, res) => {
     // For students, name may not be provided — derive from email prefix
     const finalName = name || (username ? username.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '');
 
+    // Set email inside profile if not present
+    if (!profileData.email) {
+      profileData.email = username;
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
     const user = await User.create({ 
       name: finalName, username, password, role: role || 'STUDENT', department,
+      isEmailVerified: false,
+      emailVerificationToken: token,
+      emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       profile: profileData
     });
 
@@ -150,20 +191,24 @@ const register = async (req, res) => {
       link: welcomeData.link
     });
 
-    // Resolve departmentId for client-side filtering
-    let newUserDepartmentId = null;
-    if (user.department) {
-      const dept = await Department.findOne({ $or: [{ name: user.department }, { code: user.department }] });
-      if (dept) newUserDepartmentId = dept._id;
+    // Send verification email in background
+    let emailSent = false;
+    try {
+      const portal = req.body.portal || (role === 'STUDENT' ? 'sync' : 'track');
+      await sendVerificationEmail(user.username, user.name, token, portal);
+      emailSent = true;
+    } catch (err) {
+      console.error('Failed to send verification email during registration:', err);
     }
 
     res.status(201).json({
-      _id: user._id, name: user.name, username: user.username,
-      role: user.role, subRole: user.subRole, department: user.department,
-      departmentId: newUserDepartmentId,
-      isActive: user.isActive, isVerified: user.isVerified, profileCompleted: user.profileCompleted,
-      avatarUrl: user.avatarUrl, profile: user.profile,
-      token: generateToken(user._id, user.role),
+      success: true,
+      emailPending: true,
+      email: user.username,
+      emailSent,
+      message: emailSent 
+        ? 'Registration successful. Please verify your email.' 
+        : 'Registration successful, but we could not send the verification email. Please try resending it.'
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -178,7 +223,7 @@ const getFacultyList = async (req, res) => {
     if (req.user.role === 'HOD' || req.user.role === 'FACULTY') {
       query.department = req.user.department;
     }
-    const faculty = await User.find(query).select('name username role subRole department isActive isVerified');
+    const faculty = await User.find(query).select('name username role subRole department isActive isVerified isEmailVerified');
     res.json(faculty);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -274,7 +319,7 @@ const getDeptUsers = async (req, res) => {
       return res.status(403).json({ message: 'Action restricted to HOD.' });
     }
     const query = req.user.role === 'ADMIN' ? {} : { department: req.user.department };
-    const users = await User.find(query).select('name username role department isActive isVerified profileCompleted');
+    const users = await User.find(query).select('name username role department isActive isVerified isEmailVerified profileCompleted');
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -287,7 +332,7 @@ const getAllUsers = async (req, res) => {
     if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ message: 'Action restricted to Super Admin.' });
     }
-    const users = await User.find().select('name username role subRole department isActive isVerified profileCompleted profile');
+    const users = await User.find().select('name username role subRole department isActive isVerified isEmailVerified profileCompleted profile');
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -308,7 +353,8 @@ const adminCreateUser = async (req, res) => {
     // Check duplicate username
     const exists = await User.findOne({ username });
     if (exists) {
-      return res.status(400).json({ message: 'Username / Email already registered' });
+      const portalName = exists.role === 'STUDENT' ? 'ScholarSync' : 'ScholarTrack';
+      return res.status(400).json({ message: `Username / Email already registered on the ${portalName} portal.` });
     }
 
     // Unique HOD constraint check
@@ -333,6 +379,7 @@ const adminCreateUser = async (req, res) => {
       subRole: role === 'FACULTY' ? (subRole || 'SUPERVISOR') : null,
       department,
       isActive: true,
+      isEmailVerified: true,
       profileCompleted: false
     });
 
@@ -681,6 +728,11 @@ const verifyUser = async (req, res) => {
     const targetUser = await User.findById(req.params.id);
     if (!targetUser) return res.status(404).json({ message: 'User not found' });
 
+    // Verify email must be done first
+    if (targetUser.isEmailVerified === false) {
+      return res.status(400).json({ message: 'User must verify their email address before their account can be approved.' });
+    }
+
     // HODs, ADMINs, or SUPER_ADMINs can verify
     if (!['HOD', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Not authorized.' });
@@ -830,4 +882,123 @@ const updateUserProfileByHod = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin };
+// GET /api/auth/verify-email
+const verifyEmail = async (req, res) => {
+  const { token } = req.query;
+  try {
+    if (!token) {
+      return res.status(400).json({ message: 'Verification token is required.' });
+    }
+    
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Verification link is invalid or has expired.' });
+    }
+    
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+    
+    res.json({ success: true, message: 'Email verified successfully!' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST /api/auth/resend-verification
+const resendVerificationEmail = async (req, res) => {
+  const { username, portal } = req.body;
+  try {
+    if (!username) {
+      return res.status(400).json({ message: 'Username/Email is required.' });
+    }
+    
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'This email is already verified. Please log in.' });
+    }
+    
+    const token = crypto.randomBytes(32).toString('hex');
+    user.emailVerificationToken = token;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await user.save();
+    
+    const targetPortal = portal || (user.role === 'STUDENT' ? 'sync' : 'track');
+    await sendVerificationEmail(user.username, user.name, token, targetPortal);
+    
+    res.json({ success: true, message: 'Verification email resent successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST /api/auth/forgot-password
+const forgotPassword = async (req, res) => {
+  const { username, portal } = req.body;
+  try {
+    if (!username) {
+      return res.status(400).json({ message: 'Email address is required.' });
+    }
+
+    const user = await User.findOne({ username });
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      user.resetPasswordToken = token;
+      user.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
+      await user.save();
+
+      const { sendPasswordResetEmail } = require('../utils/emailService');
+      const targetPortal = portal || (user.role === 'STUDENT' ? 'sync' : 'track');
+      await sendPasswordResetEmail(user.username, user.name, token, targetPortal);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'If the email exists in our database, you will receive a password reset link shortly.' 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST /api/auth/reset-password
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+  try {
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required.' });
+    }
+    if (!password) {
+      return res.status(400).json({ message: 'New password is required.' });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Reset token is invalid or has expired.' });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successfully!' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword };

@@ -63,8 +63,12 @@ const Login = () => {
       }
       navigate(dashMap[result.role] ?? '/student-dashboard');
     } else {
-      setError(result.message ?? 'Authentication failed.');
       setLoading(false);
+      if (result.emailPending) {
+        navigate(`/verify-email-pending?email=${encodeURIComponent(result.username)}`);
+      } else {
+        setError(result.message ?? 'Authentication failed.');
+      }
     }
   };
 
@@ -138,7 +142,7 @@ const Login = () => {
               />
             </div>
 
-            <div className="form-group">
+             <div className="form-group">
               <label className="form-label">Password</label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -160,6 +164,11 @@ const Login = () => {
                 >
                   {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+              </div>
+              <div style={{ textAlign: 'right', marginTop: '6px' }}>
+                <Link to="/forgot-password" style={{ fontSize: '0.82rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                  Forgot Password?
+                </Link>
               </div>
             </div>
 

@@ -63,13 +63,25 @@ export const AuthProvider = ({ children }) => {
       if (fetchNotifications) fetchNotifications();
       return { success: true, role: data.role };
     } catch (error) {
+      if (error.response?.status === 403 && error.response?.data?.emailPending) {
+        return { 
+          success: false, 
+          emailPending: true, 
+          username: error.response.data.username, 
+          message: error.response.data.message 
+        };
+      }
       return { success: false, message: error.response?.data?.message || 'Login failed' };
     }
   };
 
   const register = async (userData) => {
     try {
+      userData.portal = 'track';
       const { data } = await axios.post(`${API_URL}/auth/register`, userData);
+      if (data.emailPending) {
+        return { success: true, emailPending: true, email: data.email, message: data.message };
+      }
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data));
       setUser(data);
@@ -78,6 +90,15 @@ export const AuthProvider = ({ children }) => {
       return { success: true, role: data.role };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Registration failed' };
+    }
+  };
+
+  const resendVerification = async (username) => {
+    try {
+      const { data } = await axios.post(`${API_URL}/auth/resend-verification`, { username, portal: 'track' });
+      return { success: true, message: data.message };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Resend failed' };
     }
   };
 
@@ -165,7 +186,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, updateProfile, uploadAvatar, uploadProfileDocument, fetchMe }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, updateProfile, uploadAvatar, uploadProfileDocument, fetchMe, resendVerification }}>
       {children}
     </AuthContext.Provider>
   );

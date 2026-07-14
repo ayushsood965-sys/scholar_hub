@@ -18,6 +18,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" />;
   }
 
+  if (user.isEmailVerified === false) {
+    return <Navigate to={`/verify-email-pending?email=${encodeURIComponent(user.username)}`} />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     const dashMap = {
       SUPER_ADMIN: '/super-dashboard',

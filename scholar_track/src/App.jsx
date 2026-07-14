@@ -3,6 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import VerifyEmailPending from "./pages/VerifyEmailPending";
+import VerifyEmailCallback from "./pages/VerifyEmailCallback";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AuthBridge from "./pages/AuthBridge";
 import LogoutBridge from "./pages/LogoutBridge";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -56,6 +60,10 @@ const App = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+        <Route path="/verify-email" element={<VerifyEmailCallback />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth-bridge" element={<AuthBridge />} />
         <Route path="/logout-bridge" element={<LogoutBridge />} />
 

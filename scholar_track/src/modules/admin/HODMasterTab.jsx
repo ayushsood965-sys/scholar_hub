@@ -185,9 +185,26 @@ const HODMasterTab = () => {
                     style={{
                       fontSize: "0.8rem",
                       color: "var(--text-secondary)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2px",
+                      alignItems: "flex-start",
+                      marginTop: "2px"
                     }}
                   >
-                    {row.username}
+                    <span>{row.username}</span>
+                    <span style={{
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                      textTransform: "uppercase",
+                      background: row.isEmailVerified ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                      color: row.isEmailVerified ? "#10B981" : "#EF4444",
+                      border: `1px solid ${row.isEmailVerified ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)"}`
+                    }}>
+                      {row.isEmailVerified ? "Email Verified" : "Email Unverified"}
+                    </span>
                   </div>
                 </div>
               ),
@@ -243,8 +260,18 @@ const HODMasterTab = () => {
                   {!row.isVerified && (
                     <button
                       className="btn btn-sm btn-primary"
-                      onClick={() => handleVerify(row._id)}
-                      title="Verify"
+                      onClick={() => {
+                        if (row.isEmailVerified === false) return;
+                        handleVerify(row._id);
+                      }}
+                      disabled={row.isEmailVerified === false}
+                      title={row.isEmailVerified ? "Verify" : "Email must be verified first"}
+                      style={{
+                        cursor: row.isEmailVerified ? "pointer" : "not-allowed",
+                        opacity: row.isEmailVerified ? 1 : 0.6,
+                        background: row.isEmailVerified ? "var(--primary-color)" : "#9CA3AF",
+                        borderColor: row.isEmailVerified ? "var(--primary-color)" : "#9CA3AF"
+                      }}
                     >
                       <ShieldAlert size={14} /> Verify
                     </button>

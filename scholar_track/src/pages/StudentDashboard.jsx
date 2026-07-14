@@ -11,7 +11,6 @@ import CorrectionsTab from '../modules/student/CorrectionsTab';
 import AttendanceLogsTab from '../modules/student/AttendanceLogsTab';
 import ProfileTab from '../modules/student/ProfileTab';
 import StaffProfileTab from '../modules/profile/StaffProfileTab';
-import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import SkeletonLoader from '../components/ui/SkeletonLoader';
 
 const StudentDashboard = () => {
@@ -20,7 +19,6 @@ const StudentDashboard = () => {
   const api = useApi();
   
   const [activeTab, setActiveTab] = useTabPersistence('track_student_tab', 'overview');
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [thesis, setThesis] = useState(null);
   const [loadingThesis, setLoadingThesis] = useState(true);
 
@@ -51,9 +49,6 @@ const StudentDashboard = () => {
   useEffect(() => {
     if (user) {
       fetchThesis();
-      if (!user.profileCompleted) {
-        setShowOnboarding(true);
-      }
     }
   }, []);
 
@@ -69,7 +64,6 @@ const StudentDashboard = () => {
   };
 
   const handleGoToProfile = () => {
-    setShowOnboarding(false);
     setActiveTab('profile');
   };
 
@@ -90,34 +84,26 @@ const StudentDashboard = () => {
   }
 
   return (
-    <>
-      <DashboardShell
-        role="STUDENT"
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        headerTitle={tabTitles[activeTab]}
-        isLocked={isLocked}
-      >
-        {activeTab === 'overview' && <OverviewTab thesis={thesis} />}
-        {activeTab === 'attendance' && <AttendanceTab />}
-        {activeTab === 'records' && <AttendanceLogsTab />}
-        {activeTab === 'leave' && <LeaveTab />}
-        {activeTab === 'corrections' && <CorrectionsTab />}
-        {activeTab === 'profile' && (
-          user?.profile?.isPhD && thesis && thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED' ? (
-            <StaffProfileTab thesis={thesis} />
-          ) : (
-            <ProfileTab thesis={thesis} onRefreshThesis={fetchThesis} />
-          )
-        )}
-      </DashboardShell>
-
-      <ProfileOnboardingModal
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onGo={handleGoToProfile}
-      />
-    </>
+    <DashboardShell
+      role="STUDENT"
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      headerTitle={tabTitles[activeTab]}
+      isLocked={isLocked}
+    >
+      {activeTab === 'overview' && <OverviewTab thesis={thesis} />}
+      {activeTab === 'attendance' && <AttendanceTab />}
+      {activeTab === 'records' && <AttendanceLogsTab />}
+      {activeTab === 'leave' && <LeaveTab />}
+      {activeTab === 'corrections' && <CorrectionsTab />}
+      {activeTab === 'profile' && (
+        user?.profile?.isPhD && thesis && thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED' ? (
+          <StaffProfileTab thesis={thesis} />
+        ) : (
+          <ProfileTab thesis={thesis} onRefreshThesis={fetchThesis} />
+        )
+      )}
+    </DashboardShell>
   );
 };
 

@@ -51,6 +51,7 @@ connectDB().then(async () => {
         role: 'SUPER_ADMIN',
         isActive: true,
         isVerified: true,
+        isEmailVerified: true,
         profileCompleted: true,
         profile: {
           email: 'admin@scholarsync.com',

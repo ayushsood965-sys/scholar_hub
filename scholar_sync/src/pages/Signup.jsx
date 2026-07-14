@@ -47,8 +47,9 @@ const Signup = () => {
   const [allDegreeNames, setAllDegreeNames] = useState([]);
   const [phdDegreeTypeId, setPhdDegreeTypeId] = useState('');
   const [phdDegreeTypeName, setPhdDegreeTypeName] = useState('');
-  const [hasPhdForDept, setHasPhdForDept] = useState(false);
   const [phdDegreeNames, setPhdDegreeNames] = useState([]);
+  const [selectedDegreeNameId, setSelectedDegreeNameId] = useState('');
+  const [hasPhdForDept, setHasPhdForDept] = useState(false);
 
   // Gender and Category from master data
   const [gender, setGender] = useState('');
@@ -56,7 +57,7 @@ const Signup = () => {
   const [genderOptions, setGenderOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
 
-  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
@@ -166,6 +167,15 @@ const Signup = () => {
     setPhdDegreeNames(phdNames);
   }, [departmentId, allDegreeNames]);
 
+  // Sync selectedDegreeNameId when phdDegreeNames changes
+  useEffect(() => {
+    if (phdDegreeNames.length > 0) {
+      setSelectedDegreeNameId(phdDegreeNames[0]._id);
+    } else {
+      setSelectedDegreeNameId('');
+    }
+  }, [phdDegreeNames]);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -185,63 +195,64 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setFieldErrors({});
+
+    const newErrors = {};
 
     if (!role) {
-      setError('Please select a role to continue.');
-      return;
+      newErrors.role = 'Please select a role to continue.';
     }
+    // Check required fields
+    if (!username) newErrors.username = 'Email address is required.';
+    if (!password) newErrors.password = 'Password is required.';
+    if (!confirmPassword) newErrors.confirmPassword = 'Confirm password is required.';
+    if (!department) newErrors.department = 'Department is required.';
+    if (!phoneNumber) newErrors.phoneNumber = 'Phone number is required.';
 
-    // Common validations
-    if (!username || !password || !confirmPassword || !department || !phoneNumber) {
-      setError('Please fill in all required fields.');
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+      newErrors.confirmPassword = 'Passwords do not match.';
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
+    if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long.';
+    } else {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/;
+      if (!passwordRegex.test(password)) {
+        newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.';
+      }
     }
 
     // Student-specific validations (PhD only)
     if (role === 'STUDENT') {
-      if (!name) {
-        setError('Please enter your full name.');
-        return;
-      }
-      if (!academicSession) {
-        setError('Please select an academic session.');
-        return;
-      }
-      if (!gender) {
-        setError('Please select a gender.');
-        return;
-      }
-      if (!category) {
-        setError('Please select a category.');
-        return;
-      }
+      if (!name) newErrors.name = 'Please enter your full name.';
+      if (!academicSession) newErrors.academicSession = 'Please select an academic session.';
+      if (!gender) newErrors.gender = 'Please select a gender.';
+      if (!category) newErrors.category = 'Please select a category.';
       if (!hasPhdForDept) {
-        setError('No PhD programme is mapped under the selected department. Please choose a department that offers PhD, or contact your department administrator.');
-        return;
+        newErrors.department = 'No PhD programme is mapped under the selected department. Please choose a department that offers PhD, or contact your department administrator.';
+      } else if (!selectedDegreeNameId) {
+        newErrors.selectedDegreeNameId = 'Please select a PhD programme.';
       }
     }
 
     // Faculty/HOD validations
     if ((role === 'FACULTY' || role === 'HOD') && !name) {
-      setError('Please enter your full name.');
-      return;
+      newErrors.name = 'Please enter your full name.';
     }
 
     const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
     const indianPhoneRegex = /^(\+91|91|0)?[6-9]\d{9}$/;
     if (!indianPhoneRegex.test(cleanedPhone)) {
-      setError('Please enter a valid 10-digit Indian phone number (starts with 6-9).');
+      newErrors.phoneNumber = 'Please enter a valid 10-digit Indian phone number (starts with 6-9).';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
       return;
     }
 
@@ -259,10 +270,10 @@ const Signup = () => {
       userData.academicSession = academicSession;
       userData.degreeTypeId = phdDegreeTypeId;
       userData.degreeTypeName = phdDegreeTypeName;
-      // Include first PhD degree name for this department as degreeName info
-      if (phdDegreeNames.length > 0) {
-        userData.degreeNameId = phdDegreeNames[0]._id;
-        userData.degreeNameLabel = phdDegreeNames[0].name;
+      const chosenDegree = phdDegreeNames.find(dn => dn._id === selectedDegreeNameId);
+      if (chosenDegree) {
+        userData.degreeNameId = chosenDegree._id;
+        userData.degreeNameLabel = chosenDegree.name;
       }
       userData.gender = gender;
       userData.category = category;
@@ -272,10 +283,26 @@ const Signup = () => {
 
     const result = await register(userData);
     if (result.success) {
-      navigate(dashMap[result.role] ?? '/student-dashboard');
+      if (result.emailPending) {
+        navigate(`/verify-email-pending?email=${encodeURIComponent(userData.username)}`);
+      } else {
+        navigate(dashMap[result.role] ?? '/student-dashboard');
+      }
     } else {
-      setError(result.message ?? 'Registration failed.');
       setLoading(false);
+      const msg = result.message ?? 'Registration failed.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('password')) {
+        setFieldErrors({ password: msg });
+      } else if (lower.includes('phone') || lower.includes('mobile') || lower.includes('number')) {
+        setFieldErrors({ phoneNumber: msg });
+      } else if (lower.includes('registered') || lower.includes('email') || lower.includes('username') || lower.includes('credentials')) {
+        setFieldErrors({ username: msg });
+      } else if (lower.includes('hod') || lower.includes('department')) {
+        setFieldErrors({ department: msg });
+      } else {
+        setFieldErrors({ general: msg });
+      }
     }
   };
 
@@ -292,7 +319,7 @@ const Signup = () => {
           <h1 className="page-title">Join ScholarSync</h1>
           <p className="page-desc">PhD Scholars &amp; Supervisors — Create your credentials</p>
 
-          {error && (
+          {fieldErrors.general && (
             <div style={{
               padding: '12px 16px', borderRadius: '8px', marginBottom: '15px',
               background: 'rgba(239, 68, 68, 0.08)',
@@ -300,10 +327,8 @@ const Signup = () => {
               color: '#EF4444', fontSize: '0.85rem', fontWeight: 500,
               display: 'flex', alignItems: 'flex-start', gap: '8px'
             }}>
-              {error.includes('No PhD') && (
-                <span style={{ flexShrink: 0, marginTop: '1px' }}>⚠</span>
-              )}
-              {error}
+              <span style={{ flexShrink: 0, marginTop: '1px' }}>⚠</span>
+              {fieldErrors.general}
             </div>
           )}
 
@@ -316,7 +341,7 @@ const Signup = () => {
                 value={role}
                 onChange={e => {
                   setRole(e.target.value);
-                  setError('');
+                  setFieldErrors({});
                   setAcademicSession('');
                   setGender('');
                   setCategory('');
@@ -342,6 +367,11 @@ const Signup = () => {
                 <option value="FACULTY" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>Faculty / Supervisor</option>
                 <option value="HOD" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>Head of Department (HOD)</option>
               </select>
+              {fieldErrors.role && (
+                <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                  ⚠ {fieldErrors.role}
+                </span>
+              )}
             </div>
 
             {/* STUDENT FIELDS (PhD only) */}
@@ -357,6 +387,11 @@ const Signup = () => {
                     required
                     style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                   />
+                  {fieldErrors.name && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -432,7 +467,7 @@ const Signup = () => {
                                       setDepartmentId(d._id);
                                       setIsDropdownOpen(false);
                                       setSearchQuery('');
-                                      if (error.includes('No PhD')) setError('');
+                                      setFieldErrors(prev => ({ ...prev, department: null }));
                                     }}
                                     style={{
                                       color: theme.textPrimary,
@@ -455,6 +490,11 @@ const Signup = () => {
                       </div>
                     )}
                   </div>
+                  {fieldErrors.department && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.department}
+                    </span>
+                  )}
                 </div>
 
                 {/* PhD Degree Type — auto-detected, shown as read-only badge */}
@@ -495,25 +535,39 @@ const Signup = () => {
                   )}
                 </div>
 
-                {/* Show available PhD degree names as info (read-only) */}
+                {/* PhD Degree Name Dropdown */}
                 {departmentId && hasPhdForDept && phdDegreeNames.length > 0 && (
                   <div className="form-group">
-                    <label className="form-label">Available PhD Programmes</label>
-                    <div style={{
-                      display: 'flex', flexWrap: 'wrap', gap: '6px',
-                      padding: '4px 0'
-                    }}>
+                    <label className="form-label">PhD Programme / Course <span style={{ color: theme.error }}>*</span></label>
+                    <select
+                      className="form-input"
+                      value={selectedDegreeNameId}
+                      onChange={e => setSelectedDegreeNameId(e.target.value)}
+                      required
+                      style={{
+                        backgroundColor: theme.inputBg,
+                        color: theme.inputText,
+                        borderColor: theme.inputBorder,
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23${theme.isDark ? '88898b' : '6B7280'}' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        backgroundSize: '14px',
+                        paddingRight: '36px',
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>-- Select PhD Programme --</option>
                       {phdDegreeNames.map(dn => (
-                        <span key={dn._id} style={{
-                          padding: '4px 12px', borderRadius: '20px',
-                          background: 'rgba(19, 58, 38, 0.06)',
-                          border: '1px solid rgba(19, 58, 38, 0.12)',
-                          fontSize: '0.8rem', color: '#133A26', fontWeight: 500
-                        }}>
-                          {dn.name} ({dn.code})
-                        </span>
+                        <option key={dn._id} value={dn._id} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{dn.name} ({dn.code})</option>
                       ))}
-                    </div>
+                    </select>
+                    {fieldErrors.selectedDegreeNameId && (
+                      <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                        ⚠ {fieldErrors.selectedDegreeNameId}
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -543,6 +597,11 @@ const Signup = () => {
                       <option key={s._id} value={s.sessionName} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{s.sessionName}</option>
                     ))}
                   </select>
+                  {fieldErrors.academicSession && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.academicSession}
+                    </span>
+                  )}
                 </div>
 
                 {/* Gender Dropdown */}
@@ -572,6 +631,11 @@ const Signup = () => {
                       <option key={g._id} value={g.value} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{g.label}</option>
                     ))}
                   </select>
+                  {fieldErrors.gender && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.gender}
+                    </span>
+                  )}
                 </div>
 
                 {/* Category Dropdown */}
@@ -601,6 +665,11 @@ const Signup = () => {
                       <option key={c._id} value={c.value} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{c.label}</option>
                     ))}
                   </select>
+                  {fieldErrors.category && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.category}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -610,10 +679,18 @@ const Signup = () => {
                     type="email"
                     placeholder="Enter your email id"
                     value={username}
-                    onChange={e => setUsername(e.target.value)}
+                    onChange={e => {
+                      setUsername(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, username: null }));
+                    }}
                     required
                     style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                   />
+                  {fieldErrors.username && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.username}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -622,10 +699,18 @@ const Signup = () => {
                     className="form-input"
                     placeholder="Enter 10-digit mobile number e.g. 9876543210"
                     value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value)}
+                    onChange={e => {
+                      setPhoneNumber(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, phoneNumber: null }));
+                    }}
                     required
                     style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                   />
+                  {fieldErrors.phoneNumber && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.phoneNumber}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -636,7 +721,10 @@ const Signup = () => {
                       type={showPwd ? 'text' : 'password'}
                       placeholder="Min. 6 characters"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={e => {
+                        setPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, password: null }));
+                      }}
                       required
                       style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                     />
@@ -653,6 +741,11 @@ const Signup = () => {
                       {showPwd ? '🙈' : '👁'}
                     </button>
                   </div>
+                  {fieldErrors.password && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.password}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -663,7 +756,10 @@ const Signup = () => {
                       type={showConfirmPwd ? 'text' : 'password'}
                       placeholder="Re-enter your password"
                       value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
+                      onChange={e => {
+                        setConfirmPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, confirmPassword: null }));
+                      }}
                       required
                       style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
                     />
@@ -680,6 +776,11 @@ const Signup = () => {
                       {showConfirmPwd ? '🙈' : '👁'}
                     </button>
                   </div>
+                  {fieldErrors.confirmPassword && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.confirmPassword}
+                    </span>
+                  )}
                 </div>
               </>
             )}
@@ -742,6 +843,7 @@ const Signup = () => {
                                       setDepartmentId(d._id);
                                       setIsDropdownOpen(false);
                                       setSearchQuery('');
+                                      setFieldErrors(prev => ({ ...prev, department: null }));
                                     }}
                                     style={{
                                       paddingLeft: '24px',
@@ -762,6 +864,11 @@ const Signup = () => {
                       </div>
                     )}
                   </div>
+                  {fieldErrors.department && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.department}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -770,9 +877,17 @@ const Signup = () => {
                     className="form-input"
                     placeholder="Enter your full name"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => {
+                      setName(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, name: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.name && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -782,9 +897,17 @@ const Signup = () => {
                     type="email"
                     placeholder="Enter your email id"
                     value={username}
-                    onChange={e => setUsername(e.target.value)}
+                    onChange={e => {
+                      setUsername(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, username: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.username && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.username}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -793,9 +916,17 @@ const Signup = () => {
                     className="form-input"
                     placeholder="Enter 10-digit mobile number e.g. 9876543210"
                     value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value)}
+                    onChange={e => {
+                      setPhoneNumber(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, phoneNumber: null }));
+                    }}
                     required
                   />
+                  {fieldErrors.phoneNumber && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.phoneNumber}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -806,7 +937,10 @@ const Signup = () => {
                       type={showPwd ? 'text' : 'password'}
                       placeholder="Min. 6 characters"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={e => {
+                        setPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, password: null }));
+                      }}
                       required
                     />
                     <button
@@ -822,6 +956,11 @@ const Signup = () => {
                       {showPwd ? '🙈' : '👁'}
                     </button>
                   </div>
+                  {fieldErrors.password && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.password}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -832,7 +971,10 @@ const Signup = () => {
                       type={showConfirmPwd ? 'text' : 'password'}
                       placeholder="Re-enter your password"
                       value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
+                      onChange={e => {
+                        setConfirmPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, confirmPassword: null }));
+                      }}
                       required
                     />
                     <button
@@ -848,6 +990,11 @@ const Signup = () => {
                       {showConfirmPwd ? '🙈' : '👁'}
                     </button>
                   </div>
+                  {fieldErrors.confirmPassword && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.confirmPassword}
+                    </span>
+                  )}
                 </div>
               </>
             )}

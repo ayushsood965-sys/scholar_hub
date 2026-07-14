@@ -53,8 +53,12 @@ const Login = () => {
       else if (result.role === 'FACULTY') navigate('/faculty-dashboard');
       else navigate('/student-dashboard');
     } else {
-      setError(result.message);
       setIsLoggingIn(false);
+      if (result.emailPending) {
+        navigate(`/verify-email-pending?email=${encodeURIComponent(result.username)}`);
+      } else {
+        setError(result.message);
+      }
     }
   };
 
@@ -115,6 +119,11 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.inputText }}
               />
+              <div style={{ textAlign: 'right', marginTop: '6px' }}>
+                <Link to="/forgot-password" style={{ fontSize: '0.82rem', color: theme.primary, textDecoration: 'none', fontWeight: 500 }}>
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
             <button type="submit" className="btn-primary" style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: '24px', cursor: 'pointer' }}>
               Log In

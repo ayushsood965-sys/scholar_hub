@@ -8,6 +8,10 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import GenericPage from './pages/GenericPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import VerifyEmailPending from './pages/VerifyEmailPending';
+import VerifyEmailCallback from './pages/VerifyEmailCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import WorkflowPage from './pages/WorkflowPage';
 import LogoutBridge from './pages/LogoutBridge';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -99,6 +103,10 @@ function App() {
         {/* Auth & Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+        <Route path="/verify-email" element={<VerifyEmailCallback />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/logout-bridge" element={<LogoutBridge />} />
         <Route path="/workflow" element={<WorkflowPage />} />
         <Route path="/labs" element={<ResearchLabsPage />} />

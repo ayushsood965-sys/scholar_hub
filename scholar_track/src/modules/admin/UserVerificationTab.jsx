@@ -86,7 +86,21 @@ const UserVerificationTab = () => {
       accessor: (row) => (
         <div>
           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{row.name}</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{row.username}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start', marginTop: '2px' }}>
+            <span>{row.username}</span>
+            <span style={{
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              padding: '1px 5px',
+              borderRadius: '4px',
+              textTransform: 'uppercase',
+              background: row.isEmailVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              color: row.isEmailVerified ? '#10B981' : '#EF4444',
+              border: `1px solid ${row.isEmailVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+            }}>
+              {row.isEmailVerified ? 'Email Verified' : 'Email Unverified'}
+            </span>
+          </div>
         </div>
       )
     },
@@ -125,8 +139,22 @@ const UserVerificationTab = () => {
           {!row.isVerified && (
             <button 
               className="btn btn-sm btn-primary" 
-              style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}
-              onClick={() => handleVerify(row._id)}
+              style={{ 
+                padding: '6px 12px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '4px',
+                cursor: row.isEmailVerified ? 'pointer' : 'not-allowed',
+                opacity: row.isEmailVerified ? 1 : 0.6,
+                background: row.isEmailVerified ? 'var(--primary-color)' : '#9CA3AF',
+                borderColor: row.isEmailVerified ? 'var(--primary-color)' : '#9CA3AF'
+              }}
+              onClick={() => {
+                if (row.isEmailVerified === false) return;
+                handleVerify(row._id);
+              }}
+              disabled={row.isEmailVerified === false}
+              title={row.isEmailVerified ? "Verify ID" : "Email must be verified first"}
             >
               <UserCheck size={14} /> Verify
             </button>

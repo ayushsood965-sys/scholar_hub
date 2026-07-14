@@ -58,4 +58,23 @@ const notificationSchema = new mongoose.Schema(
 notificationSchema.index({ recipient: 1 });
 notificationSchema.index({ roleScope: 1, department: 1 });
 
+// Pre-save hook to track if document is new
+notificationSchema.pre('save', function() {
+  this._isNewDoc = this.isNew;
+});
+
+// Post-save hook to dispatch email notification
+notificationSchema.post('save', async function(doc) {
+  if (doc._isNewDoc) {
+    try {
+      const { sendNotificationEmail } = require('../utils/emailService');
+      sendNotificationEmail(doc).catch(err => {
+        console.error('Error in sendNotificationEmail async call:', err);
+      });
+    } catch (err) {
+      console.error('Error in notification post-save hook:', err);
+    }
+  }
+});
+
 module.exports = mongoose.model('Notification', notificationSchema);

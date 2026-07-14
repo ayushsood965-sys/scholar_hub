@@ -11,7 +11,6 @@ import { API_BASE_URL, API_URL } from '../config';
 import { useTabPersistence } from '../hooks/useTabPersistence';
 import MobileBottomNav from '../components/MobileBottomNav';
 import { progressiveFetch } from '../utils/progressiveFetch';
-import ProfileOnboardingModal from '../components/ProfileOnboardingModal';
 import NotificationPanel from '../components/NotificationPanel';
 import ThemeToggle from '../components/ThemeToggle';
 import UnifiedScholarModal from '../components/UnifiedScholarModal';
@@ -2138,7 +2137,22 @@ const ManageUsers = () => {
                 <div key={u._id} className="file-item" style={{ opacity: u.isActive ? 1 : 0.65 }}>
                   <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div className="file-name" style={{ flex: 2, fontWeight: 600 }}>{u.name}</div>
-                  <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#64748B' }}>{u.username}</div>
+                  <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#64748B', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span>{u.username}</span>
+                    <span style={{
+                      alignSelf: 'flex-start',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      textTransform: 'uppercase',
+                      background: u.isEmailVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                      color: u.isEmailVerified ? '#10B981' : '#EF4444',
+                      border: `1px solid ${u.isEmailVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+                    }}>
+                      {u.isEmailVerified ? 'Email Verified' : 'Email Unverified'}
+                    </span>
+                  </div>
                   <div style={{ flex: 1 }}>
                     <span style={{
                       padding: '2px 8px',
@@ -2206,6 +2220,7 @@ const ManageUsers = () => {
                     {!u.isVerified && (u.role === 'STUDENT' || u.role === 'FACULTY') && (
                       <button 
                         onClick={async () => {
+                          if (u.isEmailVerified === false) return;
                           try {
                             await axios.put(`${API}/auth/users/${u._id}/verify`, {}, getAuthHeader());
                             toast.success("Account verified successfully!");
@@ -2214,15 +2229,18 @@ const ManageUsers = () => {
                             toast.error(err.response?.data?.message || 'Verification failed');
                           }
                         }}
+                        disabled={u.isEmailVerified === false}
+                        title={u.isEmailVerified ? "Verify ID" : "Email must be verified first"}
                         style={{
-                          background: '#2563EB',
+                          background: u.isEmailVerified ? '#2563EB' : '#9CA3AF',
                           color: 'white',
                           border: 'none',
                           padding: '6px 10px',
                           borderRadius: '6px',
                           fontSize: '0.75rem',
                           fontWeight: 600,
-                          cursor: 'pointer'
+                          cursor: u.isEmailVerified ? 'pointer' : 'not-allowed',
+                          opacity: u.isEmailVerified ? 1 : 0.6
                         }}
                       >
                         Verify ID
@@ -5069,8 +5087,6 @@ const AdminDashboard = () => {
   const { allTheses = [], fetchAllTheses = (() => {}), verifyEnrollment = (() => {}), assignSupervisor = (() => {}), clearCoursework = (() => {}), awardDegree = (() => {}), updateAuditLog = (() => {}), drcApprove = (() => {}), seminarClear = (() => {}), fetchThesisById = (() => {}), reviewMilestone = (() => {}), finalApprove = (() => {}) } = useContext(ThesisContext) || {};
   const { user, fetchMe = (() => {}) } = useContext(AuthContext) || {};
 
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(!!(user && !user.profileCompleted));
-
   const handleTabChange = (tab) => {
     if (tab === 'registration' || tab === 'registrations') {
       setActiveTab('scholars');
@@ -5219,7 +5235,7 @@ const AdminDashboard = () => {
           }}>
             <span>⚠️ Please complete your profile first before proceeding further.</span>
             <button 
-              onClick={() => setIsOnboardingOpen(true)}
+              onClick={() => setActiveTab('profile')}
               style={{
                 background: '#DC2626',
                 color: 'white',
@@ -5339,11 +5355,6 @@ const AdminDashboard = () => {
         />,
         document.body
       )}
-      <ProfileOnboardingModal 
-        isOpen={isOnboardingOpen} 
-        onClose={() => setIsOnboardingOpen(false)} 
-        onGo={() => { setActiveTab('profile'); setIsOnboardingOpen(false); }} 
-      />
       <MobileBottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}
