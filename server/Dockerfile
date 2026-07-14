@@ -9,8 +9,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies with npm cache mount
-RUN --mount=type=cache,id=npm-cache,target=/root/.npm 
-    --mount=type=cache,id=node-modules,target=/app/node_modules 
+# Using --mount=type=cache to persist npm cache and node_modules across builds
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+    --mount=type=cache,id=node-modules,target=/app/node_modules \
     npm ci --prefer-offline --omit=dev
 
 # Copy source code
@@ -25,7 +26,7 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application source
-COPY --from=builder /app .
+COPY --from=builder /app ./
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
@@ -34,7 +35,7 @@ RUN mkdir -p /app/uploads
 EXPOSE 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget -qO- http://localhost:5000/api/health || exit 1
 
 # Start the server
