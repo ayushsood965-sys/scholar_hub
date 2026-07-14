@@ -28,26 +28,30 @@ jobs:
             local app_name="$1"
             local app_uuid="$2"
             
+            # Strip trailing slash from base URL if present
+            local base_url="${{ secrets.COOLIFY_BASE_URL }}"
+            base_url="${base_url%/}"
+            
             echo "============================================="
             echo "Managing deployments for $app_name ($app_uuid)"
             echo "============================================="
             
             # Fetch active/queued deployments for this application
             echo "Fetching current deployments from Coolify..."
-            deployments=$(curl -s -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            deployments_response=$(curl -s -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
               -H "Content-Type: application/json" \
-              "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deployments/applications/$app_uuid" || echo "[]")
+              "$base_url/api/v1/deployments/applications/$app_uuid" || echo "{}")
               
-            if [ -n "$deployments" ] && [ "$deployments" != "[]" ] && [[ "$deployments" == \[*\] ]]; then
-              # Parse queued or in_progress deployment UUIDs using jq
-              pending_uuids=$(echo "$deployments" | jq -r '.[] | select(.status == "queued" or .status == "in_progress") | .deployment_uuid')
-              
+            # Parse queued or in_progress deployment UUIDs using jq
+            pending_uuids=$(echo "$deployments_response" | jq -r '.deployments[]? | select(.status == "queued" or .status == "in_progress") | .deployment_uuid' 2>/dev/null || true)
+            
+            if [ -n "$pending_uuids" ]; then
               for uuid in $pending_uuids; do
                 if [ -n "$uuid" ] && [ "$uuid" != "null" ]; then
                   echo "Found pending/active deployment $uuid for $app_name. Canceling..."
                   cancel_resp=$(curl -s -X POST -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
                     -H "Content-Type: application/json" \
-                    "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deployments/$uuid/cancel")
+                    "$base_url/api/v1/deployments/$uuid/cancel")
                   echo "Cancel response: $cancel_resp"
                 fi
               done
@@ -58,7 +62,7 @@ jobs:
             # Trigger new deployment
             echo "Triggering new deployment for $app_name..."
             response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
-              "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy?uuid=$app_uuid&force=false" \
+              "$base_url/api/v1/deploy?uuid=$app_uuid&force=false" \
               -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
               -H "Content-Type: application/json")
             echo "Deployment trigger response: $response"
