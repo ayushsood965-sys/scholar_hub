@@ -54,7 +54,7 @@ const VerifyEmailCallback = () => {
           <div>
             <div className="spinner" style={{ width: '60px', height: '60px', border: '5px solid rgba(99, 102, 241, 0.1)', borderTop: '5px solid #6366F1', borderRadius: '50%', margin: '0 auto 24px', animation: 'spin 1s linear infinite' }}></div>
             <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#1e1b4b', marginBottom: '12px' }}>Verifying Email</h2>
-            <p style={{ fontSize: '0.95rem', color: '#4b5563', lineHeight: 1.5 }}>Please wait while we verify your email address...</p>
+            <p style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>Please wait while we verify your email address...</p>
           </div>
         )}
 

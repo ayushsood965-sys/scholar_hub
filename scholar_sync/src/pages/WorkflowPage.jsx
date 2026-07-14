@@ -372,7 +372,7 @@ const SceneMockUI = ({ mockUI, isActive }) => {
             <div className="pres-mock-scholar-card-review">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>🎓 Rahul Sharma</div>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>🎓 Rahul Sharma</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Dept. of Computer Science | Enr: 2024-CS-001</div>
                 </div>
                 <div style={{ background: '#FEF3C7', color: '#D97706', padding: '4px 12px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 800 }}>AWAITING</div>

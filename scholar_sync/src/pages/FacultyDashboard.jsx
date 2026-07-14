@@ -157,7 +157,7 @@ const Header = ({ title, user }) => {
       </button>
       <div className="header-title">{title}</div>
       <div className="header-actions">
-        <ThemeToggle style={{ marginRight: '8px', color: '#475569' }} />
+        <ThemeToggle style={{ marginRight: '8px', color: 'var(--color-text-secondary)' }} />
         {/* Bell Popover Container */}
         <div style={{ position: 'relative' }}>
           <button 
@@ -174,7 +174,7 @@ const Header = ({ title, user }) => {
               padding: '8px',
               borderRadius: '50%',
               transition: 'background-color 0.2s',
-              color: '#475569'
+              color: 'var(--color-text-secondary)'
             }}
             onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
             onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -214,8 +214,8 @@ const Header = ({ title, user }) => {
                 top: '45px',
                 right: '0',
                 width: '340px',
-                background: 'white',
-                border: '1px solid #E2E8F0',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '16px',
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
                 zIndex: 99999,
@@ -224,8 +224,8 @@ const Header = ({ title, user }) => {
               }}
             >
               {/* Dropdown Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #F1F5F9', background: '#FAFAFA' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+                <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🔔</span> Recent Notifications
                 </span>
                 {unreadCount > 0 && (
@@ -241,7 +241,7 @@ const Header = ({ title, user }) => {
               {/* Scrollable List */}
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {notifications.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94A3B8', fontSize: '0.8rem' }}>
+                  <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                     <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🍃</div>
                     <p style={{ margin: 0, fontWeight: 600 }}>All Caught Up!</p>
                     <p style={{ margin: '2px 0 0', fontSize: '0.72rem' }}>No notifications to show.</p>
@@ -255,7 +255,7 @@ const Header = ({ title, user }) => {
                         onClick={(e) => handleItemClick(e, n._id)}
                         style={{
                           padding: '12px 16px',
-                          borderBottom: '1px solid #F1F5F9',
+                          borderBottom: '1px solid var(--color-border)',
                           background: n.read ? 'white' : '#F8FAFC',
                           cursor: 'pointer',
                           display: 'flex',
@@ -272,7 +272,7 @@ const Header = ({ title, user }) => {
                             <span style={{ fontSize: '0.78rem', fontWeight: n.read ? 600 : 800, color: '#1E293B', lineHeight: 1.2 }}>
                               {n.title}
                             </span>
-                            <span style={{ fontSize: '0.62rem', color: '#94A3B8', flexShrink: 0 }}>
+                            <span style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>
                               {new Date(n.createdAt).toLocaleDateString()}
                             </span>
                           </div>
@@ -389,7 +389,7 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
 const getStatusDisplay = (status) => {
   switch (status) {
     case 'DRAFT':
-      return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+      return { text: 'Draft', color: 'var(--color-text-secondary)', bg: '#E2E8F0', border: '#CBD5E1' };
     case 'PENDING':
       return { text: 'submitted and pending review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
     case 'UNDER_REVIEW_HOD':
@@ -401,7 +401,7 @@ const getStatusDisplay = (status) => {
     case 'REJECTED_BY_HOD':
       return { text: 'rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     default:
-      return { text: status, color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+      return { text: status, color: 'var(--color-text-secondary)', bg: '#E2E8F0', border: '#CBD5E1' };
   }
 };
 
@@ -514,8 +514,8 @@ const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20, flex: 1, minHeight: 0 }}>
           {/* Left Panel: Document Viewer */}
-          <div style={{ background: '#F8FAFC', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ background: '#F1F5F9', padding: '8px 16px', borderBottom: '1px solid var(--color-border, #E2E8F0)', fontWeight: 600, fontSize: '0.8rem', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--color-bg)', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--color-bg)', padding: '8px 16px', borderBottom: '1px solid var(--color-border, #E2E8F0)', fontWeight: 600, fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>📄 Document Preview Window</span>
               {fileUrl && <a href={`${API_BASE_URL}${fileUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700 }}>Download Copy ⬇️</a>}
             </div>
@@ -534,7 +534,7 @@ const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
                   )}
                 </>
               ) : (
-                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', flexDirection: 'column' }}>
                   <span style={{ fontSize: '2.5rem' }}>⚠️</span>
                   <p style={{ marginTop: 8, fontWeight: 700 }}>No document attachment found</p>
                 </div>
@@ -637,7 +637,7 @@ const FacultyDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
                   </button>
                 </>
               ) : (
-                <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
+                <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: 'var(--color-bg)', borderRadius: 8, fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
                   Status: <span style={{ color: doc.status === 'VERIFIED' ? '#059669' : doc.status === 'UNDER_REVIEW_HOD' ? '#1D4ED8' : '#DC2626' }}>{getStatusDisplay(doc.status).text}</span>
                 </div>
               )}
@@ -1051,47 +1051,47 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
               <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #F1F5F9', paddingTop: '16px' }}>
                 {/* General & ERP Grid */}
                 <div>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Personal Details</h4>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Personal Details</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.8rem', marginBottom: '20px' }}>
-                    <div><strong>Email/Username:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.username || 'N/A'}</span></div>
-                    <div><strong>Mobile:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.phoneNumber || 'N/A'}</span></div>
-                    <div><strong>Date of Birth:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.dob ? new Date(thesis.scholarId.profile.dob).toLocaleDateString() : 'N/A'}</span></div>
-                    <div><strong>Gender:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.gender || 'N/A'}</span></div>
-                    <div><strong>Social Category:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.category || 'N/A'}</span></div>
-                    <div><strong>Nationality:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.nationality || 'N/A'}</span></div>
-                    <div><strong>Father's Name:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.fatherName || 'N/A'}</span></div>
-                    <div><strong>Mother's Name:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.motherName || 'N/A'}</span></div>
-                    <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.address || 'N/A'}</span></div>
+                    <div><strong>Email/Username:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.username || 'N/A'}</span></div>
+                    <div><strong>Mobile:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.phoneNumber || 'N/A'}</span></div>
+                    <div><strong>Date of Birth:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.dob ? new Date(thesis.scholarId.profile.dob).toLocaleDateString() : 'N/A'}</span></div>
+                    <div><strong>Gender:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.gender || 'N/A'}</span></div>
+                    <div><strong>Social Category:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.category || 'N/A'}</span></div>
+                    <div><strong>Nationality:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.nationality || 'N/A'}</span></div>
+                    <div><strong>Father's Name:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.fatherName || 'N/A'}</span></div>
+                    <div><strong>Mother's Name:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.motherName || 'N/A'}</span></div>
+                    <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.address || 'N/A'}</span></div>
                   </div>
 
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', borderTop: '1px solid #F1F5F9', paddingTop: '15px' }}>Thesis & Research Details</h4>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', borderTop: '1px solid #F1F5F9', paddingTop: '15px' }}>Thesis & Research Details</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.8rem' }}>
                     <div><strong>SH no:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{thesis.scholarId?.profile?.shNo || 'N/A'}</span></div>
-                    <div><strong>University Enrollment No:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
-                    <div><strong>Department:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.department || thesis.department || 'N/A'}</span></div>
-                    <div><strong>Admission Date:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.admissionDate ? new Date(thesis.scholarId.profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
-                    <div><strong>Mode of Ph.D.:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{thesis.scholarId?.profile?.phdMode || 'N/A'}</span></div>
-                    <div><strong>Specialization:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.specialization || 'N/A'}</span></div>
-                    <div><strong>Research Interest:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.areaOfInterest || 'N/A'}</span></div>
-                    <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: '#0F172A', fontWeight: 700 }}>{thesis.scholarId?.profile?.thesisTitle || thesis.title || 'N/A'}</span></div>
-                    <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: '#475569', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{thesis.scholarId?.profile?.thesisSummary || thesis.abstract || 'N/A'}</span></div>
-                    <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: '#475569' }}>{thesis.scholarId?.profile?.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
+                    <div><strong>University Enrollment No:</strong> <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>{thesis.scholarId?.profile?.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
+                    <div><strong>Department:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.department || thesis.department || 'N/A'}</span></div>
+                    <div><strong>Admission Date:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.admissionDate ? new Date(thesis.scholarId.profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
+                    <div><strong>Mode of Ph.D.:</strong> <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>{thesis.scholarId?.profile?.phdMode || 'N/A'}</span></div>
+                    <div><strong>Specialization:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.specialization || 'N/A'}</span></div>
+                    <div><strong>Research Interest:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.areaOfInterest || 'N/A'}</span></div>
+                    <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: 'var(--color-text-primary)', fontWeight: 700 }}>{thesis.scholarId?.profile?.thesisTitle || thesis.title || 'N/A'}</span></div>
+                    <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: 'var(--color-text-secondary)', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{thesis.scholarId?.profile?.thesisSummary || thesis.abstract || 'N/A'}</span></div>
+                    <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.scholarId?.profile?.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
                   </div>
                 </div>
 
                 {/* Qualifications */}
                 <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Educational Background & Certifications</h4>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Educational Background & Certifications</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {/* Class 10 */}
                     {thesis.scholarId?.profile?.qualifications?.class10 && (
-                      <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.78rem' }}>
+                      <div style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.78rem' }}>
                         <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                           <span>Class 10th Standard</span>
                           {thesis.scholarId.profile.qualifications.class10.certificateUrl ? (
                             <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.class10.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 View Certificate</a>
                           ) : (
-                            <span style={{ color: '#94A3B8' }}>Pending Upload</span>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Pending Upload</span>
                           )}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
@@ -1106,13 +1106,13 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
 
                     {/* Class 12 */}
                     {thesis.scholarId?.profile?.qualifications?.class12 && (
-                      <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.78rem' }}>
+                      <div style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.78rem' }}>
                         <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                           <span>Class 12th Standard</span>
                           {thesis.scholarId.profile.qualifications.class12.certificateUrl ? (
                             <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.class12.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 View Certificate</a>
                           ) : (
-                            <span style={{ color: '#94A3B8' }}>Pending Upload</span>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Pending Upload</span>
                           )}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
@@ -1127,13 +1127,13 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
 
                     {/* Graduation */}
                     {thesis.scholarId?.profile?.qualifications?.graduation && (
-                      <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.78rem' }}>
+                      <div style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.78rem' }}>
                         <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                           <span>Graduation Details</span>
                           {thesis.scholarId.profile.qualifications.graduation.certificateUrl ? (
                             <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.graduation.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 View Certificate</a>
                           ) : (
-                            <span style={{ color: '#94A3B8' }}>Pending Upload</span>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Pending Upload</span>
                           )}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
@@ -1148,13 +1148,13 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
 
                     {/* Post Graduation */}
                     {thesis.scholarId?.profile?.qualifications?.postGraduation && (
-                      <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.78rem' }}>
+                      <div style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.78rem' }}>
                         <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                           <span>Post Graduation Details</span>
                           {thesis.scholarId.profile.qualifications.postGraduation.certificateUrl ? (
                             <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.postGraduation.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 View Certificate</a>
                           ) : (
-                            <span style={{ color: '#94A3B8' }}>Pending Upload</span>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Pending Upload</span>
                           )}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
@@ -1174,7 +1174,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                           {thesis.scholarId.profile.qualifications.mphil.certificateUrl ? (
                             <a href={`${API_BASE_URL}${thesis.scholarId.profile.qualifications.mphil.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#65A30D', fontWeight: 600 }}>📄 M.Phil Certificate</a>
                           ) : (
-                            <span style={{ color: '#94A3B8' }}>Pending Proof</span>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Pending Proof</span>
                           )}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
@@ -1227,7 +1227,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                       </div>
                     )}
                     {thesis.scholarId?.profile?.qualifications?.otherQuals?.length > 0 && (
-                      <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.78rem' }}>
+                      <div style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.78rem' }}>
                         <div style={{ fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>Other Qualifications</div>
                         {thesis.scholarId.profile.qualifications.otherQuals.map((o, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', paddingBottom: '6px', marginBottom: '6px', borderBottom: idx !== thesis.scholarId.profile.qualifications.otherQuals.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
@@ -1417,25 +1417,25 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
 
                     {/* DRC Schedule Form */}
                     {showDrcSchedule && (
-                      <form onSubmit={handleDrcScheduleSubmit} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                      <form onSubmit={handleDrcScheduleSubmit} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                         <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B' }}>Schedule DRC Meeting</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Date</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Date</label>
                             <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required />
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Time</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Time</label>
                             <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required />
                           </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Venue</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Venue</label>
                             <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required />
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Purpose</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Purpose</label>
                             <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
                               <option value="General">General DRC</option>
                               {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
@@ -1443,11 +1443,11 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                           </div>
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
                           <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen (HOD), Prof. M. Roy" value={drcForm.committeeMembers} onChange={e => setDrcForm({...drcForm, committeeMembers: e.target.value})} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
                           <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="2" placeholder="e.g. Synopsis evaluation and research feasibility review." value={drcForm.agenda} onChange={e => setDrcForm({...drcForm, agenda: e.target.value})} />
                         </div>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -1558,8 +1558,8 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
           {subRole === 'HOD' && thesis.status === 'ACTIVE_RESEARCH' && (
             <div style={{
               width: '100%',
-              background: '#F8FAFC',
-              border: '1px solid #E2E8F0',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
               borderRadius: 12,
               padding: 16,
               marginTop: 12,
@@ -2181,28 +2181,28 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
 
                   {/* DRC Schedule Form */}
                   {showDrcSchedule && (
-                    <form onSubmit={handleDrcScheduleSubmit} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                    <form onSubmit={handleDrcScheduleSubmit} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                       <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>Schedule DRC Meeting</span>
                         <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#64748B' }} onClick={() => setShowDrcSchedule(false)}>✕</button>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Date</label>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Date</label>
                           <input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Time</label>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Time</label>
                           <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required />
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Venue</label>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Venue</label>
                           <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Committee Room 1" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Purpose</label>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Purpose</label>
                           <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
                             <option value="General">General DRC</option>
                             {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
@@ -2210,11 +2210,11 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                         </div>
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
                         <input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. Dr. A. Sen (HOD), Prof. M. Roy" value={drcForm.committeeMembers} onChange={e => setDrcForm({...drcForm, committeeMembers: e.target.value})} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
                         <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical' }} rows="2" placeholder="e.g. Research progress evaluation and review." value={drcForm.agenda} onChange={e => setDrcForm({...drcForm, agenda: e.target.value})} />
                       </div>
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -2377,7 +2377,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
               <div>
                 <div style={{ fontWeight: 700, marginBottom: 12 }}>Submitted Documents for Review</div>
                 {pendingMilestones.map(m => (
-                  <div key={m._id} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div key={m._id} style={{ border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <div style={{ fontWeight: 600 }}>{m.title}</div>
                       <span style={{ fontSize: '0.8rem', fontWeight: 600, color: m.status === 'SUBMITTED' ? '#3B82F6' : '#DC2626' }}>{m.status}</span>
@@ -2495,7 +2495,7 @@ const ScholarList = ({ theses, onSelect, title, subRole }) => {
               </div>
               {paginatedData.map((t, idx) => (
                 <div key={t._id} className="file-item">
-                  <div style={{ flex: '0.5', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (currentPage - 1) * pageSize}</div>
+                  <div style={{ flex: '0.5', fontWeight: 600, color: 'var(--color-text-muted)' }}>{idx + 1 + (currentPage - 1) * pageSize}</div>
                   <div className="file-name" style={{ flex: 1.5 }}>{t.scholarId?.name || <span style={{ color: '#DC2626', fontStyle: 'italic', fontSize: '0.8rem' }}>⚠️ Unassigned</span>}</div>
                   <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
                   <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 40)}...</div>
@@ -2634,8 +2634,8 @@ const HODChangeRequestsTab = ({ user }) => {
   }
 
   return (
-    <div className="card" style={{ padding: 24, background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-      <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
+    <div className="card" style={{ padding: 24, background: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+      <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: 6 }}>
         Student Academic Modification Requests
       </h3>
       <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
@@ -2645,21 +2645,21 @@ const HODChangeRequestsTab = ({ user }) => {
       {renderGridControls()}
 
       {paginatedData.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0', fontStyle: 'italic' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: 'var(--color-bg)', borderRadius: 12, border: '1px solid var(--color-border)', fontStyle: 'italic' }}>
           No academic modification requests logged for your department.
         </div>
       ) : (
-        <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: '12px' }}>
+        <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>S.No.</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Request Type</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Current Value</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Proposed Value</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
+              <tr style={{ borderBottom: '2px solid #E2E8F0', background: 'var(--color-bg)' }}>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>S.No.</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Scholar</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Request Type</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Current Value</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Proposed Value</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -2673,21 +2673,21 @@ const HODChangeRequestsTab = ({ user }) => {
                   <tr 
                     key={r._id} 
                     style={{ 
-                      borderBottom: '1px solid #E2E8F0', 
+                      borderBottom: '1px solid var(--color-border)', 
                       background: isPending ? '#FFFBEB' : 'white',
                       transition: 'background-color 0.2s' 
                     }}
                   >
-                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (currentPage - 1) * pageSize}</td>
-                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#0F172A' }}>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>{idx + 1 + (currentPage - 1) * pageSize}</td>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                       <div style={{ fontWeight: 700 }}>{r.scholarId?.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 400 }}>{r.scholarId?.username}</div>
                     </td>
                     <td style={{ padding: '14px 16px', fontWeight: 700, color: isGuideChange ? '#1E3A8A' : '#047857' }}>
                       {isGuideChange ? '🤝 Supervisor Reallocation' : '📝 Title Modification'}
                     </td>
-                    <td style={{ padding: '14px 16px', color: '#475569' }}>{r.currentValue || 'None'}</td>
-                    <td style={{ padding: '14px 16px', color: '#0F172A', fontWeight: 600 }}>
+                    <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary)' }}>{r.currentValue || 'None'}</td>
+                    <td style={{ padding: '14px 16px', color: 'var(--color-text-primary)', fontWeight: 600 }}>
                       {isGuideChange ? proposedFacultyName : r.proposedValue}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
@@ -2747,7 +2747,7 @@ const HODChangeRequestsTab = ({ user }) => {
             <div 
               onClick={e => e.stopPropagation()}
               style={{
-                background: 'white',
+                background: 'var(--color-surface)',
                 borderRadius: '16px',
                 width: '100%',
                 maxWidth: '600px',
@@ -2760,8 +2760,8 @@ const HODChangeRequestsTab = ({ user }) => {
               }}
             >
               {/* Modal Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid #E2E8F0', background: '#FAFAFA' }}>
-                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>📋</span> Review Academic Request
                 </span>
                 <button 
@@ -2775,9 +2775,9 @@ const HODChangeRequestsTab = ({ user }) => {
               {/* Modal Body */}
               <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
                 {/* Scholar Details Banner */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px 16px', borderRadius: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: 10 }}>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0F172A' }}>{selectedRequest.scholarId?.name}</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>{selectedRequest.scholarId?.name}</div>
                     <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{selectedRequest.scholarId?.username}</div>
                   </div>
                   <span style={{ 
@@ -2802,17 +2802,17 @@ const HODChangeRequestsTab = ({ user }) => {
                   </div>
                   <div>
                     <strong style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', marginBottom: 2 }}>Current Value</strong>
-                    <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>{selectedRequest.currentValue || 'None'}</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{selectedRequest.currentValue || 'None'}</span>
                   </div>
                   <div style={{ gridColumn: 'span 2' }}>
                     <strong style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', marginBottom: 2 }}>Proposed / New Value</strong>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                       {isGuideChange ? proposedFacultyName : selectedRequest.proposedValue}
                     </span>
                   </div>
                   <div style={{ gridColumn: 'span 2', borderTop: '1px solid #F1F5F9', paddingTop: 8 }}>
                     <strong style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', marginBottom: 2 }}>Candidate Rationale</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#475569', fontStyle: 'italic' }}>"{selectedRequest.reason}"</span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>"{selectedRequest.reason}"</span>
                   </div>
                 </div>
 
@@ -2821,7 +2821,7 @@ const HODChangeRequestsTab = ({ user }) => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid #E2E8F0', paddingTop: 16 }}>
                     {isGuideChange && (
                       <div style={{ position: 'relative' }}>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>
                           Confirm or Reassign Supervisor (Active Institutional Faculty)
                         </label>
                         <div style={{ position: 'relative' }}>
@@ -2831,7 +2831,7 @@ const HODChangeRequestsTab = ({ user }) => {
                               setShowSearchResults(!showSearchResults);
                             }}
                             style={{
-                              background: '#FFFFFF',
+                              background: 'var(--color-surface)',
                               border: '1px solid #CBD5E1',
                               borderRadius: '8px',
                               padding: '10px 14px',
@@ -2840,7 +2840,7 @@ const HODChangeRequestsTab = ({ user }) => {
                               alignItems: 'center',
                               cursor: 'pointer',
                               fontSize: '0.9rem',
-                              color: '#0F172A',
+                              color: 'var(--color-text-primary)',
                               fontWeight: 600,
                               userSelect: 'none',
                               transition: 'border-color 0.2s',
@@ -2859,7 +2859,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                 : 'Choose a supervisor...'
                               }
                             </span>
-                            <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                               {showSearchResults ? '▲' : '▼'}
                             </span>
                           </div>
@@ -2883,7 +2883,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                   top: '100%', 
                                   left: 0, 
                                   right: 0, 
-                                  background: 'white', 
+                                  background: 'var(--color-surface)', 
                                   border: '1px solid #CBD5E1', 
                                   borderRadius: 8, 
                                   boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', 
@@ -2894,7 +2894,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                   overflow: 'hidden'
                                 }}
                               >
-                                <div style={{ padding: '10px 12px', borderBottom: '1px solid #E2E8F0', background: '#FAFAFA', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B' }}>
                                       Faculty Directory ({activeFacultyList.length} matches)
@@ -2944,7 +2944,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                         style={{ 
                                           padding: '10px 14px', 
                                           cursor: 'pointer', 
-                                          borderBottom: '1px solid #F1F5F9', 
+                                          borderBottom: '1px solid var(--color-border)', 
                                           background: assignedSupervisorId === f._id ? '#EFF6FF' : 'white',
                                           transition: 'background-color 0.2s',
                                           textAlign: 'left'
@@ -2953,7 +2953,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                         onMouseOut={e => e.currentTarget.style.backgroundColor = assignedSupervisorId === f._id ? '#EFF6FF' : 'white'}
                                       >
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0F172A' }}>{f.name}</span>
+                                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>{f.name}</span>
                                           <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#059669', background: '#D1FAE5', padding: '2px 6px', borderRadius: 4 }}>
                                             {f.department}
                                           </span>
@@ -2972,7 +2972,7 @@ const HODChangeRequestsTab = ({ user }) => {
                       </div>
                     )}
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>HOD Decision Remarks / MoM Context</label>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>HOD Decision Remarks / MoM Context</label>
                       <textarea 
                         className="form-input" 
                         rows="3" 
@@ -2985,7 +2985,7 @@ const HODChangeRequestsTab = ({ user }) => {
                   </div>
                 ) : (
                   selectedRequest.remarks && (
-                    <div style={{ background: '#F8FAFC', borderLeft: '4px solid #64748B', padding: '12px 16px', fontSize: '0.85rem', color: '#475569', borderRadius: 4, marginTop: 8 }}>
+                    <div style={{ background: 'var(--color-bg)', borderLeft: '4px solid #64748B', padding: '12px 16px', fontSize: '0.85rem', color: 'var(--color-text-secondary)', borderRadius: 4, marginTop: 8 }}>
                       <strong>HOD Decision Remarks:</strong> "{selectedRequest.remarks}"
                     </div>
                   )
@@ -2993,7 +2993,7 @@ const HODChangeRequestsTab = ({ user }) => {
               </div>
 
               {/* Modal Footer */}
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid #E2E8F0', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid #E2E8F0', background: 'var(--color-bg)' }}>
                 <button 
                   type="button" 
                   onClick={() => setSelectedRequest(null)}
@@ -3094,7 +3094,7 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
             ].map(({ label, value, color, bg, border }) => (
               <div key={label} className="card" style={{ textAlign: 'center', padding: '20px 16px', background: bg, border: `1px solid ${border}`, borderRadius: '12px' }}>
                 <div style={{ fontSize: '2.2rem', fontWeight: 900, color, marginBottom: '4px' }}>{value}</div>
-                <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{label}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{label}</div>
               </div>
             ))}
           </>
@@ -3108,7 +3108,7 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
             ].map(({ label, value, color, bg, border }) => (
               <div key={label} className="card" style={{ textAlign: 'center', padding: '20px 16px', background: bg, border: `1px solid ${border}`, borderRadius: '12px' }}>
                 <div style={{ fontSize: '2.2rem', fontWeight: 900, color, marginBottom: '4px' }}>{value}</div>
-                <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{label}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{label}</div>
               </div>
             ))}
           </>
@@ -3118,13 +3118,13 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
       {/* Action Center Banner */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20 }}>
         {/* Left Side: Main Tasks Overview */}
-        <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📂 Scholars Summary Checklist</span>
           </h3>
 
           {theses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: '0.85rem' }}>
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
               No scholars currently assigned under this department.
             </div>
           ) : (
@@ -3140,8 +3140,8 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '12px 16px',
-                      background: '#F8FAFC',
-                      border: '1px solid #E2E8F0',
+                      background: 'var(--color-bg)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '10px',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease'
@@ -3173,8 +3173,8 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
         {/* Right Side: Quick Alerts & Recommendations */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <NotificationPanel user={user} onTabChange={setActiveTab} />
-          <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '16px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '16px' }}>
               🔔 Action Needed
             </h3>
 
@@ -3282,19 +3282,19 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
             <div style={{ gridColumn: 'span 2', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>Candidate Submissions History:</span>
               <div style={{ width: '100%', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: '#ffffff', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: 'var(--color-surface)', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
                   <thead>
-                    <tr style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '15%' }}>Submission</th>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Date & Time</th>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Attached File</th>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '35%' }}>Remarks</th>
+                    <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '15%' }}>Submission</th>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Date & Time</th>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Attached File</th>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '35%' }}>Remarks</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rac.submissions && rac.submissions.length > 0 ? (
                       rac.submissions.map((sub, idx) => (
-                        <tr key={sub._id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <tr key={sub._id || idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#{idx + 1}</td>
                           <td style={{ padding: '6px 10px', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</td>
                           <td style={{ padding: '6px 10px' }}>
@@ -3303,16 +3303,16 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
                                 📄 View File
                               </a>
                             ) : (
-                              <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                              <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                             )}
                           </td>
-                          <td style={{ padding: '6px 10px', color: '#334155' }}>
-                            {sub.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                          <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                            {sub.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                           </td>
                         </tr>
                       ))
                     ) : (
-                      <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                         <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#1</td>
                         <td style={{ padding: '6px 10px', color: '#64748B' }}>—</td>
                         <td style={{ padding: '6px 10px' }}>
@@ -3321,11 +3321,11 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
                               📄 View File
                             </a>
                           ) : (
-                            <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                            <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                           )}
                         </td>
-                        <td style={{ padding: '6px 10px', color: '#334155' }}>
-                          {rac.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                        <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                          {rac.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                         </td>
                       </tr>
                     )}
@@ -3504,16 +3504,16 @@ const SupervisorRACConsole = ({ theses }) => {
         alignItems: 'center',
         marginBottom: '16px',
         flexWrap: 'wrap',
-        background: '#F8FAFC',
+        background: 'var(--color-bg)',
         padding: '12px 16px',
         borderRadius: '8px',
-        border: '1px solid #E2E8F0'
+        border: '1px solid var(--color-border)'
       }}>
         <div style={{ flex: 1, minWidth: '250px' }}>
           {renderGridControls()}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status Filter:</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Status Filter:</span>
           <select 
             value={racStatusFilter} 
             onChange={e => setRacStatusFilter(e.target.value)}
@@ -3522,7 +3522,7 @@ const SupervisorRACConsole = ({ theses }) => {
               borderRadius: '6px',
               border: '1px solid #CBD5E1',
               fontSize: '0.85rem',
-              background: 'white',
+              background: 'var(--color-surface)',
               color: '#1E293B',
               fontWeight: 500,
               cursor: 'pointer'
@@ -3542,11 +3542,11 @@ const SupervisorRACConsole = ({ theses }) => {
           <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading RAC records...</div>
         </div>
       ) : racs.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: '#F8FAFC', borderRadius: 8 }}>
+        <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: 'var(--color-bg)', borderRadius: 8 }}>
           No scheduled RAC review meetings found for your active scholars.
         </div>
       ) : paginatedData.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: '#F8FAFC', borderRadius: 8 }}>
+        <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: 'var(--color-bg)', borderRadius: 8 }}>
           No RAC records match the selected status filter or search query.
         </div>
       ) : (
@@ -3563,7 +3563,7 @@ const SupervisorRACConsole = ({ theses }) => {
           {paginatedData.map((r, idx) => (
             <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>
+                <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>
                   {idx + 1 + (currentPage - 1) * pageSize}
                 </div>
                 <div style={{ flex: 2 }}>
@@ -3578,7 +3578,7 @@ const SupervisorRACConsole = ({ theses }) => {
                       📄 View Progress Report
                     </a>
                   ) : (
-                    <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontStyle: 'italic' }}>Pending submission</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Pending submission</span>
                   )}
                 </div>
                 <div style={{ flex: 1.2 }}>
@@ -3615,21 +3615,21 @@ const SupervisorRACConsole = ({ theses }) => {
               </div>
               {(r.submissions && r.submissions.length > 0) || r.progressReportUrl || r.studentRemarks ? (
                 <div style={{ width: '100%', marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, alignSelf: 'flex-start' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Candidate Submissions History:</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Candidate Submissions History:</span>
                   <div style={{ width: '100%', overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: '#ffffff', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: 'var(--color-surface)', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
                       <thead>
-                        <tr style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '15%' }}>Submission</th>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Date & Time</th>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Attached File</th>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '35%' }}>Remarks</th>
+                        <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '15%' }}>Submission</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Date & Time</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Attached File</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '35%' }}>Remarks</th>
                         </tr>
                       </thead>
                       <tbody>
                         {r.submissions && r.submissions.length > 0 ? (
                           r.submissions.map((sub, idx) => (
-                            <tr key={sub._id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                            <tr key={sub._id || idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#{idx + 1}</td>
                               <td style={{ padding: '6px 10px', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</td>
                               <td style={{ padding: '6px 10px' }}>
@@ -3638,16 +3638,16 @@ const SupervisorRACConsole = ({ theses }) => {
                                     📄 View File
                                   </a>
                                 ) : (
-                                  <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                                  <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                                 )}
                               </td>
-                              <td style={{ padding: '6px 10px', color: '#334155' }}>
-                                {sub.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                              <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                                {sub.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                               </td>
                             </tr>
                           ))
                         ) : (
-                          <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                             <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#1</td>
                             <td style={{ padding: '6px 10px', color: '#64748B' }}>—</td>
                             <td style={{ padding: '6px 10px' }}>
@@ -3656,11 +3656,11 @@ const SupervisorRACConsole = ({ theses }) => {
                                   📄 View File
                                 </a>
                               ) : (
-                                <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                                <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                               )}
                             </td>
-                            <td style={{ padding: '6px 10px', color: '#334155' }}>
-                              {r.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                            <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                              {r.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                             </td>
                           </tr>
                         )}
@@ -3809,7 +3809,7 @@ const PendingReviewsQueue = ({ theses, user }) => {
           <button onClick={() => { setSelectedDoc(null); setCommentText(''); }} className="btn-outline" style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '6px 14px' }}>
             ← Back to Reviews Queue
           </button>
-          <span style={{ fontWeight: 700, color: '#475569' }}>
+          <span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>
             Reviewing: {selectedDoc.scholarName}'s Submission
           </span>
         </div>
@@ -3870,11 +3870,11 @@ const PendingReviewsQueue = ({ theses, user }) => {
             boxShadow: 'var(--shadow-sm)'
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#133A26', borderBottom: '1px solid #E2E8F0', paddingBottom: 12 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#133A26', borderBottom: '1px solid var(--color-border)', paddingBottom: 12 }}>
                 Evaluation Form
               </h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#F8FAFC', padding: 16, borderRadius: 10, fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--color-bg)', padding: 16, borderRadius: 10, fontSize: '0.85rem' }}>
                 <div><strong>Scholar Name:</strong> {selectedDoc.scholarName}</div>
                 <div><strong>Document Title:</strong> {selectedDoc.title}</div>
                 <div><strong>Deliverable Type:</strong> {selectedDoc.type}</div>
@@ -3883,7 +3883,7 @@ const PendingReviewsQueue = ({ theses, user }) => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>
                   Supervisor Feedback & Directives
                 </label>
                 <textarea 
@@ -3939,7 +3939,7 @@ const PendingReviewsQueue = ({ theses, user }) => {
         <>
           {renderGridControls()}
           {paginatedData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: '#F8FAFC', borderRadius: 12 }}>
+            <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: 'var(--color-bg)', borderRadius: 12 }}>
               <span>🍃</span> You have no pending documents in your queue. All reviews are up to date!
             </div>
           ) : (
@@ -3954,7 +3954,7 @@ const PendingReviewsQueue = ({ theses, user }) => {
               </div>
               {paginatedData.map((i, idx) => (
                 <div key={i._id} className="file-item">
-                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
+                  <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div style={{ flex: 1.5, fontWeight: 700 }}>{i.scholarName}</div>
                   <div style={{ flex: 2, fontSize: '0.9rem', color: '#1E293B' }}>{i.title}</div>
                   <div style={{ flex: 1 }}><span style={{ fontSize: '0.72rem', background: i.docType === 'MILESTONE' ? '#EFF6FF' : '#F5F3FF', color: i.docType === 'MILESTONE' ? '#1E40AF' : '#5B21B6', padding: '3px 8px', borderRadius: 12, fontWeight: 600 }}>{i.docType}</span></div>
@@ -4045,7 +4045,7 @@ const FacultyDefaultersPage = ({ user, subRole }) => {
         <>
           {renderGridControls()}
           {paginatedData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: '#F8FAFC', borderRadius: 12 }}>
+            <div style={{ textAlign: 'center', padding: 40, color: '#64748B', background: 'var(--color-bg)', borderRadius: 12 }}>
               <span>🍃</span> No progress report defaulters found in your scope. All scholars are up to date!
             </div>
           ) : (
@@ -4060,7 +4060,7 @@ const FacultyDefaultersPage = ({ user, subRole }) => {
               </div>
               {paginatedData.map((d, idx) => (
                 <div key={d._id} className="file-item">
-                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
+                  <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div style={{ flex: 1.5, fontWeight: 700 }}>{d.scholarName}</div>
                   <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.enrollmentNumber}</div>
                   <div style={{ flex: 1.5, fontSize: '0.9rem', color: '#1E293B' }}>{d.milestoneTitle}</div>
@@ -4171,7 +4171,7 @@ const MeetingsTab = ({ user }) => {
         <>
           {renderGridControls()}
           {paginatedData.length === 0 ? (
-            <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
+            <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-muted)' }}>
               <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
               <p style={{ margin: 0, fontWeight: 600 }}>No meeting requests found</p>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When scholars propose guidance consultation meetings, they will appear here.</p>
@@ -4413,7 +4413,7 @@ const FacultyDashboard = () => {
               <XCircle size={32} color="#DC2626" />
             </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginBottom: 12 }}>Account Unverified</h2>
-            <p style={{ color: '#4B5563', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
               account is not verified. Please contact HOD of your deaprtment in case of faculty and contact the super admin in case of HOD.
             </p>
             <button 
@@ -4455,7 +4455,7 @@ const FacultyDashboard = () => {
       case 'scholar_search': return <ScholarSearchTab user={user} />;
       case 'detailed_reports': return <DetailedReportsTab user={user} />;
       case 'public_config': return <PublicConfigTab user={user} />;
-      default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: '#6b7280', marginTop: 8 }}>Content coming soon.</p></div>;
+      default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: 'var(--color-text-muted)', marginTop: 8 }}>Content coming soon.</p></div>;
     }
   };
 
@@ -4526,7 +4526,7 @@ const FacultyDashboard = () => {
           fontFamily: "'Inter', sans-serif"
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '40px 60px',
             borderRadius: '24px',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',

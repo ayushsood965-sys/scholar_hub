@@ -184,7 +184,7 @@ const UtilityAction = ({ type }) => {
           <h2 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '8px', color: '#fff', letterSpacing: '-0.5px' }}>
             {type === 'clear' ? 'System Reset Utility' : type === 'seed-users' ? 'User Seeding Utility' : 'System Seeding Utility'}
           </h2>
-          <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '24px', fontWeight: '500' }}>{status}</p>
+          <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '24px', fontWeight: '500' }}>{status}</p>
 
           {error && (
             <div style={{
@@ -212,7 +212,7 @@ const UtilityAction = ({ type }) => {
               padding: '20px',
               marginBottom: '24px'
             }}>
-              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '12px', fontWeight: '700', letterSpacing: '0.5px' }}>Operations Log</h3>
+              <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '12px', fontWeight: '700', letterSpacing: '0.5px' }}>Operations Log</h3>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', padding: 0 }}>
                 {summary.records && summary.records.map(r => (
                   <li key={r.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', borderBottom: '1px dashed rgba(255,255,255,0.06)', paddingBottom: '6px' }}>
@@ -229,10 +229,10 @@ const UtilityAction = ({ type }) => {
               </ul>
               {summary.files && summary.files.length > 0 && (
                 <div style={{ marginTop: '16px' }}>
-                  <h4 style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: '700' }}>Deleted Document Files ({summary.files.length})</h4>
+                  <h4 style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px', fontWeight: '700' }}>Deleted Document Files ({summary.files.length})</h4>
                   <div style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {summary.files.map(f => (
-                      <div key={f} style={{ fontSize: '11px', background: 'rgba(255,255,255,0.04)', padding: '6px 10px', borderRadius: '6px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div key={f} style={{ fontSize: '11px', background: 'rgba(255,255,255,0.04)', padding: '6px 10px', borderRadius: '6px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         📄 {f}
                       </div>
                     ))}
@@ -311,7 +311,7 @@ const UtilityAction = ({ type }) => {
             <h2 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '8px', color: '#fff', letterSpacing: '-0.5px' }}>
               Authorize System Action
             </h2>
-            <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '24px', lineHeight: '1.5', fontWeight: '500' }}>
+            <p style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '24px', lineHeight: '1.5', fontWeight: '500' }}>
               {type === 'clear' 
                 ? 'This action will completely wipe all database records and delete all stored PDF/DOCX thesis documents. This process is irreversible.' 
                 : type === 'seed-users'
@@ -344,7 +344,7 @@ const UtilityAction = ({ type }) => {
                 <>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#94a3b8' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>
                         Academic Departments
                       </label>
                       <div style={{ display: 'flex', gap: '8px' }}>
@@ -359,7 +359,7 @@ const UtilityAction = ({ type }) => {
                         <button 
                           type="button" 
                           onClick={() => setSelectedDepts([])}
-                          style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
                         >
                           Deselect All
                         </button>
@@ -378,7 +378,7 @@ const UtilityAction = ({ type }) => {
                       gap: '8px'
                     }}>
                       {loadingDepts ? (
-                        <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', padding: '10px' }}>Loading departments...</div>
+                        <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px' }}>Loading departments...</div>
                       ) : (
                         departments.map(d => {
                           const checked = selectedDepts.includes(d.name);
@@ -420,7 +420,7 @@ const UtilityAction = ({ type }) => {
 
                   <div style={{ display: 'flex', gap: '16px' }}>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#94a3b8' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>
                         Scholars Count
                       </label>
                       <select 
@@ -446,7 +446,7 @@ const UtilityAction = ({ type }) => {
                     </div>
 
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#94a3b8' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>
                         Faculty Count
                       </label>
                       <select 
@@ -473,7 +473,7 @@ const UtilityAction = ({ type }) => {
               )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#94a3b8' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>
                   Enter Security Password
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -514,7 +514,7 @@ const UtilityAction = ({ type }) => {
                       transform: 'translateY(-50%)',
                       background: 'none',
                       border: 'none',
-                      color: '#94a3b8',
+                      color: 'var(--color-text-muted)',
                       fontSize: '11px',
                       fontWeight: '700',
                       textTransform: 'uppercase',
@@ -540,7 +540,7 @@ const UtilityAction = ({ type }) => {
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     borderRadius: '14px',
                     background: 'none',
-                    color: '#94a3b8',
+                    color: 'var(--color-text-muted)',
                     fontSize: '14px',
                     fontWeight: '700',
                     cursor: 'pointer',

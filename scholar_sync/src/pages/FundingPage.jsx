@@ -59,22 +59,22 @@ const FundingPage = () => {
           {/* Header Stats */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Grants & Funding</h1>
-            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto 30px', fontSize: '1.05rem', color: '#4B5563' }}>
+            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto 30px', fontSize: '1.05rem', color: 'var(--color-text-secondary)' }}>
               Discover doctoral fellowship schemes, corporate project sponsorships, travel grants, and academic research funding pools.
             </p>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', maxWidth: '900px', margin: '0 auto' }}>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>₹5.2 Crores</div>
-                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px', fontWeight: 600 }}>Active Funding Pool</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600 }}>Active Funding Pool</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>18 Scholars</div>
-                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px', fontWeight: 600 }}>Active Fellowships Supported</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600 }}>Active Fellowships Supported</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>8 Partners</div>
-                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px', fontWeight: 600 }}>Corporate & Agency Sponsors</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600 }}>Corporate & Agency Sponsors</div>
               </div>
             </div>
           </div>
@@ -88,13 +88,13 @@ const FundingPage = () => {
                 placeholder="Search grants by agency, keyword, or scope..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'white', border: '1px solid #D1D5DB' }}
+                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'var(--color-surface)', border: '1px solid #D1D5DB' }}
               />
               <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '15px' }} />
             </div>
 
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <span style={{ alignSelf: 'center', fontSize: '0.85rem', fontWeight: 600, color: '#6B7280', marginRight: '6px' }}>Agencies:</span>
+              <span style={{ alignSelf: 'center', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '6px' }}>Agencies:</span>
               {availableAgencies.map(agency => (
                 <button
                   key={agency}
@@ -123,7 +123,7 @@ const FundingPage = () => {
               <div className="premium-preloader-text">Loading funding opportunities...</div>
             </div>
           ) : filteredFunding.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
               No funding opportunities matched your criteria.
             </div>
           ) : (
@@ -141,15 +141,15 @@ const FundingPage = () => {
 
                   <div>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#111827', margin: '0 0 6px', lineHeight: '1.4' }}>{grant.title}</h3>
-                    <p style={{ fontSize: '0.82rem', color: '#6B7280', margin: 0 }}><strong>Agency:</strong> {grant.agency}</p>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0 }}><strong>Agency:</strong> {grant.agency}</p>
                   </div>
 
-                  <p style={{ fontSize: '0.88rem', color: '#4B5563', lineHeight: '1.5', margin: 0, flex: 1 }}>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', lineHeight: '1.5', margin: 0, flex: 1 }}>
                     {grant.scope}
                   </p>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E7EB', paddingTop: '12px', marginTop: '12px' }}>
-                    <span style={{ fontSize: '0.82rem', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Calendar size={14} /> <strong>Duration:</strong> {grant.duration}
                     </span>
                     <a href={`mailto:grants@hpu.ac.in?subject=Application Inquiry: ${grant.title}`} className="btn-outline-small" style={{ fontSize: '0.78rem', padding: '6px 14px', textDecoration: 'none' }}>Apply/Explore ➔</a>

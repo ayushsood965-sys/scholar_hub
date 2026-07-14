@@ -374,7 +374,7 @@ const PublicConfigTab = ({ user }) => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Configuration Sub Tabs */}
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
         {[
           { key: 'labs', label: 'Research Labs', icon: Users },
           { key: 'inquiries', label: 'Collaboration Inquiries', icon: Mail },
@@ -419,7 +419,7 @@ const PublicConfigTab = ({ user }) => {
       </div>
 
       {/* Dynamic Sub-tab views */}
-      <div className="card" style={{ padding: '24px', background: 'white' }}>
+      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
         
         {/* ================================================= */}
         {/* RESEARCH LABS VIEW */}
@@ -438,10 +438,10 @@ const PublicConfigTab = ({ user }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {labs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8' }}>No research labs registered yet. Click "Add Research Lab" to create one.</div>
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No research labs registered yet. Click "Add Research Lab" to create one.</div>
               ) : (
                 labs.map(lab => (
-                  <div key={lab._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid #E2E8F0', borderRadius: '12px', background: '#F8FAFC' }}>
+                  <div key={lab._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <h4 style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>{lab.name}</h4>
@@ -450,13 +450,13 @@ const PublicConfigTab = ({ user }) => {
                       <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>
                         <strong>PI Lead:</strong> {lab.leadId?.name || 'Faculty Lead'} | <strong>Department:</strong> {lab.department}
                       </p>
-                      <p style={{ fontSize: '0.8rem', color: '#334155', margin: '4px 0 0' }}><strong>Focus:</strong> {lab.focus}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}><strong>Focus:</strong> {lab.focus}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={() => openEditModal('lab', lab)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', cursor: 'pointer' }}>
+                      <button onClick={() => openEditModal('lab', lab)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
                         <Edit2 size={15} />
                       </button>
-                      <button onClick={() => handleLabDelete(lab._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'white', color: '#EF4444', cursor: 'pointer' }}>
+                      <button onClick={() => handleLabDelete(lab._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'var(--color-surface)', color: '#EF4444', cursor: 'pointer' }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -477,10 +477,10 @@ const PublicConfigTab = ({ user }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {inquiries.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8' }}>No inquiries submitted yet.</div>
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No inquiries submitted yet.</div>
               ) : (
                 inquiries.map(inq => (
-                  <div key={inq._id} style={{ padding: '20px', border: '1px solid #E2E8F0', borderRadius: '12px', background: '#F8FAFC' }}>
+                  <div key={inq._id} style={{ padding: '20px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                       <div>
                         <h4 style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>{inq.project}</h4>
@@ -511,7 +511,7 @@ const PublicConfigTab = ({ user }) => {
                         </button>
                       </div>
                     </div>
-                    <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #F1F5F9', fontSize: '0.82rem', color: '#334155', lineHeight: 1.5 }}>
+                    <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
                       {inq.details}
                     </div>
                     {inq.remarks && (
@@ -543,10 +543,10 @@ const PublicConfigTab = ({ user }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {funding.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8' }}>No grants listed. Click "Create Opportunity" to add one.</div>
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No grants listed. Click "Create Opportunity" to add one.</div>
               ) : (
                 funding.map(grant => (
-                  <div key={grant._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid #E2E8F0', borderRadius: '12px', background: '#F8FAFC' }}>
+                  <div key={grant._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <h4 style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>{grant.title}</h4>
@@ -557,10 +557,10 @@ const PublicConfigTab = ({ user }) => {
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={() => openEditModal('funding', grant)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', cursor: 'pointer' }}>
+                      <button onClick={() => openEditModal('funding', grant)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
                         <Edit2 size={15} />
                       </button>
-                      <button onClick={() => handleFundingDelete(grant._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'white', color: '#EF4444', cursor: 'pointer' }}>
+                      <button onClick={() => handleFundingDelete(grant._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'var(--color-surface)', color: '#EF4444', cursor: 'pointer' }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -588,10 +588,10 @@ const PublicConfigTab = ({ user }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {events.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8' }}>No scheduled events. Click "Schedule Event" to add one.</div>
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No scheduled events. Click "Schedule Event" to add one.</div>
               ) : (
                 events.map(evt => (
-                  <div key={evt._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid #E2E8F0', borderRadius: '12px', background: '#F8FAFC' }}>
+                  <div key={evt._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <h4 style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>{evt.title}</h4>
@@ -600,13 +600,13 @@ const PublicConfigTab = ({ user }) => {
                       <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>
                         📅 {new Date(evt.date).toLocaleDateString()} | 🕒 {evt.time} | 📍 {evt.location}
                       </p>
-                      <p style={{ fontSize: '0.8rem', color: '#334155', margin: '2px 0 0' }}>👤 <strong>Speaker:</strong> {evt.speaker}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>👤 <strong>Speaker:</strong> {evt.speaker}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={() => openEditModal('event', evt)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', cursor: 'pointer' }}>
+                      <button onClick={() => openEditModal('event', evt)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
                         <Edit2 size={15} />
                       </button>
-                      <button onClick={() => handleEventDelete(evt._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'white', color: '#EF4444', cursor: 'pointer' }}>
+                      <button onClick={() => handleEventDelete(evt._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'var(--color-surface)', color: '#EF4444', cursor: 'pointer' }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -634,10 +634,10 @@ const PublicConfigTab = ({ user }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {projects.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8' }}>No doctoral projects registered yet. Click "Add Doctoral Project" to create one.</div>
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No doctoral projects registered yet. Click "Add Doctoral Project" to create one.</div>
               ) : (
                 projects.map(proj => (
-                  <div key={proj._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid #E2E8F0', borderRadius: '12px', background: '#F8FAFC' }}>
+                  <div key={proj._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
                     <div style={{ flex: 1, marginRight: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <h4 style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>{proj.title}</h4>
@@ -646,15 +646,15 @@ const PublicConfigTab = ({ user }) => {
                       <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>
                         <strong>Scholar:</strong> {proj.scholarName} | <strong>Supervisor:</strong> {proj.supervisorName} | <strong>Department:</strong> {proj.department}
                       </p>
-                      <p style={{ fontSize: '0.8rem', color: '#334155', margin: '4px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '4px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                         <strong>Abstract:</strong> {proj.abstract}
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
-                      <button onClick={() => openEditModal('project', proj)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', cursor: 'pointer' }}>
+                      <button onClick={() => openEditModal('project', proj)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
                         <Edit2 size={15} />
                       </button>
-                      <button onClick={() => handleProjectDelete(proj._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'white', color: '#EF4444', cursor: 'pointer' }}>
+                      <button onClick={() => handleProjectDelete(proj._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'var(--color-surface)', color: '#EF4444', cursor: 'pointer' }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -682,10 +682,10 @@ const PublicConfigTab = ({ user }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {collabCalls.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8' }}>No collaboration calls registered yet. Click "Add Collaboration Call" to create one.</div>
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No collaboration calls registered yet. Click "Add Collaboration Call" to create one.</div>
               ) : (
                 collabCalls.map(call => (
-                  <div key={call._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid #E2E8F0', borderRadius: '12px', background: '#F8FAFC' }}>
+                  <div key={call._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
                     <div style={{ flex: 1, marginRight: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <h4 style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>{call.title}</h4>
@@ -695,15 +695,15 @@ const PublicConfigTab = ({ user }) => {
                       <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>
                         <strong>Department:</strong> {call.department}
                       </p>
-                      <p style={{ fontSize: '0.8rem', color: '#334155', margin: '4px 0 0' }}>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                         {call.description}
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
-                      <button onClick={() => openEditModal('collab_call', call)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', cursor: 'pointer' }}>
+                      <button onClick={() => openEditModal('collab_call', call)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
                         <Edit2 size={15} />
                       </button>
-                      <button onClick={() => handleCollabCallDelete(call._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'white', color: '#EF4444', cursor: 'pointer' }}>
+                      <button onClick={() => handleCollabCallDelete(call._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'var(--color-surface)', color: '#EF4444', cursor: 'pointer' }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -721,8 +721,8 @@ const PublicConfigTab = ({ user }) => {
       {/* ================================================= */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '520px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '18px', fontSize: '1.2rem', fontWeight: 700, color: '#0F172A' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '520px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ marginTop: 0, marginBottom: '18px', fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
               {editingId ? 'Edit Record' : 'Create New Record'}
             </h3>
             
@@ -730,30 +730,30 @@ const PublicConfigTab = ({ user }) => {
             {subTab === 'labs' && (
               <form onSubmit={handleLabSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Lab Name</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Lab Name</label>
                   <input type="text" required className="form-input" value={labForm.name} onChange={e => setLabForm({...labForm, name: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Department</label>
-                  <input type="text" disabled className="form-input" value={labForm.department} style={{ background: '#F1F5F9' }} />
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Department</label>
+                  <input type="text" disabled className="form-input" value={labForm.department} style={{ background: 'var(--color-bg)' }} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Lead Supervisor</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Lead Supervisor</label>
                   <select required className="form-input" value={labForm.leadId} onChange={e => setLabForm({...labForm, leadId: e.target.value})}>
                     <option value="">Select...</option>
                     {faculty.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Research Focus Area</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Research Focus Area</label>
                   <input type="text" required className="form-input" value={labForm.focus} onChange={e => setLabForm({...labForm, focus: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Active Projects (comma separated)</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Active Projects (comma separated)</label>
                   <input type="text" className="form-input" placeholder="e.g. Deep Reinforcement Swarms, Image Passing" value={labForm.projects} onChange={e => setLabForm({...labForm, projects: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Recruiting Status</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Recruiting Status</label>
                   <select className="form-input" value={labForm.status} onChange={e => setLabForm({...labForm, status: e.target.value})}>
                     <option value="Actively Recruiting Scholars">Actively Recruiting Scholars</option>
                     <option value="2 Research Slots Open">2 Research Slots Open</option>
@@ -774,29 +774,29 @@ const PublicConfigTab = ({ user }) => {
             {subTab === 'funding' && (
               <form onSubmit={handleFundingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Grant/Fellowship Title</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Grant/Fellowship Title</label>
                   <input type="text" required className="form-input" value={fundingForm.title} onChange={e => setFundingForm({...fundingForm, title: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Funding Agency</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Funding Agency</label>
                   <input type="text" required className="form-input" value={fundingForm.agency} onChange={e => setFundingForm({...fundingForm, agency: e.target.value})} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Amount Pool</label>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Amount Pool</label>
                     <input type="text" required className="form-input" placeholder="e.g. ₹25,00,000" value={fundingForm.amount} onChange={e => setFundingForm({...fundingForm, amount: e.target.value})} />
                   </div>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Duration</label>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Duration</label>
                     <input type="text" required className="form-input" placeholder="e.g. 3 Years" value={fundingForm.duration} onChange={e => setFundingForm({...fundingForm, duration: e.target.value})} />
                   </div>
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Detailed Scope/Criteria</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Detailed Scope/Criteria</label>
                   <textarea rows={4} required className="form-input" style={{ resize: 'none', fontFamily: 'inherit' }} value={fundingForm.scope} onChange={e => setFundingForm({...fundingForm, scope: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Status</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Status</label>
                   <select className="form-input" value={fundingForm.status} onChange={e => setFundingForm({...fundingForm, status: e.target.value})}>
                     <option value="Applications Open">Applications Open</option>
                     <option value="Actively Reviewing">Actively Reviewing</option>
@@ -817,29 +817,29 @@ const PublicConfigTab = ({ user }) => {
             {subTab === 'events' && (
               <form onSubmit={handleEventSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Event Title</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Event Title</label>
                   <input type="text" required className="form-input" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Date</label>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Date</label>
                     <input type="date" required className="form-input" value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} />
                   </div>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Time Range</label>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Time Range</label>
                     <input type="text" required className="form-input" placeholder="e.g. 10:00 AM - 01:00 PM" value={eventForm.time} onChange={e => setEventForm({...eventForm, time: e.target.value})} />
                   </div>
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Venue Location</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Venue Location</label>
                   <input type="text" required className="form-input" value={eventForm.location} onChange={e => setEventForm({...eventForm, location: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Keynote Speaker / Conductor</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Keynote Speaker / Conductor</label>
                   <input type="text" required className="form-input" value={eventForm.speaker} onChange={e => setEventForm({...eventForm, speaker: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Event Type</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Event Type</label>
                   <select className="form-input" value={eventForm.type} onChange={e => setEventForm({...eventForm, type: e.target.value})}>
                     <option value="Seminar">Seminar</option>
                     <option value="Workshop">Workshop</option>
@@ -861,33 +861,33 @@ const PublicConfigTab = ({ user }) => {
             {subTab === 'projects' && (
               <form onSubmit={handleProjectSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Project Title</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Project Title</label>
                   <input type="text" required className="form-input" value={projectForm.title} onChange={e => setProjectForm({...projectForm, title: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Department</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Department</label>
                   <input type="text" required className="form-input" value={projectForm.department} onChange={e => setProjectForm({...projectForm, department: e.target.value})} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Scholar Name</label>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Scholar Name</label>
                     <input type="text" required className="form-input" value={projectForm.scholarName} onChange={e => setProjectForm({...projectForm, scholarName: e.target.value})} />
                   </div>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Supervisor Name</label>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Supervisor Name</label>
                     <input type="text" required className="form-input" value={projectForm.supervisorName} onChange={e => setProjectForm({...projectForm, supervisorName: e.target.value})} />
                   </div>
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Project Abstract</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Project Abstract</label>
                   <textarea rows={4} required className="form-input" style={{ resize: 'none', fontFamily: 'inherit' }} value={projectForm.abstract} onChange={e => setProjectForm({...projectForm, abstract: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Project Cover Image URL (Optional)</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Project Cover Image URL (Optional)</label>
                   <input type="text" className="form-input" placeholder="e.g. https://images.unsplash.com/photo-..." value={projectForm.imageUrl} onChange={e => setProjectForm({...projectForm, imageUrl: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Status</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Status</label>
                   <select className="form-input" value={projectForm.status} onChange={e => setProjectForm({...projectForm, status: e.target.value})}>
                     <option value="ACTIVE_RESEARCH">ACTIVE RESEARCH</option>
                     <option value="Awarded">Awarded</option>
@@ -907,15 +907,15 @@ const PublicConfigTab = ({ user }) => {
             {subTab === 'collab_calls' && (
               <form onSubmit={handleCollabCallSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Call Title</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Call Title</label>
                   <input type="text" required className="form-input" value={collabCallForm.title} onChange={e => setCollabCallForm({...collabCallForm, title: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Department</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Department</label>
                   <input type="text" required className="form-input" value={collabCallForm.department} onChange={e => setCollabCallForm({...collabCallForm, department: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Call Type</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Call Type</label>
                   <select className="form-input" value={collabCallForm.type} onChange={e => setCollabCallForm({...collabCallForm, type: e.target.value})}>
                     <option value="Industry Partner">Industry Partner</option>
                     <option value="Inter-Departmental">Inter-Departmental</option>
@@ -923,11 +923,11 @@ const PublicConfigTab = ({ user }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Brief Description</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Brief Description</label>
                   <textarea rows={4} required className="form-input" style={{ resize: 'none', fontFamily: 'inherit' }} value={collabCallForm.description} onChange={e => setCollabCallForm({...collabCallForm, description: e.target.value})} />
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Status</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Status</label>
                   <select className="form-input" value={collabCallForm.status} onChange={e => setCollabCallForm({...collabCallForm, status: e.target.value})}>
                     <option value="Active">Active</option>
                     <option value="Closed">Closed</option>
@@ -951,13 +951,13 @@ const PublicConfigTab = ({ user }) => {
       {/* ================================================= */}
       {isInquiryModalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '18px', fontSize: '1.2rem', fontWeight: 700, color: '#0F172A' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ marginTop: 0, marginBottom: '18px', fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
               Evaluate Collaboration Proposal
             </h3>
             <form onSubmit={handleInquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Status Desk</label>
+                <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Status Desk</label>
                 <select className="form-input" value={inquiryRemark.status} onChange={e => setInquiryRemark({...inquiryRemark, status: e.target.value})} required>
                   <option value="PENDING">PENDING</option>
                   <option value="REVIEWED">REVIEWED</option>
@@ -966,7 +966,7 @@ const PublicConfigTab = ({ user }) => {
                 </select>
               </div>
               <div>
-                <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Administrative / Office Remarks</label>
+                <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Administrative / Office Remarks</label>
                 <textarea rows={4} className="form-input" style={{ resize: 'none', fontFamily: 'inherit' }} value={inquiryRemark.remarks} onChange={e => setInquiryRemark({...inquiryRemark, remarks: e.target.value})} placeholder="Log review notes, expert panel updates, or next steps here..." />
               </div>
 

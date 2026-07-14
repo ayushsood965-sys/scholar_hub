@@ -65,7 +65,7 @@ const VerifyEmailPending = () => {
         
         <h2 style={{ fontSize: '1.8rem', fontWeight: 700, color: '#1e1b4b', marginBottom: '16px', letterSpacing: '-0.5px' }}>Verify Your Email</h2>
         
-        <p style={{ fontSize: '0.98rem', color: '#4b5563', lineHeight: 1.6, marginBottom: '28px' }}>
+        <p style={{ fontSize: '0.98rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: '28px' }}>
           We've sent an email verification link to:<br />
           <strong style={{ color: '#1e1b4b', fontSize: '1.05rem', wordBreak: 'break-all' }}>{email}</strong>
         </p>

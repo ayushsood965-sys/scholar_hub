@@ -158,7 +158,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
   const q = profile.qualifications || {};
 
   const getDocLink = (certUrl) => {
-    if (!certUrl) return <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>⚠️ Missing</span>;
+    if (!certUrl) return <span style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>⚠️ Missing</span>;
     return (
       <a 
         href={`${API_BASE_URL}${certUrl}`} 
@@ -213,11 +213,11 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
               maxHeight: '90vh',
               padding: '28px', 
               position: 'relative',
-              background: '#ffffff',
-              color: '#0f172a',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text-primary)',
               borderRadius: '20px',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--color-border)',
               display: 'flex',
               flexDirection: 'column',
               fontFamily: 'Outfit, sans-serif'
@@ -234,7 +234,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                 top: '20px', 
                 right: '20px', 
                 color: '#64748b', 
-                background: '#f1f5f9', 
+                background: 'var(--color-bg)', 
                 border: 'none', 
                 cursor: 'pointer',
                 padding: '6px',
@@ -258,7 +258,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                 {student.name?.[0]?.toUpperCase() || 'S'}
               </div>
               <div>
-                <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {isEditing ? editForm.name : student.name}
                   {student.isVerified ? (
                     <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -270,14 +270,14 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                     </span>
                   )}
                 </h2>
-                <p style={{ color: '#475569', fontSize: '0.85rem', margin: '4px 0 0 0', fontWeight: '500' }}>
+                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: '4px 0 0 0', fontWeight: '500' }}>
                   {student.username} | Department of {student.department}
                 </p>
               </div>
             </div>
 
             {/* Modal Tabs */}
-            <div style={{ display: 'flex', gap: '20px', borderBottom: '1px solid #e2e8f0', marginBottom: '20px', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', gap: '20px', borderBottom: '1px solid var(--color-border)', marginBottom: '20px', paddingBottom: '8px' }}>
               <button 
                 style={{ 
                   background: 'none', 
@@ -314,21 +314,21 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
             <div style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '4px', marginBottom: '24px' }}>
               {activeTab === 'personal' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  <div style={{ padding: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
-                    <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Basic Info</h3>
+                  <div style={{ padding: '20px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '16px' }}>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--color-text-primary)', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Basic Info</h3>
                     {isEditing ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Full Name</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Full Name</label>
                           <input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Date of Birth</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Date of Birth</label>
                           <input type="date" value={editForm.dob} onChange={e => setEditForm({...editForm, dob: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Gender</label>
-                          <select value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', background: 'white' }}>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Gender</label>
+                          <select value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', background: 'var(--color-surface)' }}>
                             <option value="">Select Gender</option>
                             <option value="MALE">Male</option>
                             <option value="FEMALE">Female</option>
@@ -336,51 +336,51 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                           </select>
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Category</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Category</label>
                           <input type="text" value={editForm.category} onChange={e => setEditForm({...editForm, category: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Nationality</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Nationality</label>
                           <input type="text" value={editForm.nationality} onChange={e => setEditForm({...editForm, nationality: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#334155' }}>
-                        <div><strong style={{ color: '#475569' }}>Full Name:</strong> {student.name || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Date of Birth:</strong> {profile.dob || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Gender:</strong> {profile.gender || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Category:</strong> {profile.category || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Nationality:</strong> {profile.nationality || '—'}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Full Name:</strong> {student.name || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Date of Birth:</strong> {profile.dob || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Gender:</strong> {profile.gender || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Category:</strong> {profile.category || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Nationality:</strong> {profile.nationality || '—'}</div>
                       </div>
                     )}
                   </div>
-                  <div style={{ padding: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
-                    <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Contact Info</h3>
+                  <div style={{ padding: '20px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '16px' }}>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--color-text-primary)', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Contact Info</h3>
                     {isEditing ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Father's Name</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Father's Name</label>
                           <input type="text" value={editForm.fatherName} onChange={e => setEditForm({...editForm, fatherName: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Mother's Name</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Mother's Name</label>
                           <input type="text" value={editForm.motherName} onChange={e => setEditForm({...editForm, motherName: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Phone Number</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Phone Number</label>
                           <input type="text" value={editForm.phoneNumber} onChange={e => setEditForm({...editForm, phoneNumber: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Contact Address</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Contact Address</label>
                           <textarea value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} style={{ width: '100%', height: '60px', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', resize: 'vertical' }} />
                         </div>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#334155' }}>
-                        <div><strong style={{ color: '#475569' }}>Father's Name:</strong> {profile.fatherName || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Mother's Name:</strong> {profile.motherName || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Phone Number:</strong> {profile.phoneNumber || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Contact Address:</strong> {profile.address || '—'}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Father's Name:</strong> {profile.fatherName || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Mother's Name:</strong> {profile.motherName || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Phone Number:</strong> {profile.phoneNumber || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Contact Address:</strong> {profile.address || '—'}</div>
                       </div>
                     )}
                   </div>
@@ -389,60 +389,60 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
 
               {activeTab === 'academic' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ padding: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
-                    <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Admission Details</h3>
+                  <div style={{ padding: '20px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '16px' }}>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--color-text-primary)', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Admission Details</h3>
                     {isEditing ? (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem' }}>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Department</label>
-                          <input type="text" value={student.department} disabled style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', background: '#f1f5f9' }} />
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Department</label>
+                          <input type="text" value={student.department} disabled style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', background: 'var(--color-bg)' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Degree Type</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Degree Type</label>
                           <input type="text" value={editForm.degreeType} onChange={e => setEditForm({...editForm, degreeType: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Degree Name</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Degree Name</label>
                           <input type="text" value={editForm.degreeName} onChange={e => setEditForm({...editForm, degreeName: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Academic Session</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Academic Session</label>
                           <input type="text" value={editForm.academicSession} onChange={e => setEditForm({...editForm, academicSession: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Enrollment Number</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Enrollment Number</label>
                           <input type="text" value={editForm.enrollmentNumber} onChange={e => setEditForm({...editForm, enrollmentNumber: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>HPU ERP Admission No.</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>HPU ERP Admission No.</label>
                           <input type="text" value={editForm.erpAdmissionNo} onChange={e => setEditForm({...editForm, erpAdmissionNo: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Admission Date</label>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Admission Date</label>
                           <input type="date" value={editForm.admissionDate} onChange={e => setEditForm({...editForm, admissionDate: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem' }} />
                         </div>
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', color: '#334155' }}>
-                        <div><strong style={{ color: '#475569' }}>Login Username:</strong> {student.username || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Department:</strong> {student.department || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Degree Type:</strong> {profile.degreeType || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Degree Name:</strong> {profile.degreeName || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Academic Session:</strong> {profile.academicSession || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Enrollment Number:</strong> {profile.enrollmentNumber || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>HPU ERP Admission No.:</strong> {profile.erpAdmissionNo || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Scholar Number:</strong> {profile.shNo || '—'}</div>
-                        <div><strong style={{ color: '#475569' }}>Admission Date:</strong> {profile.admissionDate || '—'}</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Login Username:</strong> {student.username || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Department:</strong> {student.department || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Degree Type:</strong> {profile.degreeType || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Degree Name:</strong> {profile.degreeName || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Academic Session:</strong> {profile.academicSession || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Enrollment Number:</strong> {profile.enrollmentNumber || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>HPU ERP Admission No.:</strong> {profile.erpAdmissionNo || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Scholar Number:</strong> {profile.shNo || '—'}</div>
+                        <div><strong style={{ color: 'var(--color-text-secondary)' }}>Admission Date:</strong> {profile.admissionDate || '—'}</div>
                       </div>
                     )}
                   </div>
 
-                  <div style={{ padding: '20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
-                    <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Qualifications Matrix</h3>
+                  <div style={{ padding: '20px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '16px' }}>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--color-text-primary)', fontWeight: '800', marginTop: 0, marginBottom: '16px' }}>Qualifications Matrix</h3>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-secondary)' }}>
                             <th style={{ padding: '8px' }}>Level</th>
                             <th style={{ padding: '8px' }}>Board/University</th>
                             <th style={{ padding: '8px' }}>School/College</th>
@@ -451,9 +451,9 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                             <th style={{ padding: '8px' }}>Action</th>
                           </tr>
                         </thead>
-                        <tbody style={{ color: '#334155' }}>
+                        <tbody style={{ color: 'var(--color-text-secondary)' }}>
                           {q.class10 && (
-                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <td style={{ padding: '8px', fontWeight: 600 }}>Class 10</td>
                               {isEditing ? (
                                 <>
@@ -490,7 +490,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                             </tr>
                           )}
                           {q.class12 && (
-                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <td style={{ padding: '8px', fontWeight: 600 }}>Class 12</td>
                               {isEditing ? (
                                 <>
@@ -527,7 +527,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                             </tr>
                           )}
                           {q.graduation && (
-                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <td style={{ padding: '8px', fontWeight: 600 }}>Graduation</td>
                               {isEditing ? (
                                 <>
@@ -564,7 +564,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                             </tr>
                           )}
                           {q.postGraduation && q.postGraduation.degree && (
-                            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <td style={{ padding: '8px', fontWeight: 600 }}>Post Graduation</td>
                               {isEditing ? (
                                 <>
@@ -614,12 +614,12 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {/* Submission log */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.8rem', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px', background: 'var(--color-bg)', borderRadius: '8px', fontSize: '0.8rem', border: '1px solid var(--color-border)' }}>
                       <span className="badge" style={{ fontSize: '0.62rem', flexShrink: 0, background: '#eff6ff', color: '#1e40af', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                         SUBMITTED
                       </span>
-                      <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
-                        <strong style={{ color: '#0f172a' }}>{student.name}</strong> <span style={{ color: '#64748b', fontSize: '0.72rem' }}>(Student)</span>: Registered and submitted profile details for verification.
+                      <span style={{ color: 'var(--color-text-secondary)', lineHeight: 1.4, width: '100%' }}>
+                        <strong style={{ color: 'var(--color-text-primary)' }}>{student.name}</strong> <span style={{ color: '#64748b', fontSize: '0.72rem' }}>(Student)</span>: Registered and submitted profile details for verification.
                         {student.createdAt && (
                           <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: 2 }}>
                             {new Date(student.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -634,8 +634,8 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                         <span className="badge" style={{ fontSize: '0.62rem', flexShrink: 0, background: '#ecfdf5', color: '#065f46', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                           APPROVED
                         </span>
-                        <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
-                          <strong style={{ color: '#0f172a' }}>HOD</strong>: Verified credentials and approved candidate registration.
+                        <span style={{ color: 'var(--color-text-secondary)', lineHeight: 1.4, width: '100%' }}>
+                          <strong style={{ color: 'var(--color-text-primary)' }}>HOD</strong>: Verified credentials and approved candidate registration.
                           {student.updatedAt && (
                             <div style={{ fontSize: '0.7rem', color: '#047857', marginTop: 2 }}>
                               {new Date(student.updatedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -656,9 +656,9 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                   <button 
                     onClick={() => setIsEditing(false)}
                     style={{
-                      background: '#f1f5f9',
+                      background: 'var(--color-bg)',
                       border: 'none',
-                      color: '#475569',
+                      color: 'var(--color-text-secondary)',
                       padding: '10px 20px',
                       borderRadius: '10px',
                       cursor: 'pointer',
@@ -691,9 +691,9 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                   <button 
                     onClick={onClose}
                     style={{
-                      background: '#f1f5f9',
+                      background: 'var(--color-bg)',
                       border: 'none',
-                      color: '#475569',
+                      color: 'var(--color-text-secondary)',
                       padding: '10px 20px',
                       borderRadius: '10px',
                       cursor: 'pointer',
@@ -762,7 +762,7 @@ const UnifiedStudentModal = ({ isOpen, onClose, student, onVerifySuccess }) => {
                             <button
                               type="button"
                               onClick={() => setShowRejectPopup(false)}
-                              style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#E2E8F0', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#475569', fontWeight: 600 }}
+                              style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#E2E8F0', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'var(--color-text-secondary)', fontWeight: 600 }}
                             >
                               Cancel
                             </button>

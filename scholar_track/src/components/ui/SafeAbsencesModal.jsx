@@ -143,7 +143,7 @@ const SafeAbsencesModal = ({ requiredPercentage = 75, subjectWiseAttendance = []
                           </div>
                         )
                       ) : (
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
                           No classes conducted
                         </span>
                       )}

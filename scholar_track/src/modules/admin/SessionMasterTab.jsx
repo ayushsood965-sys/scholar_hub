@@ -90,7 +90,7 @@ const SessionMasterTab = () => {
       header: 'Status',
       accessor: (row) => row.isCurrent
         ? <span style={{ fontSize: '0.75rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Current</span>
-        : <span style={{ fontSize: '0.75rem', background: '#F1F5F9', color: '#64748B', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Inactive</span>
+        : <span style={{ fontSize: '0.75rem', background: 'var(--color-bg)', color: '#64748B', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Inactive</span>
     },
     {
       header: 'Actions',

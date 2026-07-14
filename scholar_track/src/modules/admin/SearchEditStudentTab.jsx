@@ -597,7 +597,7 @@ const SearchEditStudentTab = () => {
                     setShowDegreeDropdown(true);
                   }}
                   disabled={!searchParams.degreeType}
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '0.9rem', padding: 0 }}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: 0 }}
                 >
                   {searchParams.degreeName ? '×' : '▼'}
                 </button>
@@ -619,7 +619,7 @@ const SearchEditStudentTab = () => {
                     All Degree Names (Clear selection)
                   </div>
                   {getFilteredDegreeNames().filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).length === 0 ? (
-                    <div style={{ padding: '8px 12px', fontSize: '0.82rem', color: '#94A3B8', fontStyle: 'italic' }}>No matches found</div>
+                    <div style={{ padding: '8px 12px', fontSize: '0.82rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No matches found</div>
                   ) : (
                     getFilteredDegreeNames().filter(d => d.name.toLowerCase().includes(searchParams.degreeName.toLowerCase())).map(d => (
                       <div 
@@ -663,7 +663,7 @@ const SearchEditStudentTab = () => {
       {loading ? (
         <SkeletonLoader count={4} height={50} />
       ) : hasSearched && students.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', fontStyle: 'italic' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: 'var(--color-bg)', borderRadius: '12px', border: '1px solid var(--color-border)', fontStyle: 'italic' }}>
           No students found matching your search parameters.
         </div>
       ) : hasSearched ? (
@@ -672,32 +672,32 @@ const SearchEditStudentTab = () => {
             {grid.renderGridControls()}
           </div>
 
-          <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: '12px' }}>
+          <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
-                  <th style={{ padding: '12px 16px', fontWeight: 700, color: '#475569' }}>S.No.</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 700, color: '#475569' }}>Scholar Details</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 700, color: '#475569' }}>Academic Info</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 700, color: '#475569' }}>Department</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Actions</th>
+                <tr style={{ borderBottom: '2px solid #E2E8F0', background: 'var(--color-bg)' }}>
+                  <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>S.No.</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Scholar Details</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Academic Info</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Department</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {grid.paginatedData.map((s, idx) => (
-                  <tr key={s._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>
+                  <tr key={s._id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background-color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                       {idx + 1 + (grid.currentPage - 1) * grid.pageSize}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontWeight: 700, color: '#0F172A' }}>{s.name}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{s.name}</div>
                       <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{s.username}</div>
                       {s.profile?.phoneNumber && <div style={{ fontSize: '0.78rem', color: '#64748B' }}>📞 {s.profile.phoneNumber}</div>}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ fontWeight: 500, color: '#1e3a8a' }}>SH No: {s.profile?.shNo || '—'}</div>
-                      <div style={{ fontSize: '0.78rem', color: '#475569' }}>Roll No: {s.profile?.enrollmentNumber || '—'}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Roll No: {s.profile?.enrollmentNumber || '—'}</div>
                       <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{s.profile?.degreeType} | {s.profile?.degreeName}</div>
                     </td>
                     <td style={{ padding: '14px 16px' }}>
@@ -732,7 +732,7 @@ const SearchEditStudentTab = () => {
           </div>
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: 'var(--color-bg)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
           Use the filters above to search student records.
         </div>
       )}
@@ -943,7 +943,7 @@ const SearchEditStudentTab = () => {
                         </select>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '24px', background: '#F8FAFC', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', gap: '24px', background: 'var(--color-bg)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border)', marginTop: '8px' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
                         <input type="checkbox" name="isVerified" checked={editForm.isVerified} onChange={handleEditFormChange} style={{ width: '16px', height: '16px' }} />
                         Verified Profile Account

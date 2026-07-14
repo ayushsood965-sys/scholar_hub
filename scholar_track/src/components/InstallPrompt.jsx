@@ -244,7 +244,7 @@ const InstallPrompt = () => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: '#ffffff',
+          background: 'var(--color-surface)',
           marginBottom: '16px'
         }}>
           <img src="/hpu_logo.png" alt="ScholarTrack" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />

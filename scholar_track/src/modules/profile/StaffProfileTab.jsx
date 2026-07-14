@@ -115,7 +115,7 @@ const StaffProfileTab = ({ thesis }) => {
     justifyContent: 'center',
     padding: '6px 14px',
     background: 'transparent',
-    color: '#475569',
+    color: 'var(--color-text-secondary)',
     border: '1px solid #CBD5E1',
     borderRadius: '6px',
     fontWeight: '600',
@@ -574,7 +574,7 @@ const StaffProfileTab = ({ thesis }) => {
         </a>
       );
     }
-    return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: '#6B7280', fontWeight: 600 }}>Pending Upload</span>;
+    return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: 'var(--color-text-muted)', fontWeight: 600 }}>Pending Upload</span>;
   };
 
   // Dynamic Scroll Sentinel & Snap Scroll Hook
@@ -1240,7 +1240,7 @@ const StaffProfileTab = ({ thesis }) => {
             <img 
               src={`${API_BASE_URL}${user.avatarUrl}`} 
               alt="Avatar Preview" 
-              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #133A26', background: '#F8FAFC' }} 
+              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #133A26', background: 'var(--color-bg)' }} 
             />
           ) : (
             <svg viewBox="0 0 100 100" style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#e2e8f0', display: 'block', border: '3px solid #133A26' }}>
@@ -1250,7 +1250,7 @@ const StaffProfileTab = ({ thesis }) => {
           )}
           <div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#111827', margin: 0 }}>{user?.name}</h2>
-            <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '4px 0 12px' }}>Ph.D. Scholar • {user?.department}</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: '4px 0 12px' }}>Ph.D. Scholar • {user?.department}</p>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#133A26', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
               {avatarLoading ? 'Uploading...' : '📷 Change Profile Picture'}
               <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={avatarLoading} />
@@ -1425,46 +1425,46 @@ const StaffProfileTab = ({ thesis }) => {
 
           {user?.role === 'STUDENT' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div className="responsive-two-col-grid" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
+              <div className="responsive-two-col-grid" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '20px', fontSize: '0.85rem' }}>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Full Name</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.name || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.name || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Email</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.username || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.username || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Birth</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.dob || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.dob || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Gender</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.gender || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.gender || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Social Category</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.category || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.category || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Nationality</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.nationality || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.nationality || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Father's Name</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.fatherName || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.fatherName || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Mother's Name</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.motherName || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.motherName || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Phone Number</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.phoneNumber || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.phoneNumber || '—'}</strong>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Residential Address</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.address || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.address || '—'}</strong>
                 </div>
               </div>
 
@@ -1474,15 +1474,15 @@ const StaffProfileTab = ({ thesis }) => {
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Academic Session</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.academicSession || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.academicSession || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree Type</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.degreeType || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.degreeType || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Department</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.department || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.department || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>SH no.</span>
@@ -1490,39 +1490,39 @@ const StaffProfileTab = ({ thesis }) => {
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Enrollment Number</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.enrollmentNumber || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.enrollmentNumber || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Admission</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.admissionDate || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.admissionDate || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Ph.D. Mode</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.phdMode || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.phdMode || '—'}</strong>
                 </div>
                 <div>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Specialization</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.specialization || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.specialization || '—'}</strong>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Area of Research Interest</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.areaOfInterest || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.areaOfInterest || '—'}</strong>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Assigned Supervisor / Guide</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{thesis?.supervisorId?.name || 'Awaiting Allocation'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{thesis?.supervisorId?.name || 'Awaiting Allocation'}</strong>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Thesis Title</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.thesisTitle || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.thesisTitle || '—'}</strong>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Thesis Summary / Abstract</span>
-                  <strong style={{ color: '#334155', fontSize: '0.88rem', fontWeight: 500, display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.5, marginTop: 4 }}>{user?.profile?.thesisSummary || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-secondary)', fontSize: '0.88rem', fontWeight: 500, display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.5, marginTop: 4 }}>{user?.profile?.thesisSummary || '—'}</strong>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Keywords</span>
-                  <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.thesisKeywords || '—'}</strong>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.thesisKeywords || '—'}</strong>
                 </div>
               </div>
             </div>
@@ -1748,71 +1748,71 @@ const StaffProfileTab = ({ thesis }) => {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Faculty Name</span>
-                      <strong style={{ color: '#1F2937' }}>{user?.name}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{user?.name}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Designation</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.designation || 'Supervisor'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.designation || 'Supervisor'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Department</span>
-                      <strong style={{ color: '#1F2937' }}>{user?.department}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{user?.department}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Specialization</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.specialization || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.specialization || 'N/A'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Email ID</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.email || user?.username}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.email || user?.username}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Contact Phone</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.phoneNumber || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.phoneNumber || 'N/A'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Date of Birth</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.dob || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.dob || 'N/A'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Gender</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.gender || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.gender || 'N/A'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Category</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.category || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.category || 'N/A'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Nationality</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.nationality || 'Indian'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.nationality || 'Indian'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Father's Name</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.fatherName || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.fatherName || 'N/A'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Mother's Name</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.motherName || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.motherName || 'N/A'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block' }}>Office Room</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.officeRoom || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.officeRoom || 'N/A'}</strong>
                     </div>
                     {user?.role === 'HOD' && (
                       <>
                         <div>
                           <span style={{ color: '#64748B', display: 'block' }}>Years of Service</span>
-                          <strong style={{ color: '#1F2937' }}>{profile.yearsOfService || 'N/A'}</strong>
+                          <strong style={{ color: 'var(--color-text-primary)' }}>{profile.yearsOfService || 'N/A'}</strong>
                         </div>
                         <div>
                           <span style={{ color: '#64748B', display: 'block' }}>Additional Responsibilities</span>
-                          <strong style={{ color: '#1F2937' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
+                          <strong style={{ color: 'var(--color-text-primary)' }}>{profile.additionalResponsibilities || 'N/A'}</strong>
                         </div>
                       </>
                     )}
                     <div style={{ gridColumn: '1 / -1' }}>
                       <span style={{ color: '#64748B', display: 'block' }}>Residential Address</span>
-                      <strong style={{ color: '#1F2937' }}>{profile.address || 'N/A'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{profile.address || 'N/A'}</strong>
                     </div>
                   </div>
                 )}
@@ -1906,7 +1906,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showExpForm && (
-            <form onSubmit={saveExperience} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={saveExperience} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingExpIndex === -1 ? 'Add Experience' : 'Edit Experience'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -1946,9 +1946,9 @@ const StaffProfileTab = ({ thesis }) => {
               <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No employment history logged yet.</span>
             ) : (
               experienceList.map((exp, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{exp.designation}</strong>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{exp.designation}</strong>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{exp.organization}</span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
                       {new Date(exp.startDate).toLocaleDateString()} – {exp.isPresent ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'N/A'}
@@ -1996,156 +1996,156 @@ const StaffProfileTab = ({ thesis }) => {
           {user?.role === 'STUDENT' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Class 10 Card */}
-              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Class 10 (Secondary) Details</h4>
                   {renderStudentDocBadge(user?.profile?.qualifications?.class10?.certificateUrl)}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.rollNo || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.rollNo || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board of Examination</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.board || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.board || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>School Name</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.school || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.school || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.marksObtained || '0'} / {user?.profile?.qualifications?.class10?.totalMarks || '0'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.marksObtained || '0'} / {user?.profile?.qualifications?.class10?.totalMarks || '0'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.percentage || '0%'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class10?.percentage || '0%'}</strong>
                   </div>
                 </div>
               </div>
 
               {/* Class 12 Card */}
-              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Class 12 (Higher Secondary) Details</h4>
                   {renderStudentDocBadge(user?.profile?.qualifications?.class12?.certificateUrl)}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.rollNo || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.rollNo || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board of Examination</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.board || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.board || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>School Name</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.school || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.school || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.marksObtained || '0'} / {user?.profile?.qualifications?.class12?.totalMarks || '0'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.marksObtained || '0'} / {user?.profile?.qualifications?.class12?.totalMarks || '0'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.percentage || '0%'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.class12?.percentage || '0%'}</strong>
                   </div>
                 </div>
               </div>
 
               {/* Graduation Card */}
-              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Graduation Details</h4>
                   {renderStudentDocBadge(user?.profile?.qualifications?.graduation?.certificateUrl)}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll No / Enroll No</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.rollNo || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.rollNo || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.degree || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.degree || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>College Name</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.college || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.college || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.university || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.university || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>CGPA / Marks Obtained</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.marksObtained || '0'} / {user?.profile?.qualifications?.graduation?.totalMarks || '0'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.marksObtained || '0'} / {user?.profile?.qualifications?.graduation?.totalMarks || '0'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage / CGPA (%)</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.percentage || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.graduation?.percentage || '—'}</strong>
                   </div>
                 </div>
               </div>
 
               {/* Post Graduation Card */}
-              <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Post-Graduation Details</h4>
                   {renderStudentDocBadge(user?.profile?.qualifications?.postGraduation?.certificateUrl)}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll No / Enroll No</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.rollNo || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.rollNo || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Degree</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.degree || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.degree || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>College Name</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.college || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.college || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.university || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.university || '—'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>CGPA / Marks Obtained</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.marksObtained || '0'} / {user?.profile?.qualifications?.postGraduation?.totalMarks || '0'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.marksObtained || '0'} / {user?.profile?.qualifications?.postGraduation?.totalMarks || '0'}</strong>
                   </div>
                   <div>
                     <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage / CGPA (%)</span>
-                    <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.percentage || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.postGraduation?.percentage || '—'}</strong>
                   </div>
                 </div>
               </div>
 
               {/* M.Phil Card (Optional) */}
               {user?.profile?.qualifications?.mphil?.done === true && (
-                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>M.Phil Details</h4>
                     {renderStudentDocBadge(user?.profile?.qualifications?.mphil?.certificateUrl)}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>University Name</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.university || '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.university || '—'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Passing Year</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.passingYear || '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.passingYear || '—'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.marksObtained || '0'} / {user?.profile?.qualifications?.mphil?.totalMarks || '0'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.marksObtained || '0'} / {user?.profile?.qualifications?.mphil?.totalMarks || '0'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.percentage || '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.mphil?.percentage || '—'}</strong>
                     </div>
                   </div>
                 </div>
@@ -2153,31 +2153,31 @@ const StaffProfileTab = ({ thesis }) => {
 
               {/* NET JRF Card (Optional) */}
               {user?.profile?.qualifications?.netJrf?.qualified === true && (
-                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>UGC NET / JRF Qualification Details</h4>
                     {renderStudentDocBadge(user?.profile?.qualifications?.netJrf?.certificateUrl)}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem' }}>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Certificate Number</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.certNumber || '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.certNumber || '—'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rollNo || '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rollNo || '—'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Rank (if any)</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rank || '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.rank || '—'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Score / Percentile</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.score || '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.score || '—'}</strong>
                     </div>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Date of Issue</span>
-                      <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.issueDate ? user.profile.qualifications.netJrf.issueDate.split('T')[0] : '—'}</strong>
+                      <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{user?.profile?.qualifications?.netJrf?.issueDate ? user.profile.qualifications.netJrf.issueDate.split('T')[0] : '—'}</strong>
                     </div>
                   </div>
                 </div>
@@ -2185,33 +2185,33 @@ const StaffProfileTab = ({ thesis }) => {
 
               {/* Other Qualifications (Optional) */}
               {user?.profile?.qualifications?.otherQuals?.length > 0 && (
-                <div style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F9FAFB' }}>
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', marginBottom: '12px' }}>Other Qualifications</h4>
                   {user.profile.qualifications.otherQuals.map((o, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '12px' }}>
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', fontSize: '0.85rem', marginBottom: '12px' }}>
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Qualification Type</span>
-                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.type === 'Other' ? o.otherType : o.type || '—'}</strong>
+                        <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.type === 'Other' ? o.otherType : o.type || '—'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Roll Number</span>
-                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.rollNo || '—'}</strong>
+                        <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.rollNo || '—'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board / University</span>
-                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.board || '—'}</strong>
+                        <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.board || '—'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Institution / School</span>
-                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.school || '—'}</strong>
+                        <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.school || '—'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / Total</span>
-                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.marksObtained || '0'} / {o.totalMarks || '0'}</strong>
+                        <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.marksObtained || '0'} / {o.totalMarks || '0'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
-                        <strong style={{ color: '#0F172A', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
+                        <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
                       </div>
                       <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center' }}>
                         {renderStudentDocBadge(o.certificateUrl)}
@@ -2227,9 +2227,9 @@ const StaffProfileTab = ({ thesis }) => {
                 const info = eduDrafts[key] || {};
                 const originalInfo = qualifications[key] || {};
                 return (
-                  <div key={key} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div key={key} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div className="edu-card-header">
-                      <strong style={{ fontSize: '0.88rem', color: '#1F2937' }}>{label}</strong>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)' }}>{label}</strong>
                       
                       {/* Document status or upload controls */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2353,7 +2353,7 @@ const StaffProfileTab = ({ thesis }) => {
                   {otherQualsDraft.map((qual, index) => {
                     const originalQual = (qualifications.otherQuals && qualifications.otherQuals[index]) || {};
                     return (
-                      <div key={index} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: '#F8FAFC' }}>
+                      <div key={index} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
                         <div className="edu-card-header">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, width: '100%' }}>
                             <input 
@@ -2499,7 +2499,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showAwardForm && (
-            <form onSubmit={saveAward} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={saveAward} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingAwardIndex === -1 ? 'Add Award' : 'Edit Award'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2532,9 +2532,9 @@ const StaffProfileTab = ({ thesis }) => {
               <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No honours or awards logged yet.</span>
             ) : (
               awardsList.map((aw, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{aw.awardName}</strong>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{aw.awardName}</strong>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{aw.awardingBody}</span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Year: {aw.year}</span>
                     {aw.description && <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '8px 0 0 0', lineHeight: 1.4 }}>{aw.description}</p>}
@@ -2587,7 +2587,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showThesisForm && (
-            <form onSubmit={saveThesis} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={saveThesis} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingThesisIndex === -1 ? 'Add Thesis Record' : 'Edit Thesis Record'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2623,9 +2623,9 @@ const StaffProfileTab = ({ thesis }) => {
               <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No theses guidance logged yet.</span>
             ) : (
               thesesList.map((th, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{th.thesisTitle}</strong>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{th.thesisTitle}</strong>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Scholar: {th.scholarName}</span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
                       <span>Year: {th.yearOfAward}</span>
@@ -2680,7 +2680,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showMemberForm && (
-            <form onSubmit={saveMember} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={saveMember} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingMemberIndex === -1 ? 'Add Membership' : 'Edit Membership'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2718,9 +2718,9 @@ const StaffProfileTab = ({ thesis }) => {
               <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No professional memberships logged yet.</span>
             ) : (
               membershipsList.map((mb, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{mb.membershipName}</strong>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{mb.membershipName}</strong>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{mb.organization}</span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
                       <span>Joined: {mb.year}</span>
@@ -2774,7 +2774,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showCommitteeForm && (
-            <form onSubmit={saveCommittee} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={saveCommittee} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingCommitteeIndex === -1 ? 'Add Committee Seat' : 'Edit Committee Seat'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2807,9 +2807,9 @@ const StaffProfileTab = ({ thesis }) => {
               <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No committee seats logged yet.</span>
             ) : (
               committeesList.map((ct, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ct.committeeName}</strong>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{ct.committeeName}</strong>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Role: {ct.role} ({ct.organization})</span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {ct.duration}</span>
                   </div>
@@ -2860,7 +2860,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showProjectForm && (
-            <form onSubmit={saveProject} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={saveProject} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingProjectIndex === -1 ? 'Add Project' : 'Edit Project'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
@@ -2908,9 +2908,9 @@ const StaffProfileTab = ({ thesis }) => {
               <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No research projects logged yet.</span>
             ) : (
               projectsList.map((pr, i) => (
-                <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pr.projectTitle}</strong>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{pr.projectTitle}</strong>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Agency: {pr.fundingAgency} | Grant: ₹{pr.amount}</span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
                       <span>Duration: {pr.duration}</span>
@@ -2967,7 +2967,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showPubForm && (
-            <form onSubmit={savePub} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={savePub} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingPubIndex === -1 ? 'Add Publication' : 'Edit Publication'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -3007,9 +3007,9 @@ const StaffProfileTab = ({ thesis }) => {
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publication found.</span>
               ) : (
                 verifiedPubs.map((p, i) => (
-                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{p.title}</strong>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{p.title}</strong>
                       <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{p.journalName} ({p.type})</span>
                       {p.type === 'JOURNAL' ? (
                         <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
@@ -3042,9 +3042,9 @@ const StaffProfileTab = ({ thesis }) => {
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publications logged yet.</span>
               ) : (
                 publicationsList.map((pb, i) => (
-                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{pb.title}</strong>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{pb.title}</strong>
                       <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
                       <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
                       {pb.doi && (
@@ -3108,7 +3108,7 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* Form */}
           {showIprForm && (
-            <form onSubmit={saveIpr} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: '#F8FAFC' }}>
+            <form onSubmit={saveIpr} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingIprIndex === -1 ? 'Add IPR Log' : 'Edit IPR Log'}</h4>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
@@ -3199,9 +3199,9 @@ const StaffProfileTab = ({ thesis }) => {
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No IPR found.</span>
               ) : (
                 verifiedIprs.map((ip, i) => (
-                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{ip.title}</strong>
                       <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType || (ip.type === 'PATENT' ? 'Patent' : 'IPR')} | Status: {ip.itemStatus} ({ip.journalName})</span>
                       <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
                       <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
@@ -3225,9 +3225,9 @@ const StaffProfileTab = ({ thesis }) => {
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No Intellectual Property Rights logged yet.</span>
               ) : (
                 iprList.map((ip, i) => (
-                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: '#1F2937', display: 'block' }}>{ip.title}</strong>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{ip.title}</strong>
                       <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType} | Status: {ip.itemStatus} ({ip.journalName})</span>
                       <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
                       <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
@@ -3270,7 +3270,7 @@ const StaffProfileTab = ({ thesis }) => {
 
         {/* 12. PRIVACY & SETTINGS */}
         <section ref={sectionRefs.settings} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
             <Settings size={20} style={{ color: '#1A5A3B' }} />
             <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Privacy & Settings</h3>
           </div>
@@ -3278,15 +3278,15 @@ const StaffProfileTab = ({ thesis }) => {
           <form onSubmit={savePrivacy} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
               
-              <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                <strong style={{ fontSize: '0.88rem', color: '#1F2937', display: 'block', marginBottom: '8px' }}>
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '8px' }}>
                   Profile Visibility
                 </strong>
                 <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: '14px', lineHeight: 1.35 }}>
                   Decide whether your academic credentials and publications are discoverable on the public portal.
                 </p>
                 <div style={{ display: 'flex', gap: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#1F2937', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="profileVisibility" 
@@ -3296,7 +3296,7 @@ const StaffProfileTab = ({ thesis }) => {
                     />
                     <Eye size={14} style={{ color: '#10b981' }} /> Public
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#1F2937', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="profileVisibility" 
@@ -3309,15 +3309,15 @@ const StaffProfileTab = ({ thesis }) => {
                 </div>
               </div>
 
-              <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                <strong style={{ fontSize: '0.88rem', color: '#1F2937', display: 'block', marginBottom: '8px' }}>
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '8px' }}>
                   Document Visibility
                 </strong>
                 <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: '14px', lineHeight: 1.35 }}>
                   Decide whether uploaded certificates and research briefs are viewable by public query guests.
                 </p>
                 <div style={{ display: 'flex', gap: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#1F2937', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="documentVisibility" 

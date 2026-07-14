@@ -417,7 +417,7 @@ const StudentSubjectMappingTab = () => {
             </div>
             <div>
               <span className="font-semibold" style={{ color: '#DC2626', fontSize: '0.9rem' }}>Timetable Not Found</span>
-              <p className="text-sm" style={{ color: '#4B5563', marginTop: '4px', fontSize: '0.85rem', lineHeight: 1.4 }}>{searchError}</p>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '0.85rem', lineHeight: 1.4 }}>{searchError}</p>
             </div>
             <button
               type="button"

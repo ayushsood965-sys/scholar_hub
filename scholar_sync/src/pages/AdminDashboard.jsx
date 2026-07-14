@@ -70,7 +70,7 @@ const Header = ({ title }) => {
       </button>
       <div className="header-title">{title}</div>
       <div className="header-actions">
-        <ThemeToggle style={{ marginRight: '8px', color: '#475569' }} />
+        <ThemeToggle style={{ marginRight: '8px', color: 'var(--color-text-secondary)' }} />
         {/* Bell Popover Container */}
         <div style={{ position: 'relative' }}>
           <button 
@@ -87,7 +87,7 @@ const Header = ({ title }) => {
               padding: '8px',
               borderRadius: '50%',
               transition: 'background-color 0.2s',
-              color: '#475569'
+              color: 'var(--color-text-secondary)'
             }}
             onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
             onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -127,8 +127,8 @@ const Header = ({ title }) => {
                 top: '45px',
                 right: '0',
                 width: '340px',
-                background: 'white',
-                border: '1px solid #E2E8F0',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '16px',
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
                 zIndex: 99999,
@@ -137,8 +137,8 @@ const Header = ({ title }) => {
               }}
             >
               {/* Dropdown Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #F1F5F9', background: '#FAFAFA' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+                <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🔔</span> Recent Notifications
                 </span>
                 {unreadCount > 0 && (
@@ -154,7 +154,7 @@ const Header = ({ title }) => {
               {/* Scrollable List */}
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {notifications.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94A3B8', fontSize: '0.8rem' }}>
+                  <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                     <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🍃</div>
                     <p style={{ margin: 0, fontWeight: 600 }}>All Caught Up!</p>
                     <p style={{ margin: '2px 0 0', fontSize: '0.72rem' }}>No notifications to show.</p>
@@ -168,7 +168,7 @@ const Header = ({ title }) => {
                         onClick={(e) => handleItemClick(e, n._id)}
                         style={{
                           padding: '12px 16px',
-                          borderBottom: '1px solid #F1F5F9',
+                          borderBottom: '1px solid var(--color-border)',
                           background: n.read ? 'white' : '#F8FAFC',
                           cursor: 'pointer',
                           display: 'flex',
@@ -185,7 +185,7 @@ const Header = ({ title }) => {
                             <span style={{ fontSize: '0.78rem', fontWeight: n.read ? 600 : 800, color: '#1E293B', lineHeight: 1.2 }}>
                               {n.title}
                             </span>
-                            <span style={{ fontSize: '0.62rem', color: '#94A3B8', flexShrink: 0 }}>
+                            <span style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>
                               {new Date(n.createdAt).toLocaleDateString()}
                             </span>
                           </div>
@@ -817,8 +817,8 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                   {/* Left Column: Post-Graduation and Graduation */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Post-Graduation Card */}
-                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: '#F8FAFC' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1E3A8A', borderBottom: '1px solid #E2E8F0', paddingBottom: 6, marginBottom: 10 }}>🎓 Post Graduation (PG) Details</div>
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1E3A8A', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>🎓 Post Graduation (PG) Details</div>
                       {qualifications.postGraduation?.degree ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
                           <div><strong>Degree:</strong> {qualifications.postGraduation.degree}</div>
@@ -845,8 +845,8 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                     </div>
 
                     {/* Graduation Card */}
-                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: '#F8FAFC' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1E3A8A', borderBottom: '1px solid #E2E8F0', paddingBottom: 6, marginBottom: 10 }}>🎓 Graduation (UG) Details</div>
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1E3A8A', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>🎓 Graduation (UG) Details</div>
                       {qualifications.graduation?.degree ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
                           <div><strong>Degree:</strong> {qualifications.graduation.degree}</div>
@@ -876,12 +876,12 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                   {/* Right Column: Schooling and NET-JRF Exams */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Class 12th & 10th Card */}
-                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: '#F8FAFC' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#065F46', borderBottom: '1px solid #E2E8F0', paddingBottom: 6, marginBottom: 10 }}>🏫 Board Schooling Details</div>
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#065F46', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>🏫 Board Schooling Details</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8rem' }}>
                         {qualifications.class12?.rollNo ? (
                           <div style={{ borderBottom: '1px dashed #CBD5E1', paddingBottom: 8 }}>
-                            <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: 2 }}>Class 12th / Higher Secondary</div>
+                            <div style={{ fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>Class 12th / Higher Secondary</div>
                             <div>Board: {qualifications.class12.board} | School: {qualifications.class12.school}</div>
                             <div>Roll No: {qualifications.class12.rollNo} | Score: {qualifications.class12.marksObtained}/{qualifications.class12.totalMarks} ({qualifications.class12.percentage}%)</div>
                             {qualifications.class12.certificateUrl && (
@@ -902,7 +902,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                         )}
                         {qualifications.class10?.rollNo ? (
                           <div>
-                            <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: 2 }}>Class 10th / Secondary</div>
+                            <div style={{ fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>Class 10th / Secondary</div>
                             <div>Board: {qualifications.class10.board} | School: {qualifications.class10.school}</div>
                             <div>Roll No: {qualifications.class10.rollNo} | Score: {qualifications.class10.marksObtained}/{qualifications.class10.totalMarks} ({qualifications.class10.percentage}%)</div>
                             {qualifications.class10.certificateUrl && (
@@ -925,8 +925,8 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                     </div>
 
                     {/* NET-JRF details Card */}
-                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: '#F8FAFC' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#B45309', borderBottom: '1px solid #E2E8F0', paddingBottom: 6, marginBottom: 10 }}>📝 National Level Exams (NET / JRF)</div>
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#B45309', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>📝 National Level Exams (NET / JRF)</div>
                       {qualifications.netJrf?.qualified ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
                           <div><strong>NET/JRF Qualified:</strong> <span style={{ color: '#D97706', fontWeight: 800 }}>YES</span></div>
@@ -950,14 +950,14 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           <span style={{ fontSize: '0.78rem', color: '#64748B', fontStyle: 'italic' }}>No NET/JRF qualification reported by student.</span>
-                          {qualifications.other?.details && <div style={{ fontSize: '0.8rem', background: '#F1F5F9', padding: '6px 10px', borderRadius: 6, marginTop: 4 }}><strong>Other details:</strong> {qualifications.other.details}</div>}
+                          {qualifications.other?.details && <div style={{ fontSize: '0.8rem', background: 'var(--color-bg)', padding: '6px 10px', borderRadius: 6, marginTop: 4 }}><strong>Other details:</strong> {qualifications.other.details}</div>}
                           {qualifications.other?.certificateUrl && (
                             <div style={{ marginTop: 8, borderTop: '1px dashed #CBD5E1', paddingTop: 8 }}>
                               <a 
                                 href={`${API_BASE_URL}${qualifications.other.certificateUrl}`} 
                                 target="_blank" 
                                 rel="noreferrer" 
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#475569', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary)', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}
                               >
                                 📄 View Uploaded Certificate
                               </a>
@@ -1029,32 +1029,32 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
 
                 {/* Specialization & PhD Mode & Enrollment No */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 12, borderRadius: 10 }}>
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>SH no.</div>
                     <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#059669' }}>{profile.shNo || 'N/A'}</div>
                   </div>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 12, borderRadius: 10 }}>
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>University Enrollment No</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>{profile.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</div>
                   </div>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 12, borderRadius: 10 }}>
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Admission Date</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : 'N/A'}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>{profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : 'N/A'}</div>
                   </div>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 12, borderRadius: 10 }}>
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Ph.D. Study Mode</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.phdMode || 'N/A'}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>{profile.phdMode || 'N/A'}</div>
                   </div>
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 10 }}>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 12, borderRadius: 10 }}>
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, marginBottom: 2 }}>Specialization</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F2937' }}>{profile.specialization || 'N/A'}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>{profile.specialization || 'N/A'}</div>
                   </div>
                 </div>
 
                 {/* Tentative Area of Research */}
-                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 14, borderRadius: 12 }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Area of Research Interest</div>
-                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0F172A' }}>{profile.areaOfInterest || thesis.title || 'N/A'}</div>
+                <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 14, borderRadius: 12 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Area of Research Interest</div>
+                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>{profile.areaOfInterest || thesis.title || 'N/A'}</div>
                 </div>
 
                 {/* Thesis Title */}
@@ -1064,21 +1064,21 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                 </div>
 
                 {/* Thesis Summary */}
-                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 14, borderRadius: 12 }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Thesis Summary / Abstract</div>
-                  <div style={{ fontSize: '0.82rem', color: '#334155', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{profile.thesisSummary || thesis.abstract || 'N/A'}</div>
+                <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 14, borderRadius: 12 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Thesis Summary / Abstract</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{profile.thesisSummary || thesis.abstract || 'N/A'}</div>
                 </div>
 
                 {/* Keywords */}
-                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 14, borderRadius: 12 }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Keywords</div>
-                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0F172A' }}>{profile.thesisKeywords || thesis.keywords || 'N/A'}</div>
+                <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 14, borderRadius: 12 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Keywords</div>
+                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>{profile.thesisKeywords || thesis.keywords || 'N/A'}</div>
                 </div>
 
                 {/* Research Statement Proposal */}
-                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 14, borderRadius: 12 }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Research Proposal / Academic Profile Statement</div>
-                  <div style={{ fontSize: '0.82rem', color: '#334155', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{profile.academicBackground || 'N/A'}</div>
+                <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 14, borderRadius: 12 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Research Proposal / Academic Profile Statement</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{profile.academicBackground || 'N/A'}</div>
                 </div>
 
               </div>
@@ -1087,7 +1087,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
 
           {/* DYNAMIC LIFECYCLE TRANSITIONS PANEL */}
           <div style={{ background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 16, padding: '20px 24px', flexShrink: 0 }}>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.92rem', fontWeight: 800, color: '#111827', borderBottom: '1px solid #E2E8F0', paddingBottom: 8 }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.92rem', fontWeight: 800, color: '#111827', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
               ⚙️ PhD Candidate Workspace & Verification Desk
             </h4>
             
@@ -1119,9 +1119,9 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
 
                 {/* 2. Allocate Supervisor */}
                 {thesis.status !== 'AWARDED' && (
-                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 12, borderRadius: 12, flex: 1, display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 12, borderRadius: 12, flex: 1, display: 'flex', gap: 10, alignItems: 'center' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Supervisor Allocation Desk</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Supervisor Allocation Desk</div>
                       <select 
                         className="form-input" 
                         style={{ padding: '6px 10px', height: 'auto', fontSize: '0.8rem', width: '100%' }} 
@@ -1173,8 +1173,8 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                   const cannotClearSeminar = verifiedJournalsCount < 2 || verifiedConferencesCount < 2;
 
                   return (
-                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12, width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1E293B', borderBottom: '1px solid #E2E8F0', paddingBottom: 8 }}>
+                    <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12, width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1E293B', borderBottom: '1px solid var(--color-border)', paddingBottom: 8 }}>
                         📈 Active Research Monitoring (HOD Desk)
                       </div>
                       
@@ -1209,7 +1209,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                           </div>
 
                       {/* Display files */}
-                      <div style={{ display: 'flex', gap: 16, background: '#FFFFFF', padding: '10px 14px', borderRadius: 8, border: '1px solid #FFEDD5', fontSize: '0.8rem' }}>
+                      <div style={{ display: 'flex', gap: 16, background: 'var(--color-surface)', padding: '10px 14px', borderRadius: 8, border: '1px solid #FFEDD5', fontSize: '0.8rem' }}>
                         {preMilestone.documentUrl && (
                           <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#EA580C', fontWeight: 700, textDecoration: 'underline' }}>
                             📄 Rough Thesis Draft
@@ -1331,7 +1331,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
 
                       {/* Download final thesis */}
                       {finalMilestone && finalMilestone.documentUrl && (
-                        <div style={{ background: '#FFFFFF', padding: '10px 14px', borderRadius: 8, border: '1px solid #BFDBFE', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ background: 'var(--color-surface)', padding: '10px 14px', borderRadius: 8, border: '1px solid #BFDBFE', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontSize: '1.1rem' }}>📄</span>
                           <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'underline' }}>
                             View Final Complete Hard-bound Thesis PDF
@@ -1358,11 +1358,11 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                               <form onSubmit={handleDispatchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                   <div>
-                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 2 }}>Dispatch Date</label>
+                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Dispatch Date</label>
                                     <input type="date" className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} value={dispatchForm.dispatchDate} onChange={e => setDispatchForm({...dispatchForm, dispatchDate: e.target.value})} required />
                                   </div>
                                   <div>
-                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 2 }}>Dispatch Method</label>
+                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Dispatch Method</label>
                                     <select className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} value={dispatchForm.dispatchMethod} onChange={e => setDispatchForm({...dispatchForm, dispatchMethod: e.target.value})} required>
                                       <option value="Speed Post">Speed Post</option>
                                       <option value="Registered Post">Registered Post</option>
@@ -1373,7 +1373,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                                   </div>
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 2 }}>Tracking No. / Reference Reference</label>
+                                  <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Tracking No. / Reference Reference</label>
                                   <input type="text" className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} placeholder="e.g. SP123456789IN" value={dispatchForm.dispatchTrackingNumber} onChange={e => setDispatchForm({...dispatchForm, dispatchTrackingNumber: e.target.value})} />
                                 </div>
                                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
@@ -1402,20 +1402,20 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                                 <form onSubmit={handleVivaScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                     <div>
-                                      <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 2 }}>Defense Date</label>
+                                      <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Defense Date</label>
                                       <input type="date" className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} value={vivaForm.vivaDate} onChange={e => setVivaForm({...vivaForm, vivaDate: e.target.value})} required />
                                     </div>
                                     <div>
-                                      <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 2 }}>Defense Time</label>
+                                      <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Defense Time</label>
                                       <input type="text" className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} placeholder="e.g. 11:30 AM" value={vivaForm.vivaTime} onChange={e => setVivaForm({...vivaForm, vivaTime: e.target.value})} required />
                                     </div>
                                   </div>
                                   <div>
-                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 2 }}>Venue Location</label>
+                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Venue Location</label>
                                     <input type="text" className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} placeholder="e.g. Academic Council Hall" value={vivaForm.vivaVenue} onChange={e => setVivaForm({...vivaForm, vivaVenue: e.target.value})} required />
                                   </div>
                                   <div>
-                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 2 }}>External Panel Board Members</label>
+                                    <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>External Panel Board Members</label>
                                     <input type="text" className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} placeholder="e.g. Prof. Kumar (External), HOD, Supervisor" value={vivaForm.vivaPanel} onChange={e => setVivaForm({...vivaForm, vivaPanel: e.target.value})} />
                                   </div>
                                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
@@ -1522,8 +1522,8 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                         </div>
 
                         {/* DRC Meetings Table */}
-                        <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12 }}>
-                          <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#334155', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12 }}>
+                          <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>📆 DRC Meetings Status Desk</span>
                             {!drcMeetings.some(m => m.status === 'SCHEDULED') && !showDrcSchedule && (
                               <button type="button" className="btn-primary" onClick={() => setShowDrcSchedule(true)} style={{ padding: '5px 12px', fontSize: '0.75rem', background: '#3B82F6' }}>+ Schedule Meeting</button>
@@ -1536,12 +1536,12 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                             drcMeetings.map((drc, idx) => (
                               <div key={drc._id} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px solid #E2E8F0' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 12 : 0, paddingTop: idx > 0 ? 12 : 0 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>DRC Assessment Panel</span>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>DRC Assessment Panel</span>
                                   <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#D97706' }}>
                                     {drc.status}
                                   </span>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.78rem', color: '#475569', margin: '6px 0' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary)', margin: '6px 0' }}>
                                   <div><strong>Meeting Date:</strong> {new Date(drc.scheduledDate).toLocaleDateString()}</div>
                                   <div><strong>Time:</strong> {drc.scheduledTime}</div>
                                   <div style={{ gridColumn: 'span 2' }}><strong>Venue Location:</strong> {drc.venue}</div>
@@ -1560,28 +1560,28 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
 
                         {/* DRC Schedule Form */}
                         {showDrcSchedule && (
-                          <form onSubmit={handleDrcScheduleSubmit} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1E293B', borderBottom: '1px solid #E2E8F0', paddingBottom: 6 }}>Schedule DRC Panel Meeting</div>
+                          <form onSubmit={handleDrcScheduleSubmit} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1E293B', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>Schedule DRC Panel Meeting</div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                               <div>
-                                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Date</label>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Date</label>
                                 <input type="date" className="form-input" style={{ width: '100%', padding: '6px', fontSize: '0.8rem' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required />
                               </div>
                               <div>
-                                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Meeting Time</label>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Time</label>
                                 <input type="text" className="form-input" style={{ width: '100%', padding: '6px', fontSize: '0.8rem' }} placeholder="e.g. 11:30 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required />
                               </div>
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Venue</label>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Venue</label>
                               <input type="text" className="form-input" style={{ width: '100%', padding: '6px', fontSize: '0.8rem' }} placeholder="e.g. HOD Board Room" value={drcForm.venue} onChange={e => setDrcForm({...drcForm, venue: e.target.value})} required />
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Committee Panel Members</label>
                               <input type="text" className="form-input" style={{ width: '100%', padding: '6px', fontSize: '0.8rem' }} placeholder="e.g. Dr. A. Sen (HOD), Prof. M. Roy, Dr. S. Ghose" value={drcForm.committeeMembers} onChange={e => setDrcForm({...drcForm, committeeMembers: e.target.value})} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Agenda / Focus Areas</label>
                               <textarea className="form-input" style={{ width: '100%', padding: '6px', resize: 'vertical', fontSize: '0.8rem' }} rows="2" placeholder="e.g. Feasibility review of candidate's synopsis and guide allocation." value={drcForm.agenda} onChange={e => setDrcForm({...drcForm, agenda: e.target.value})} />
                             </div>
                             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -1650,7 +1650,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
             </button>
             {accordionOpen.timeline && (
               <div style={{ padding: '20px 24px', borderTop: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface, #ffffff)' }}>
-                <div style={{ maxHeight: 150, overflowY: 'auto', background: '#F8FAFC', borderRadius: 8, padding: 12, border: '1px solid #E2E8F0' }} className="custom-scrollbar">
+                <div style={{ maxHeight: 150, overflowY: 'auto', background: 'var(--color-bg)', borderRadius: 8, padding: 12, border: '1px solid var(--color-border)' }} className="custom-scrollbar">
                   {thesis.auditLog?.length ? (
                     thesis.auditLog.map((l, i) => (
                       <div key={i} style={{ fontSize: '0.8rem', padding: '6px 0', borderBottom: i < thesis.auditLog.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
@@ -1713,7 +1713,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
               <div style={{ padding: '20px 24px', borderTop: '1px solid var(--color-border, #E2E8F0)', background: 'var(--color-surface, #ffffff)', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {milestones?.length > 0 ? (
                   milestones.map(m => (
-                    <div key={m._id} style={{ border: '1px solid #E2E8F0', borderRadius: 12, padding: 14, background: '#F8FAFC' }}>
+                    <div key={m._id} style={{ border: '1px solid var(--color-border)', borderRadius: 12, padding: 14, background: 'var(--color-bg)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B' }}>{m.title}</div>
                         <span style={{ padding: '3px 9px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: m.status === 'APPROVED' ? '#D1FAE5' : m.status === 'SUBMITTED' ? '#DBEAFE' : m.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: m.status === 'APPROVED' ? '#065F46' : m.status === 'SUBMITTED' ? '#1D4ED8' : m.status === 'REVISION_REQUIRED' ? '#991B1B' : '#D97706' }}>
@@ -1798,7 +1798,7 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
             </div>
             <div>
               <div style={{ fontSize: '1.8rem', fontWeight: 900, color, marginBottom: '2px' }}>{value}</div>
-              <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{label}</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{label}</div>
             </div>
           </div>
         ))}
@@ -1807,13 +1807,13 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
       {/* Action Center Banner */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20 }}>
         {/* Left Side: Main Submissions Overview */}
-        <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📂 Scholars Summary Checklist</span>
           </h3>
 
           {cleanTheses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: '0.85rem' }}>
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
               No scholars currently registered in this department.
             </div>
           ) : (
@@ -1827,8 +1827,8 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '12px 16px',
-                    background: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '10px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
@@ -1857,8 +1857,8 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
         {/* Right Side: Quick Alerts & Recommendations */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <NotificationPanel user={user} onTabChange={setActiveTab} />
-          <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: '16px' }}>
+          <div className="card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '16px' }}>
               🔔 Action Needed
             </h3>
 
@@ -1970,7 +1970,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
                 <div className="file-header"><div style={{ flex: 0.5 }}>S.No.</div><div style={{ flex: 1.5 }}>Scholar</div><div style={{ flex: 1 }}>Dept</div><div style={{ flex: 2 }}>Title</div><div style={{ flex: 1.2 }}>Supervisor</div><div style={{ flex: 1 }}>Status</div><div style={{ flex: 1.4 }}>Action</div></div>
                 {paginatedData.map((t, idx) => (
                   <div key={t._id} className="file-item">
-                    <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
+                    <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                     <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <div className="file-name">{t.scholarId?.name}</div>
                       {['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'SUBMITTED', 'AWARDED'].includes(t.status) && milestoneMap[t._id] && (
@@ -2003,7 +2003,7 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
                     </div>
                     <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
                     <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 35)}...</div>
-                    <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#6b7280' }}>{t.supervisorId?.name || '—'}</div>
+                    <div style={{ flex: 1.2, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{t.supervisorId?.name || '—'}</div>
                     <div style={{ flex: 1 }}>
                       {(() => {
                         const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status, t.externalEvaluationStatus, t.vivaStatus);
@@ -2039,13 +2039,13 @@ const ExternalEvaluation = ({ theses, onAuditLog }) => {
   return (
     <div className="card documents-card">
       <h3 className="card-title">External Evaluation Tracker</h3>
-      <p style={{ color: '#6b7280', marginBottom: 16, fontSize: '0.9rem' }}>Track submitted theses through the external examiner evaluation process.</p>
+      <p style={{ color: 'var(--color-text-muted)', marginBottom: 16, fontSize: '0.9rem' }}>Track submitted theses through the external examiner evaluation process.</p>
       {renderGridControls()}
       {paginatedData.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No submitted theses yet.</div>
       ) : (
         paginatedData.map((t, idx) => (
-          <div key={t._id} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, marginBottom: 12, position: 'relative' }}>
+          <div key={t._id} style={{ border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, marginBottom: 12, position: 'relative' }}>
             <div style={{ position: 'absolute', top: 8, right: 12, background: '#7C3AED', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>{(currentPage - 1) * pageSize + idx + 1}</div>
             <div style={{ fontWeight: 700, marginBottom: 4 }}>{t.scholarId?.name}</div>
             <div style={{ fontSize: '0.85rem', color: '#374151', marginBottom: 12 }}>{t.title}</div>
@@ -2135,7 +2135,7 @@ const ManageUsers = () => {
               </div>
               {paginatedData.map((u, idx) => (
                 <div key={u._id} className="file-item" style={{ opacity: u.isActive ? 1 : 0.65 }}>
-                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
+                  <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div className="file-name" style={{ flex: 2, fontWeight: 600 }}>{u.name}</div>
                   <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#64748B', display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <span>{u.username}</span>
@@ -2292,16 +2292,16 @@ const ManageFaculty = () => {
         alignItems: 'center',
         marginBottom: '16px',
         flexWrap: 'wrap',
-        background: '#F8FAFC',
+        background: 'var(--color-bg)',
         padding: '12px 16px',
         borderRadius: '8px',
-        border: '1px solid #E2E8F0'
+        border: '1px solid var(--color-border)'
       }}>
         <div style={{ flex: 1, minWidth: '250px' }}>
           {renderGridControls()}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Filter by Role:</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Filter by Role:</span>
           <select 
             value={roleFilter} 
             onChange={e => setRoleFilter(e.target.value)}
@@ -2310,7 +2310,7 @@ const ManageFaculty = () => {
               borderRadius: '6px',
               border: '1px solid #CBD5E1',
               fontSize: '0.85rem',
-              background: 'white',
+              background: 'var(--color-surface)',
               color: '#1E293B',
               fontWeight: 500,
               cursor: 'pointer'
@@ -2336,7 +2336,7 @@ const ManageFaculty = () => {
         ) : (
           paginatedData.map((f, idx) => (
             <div key={f._id} className="file-item">
-              <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>
+              <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>
                 {idx + 1 + (currentPage - 1) * pageSize}
               </div>
               <div className="file-name" style={{ flex: 2 }}>{f.name}</div>
@@ -2350,7 +2350,7 @@ const ManageFaculty = () => {
                   {f.subRole || 'SUPERVISOR'}
                 </span>
               </div>
-              <div style={{ flex: 1.5, fontSize: '0.85rem', color: '#6b7280' }}>{f.username}</div>
+              <div style={{ flex: 1.5, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{f.username}</div>
             </div>
           ))
         )}
@@ -2362,7 +2362,7 @@ const ManageFaculty = () => {
 const getStatusDisplay = (status) => {
   switch (status) {
     case 'DRAFT':
-      return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+      return { text: 'Draft', color: 'var(--color-text-secondary)', bg: '#E2E8F0', border: '#CBD5E1' };
     case 'PENDING':
       return { text: 'submitted and pending review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
     case 'UNDER_REVIEW_HOD':
@@ -2374,7 +2374,7 @@ const getStatusDisplay = (status) => {
     case 'REJECTED_BY_HOD':
       return { text: 'rejected by HOD', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     default:
-      return { text: status, color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+      return { text: status, color: 'var(--color-text-secondary)', bg: '#E2E8F0', border: '#CBD5E1' };
   }
 };
 
@@ -2482,8 +2482,8 @@ const HODDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20, flex: 1, minHeight: 0 }}>
           {/* Left Panel: Document Viewer */}
-          <div style={{ background: '#F8FAFC', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ background: '#F1F5F9', padding: '8px 16px', borderBottom: '1px solid var(--color-border, #E2E8F0)', fontWeight: 600, fontSize: '0.8rem', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--color-bg)', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--color-bg)', padding: '8px 16px', borderBottom: '1px solid var(--color-border, #E2E8F0)', fontWeight: 600, fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>📄 Document Preview Window</span>
               {fileUrl && <a href={`${API_BASE_URL}${fileUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700 }}>Download Copy ⬇️</a>}
             </div>
@@ -2502,7 +2502,7 @@ const HODDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
                   )}
                 </>
               ) : (
-                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', flexDirection: 'column' }}>
                   <span style={{ fontSize: '2.5rem' }}>⚠️</span>
                   <p style={{ marginTop: 8, fontWeight: 700 }}>No document attachment found</p>
                 </div>
@@ -2605,7 +2605,7 @@ const HODDocumentEvaluationModal = ({ doc, onClose, onRefresh }) => {
                   </button>
                 </>
               ) : (
-                <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
+                <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: 'var(--color-bg)', borderRadius: 8, fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
                   Status: <span style={{ color: doc.status === 'VERIFIED' ? '#059669' : '#DC2626' }}>{getStatusDisplay(doc.status).text}</span>
                 </div>
               )}
@@ -2766,7 +2766,7 @@ const HODDocumentManager = ({ theses }) => {
   const pendingReportsCount = researchOutputs.filter(r => r.status === 'SUBMITTED').length;
 
   return (
-    <div className="card" style={{ padding: 24, borderRadius: 16, border: '1px solid #E2E8F0', background: 'white' }}>
+    <div className="card" style={{ padding: 24, borderRadius: 16, border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#111827', margin: 0 }}>Document Review Manager</h3>
@@ -2938,16 +2938,16 @@ const HODDocumentManager = ({ theses }) => {
                 alignItems: 'center', 
                 marginBottom: '16px',
                 flexWrap: 'wrap',
-                background: '#F8FAFC',
+                background: 'var(--color-bg)',
                 padding: '12px 16px',
                 borderRadius: '8px',
-                border: '1px solid #E2E8F0'
+                border: '1px solid var(--color-border)'
               }}>
                 <div style={{ flex: 1, minWidth: '250px' }}>
                   {chapterGrid.renderGridControls()}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Status:</span>
                   <select 
                     value={chapterStatusFilter} 
                     onChange={e => setChapterStatusFilter(e.target.value)}
@@ -2956,7 +2956,7 @@ const HODDocumentManager = ({ theses }) => {
                       borderRadius: '6px',
                       border: '1px solid #CBD5E1',
                       fontSize: '0.85rem',
-                      background: 'white',
+                      background: 'var(--color-surface)',
                       color: '#1E293B',
                       fontWeight: 500,
                       cursor: 'pointer'
@@ -2971,30 +2971,30 @@ const HODDocumentManager = ({ theses }) => {
               </div>
 
               {chapterDrafts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                <div style={{ textAlign: 'center', padding: 40, background: 'var(--color-bg)', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                   No chapter drafts uploaded by scholars in your department yet.
                 </div>
               ) : chapterGrid.paginatedData.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                <div style={{ textAlign: 'center', padding: 40, background: 'var(--color-bg)', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                   No chapter drafts match the selected status or search filter.
                 </div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Chapter Draft Details</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Thesis Context</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Supervisor Comments</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
+                    <tr style={{ borderBottom: '2px solid #E2E8F0', background: 'var(--color-bg)' }}>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '40px' }}>S.No.</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Scholar</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Chapter Draft Details</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Thesis Context</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Supervisor Comments</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {chapterGrid.paginatedData.map((c, idx) => (
-                      <tr key={c._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>
+                      <tr key={c._id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background-color 0.2s' }}>
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                           {idx + 1 + (chapterGrid.currentPage - 1) * chapterGrid.pageSize}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
@@ -3018,7 +3018,7 @@ const HODDocumentManager = ({ theses }) => {
                               "{c.comments[c.comments.length - 1].text}"
                             </div>
                           ) : (
-                            <span style={{ color: '#94A3B8', fontStyle: 'italic', fontSize: '0.8rem' }}>No feedback logged</span>
+                            <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.8rem' }}>No feedback logged</span>
                           )}
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center' }}>
@@ -3049,16 +3049,16 @@ const HODDocumentManager = ({ theses }) => {
                   alignItems: 'center', 
                   marginBottom: '16px',
                   flexWrap: 'wrap',
-                  background: '#F8FAFC',
+                  background: 'var(--color-bg)',
                   padding: '12px 16px',
                   borderRadius: '8px',
-                  border: '1px solid #E2E8F0'
+                  border: '1px solid var(--color-border)'
                 }}>
                   <div style={{ flex: 1, minWidth: '250px' }}>
                     {pubGrid.renderGridControls()}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Status:</span>
                     <select 
                       value={pubStatusFilter} 
                       onChange={e => setPubStatusFilter(e.target.value)}
@@ -3067,7 +3067,7 @@ const HODDocumentManager = ({ theses }) => {
                         borderRadius: '6px',
                         border: '1px solid #CBD5E1',
                         fontSize: '0.85rem',
-                        background: 'white',
+                        background: 'var(--color-surface)',
                         color: '#1E293B',
                         fontWeight: 500,
                         cursor: 'pointer'
@@ -3082,31 +3082,31 @@ const HODDocumentManager = ({ theses }) => {
                 </div>
 
                 {publications.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                  <div style={{ textAlign: 'center', padding: 40, background: 'var(--color-bg)', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                     No scientific publications logged by scholars in your department yet.
                   </div>
                 ) : pubGrid.paginatedData.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                  <div style={{ textAlign: 'center', padding: 40, background: 'var(--color-bg)', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                     No scientific publications match the selected status or search filter.
                   </div>
                 ) : (
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                     <thead>
-                      <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Paper Title</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Journal & Publisher</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>ISSN/DOI</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Proofs</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
+                      <tr style={{ borderBottom: '2px solid #E2E8F0', background: 'var(--color-bg)' }}>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '40px' }}>S.No.</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Scholar</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Paper Title</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Journal & Publisher</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>ISSN/DOI</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Proofs</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pubGrid.paginatedData.map((p, idx) => (
-                        <tr key={p._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
-                          <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>
+                        <tr key={p._id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background-color 0.2s' }}>
+                          <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                             {idx + 1 + (pubGrid.currentPage - 1) * pubGrid.pageSize}
                           </td>
                           <td style={{ padding: '14px 16px' }}>
@@ -3114,7 +3114,7 @@ const HODDocumentManager = ({ theses }) => {
                             <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{p.enrollmentNumber}</div>
                           </td>
                           <td style={{ padding: '14px 16px', fontWeight: 600 }}>{p.title}</td>
-                          <td style={{ padding: '14px 16px', color: '#475569' }}>
+                          <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary)' }}>
                             <div>{p.journalName}</div>
                             <span style={{ 
                               fontSize: '0.72rem', 
@@ -3126,7 +3126,7 @@ const HODDocumentManager = ({ theses }) => {
                             }}>{p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type || 'JOURNAL'}</span>
                             {p.itemStatus && <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: 4, fontWeight: 600 }}>{p.itemStatus}</div>}
                           </td>
-                          <td style={{ padding: '14px 16px', color: '#475569' }}>
+                          <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary)' }}>
                             <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR No:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
                             {p.doiUrl && <div style={{ fontSize: '0.75rem', marginTop: 4 }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'App Number:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
                           </td>
@@ -3185,16 +3185,16 @@ const HODDocumentManager = ({ theses }) => {
                 alignItems: 'center', 
                 marginBottom: '16px',
                 flexWrap: 'wrap',
-                background: '#F8FAFC',
+                background: 'var(--color-bg)',
                 padding: '12px 16px',
                 borderRadius: '8px',
-                border: '1px solid #E2E8F0'
+                border: '1px solid var(--color-border)'
               }}>
                 <div style={{ flex: 1, minWidth: '250px' }}>
                   {reportGrid.renderGridControls()}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Status:</span>
                   <select 
                     value={reportStatusFilter} 
                     onChange={e => setReportStatusFilter(e.target.value)}
@@ -3203,7 +3203,7 @@ const HODDocumentManager = ({ theses }) => {
                       borderRadius: '6px',
                       border: '1px solid #CBD5E1',
                       fontSize: '0.85rem',
-                      background: 'white',
+                      background: 'var(--color-surface)',
                       color: '#1E293B',
                       fontWeight: 500,
                       cursor: 'pointer'
@@ -3218,31 +3218,31 @@ const HODDocumentManager = ({ theses }) => {
               </div>
 
               {researchOutputs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                <div style={{ textAlign: 'center', padding: 40, background: 'var(--color-bg)', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                   No research outputs or progress reports logged by scholars in your department yet.
                 </div>
               ) : reportGrid.paginatedData.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, background: '#F8FAFC', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
+                <div style={{ textAlign: 'center', padding: 40, background: 'var(--color-bg)', borderRadius: 12, color: '#64748B', fontStyle: 'italic' }}>
                   No research outputs match the selected status or search filter.
                 </div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Milestone / Report Title</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Milestone Type</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Due Date</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Supervisor Comments</th>
-                      <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
+                    <tr style={{ borderBottom: '2px solid #E2E8F0', background: 'var(--color-bg)' }}>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '40px' }}>S.No.</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Scholar</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Milestone / Report Title</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Milestone Type</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Due Date</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Supervisor Comments</th>
+                      <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {reportGrid.paginatedData.map((r, idx) => (
-                      <tr key={r._id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background-color 0.2s' }}>
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>
+                      <tr key={r._id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background-color 0.2s' }}>
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                           {idx + 1 + (reportGrid.currentPage - 1) * reportGrid.pageSize}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
@@ -3251,7 +3251,7 @@ const HODDocumentManager = ({ theses }) => {
                         </td>
                         <td style={{ padding: '14px 16px', fontWeight: 600 }}>{r.title}</td>
                         <td style={{ padding: '14px 16px', color: '#1E3A8A', fontWeight: 700 }}>{r.type}</td>
-                        <td style={{ padding: '14px 16px', color: '#475569' }}>{r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</td>
+                        <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary)' }}>{r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</td>
                         <td style={{ padding: '14px 16px' }}>
                           <span style={{ 
                             padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, 
@@ -3267,7 +3267,7 @@ const HODDocumentManager = ({ theses }) => {
                               "{r.comments[r.comments.length - 1].text}"
                             </div>
                           ) : (
-                            <span style={{ color: '#94A3B8', fontStyle: 'italic', fontSize: '0.8rem' }}>No feedback logged</span>
+                            <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.8rem' }}>No feedback logged</span>
                           )}
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center' }}>
@@ -3364,19 +3364,19 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
             <div style={{ gridColumn: 'span 2', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>Candidate Submissions History:</span>
               <div style={{ width: '100%', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: '#ffffff', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: 'var(--color-surface)', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
                   <thead>
-                    <tr style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '15%' }}>Submission</th>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Date & Time</th>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Attached File</th>
-                      <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '35%' }}>Remarks</th>
+                    <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '15%' }}>Submission</th>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Date & Time</th>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Attached File</th>
+                      <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '35%' }}>Remarks</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rac.submissions && rac.submissions.length > 0 ? (
                       rac.submissions.map((sub, idx) => (
-                        <tr key={sub._id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <tr key={sub._id || idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#{idx + 1}</td>
                           <td style={{ padding: '6px 10px', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</td>
                           <td style={{ padding: '6px 10px' }}>
@@ -3385,16 +3385,16 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
                                 📄 View File
                               </a>
                             ) : (
-                              <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                              <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                             )}
                           </td>
-                          <td style={{ padding: '6px 10px', color: '#334155' }}>
-                            {sub.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                          <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                            {sub.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                           </td>
                         </tr>
                       ))
                     ) : (
-                      <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                         <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#1</td>
                         <td style={{ padding: '6px 10px', color: '#64748B' }}>—</td>
                         <td style={{ padding: '6px 10px' }}>
@@ -3403,11 +3403,11 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
                               📄 View File
                             </a>
                           ) : (
-                            <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                            <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                           )}
                         </td>
-                        <td style={{ padding: '6px 10px', color: '#334155' }}>
-                          {rac.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                        <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                          {rac.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                         </td>
                       </tr>
                     )}
@@ -3588,16 +3588,16 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
         alignItems: 'center',
         marginBottom: '16px',
         flexWrap: 'wrap',
-        background: '#F8FAFC',
+        background: 'var(--color-bg)',
         padding: '12px 16px',
         borderRadius: '8px',
-        border: '1px solid #E2E8F0'
+        border: '1px solid var(--color-border)'
       }}>
         <div style={{ flex: 1, minWidth: '250px' }}>
           {renderGridControls()}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status Filter:</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Status Filter:</span>
           <select 
             value={racStatusFilter} 
             onChange={e => setRacStatusFilter(e.target.value)}
@@ -3606,7 +3606,7 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
               borderRadius: '6px',
               border: '1px solid #CBD5E1',
               fontSize: '0.85rem',
-              background: 'white',
+              background: 'var(--color-surface)',
               color: '#1E293B',
               fontWeight: 500,
               cursor: 'pointer'
@@ -3638,7 +3638,7 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
           paginatedData.map((r, idx) => (
             <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>
+                <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>
                   {idx + 1 + (currentPage - 1) * pageSize}
                 </div>
                 <div style={{ flex: 1.8 }}>
@@ -3653,7 +3653,7 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
                       📄 View Report
                     </a>
                   ) : (
-                    <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontStyle: 'italic' }}>Pending submission</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Pending submission</span>
                   )}
                 </div>
                 <div style={{ flex: 1.2 }}>
@@ -3687,21 +3687,21 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
               </div>
               {(r.submissions && r.submissions.length > 0) || r.progressReportUrl || r.studentRemarks ? (
                 <div style={{ width: '100%', marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, alignSelf: 'flex-start' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Candidate Submissions History:</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Candidate Submissions History:</span>
                   <div style={{ width: '100%', overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: '#ffffff', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', background: 'var(--color-surface)', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 480 }}>
                       <thead>
-                        <tr style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '15%' }}>Submission</th>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Date & Time</th>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Attached File</th>
-                          <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '35%' }}>Remarks</th>
+                        <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '15%' }}>Submission</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Date & Time</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Attached File</th>
+                          <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '35%' }}>Remarks</th>
                         </tr>
                       </thead>
                       <tbody>
                         {r.submissions && r.submissions.length > 0 ? (
                           r.submissions.map((sub, idx) => (
-                            <tr key={sub._id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                            <tr key={sub._id || idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#{idx + 1}</td>
                               <td style={{ padding: '6px 10px', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</td>
                               <td style={{ padding: '6px 10px' }}>
@@ -3710,16 +3710,16 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
                                     📄 View File
                                   </a>
                                 ) : (
-                                  <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                                  <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                                 )}
                               </td>
-                              <td style={{ padding: '6px 10px', color: '#334155' }}>
-                                {sub.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                              <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                                {sub.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                               </td>
                             </tr>
                           ))
                         ) : (
-                          <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                             <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#1</td>
                             <td style={{ padding: '6px 10px', color: '#64748B' }}>—</td>
                             <td style={{ padding: '6px 10px' }}>
@@ -3728,11 +3728,11 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
                                   📄 View File
                                 </a>
                               ) : (
-                                <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                                <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                               )}
                             </td>
-                            <td style={{ padding: '6px 10px', color: '#334155' }}>
-                              {r.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                            <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                              {r.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                             </td>
                           </tr>
                         )}
@@ -3855,8 +3855,8 @@ const HODChangeRequestsTab = ({ user }) => {
   }
 
   return (
-    <div className="card" style={{ padding: 24, background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-      <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
+    <div className="card" style={{ padding: 24, background: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+      <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: 6 }}>
         Student Academic Modification Requests
       </h3>
       <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
@@ -3869,16 +3869,16 @@ const HODChangeRequestsTab = ({ user }) => {
         alignItems: 'center',
         marginBottom: '16px',
         flexWrap: 'wrap',
-        background: '#F8FAFC',
+        background: 'var(--color-bg)',
         padding: '12px 16px',
         borderRadius: '8px',
-        border: '1px solid #E2E8F0'
+        border: '1px solid var(--color-border)'
       }}>
         <div style={{ flex: 1, minWidth: '250px' }}>
           {reqRenderGridControls()}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Status:</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Status:</span>
           <select
             value={reqStatusFilter}
             onChange={e => setReqStatusFilter(e.target.value)}
@@ -3887,7 +3887,7 @@ const HODChangeRequestsTab = ({ user }) => {
               borderRadius: '6px',
               border: '1px solid #CBD5E1',
               fontSize: '0.85rem',
-              background: 'white',
+              background: 'var(--color-surface)',
               color: '#1E293B',
               fontWeight: 500,
               cursor: 'pointer'
@@ -3902,21 +3902,21 @@ const HODChangeRequestsTab = ({ user }) => {
       </div>
 
       {filteredRequests.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0', fontStyle: 'italic' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', background: 'var(--color-bg)', borderRadius: 12, border: '1px solid var(--color-border)', fontStyle: 'italic' }}>
           No academic modification requests match the selected filters.
         </div>
       ) : (
-        <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: '12px' }}>
+        <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#F8FAFC' }}>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '40px' }}>S.No.</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Scholar</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Request Type</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Current Value</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Proposed Value</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Status</th>
-                <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
+              <tr style={{ borderBottom: '2px solid #E2E8F0', background: 'var(--color-bg)' }}>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '40px' }}>S.No.</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Scholar</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Request Type</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Current Value</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Proposed Value</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
+                <th style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -3930,21 +3930,21 @@ const HODChangeRequestsTab = ({ user }) => {
                   <tr 
                     key={r._id} 
                     style={{ 
-                      borderBottom: '1px solid #E2E8F0', 
+                      borderBottom: '1px solid var(--color-border)', 
                       background: isPending ? '#FFFBEB' : 'white',
                       transition: 'background-color 0.2s' 
                     }}
                   >
-                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (reqCurrentPage - 1) * reqPageSize}</td>
-                    <td style={{ padding: '14px 16px', fontWeight: 600, color: '#0F172A' }}>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>{idx + 1 + (reqCurrentPage - 1) * reqPageSize}</td>
+                    <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                       <div style={{ fontWeight: 700 }}>{r.scholarId?.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 400 }}>{r.scholarId?.username}</div>
                     </td>
                     <td style={{ padding: '14px 16px', fontWeight: 700, color: isGuideChange ? '#1E3A8A' : '#047857' }}>
                       {isGuideChange ? '🤝 Supervisor Reallocation' : '📝 Title Modification'}
                     </td>
-                    <td style={{ padding: '14px 16px', color: '#475569' }}>{r.currentValue || 'None'}</td>
-                    <td style={{ padding: '14px 16px', color: '#0F172A', fontWeight: 600 }}>
+                    <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary)' }}>{r.currentValue || 'None'}</td>
+                    <td style={{ padding: '14px 16px', color: 'var(--color-text-primary)', fontWeight: 600 }}>
                       {isGuideChange ? proposedFacultyName : r.proposedValue}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
@@ -4004,7 +4004,7 @@ const HODChangeRequestsTab = ({ user }) => {
             <div 
               onClick={e => e.stopPropagation()}
               style={{
-                background: 'white',
+                background: 'var(--color-surface)',
                 borderRadius: '16px',
                 width: '100%',
                 maxWidth: '600px',
@@ -4017,8 +4017,8 @@ const HODChangeRequestsTab = ({ user }) => {
               }}
             >
               {/* Modal Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid #E2E8F0', background: '#FAFAFA' }}>
-                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>📋</span> Review Academic Request
                 </span>
                 <button 
@@ -4032,9 +4032,9 @@ const HODChangeRequestsTab = ({ user }) => {
               {/* Modal Body */}
               <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
                 {/* Scholar Details Banner */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px 16px', borderRadius: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: 10 }}>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0F172A' }}>{selectedRequest.scholarId?.name}</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>{selectedRequest.scholarId?.name}</div>
                     <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{selectedRequest.scholarId?.username}</div>
                   </div>
                   <span style={{ 
@@ -4059,17 +4059,17 @@ const HODChangeRequestsTab = ({ user }) => {
                   </div>
                   <div>
                     <strong style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', marginBottom: 2 }}>Current Value</strong>
-                    <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>{selectedRequest.currentValue || 'None'}</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{selectedRequest.currentValue || 'None'}</span>
                   </div>
                   <div style={{ gridColumn: 'span 2' }}>
                     <strong style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', marginBottom: 2 }}>Proposed / New Value</strong>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                       {isGuideChange ? proposedFacultyName : selectedRequest.proposedValue}
                     </span>
                   </div>
                   <div style={{ gridColumn: 'span 2', borderTop: '1px solid #F1F5F9', paddingTop: 8 }}>
                     <strong style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', marginBottom: 2 }}>Candidate Rationale</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#475569', fontStyle: 'italic' }}>"{selectedRequest.reason}"</span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>"{selectedRequest.reason}"</span>
                   </div>
                 </div>
 
@@ -4078,7 +4078,7 @@ const HODChangeRequestsTab = ({ user }) => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid #E2E8F0', paddingTop: 16 }}>
                     {isGuideChange && (
                       <div style={{ position: 'relative' }}>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>
                           Confirm or Reassign Supervisor (Active Institutional Faculty)
                         </label>
                         <div style={{ position: 'relative' }}>
@@ -4088,7 +4088,7 @@ const HODChangeRequestsTab = ({ user }) => {
                               setShowSearchResults(!showSearchResults);
                             }}
                             style={{
-                              background: '#FFFFFF',
+                              background: 'var(--color-surface)',
                               border: '1px solid #CBD5E1',
                               borderRadius: '8px',
                               padding: '10px 14px',
@@ -4097,7 +4097,7 @@ const HODChangeRequestsTab = ({ user }) => {
                               alignItems: 'center',
                               cursor: 'pointer',
                               fontSize: '0.9rem',
-                              color: '#0F172A',
+                              color: 'var(--color-text-primary)',
                               fontWeight: 600,
                               userSelect: 'none',
                               transition: 'border-color 0.2s',
@@ -4116,7 +4116,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                 : 'Choose a supervisor...'
                               }
                             </span>
-                            <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                               {showSearchResults ? '▲' : '▼'}
                             </span>
                           </div>
@@ -4140,7 +4140,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                   top: '100%', 
                                   left: 0, 
                                   right: 0, 
-                                  background: 'white', 
+                                  background: 'var(--color-surface)', 
                                   border: '1px solid #CBD5E1', 
                                   borderRadius: 8, 
                                   boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', 
@@ -4151,7 +4151,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                   overflow: 'hidden'
                                 }}
                               >
-                                <div style={{ padding: '10px 12px', borderBottom: '1px solid #E2E8F0', background: '#FAFAFA', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B' }}>
                                       Faculty Directory ({activeFacultyList.length} matches)
@@ -4201,7 +4201,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                         style={{ 
                                           padding: '10px 14px', 
                                           cursor: 'pointer', 
-                                          borderBottom: '1px solid #F1F5F9', 
+                                          borderBottom: '1px solid var(--color-border)', 
                                           background: assignedSupervisorId === f._id ? '#EFF6FF' : 'white',
                                           transition: 'background-color 0.2s',
                                           textAlign: 'left'
@@ -4210,7 +4210,7 @@ const HODChangeRequestsTab = ({ user }) => {
                                         onMouseOut={e => e.currentTarget.style.backgroundColor = assignedSupervisorId === f._id ? '#EFF6FF' : 'white'}
                                       >
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0F172A' }}>{f.name}</span>
+                                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>{f.name}</span>
                                           <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#059669', background: '#D1FAE5', padding: '2px 6px', borderRadius: 4 }}>
                                             {f.department}
                                           </span>
@@ -4229,7 +4229,7 @@ const HODChangeRequestsTab = ({ user }) => {
                       </div>
                     )}
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>HOD Decision Remarks / MoM Context</label>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>HOD Decision Remarks / MoM Context</label>
                       <textarea 
                         className="form-input" 
                         rows="3" 
@@ -4242,7 +4242,7 @@ const HODChangeRequestsTab = ({ user }) => {
                   </div>
                 ) : (
                   selectedRequest.remarks && (
-                    <div style={{ background: '#F8FAFC', borderLeft: '4px solid #64748B', padding: '12px 16px', fontSize: '0.85rem', color: '#475569', borderRadius: 4, marginTop: 8 }}>
+                    <div style={{ background: 'var(--color-bg)', borderLeft: '4px solid #64748B', padding: '12px 16px', fontSize: '0.85rem', color: 'var(--color-text-secondary)', borderRadius: 4, marginTop: 8 }}>
                       <strong>HOD Decision Remarks:</strong> "{selectedRequest.remarks}"
                     </div>
                   )
@@ -4250,7 +4250,7 @@ const HODChangeRequestsTab = ({ user }) => {
               </div>
 
               {/* Modal Footer */}
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid #E2E8F0', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid #E2E8F0', background: 'var(--color-bg)' }}>
                 <button 
                   type="button" 
                   onClick={() => setSelectedRequest(null)}
@@ -4369,7 +4369,7 @@ const DefaultersTab = () => {
   );
 
   return (
-    <div className="card" style={{ padding: 24, borderRadius: 16, border: '1px solid #E2E8F0', background: 'white' }}>
+    <div className="card" style={{ padding: 24, borderRadius: 16, border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#111827', margin: 0 }}>Progress Report Defaulters</h3>
@@ -4401,9 +4401,9 @@ const DefaultersTab = () => {
         <>
           {renderGridControls()}
           {paginatedData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 48, background: '#F8FAFC', borderRadius: 12, color: '#64748B' }}>
+            <div style={{ textAlign: 'center', padding: 48, background: 'var(--color-bg)', borderRadius: 12, color: '#64748B' }}>
               <span style={{ fontSize: '2rem' }}>🎉</span>
-              <p style={{ fontWeight: 700, marginTop: 10, color: '#334155' }}>No Defaulters Found</p>
+              <p style={{ fontWeight: 700, marginTop: 10, color: 'var(--color-text-secondary)' }}>No Defaulters Found</p>
               <p style={{ fontSize: '0.8rem', marginTop: 2 }}>All scholars in this department are up-to-date with progress reports.</p>
             </div>
           ) : (
@@ -4426,13 +4426,13 @@ const DefaultersTab = () => {
                 <div style={{ flex: 1, textAlign: 'center' }}>Action</div>
               </div>
               {paginatedData.map((d, idx) => (
-                <div key={d._id} className="file-item" style={{ padding: '14px 8px', borderBottom: '1px solid #F1F5F9', alignItems: 'center' }}>
-                  <div style={{ flex: 0.5, fontWeight: 600, color: '#6B7280' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
+                <div key={d._id} className="file-item" style={{ padding: '14px 8px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
+                  <div style={{ flex: 0.5, fontWeight: 600, color: 'var(--color-text-muted)' }}>{(currentPage - 1) * pageSize + idx + 1}</div>
                   <div style={{ flex: 1.5, fontWeight: 700, color: '#1E293B' }}>{d.scholarName}</div>
-                  <div style={{ flex: 1.2, fontSize: '0.85rem', color: '#475569' }}>{d.enrollmentNumber}</div>
-                  <div style={{ flex: 1, fontSize: '0.85rem', color: '#475569' }}>{d.scholarDepartment}</div>
+                  <div style={{ flex: 1.2, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{d.enrollmentNumber}</div>
+                  <div style={{ flex: 1, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{d.scholarDepartment}</div>
                   <div style={{ flex: 2, fontSize: '0.85rem', fontWeight: 600, color: '#7F1D1D' }}>{d.milestoneTitle}</div>
-                  <div style={{ flex: 1.2, fontSize: '0.82rem', color: '#475569' }}>
+                  <div style={{ flex: 1.2, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
                     {new Date(d.dueDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </div>
                   <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
@@ -4545,32 +4545,32 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
   return (
     <div className="card" style={{ padding: 24 }}>
       <div style={{ marginBottom: 24 }}>
-        <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Global Candidate Transfers</h3>
+        <h3 className="card-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: 0 }}>Global Candidate Transfers</h3>
         <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 4 }}>
           As a Super Admin, you can relocate any scholar to another department, manually reassigning a verified Supervisor and HOD.
         </p>
       </div>
 
       <div style={{
-        background: '#F8FAFC',
+        background: 'var(--color-bg)',
         padding: '12px 16px',
         borderRadius: '8px',
-        border: '1px solid #E2E8F0',
+        border: '1px solid var(--color-border)',
         marginBottom: '16px'
       }}>
         {transferRenderGridControls()}
       </div>
 
-      <div className="table-container" style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+      <div className="table-container" style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid var(--color-border)' }}>
         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
-            <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>S.No.</th>
-              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Scholar Name / Enrollment</th>
-              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Department</th>
-              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Current Supervisor</th>
-              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Current HOD</th>
-              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textAlign: 'center' }}>Action</th>
+            <tr style={{ background: 'var(--color-bg)', borderBottom: '2px solid #E2E8F0' }}>
+              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>S.No.</th>
+              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Scholar Name / Enrollment</th>
+              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Department</th>
+              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Current Supervisor</th>
+              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Current HOD</th>
+              <th style={{ padding: '12px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -4582,8 +4582,8 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
               </tr>
             ) : (
               transferPaginatedData.map((t, idx) => (
-                <tr key={t._id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                  <td style={{ padding: '14px 16px', fontWeight: 600, color: '#6B7280' }}>{idx + 1 + (transferCurrentPage - 1) * transferPageSize}</td>
+                <tr key={t._id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background-color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--color-text-muted)' }}>{idx + 1 + (transferCurrentPage - 1) * transferPageSize}</td>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ fontWeight: 700, color: '#1E293B' }}>{t.scholarId?.name || 'N/A'}</div>
                     <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>SH no.: {t.scholarId?.profile?.shNo || '—'} | Roll: {t.enrollmentNumber}</div>
@@ -4594,11 +4594,11 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
                     </span>
                   </td>
                   <td style={{ padding: '14px 16px' }}>
-                    <div style={{ fontWeight: 500, color: '#334155' }}>
-                      {t.supervisorId?.name ? t.supervisorId.name : <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>Not Allocated</span>}
+                    <div style={{ fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                      {t.supervisorId?.name ? t.supervisorId.name : <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Not Allocated</span>}
                     </div>
                   </td>
-                  <td style={{ padding: '14px 16px', color: '#475569', fontWeight: 500 }}>
+                  <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                     {getDeptHOD(t.department)}
                   </td>
                   <td style={{ padding: '14px 16px', textAlign: 'center' }}>
@@ -4625,7 +4625,7 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
       {/* Global Transfer Modal */}
       {selectedThesis && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, backdropFilter: 'blur(4px)' }}>
-          <div style={{ background: '#ffffff', width: '500px', borderRadius: 16, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--color-surface)', width: '500px', borderRadius: 16, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
             <div style={{ background: '#7C3AED', color: 'white', padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem' }}>Global Scholar Transfer</h4>
               <button 
@@ -4636,15 +4636,15 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
               </button>
             </div>
             <form onSubmit={handleGlobalTransferSubmit} style={{ padding: 24 }}>
-              <div style={{ marginBottom: 16, background: '#F8FAFC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+              <div style={{ marginBottom: 16, background: 'var(--color-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)' }}>
                 <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>CANDIDATE</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', marginTop: 2 }}>{selectedThesis.scholarId?.name}</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-primary)', marginTop: 2 }}>{selectedThesis.scholarId?.name}</div>
                 <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 1 }}>SH no.: {selectedThesis.scholarId?.profile?.shNo || '—'} | Roll: {selectedThesis.enrollmentNumber} | Dept: {selectedThesis.department}</div>
               </div>
 
               {/* Target Dept Selection */}
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>Target Department</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>Target Department</label>
                 <select 
                   className="form-input" 
                   value={targetDept} 
@@ -4665,7 +4665,7 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
 
               {/* New Supervisor Selection */}
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>New Supervisor (Faculty/HOD)</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>New Supervisor (Faculty/HOD)</label>
                 <select 
                   className="form-input" 
                   value={targetSupervisor} 
@@ -4683,7 +4683,7 @@ const GlobalTransfersTab = ({ theses, onRefresh }) => {
 
               {/* New HOD Selection */}
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>New HOD</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 6 }}>New HOD</label>
                 <select 
                   className="form-input" 
                   value={targetHod} 
@@ -4902,7 +4902,7 @@ const MeetingsTab = ({ user }) => {
         <>
           {renderGridControls()}
           {paginatedData.length === 0 ? (
-            <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
+            <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-muted)' }}>
               <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
               <p style={{ margin: 0, fontWeight: 600 }}>No meeting requests found</p>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When scholars propose guidance consultation meetings, they will appear here.</p>
@@ -5170,7 +5170,7 @@ const AdminDashboard = () => {
               <XCircle size={32} color="#DC2626" />
             </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginBottom: 12 }}>Account Unverified</h2>
-            <p style={{ color: '#4B5563', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
               account is not verified. Please contact HOD of your deaprtment in case of faculty and contact the super admin in case of HOD.
             </p>
             <button 
@@ -5207,7 +5207,7 @@ const AdminDashboard = () => {
       case 'scholar_search': return <ScholarSearchTab user={user} />;
       case 'detailed_reports': return <DetailedReportsTab user={user} />;
       case 'public_config': return <PublicConfigTab user={user} />;
-      default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: '#6b7280', marginTop: 8 }}>Content coming soon.</p></div>;
+      default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: 'var(--color-text-muted)', marginTop: 8 }}>Content coming soon.</p></div>;
     }
   };
 
@@ -5278,7 +5278,7 @@ const AdminDashboard = () => {
           fontFamily: "'Inter', sans-serif"
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '40px 60px',
             borderRadius: '24px',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',

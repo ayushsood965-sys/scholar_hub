@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component {
               ⚠️
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '12px' }}>Something went wrong</h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '24px' }}>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '24px' }}>
               An unexpected error occurred in the application view. Please try reloading the page.
             </p>
             <div style={{

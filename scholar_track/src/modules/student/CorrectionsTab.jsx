@@ -631,9 +631,9 @@ const CorrectionsTab = () => {
                   maxWidth: '560px', 
                   width: '100%', 
                   padding: '36px', 
-                  background: '#ffffff',
+                  background: 'var(--color-surface)',
                   borderRadius: '20px',
-                  border: '1px solid #f1f5f9',
+                  border: '1px solid var(--color-border)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
                   position: 'relative'
                 }}
@@ -644,19 +644,19 @@ const CorrectionsTab = () => {
                 transition={{ type: 'spring', duration: 0.4 }}
               >
                 {/* Header */}
-                <div className="flex justify-between items-center mb-lg pb-xs" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                <div className="flex justify-between items-center mb-lg pb-xs" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Layers size={18} style={{ color: 'var(--color-primary)' }} />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', letterSpacing: '-0.3px' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)', letterSpacing: '-0.3px' }}>
                         Correction Appeal Timeline
                       </h3>
                     </div>
                   </div>
                   <button 
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} 
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} 
                     onClick={() => setSelectedCorrectionDetails(null)}
                     onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -666,12 +666,12 @@ const CorrectionsTab = () => {
                 </div>
 
                 {/* General details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px', fontSize: '0.9rem', color: '#334155', background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px', fontSize: '0.9rem', color: 'var(--color-text-secondary)', background: 'var(--color-bg)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <CalendarDays size={16} style={{ color: '#64748b' }} />
                     <span>
-                      <strong style={{ color: '#475569' }}>Date of Absence:</strong>{' '}
-                      <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                      <strong style={{ color: 'var(--color-text-secondary)' }}>Date of Absence:</strong>{' '}
+                      <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>
                         {(selectedCorrectionDetails.recordId?.date || selectedCorrectionDetails.customDate)
                           ? new Date(selectedCorrectionDetails.recordId?.date || selectedCorrectionDetails.customDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
                           : 'N/A'
@@ -682,8 +682,8 @@ const CorrectionsTab = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <User size={16} style={{ color: '#64748b' }} />
                     <span>
-                      <strong style={{ color: '#475569' }}>Assigned Faculty:</strong>{' '}
-                      <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                      <strong style={{ color: 'var(--color-text-secondary)' }}>Assigned Faculty:</strong>{' '}
+                      <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>
                         {selectedCorrectionDetails.facultyId?.name || 'Supervisor'}
                       </span>
                     </span>
@@ -691,8 +691,8 @@ const CorrectionsTab = () => {
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                     <FileText size={16} style={{ color: '#64748b', marginTop: '3px' }} />
                     <span>
-                      <strong style={{ color: '#475569' }}>Appeal Reason:</strong>{' '}
-                      <span style={{ color: '#0f172a', lineHeight: 1.4 }}>{selectedCorrectionDetails.reason}</span>
+                      <strong style={{ color: 'var(--color-text-secondary)' }}>Appeal Reason:</strong>{' '}
+                      <span style={{ color: 'var(--color-text-primary)', lineHeight: 1.4 }}>{selectedCorrectionDetails.reason}</span>
                     </span>
                   </div>
                   {selectedCorrectionDetails.documentUrl && (
@@ -706,7 +706,7 @@ const CorrectionsTab = () => {
                 </div>
 
                 {/* Timeline Stepper */}
-                <h4 style={{ fontSize: '0.98rem', fontWeight: 800, marginBottom: '18px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <h4 style={{ fontSize: '0.98rem', fontWeight: 800, marginBottom: '18px', color: 'var(--color-text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Transition Stages & Remarks
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', paddingLeft: '32px', maxHeight: '350px', overflowY: 'auto' }}>
@@ -773,8 +773,8 @@ const CorrectionsTab = () => {
                               })}
                             </span>
                           </div>
-                          <div style={{ fontSize: '0.8rem', color: '#475569' }}>
-                            Actor: <strong style={{ color: '#0f172a' }}>{log.actorName}</strong>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                            Actor: <strong style={{ color: 'var(--color-text-primary)' }}>{log.actorName}</strong>
                           </div>
                           {log.remarks && (
                             <div style={{ 

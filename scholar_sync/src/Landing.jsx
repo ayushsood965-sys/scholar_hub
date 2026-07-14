@@ -150,7 +150,7 @@ const Landing = () => {
               <div className="premium-preloader-text">Loading doctoral projects...</div>
             </div>
           ) : projects.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.05)' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.05)' }}>
               No active doctoral projects logged in the portal yet.
             </div>
           ) : (
@@ -173,14 +173,14 @@ const Landing = () => {
                       </span>
                     </div>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111827', margin: 0, lineHeight: '1.4' }}>{proj.title}</h4>
-                    <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                       {proj.abstract}
                     </p>
                     <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '10px', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontSize: '0.75rem', color: '#374151' }}>
                         <strong>Scholar:</strong> {proj.scholarId?.name || proj.scholarName || 'Academic Scholar'}
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#4B5563' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
                         <strong>Guide:</strong> {proj.supervisorId?.name || proj.supervisorName || 'Faculty Guide'}
                       </span>
                     </div>

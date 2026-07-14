@@ -1488,7 +1488,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: 0 }}>
                 Your registration details were sent back by the HOD with the following remarks:
                 <br />
-                <strong style={{ color: '#0f172a' }}>"{profile.profile.rejectionRemarks}"</strong>
+                <strong style={{ color: 'var(--color-text-primary)' }}>"{profile.profile.rejectionRemarks}"</strong>
               </p>
             </div>
           </div>
@@ -1645,13 +1645,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           <div style={{
             position: 'sticky',
             top: '92px',
-            background: '#ffffff',
-            border: '1px solid #e5e7eb',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
             borderRadius: '12px',
             padding: '20px 16px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
           }}>
-            <h4 style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: 700, marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+            <h4 style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: 700, marginBottom: '20px', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
               Profile Progress
             </h4>
             
@@ -1897,11 +1897,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Gender</label>
-                    <input className="form-input" disabled value={gender || 'N/A'} style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }} />
+                    <input className="form-input" disabled value={gender || 'N/A'} style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Category</label>
-                    <input className="form-input" disabled value={category || 'N/A'} style={{ background: '#F1F5F9', color: '#64748B', cursor: 'not-allowed' }} />
+                    <input className="form-input" disabled value={category || 'N/A'} style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                 </div>
 

@@ -232,7 +232,7 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
             >
               <span>{day.dayOfMonth}</span>
               {holidayTitle && (
-                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#fff', position: 'absolute', bottom: '4px' }} />
+                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--color-surface)', position: 'absolute', bottom: '4px' }} />
               )}
             </motion.div>
           );

@@ -217,7 +217,7 @@ const DegreeNameMasterTab = () => {
                         <span style={{ color: selectedDeptName ? 'inherit' : '#9CA3AF' }}>
                           {selectedDeptName || 'Select Department...'}
                         </span>
-                        <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>▼</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>▼</span>
                       </div>
                       {isDeptOpen && (
                         <div style={{
@@ -266,7 +266,7 @@ const DegreeNameMasterTab = () => {
                                 </div>
                               ))
                             ) : (
-                              <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.85rem', textAlign: 'center' }}>
+                              <div style={{ padding: '10px', color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
                                 No departments found
                               </div>
                             )}

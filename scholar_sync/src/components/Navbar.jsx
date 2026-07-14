@@ -106,18 +106,18 @@ const Navbar = () => {
               </button>
               
               {showNotifications && (
-                <div style={{ position: 'absolute', top: '40px', right: '-50px', width: '300px', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 100, overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '40px', right: '-50px', width: '300px', background: 'var(--color-surface)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 100, overflow: 'hidden' }}>
                   <div style={{ padding: '15px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Notifications</div>
                   <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                     {notifications.length > 0 ? (
                       notifications.map(notif => (
                         <div key={notif.id} onClick={() => markAsRead(notif.id)} style={{ padding: '15px', borderBottom: '1px solid #eee', background: notif.read ? 'white' : '#f0fdf4', cursor: 'pointer', fontSize: '0.9rem' }}>
                           {notif.message}
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '5px' }}>{new Date(notif.date).toLocaleTimeString()}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '5px' }}>{new Date(notif.date).toLocaleTimeString()}</div>
                         </div>
                       ))
                     ) : (
-                      <div style={{ padding: '15px', textAlign: 'center', color: '#6b7280' }}>No notifications</div>
+                      <div style={{ padding: '15px', textAlign: 'center', color: 'var(--color-text-muted)' }}>No notifications</div>
                     )}
                   </div>
                 </div>
@@ -128,7 +128,7 @@ const Navbar = () => {
             <div style={{ position: 'relative' }}>
               <button 
                 onClick={() => setShowDropdown(!showDropdown)}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', border: '1px solid #e5e7eb', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer' }}
               >
                 <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#133A26', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
                   {user.name.charAt(0)}
@@ -138,12 +138,12 @@ const Navbar = () => {
               </button>
               
               {showDropdown && (
-                <div style={{ position: 'absolute', top: '45px', right: 0, width: '200px', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 100, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-                  <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ position: 'absolute', top: '45px', right: 0, width: '200px', background: 'var(--color-surface)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 100, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                  <div style={{ padding: '15px', borderBottom: '1px solid var(--color-border)' }}>
                     <div style={{ fontWeight: 'bold', color: '#111827' }}>{user.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{user.role}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{user.role}</div>
                   </div>
-                  <button onClick={goToDashboard} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 15px', background: 'none', border: 'none', borderBottom: '1px solid #e5e7eb', cursor: 'pointer', textAlign: 'left', color: '#374151' }}>
+                  <button onClick={goToDashboard} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 15px', background: 'none', border: 'none', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', textAlign: 'left', color: '#374151' }}>
                     <User size={16} /> My Dashboard
                   </button>
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 15px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: '#F87171' }}>

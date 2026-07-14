@@ -304,7 +304,7 @@ const renderHistoryRow = (h, i, total) => {
       <td style={{ padding: '10px 12px', color: '#64748B', whiteSpace: 'nowrap' }}>
         {new Date(h.timestamp).toLocaleString()}
       </td>
-      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#334155' }}>
+      <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
         {h.actorName} <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748B' }}>({h.actorRole})</span>
       </td>
       <td style={{ padding: '10px 12px' }}>
@@ -312,11 +312,11 @@ const renderHistoryRow = (h, i, total) => {
           {getActionDisplayName(h.action)}
         </span>
       </td>
-      <td style={{ padding: '10px 12px', color: '#475569', fontStyle: 'italic', maxWidth: '300px', wordBreak: 'break-word' }}>
+      <td style={{ padding: '10px 12px', color: 'var(--color-text-secondary)', fontStyle: 'italic', maxWidth: '300px', wordBreak: 'break-word' }}>
         "{h.remarks || 'No remarks.'}"
       </td>
       <td style={{ padding: '10px 12px' }}>
-        {files.length > 0 ? files : <span style={{ color: '#94A3B8' }}>N/A</span>}
+        {files.length > 0 ? files : <span style={{ color: 'var(--color-text-muted)' }}>N/A</span>}
       </td>
     </tr>
   );
@@ -342,22 +342,22 @@ const renderHistoryTable = (history) => {
         const outcomeText = isRejected ? 'Rejected' : isApproved ? 'Approved' : 'In Progress';
         
         return (
-          <div key={ci} style={{ marginBottom: 16, borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-            <div style={{ background: outcomeBg, padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0' }}>
+          <div key={ci} style={{ marginBottom: 16, borderRadius: 8, border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+            <div style={{ background: outcomeBg, padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)' }}>
               <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#1E293B' }}>Submission #{cycleNum}</span>
               <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, color: outcomeColor, background: 'rgba(255,255,255,0.7)' }}>
                 {outcomeText}
               </span>
             </div>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left', background: '#FFFFFF' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left', background: 'var(--color-surface)' }}>
                 <thead>
-                  <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Timestamp</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>User</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Action</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Remarks</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Files</th>
+                  <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Timestamp</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>User</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Action</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Remarks</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Files</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -697,7 +697,7 @@ const EvaluationTimelineWrapper = ({ milestone, thesis, titlePrefix, history }) 
   const isApproved = status === 'APPROVED' || status === 'VERIFIED' || status === 'CLEARED' || status === 'SATISFACTORY';
 
   return (
-    <div style={{ marginTop: 20, padding: 16, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+    <div style={{ marginTop: 20, padding: 16, background: 'var(--color-bg)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isOpen ? 12 : 0 }}>
         <h6 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
           <span>📊</span> {titlePrefix} Evaluation Status
@@ -831,7 +831,7 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
 const getStatusDisplay = (status) => {
   switch (status) {
     case 'DRAFT':
-      return { text: 'Draft', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+      return { text: 'Draft', color: 'var(--color-text-secondary)', bg: '#E2E8F0', border: '#CBD5E1' };
     case 'PENDING':
       return { text: 'submitted and pending review at supervisor', color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' };
     case 'UNDER_REVIEW_HOD':
@@ -845,7 +845,7 @@ const getStatusDisplay = (status) => {
     case 'REJECTED':
       return { text: 'rejected', color: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
     default:
-      return { text: status || 'Unknown', color: '#475569', bg: '#E2E8F0', border: '#CBD5E1' };
+      return { text: status || 'Unknown', color: 'var(--color-text-secondary)', bg: '#E2E8F0', border: '#CBD5E1' };
   }
 };
 
@@ -1001,8 +1001,8 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
               <span style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>Candidate Submissions History:</span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
                 {rac.submissions.map((sub, idx) => (
-                  <div key={sub._id || idx} style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', padding: 10, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: 2 }}>
+                  <div key={sub._id || idx} style={{ background: 'var(--color-bg)', border: '1px solid #CBD5E1', padding: 10, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: 2 }}>
                       <span style={{ fontWeight: 700, color: '#1E3A8A' }}>Submission #{idx + 1}</span>
                       <span style={{ fontSize: '0.68rem', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</span>
                     </div>
@@ -1025,7 +1025,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
           ) : (rac.progressReportUrl || rac.studentRemarks) ? (
             <div style={{ gridColumn: 'span 2', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>Candidate Submission:</span>
-              <div style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', padding: 10, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', maxWidth: 400 }}>
+              <div style={{ background: 'var(--color-bg)', border: '1px solid #CBD5E1', padding: 10, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', maxWidth: 400 }}>
                 {rac.progressReportUrl && (
                   <div>
                     <a href={`${API_BASE_URL}${rac.progressReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'underline' }}>
@@ -1118,14 +1118,14 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
           <button onClick={onClose} className="usm-close-btn">✕</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20, flex: 1, minHeight: 0 }}>
-          <div style={{ background: '#F8FAFC', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ background: '#F1F5F9', padding: '8px 16px', borderBottom: '1px solid var(--color-border, #E2E8F0)', fontWeight: 600, fontSize: '0.8rem', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--color-bg)', borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--color-bg)', padding: '8px 16px', borderBottom: '1px solid var(--color-border, #E2E8F0)', fontWeight: 600, fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>📄 Document Preview</span>
               {fileUrl && <a href={`${API_BASE_URL}${fileUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700 }}>Download ⬇️</a>}
             </div>
             <div style={{ flex: 1, position: 'relative' }}>
               {fileUrl ? <iframe src={viewerUrl} title="Doc" style={{ width: '100%', height: '100%', border: 'none' }} /> : (
-                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', flexDirection: 'column' }}>
                   <span style={{ fontSize: '2.5rem' }}>⚠️</span><p style={{ marginTop: 8, fontWeight: 700 }}>No document attached</p>
                 </div>
               )}
@@ -1218,7 +1218,7 @@ const DocEvalModal = ({ doc, onClose, onRefresh }) => {
                 } else {
                   const display = doc.type === '6_MONTH_REPORT' || doc.docType === 'PUBLICATION' ? getStatusDisplay(doc.status) : { text: doc.status };
                   return (
-                    <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: '#F1F5F9', borderRadius: 8, fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>
+                    <div style={{ textAlign: 'center', width: '100%', padding: '10px', background: 'var(--color-bg)', borderRadius: 8, fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
                       Status: <span style={{ color: doc.status === 'VERIFIED' || doc.status === 'APPROVED' ? '#059669' : doc.status === 'UNDER_REVIEW_HOD' || doc.status === 'PENDING_HOD' ? '#1D4ED8' : '#DC2626' }}>{display.text}</span>
                     </div>
                   );
@@ -1871,22 +1871,22 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     return (
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: '0.85rem' }}>
         <thead>
-          <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0', textAlign: 'left' }}>
-            <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Subject Name</th>
-            <th style={{ padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Subject Code</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '120px' }}>Marks Obtained</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '120px' }}>Maximum Marks</th>
-            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569', width: '150px' }}>Exam Month & Year</th>
+          <tr style={{ background: 'var(--color-bg)', borderBottom: '2px solid #E2E8F0', textAlign: 'left' }}>
+            <th style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Subject Name</th>
+            <th style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Subject Code</th>
+            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '120px' }}>Marks Obtained</th>
+            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '120px' }}>Maximum Marks</th>
+            <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '150px' }}>Exam Month & Year</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, idx) => (
-            <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+            <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
               <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1E293B' }}>{item.subjectName}</td>
-              <td style={{ padding: '10px 12px', color: '#475569' }}>{item.subjectCode || '-'}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#0F172A' }}>{item.marksObtained}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#475569' }}>{item.maxMarks}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#475569' }}>{formatMonthYear(item.examinationMonthYear)}</td>
+              <td style={{ padding: '10px 12px', color: 'var(--color-text-secondary)' }}>{item.subjectCode || '-'}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--color-text-primary)' }}>{item.marksObtained}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{item.maxMarks}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{formatMonthYear(item.examinationMonthYear)}</td>
             </tr>
           ))}
         </tbody>
@@ -1960,14 +1960,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
             {details.others && details.others.length > 0 && (
               <div className="usm-card" style={{ padding: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#475569', borderBottom: '2px solid #CBD5E1', paddingBottom: 6 }}>4. Others</div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text-secondary)', borderBottom: '2px solid #CBD5E1', paddingBottom: 6 }}>4. Others</div>
                 {renderCourseworkSection('Others', details.others)}
               </div>
             )}
 
             {thesis.courseworkUploadProof && (
-              <div className="usm-card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC' }}>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#334155' }}>Upload Proof (Grade Sheet / Certificate)</span>
+              <div className="usm-card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-bg)' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Upload Proof (Grade Sheet / Certificate)</span>
                 <a 
                   href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
                   target="_blank" 
@@ -1995,7 +1995,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     placeholder="Enter reason for sending back..."
                     value={cwRemarks}
                     onChange={e => setCwRemarks(e.target.value)}
-                    style={{ background: '#FFFFFF', borderColor: '#BBF7D0', width: '100%' }}
+                    style={{ background: 'var(--color-surface)', borderColor: '#BBF7D0', width: '100%' }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -2037,7 +2037,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     placeholder="Enter reason for sending back..."
                     value={cwRemarks}
                     onChange={e => setCwRemarks(e.target.value)}
-                    style={{ background: '#FFFFFF', borderColor: '#BFDBFE', width: '100%' }}
+                    style={{ background: 'var(--color-surface)', borderColor: '#BFDBFE', width: '100%' }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -2295,13 +2295,13 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
             <div>
               <strong>Thesis Title:</strong>
-              <div style={{ background: '#F8FAFC', padding: 10, borderRadius: 8, marginTop: 4, fontWeight: 600, color: '#334155', border: '1px solid #E2E8F0' }}>
+              <div style={{ background: 'var(--color-bg)', padding: 10, borderRadius: 8, marginTop: 4, fontWeight: 600, color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}>
                 {thesis.title || 'N/A'}
               </div>
             </div>
             <div>
               <strong>Abstract:</strong>
-              <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 8, marginTop: 4, color: '#475569', lineHeight: '1.5', border: '1px solid #E2E8F0', whiteSpace: 'pre-line' }}>
+              <div style={{ background: 'var(--color-bg)', padding: 12, borderRadius: 8, marginTop: 4, color: 'var(--color-text-secondary)', lineHeight: '1.5', border: '1px solid var(--color-border)', whiteSpace: 'pre-line' }}>
                 {thesis.abstract || 'N/A'}
               </div>
             </div>
@@ -2350,7 +2350,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               placeholder="Enter evaluation remarks or changes required..."
               value={remarks[synopsisMilestone._id] || ''}
               onChange={e => setRemarks(r => ({ ...r, [synopsisMilestone._id]: e.target.value }))}
-              style={{ marginBottom: 12, width: '100%', borderColor: '#FCD34D', background: '#FFFFFF' }}
+              style={{ marginBottom: 12, width: '100%', borderColor: '#FCD34D', background: 'var(--color-surface)' }}
             />
             {subRole === 'HOD' && isPendingHOD && (
               <div style={{ marginTop: '14px', borderTop: '1px solid #FCD34D', paddingTop: '14px', marginBottom: '14px' }}>
@@ -2358,19 +2358,19 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Meeting Date *</label>
-                    <input type="date" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcDate} onChange={e => setSynDrcDate(e.target.value)} />
+                    <input type="date" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: 'var(--color-surface)', borderColor: '#FCD34D' }} value={synDrcDate} onChange={e => setSynDrcDate(e.target.value)} />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Meeting Time *</label>
-                    <input type="time" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcTime} onChange={e => setSynDrcTime(e.target.value)} />
+                    <input type="time" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: 'var(--color-surface)', borderColor: '#FCD34D' }} value={synDrcTime} onChange={e => setSynDrcTime(e.target.value)} />
                   </div>
                   <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Venue *</label>
-                    <input type="text" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcVenue} onChange={e => setSynDrcVenue(e.target.value)} placeholder="e.g. Dept Committee Room, Block A" />
+                    <input type="text" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: 'var(--color-surface)', borderColor: '#FCD34D' }} value={synDrcVenue} onChange={e => setSynDrcVenue(e.target.value)} placeholder="e.g. Dept Committee Room, Block A" />
                   </div>
                   <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
                     <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Committee Members</label>
-                    <input type="text" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcCommittee} onChange={e => setSynDrcCommittee(e.target.value)} placeholder="e.g. Prof. R.K. Sharma, Dr. S. Verma" />
+                    <input type="text" className="form-input" style={{ fontSize: '0.8rem', padding: '6px', background: 'var(--color-surface)', borderColor: '#FCD34D' }} value={synDrcCommittee} onChange={e => setSynDrcCommittee(e.target.value)} placeholder="e.g. Prof. R.K. Sharma, Dr. S. Verma" />
                   </div>
                 </div>
               </div>
@@ -2432,7 +2432,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {synDrcs.map(drc => (
-                      <div key={drc._id} className="usm-card" style={{ border: '1px solid #CBD5E1', padding: 20, background: '#F8FAFC' }}>
+                      <div key={drc._id} className="usm-card" style={{ border: '1px solid #CBD5E1', padding: 20, background: 'var(--color-bg)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                           <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span>🏛️</span> Synopsis DRC Evaluation
@@ -2449,7 +2449,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                           </span>
                         </div>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.85rem', color: '#334155', background: '#FFFFFF', padding: 16, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: drc.status === 'SCHEDULED' && subRole === 'HOD' ? 16 : 0 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.85rem', color: 'var(--color-text-secondary)', background: 'var(--color-surface)', padding: 16, borderRadius: 8, border: '1px solid var(--color-border)', marginBottom: drc.status === 'SCHEDULED' && subRole === 'HOD' ? 16 : 0 }}>
                           <div><strong>Date:</strong> {new Date(drc.scheduledDate).toLocaleDateString()}</div>
                           <div><strong>Time:</strong> {drc.scheduledTime}</div>
                           <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {drc.venue}</div>
@@ -2466,14 +2466,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                             <h5 style={{ margin: '0 0 10px', color: '#92400E', fontSize: '0.85rem', fontWeight: 800 }}>📋 Record DRC Outcome</h5>
                             <div className="form-group">
                               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#92400E', marginBottom: 6 }}>Evaluation Status *</label>
-                              <select className="form-input" style={{ width: '100%', padding: '6px', background: '#FFFFFF', borderColor: '#FCD34D' }} value={synDrcOutcomeStatus} onChange={e => setSynDrcOutcomeStatus(e.target.value)}>
+                              <select className="form-input" style={{ width: '100%', padding: '6px', background: 'var(--color-surface)', borderColor: '#FCD34D' }} value={synDrcOutcomeStatus} onChange={e => setSynDrcOutcomeStatus(e.target.value)}>
                                 <option value="APPROVED">Satisfactory (Move candidate to Active Research)</option>
                                 <option value="REVISION_REQUIRED">Unsatisfactory (Revert candidate to Synopsis revision)</option>
                               </select>
                             </div>
                             <div className="form-group" style={{ marginTop: 10 }}>
                               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#92400E', marginBottom: 6 }}>Committee Remarks / Feedback *</label>
-                              <textarea className="form-input" rows="3" style={{ width: '100%', borderColor: '#FCD34D', background: '#FFFFFF' }} value={synDrcOutcomeRemarks} onChange={e => setSynDrcOutcomeRemarks(e.target.value)} placeholder="Provide final remarks from the DRC panel..." />
+                              <textarea className="form-input" rows="3" style={{ width: '100%', borderColor: '#FCD34D', background: 'var(--color-surface)' }} value={synDrcOutcomeRemarks} onChange={e => setSynDrcOutcomeRemarks(e.target.value)} placeholder="Provide final remarks from the DRC panel..." />
                             </div>
                             <button className="btn-primary" style={{ marginTop: 8, padding: '8px 16px', background: '#D97706' }} onClick={() => handleSynopsisDrcOutcome(drc._id)} disabled={loading}>
                               {loading ? 'Recording...' : 'Submit DRC Outcome'}
@@ -2486,7 +2486,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 );
               }
               return (
-                <div className="usm-card" style={{ padding: 16, background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic', textAlign: 'center' }}>
+                <div className="usm-card" style={{ padding: 16, background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic', textAlign: 'center' }}>
                   ⏳ DRC meeting has not been scheduled yet.
                 </div>
               );
@@ -2567,8 +2567,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
     const statusBadge = (status) => {
       const colors = {
-        NOT_SCHEDULED: { bg: '#F3F4F6', color: '#4B5563', text: 'Not Scheduled' },
-        NOT_REQUESTED: { bg: '#F3F4F6', color: '#4B5563', text: 'Not Scheduled' },
+        NOT_SCHEDULED: { bg: '#F3F4F6', color: 'var(--color-text-secondary)', text: 'Not Scheduled' },
+        NOT_REQUESTED: { bg: '#F3F4F6', color: 'var(--color-text-secondary)', text: 'Not Scheduled' },
         SCHEDULED: { bg: '#FFFBEB', color: '#B45309', text: 'Scheduled' },
         CLEARED: { bg: '#D1FAE5', color: '#065F46', text: 'Seminar Cleared' },
         UNCLEARED: { bg: '#FEE2E2', color: '#991B1B', text: 'Uncleared' }
@@ -2611,7 +2611,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
         {/* 1. DRAFT SUBMISSION & REVIEW PIPELINE (Must happen first) */}
         <div className="usm-card" style={{ padding: 16 }}>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
             📂 Thesis Draft and Plagiarism Report Review
           </h4>
 
@@ -2622,7 +2622,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           ) : (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
                   Milestone Status: <strong style={{ textTransform: 'uppercase', color: preMilestone.status === 'APPROVED' ? '#059669' : preMilestone.status === 'REVISION_REQUIRED' ? '#DC2626' : '#2563EB' }}>{preMilestone.status}</strong>
                 </span>
               </div>
@@ -2630,29 +2630,29 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               {/* Uploaded files display */}
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16, fontSize: '0.82rem' }}>
                 <thead>
-                  <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Document</th>
-                    <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Download</th>
+                  <tr style={{ background: 'var(--color-bg)', borderBottom: '2px solid #E2E8F0' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Document</th>
+                    <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Download</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1E293B' }}>📄 Rough Thesis Draft</td>
                     <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                       {preMilestone.documentUrl ? (
                         <a href={`${API_BASE_URL}${preMilestone.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600 }}>Download</a>
                       ) : (
-                        <span style={{ color: '#94A3B8' }}>Not Uploaded</span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Not Uploaded</span>
                       )}
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600, color: '#1E293B' }}>🔍 Turnitin Plagiarism Report</td>
                     <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                       {preMilestone.plagiarismReportUrl ? (
                         <a href={`${API_BASE_URL}${preMilestone.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600 }}>Download</a>
                       ) : (
-                        <span style={{ color: '#94A3B8' }}>Not Uploaded</span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Not Uploaded</span>
                       )}
                     </td>
                   </tr>
@@ -2733,12 +2733,12 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
         {/* 2. SEMINAR DETAILS / SCHEDULING FLOW (Only visible/active if draft is APPROVED) */}
         <div className="usm-card" style={{ padding: 16 }}>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
             📅 Pre-Submission Seminar Status & Schedule
           </h4>
 
           {preMilestone?.status !== 'APPROVED' ? (
-            <div style={{ padding: 14, background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 8, color: '#64748B', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: 14, background: 'var(--color-bg)', border: '1px dashed #CBD5E1', borderRadius: 8, color: '#64748B', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>🔒</span> Pre-Submission Seminar Scheduling is locked until the Thesis Draft & Plagiarism Package gets final HOD approval.
             </div>
           ) : (
@@ -2748,7 +2748,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <div>
                   {!isReadOnly && subRole === 'HOD' ? (
                     <form onSubmit={handleHODScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#475569' }}>Schedule Pre-Submission Seminar:</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>Schedule Pre-Submission Seminar:</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         <div>
                           <label className="form-label" style={{ fontSize: '0.75rem' }}>Date *</label>
@@ -2800,7 +2800,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
                   {!isReadOnly && subRole === 'HOD' ? (
                     <form onSubmit={handleHODOutcomeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#475569' }}>Record Seminar Outcome:</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>Record Seminar Outcome:</div>
                       <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
                           <input type="radio" name="outcome" value="CLEARED" checked={semOutcomeStatus === 'CLEARED'} onChange={() => setSemOutcomeStatus('CLEARED')} />
@@ -2892,14 +2892,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         {/* Previously Held Seminar History Logs */}
         {thesis.preSubmissionSeminarHistory && thesis.preSubmissionSeminarHistory.length > 0 && (
           <div className="usm-card" style={{ padding: 16, marginTop: 16 }}>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>📜</span> Pre-Submission Seminar History Logs
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {thesis.preSubmissionSeminarHistory.map((h, idx) => (
-                <div key={idx} style={{ background: '#F8FAFC', borderRadius: 10, padding: 14, border: '1px solid #E2E8F0', fontSize: '0.82rem' }}>
+                <div key={idx} style={{ background: 'var(--color-bg)', borderRadius: 10, padding: 14, border: '1px solid var(--color-border)', fontSize: '0.82rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
-                    <span style={{ fontWeight: 700, color: '#475569' }}>Colloquium Run #{idx + 1}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>Colloquium Run #{idx + 1}</span>
                     {h.status === 'CLEARED' ? (
                       <span style={{ padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontSize: '0.7rem', background: '#D1FAE5', color: '#065F46' }}>
                         CLEARED (Satisfactory)
@@ -2910,15 +2910,15 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', color: '#475569', marginBottom: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', color: 'var(--color-text-secondary)', marginBottom: 8 }}>
                     <div><strong>Scheduled Date:</strong> {h.scheduledDate ? new Date(h.scheduledDate).toLocaleDateString() : 'N/A'}</div>
                     <div><strong>Time:</strong> {h.scheduledTime}</div>
                     <div style={{ gridColumn: 'span 2' }}><strong>Venue:</strong> {h.venue}</div>
                     {h.committeeMembers && <div style={{ gridColumn: 'span 2' }}><strong>Panel:</strong> {h.committeeMembers}</div>}
                   </div>
-                  <div style={{ background: 'white', padding: 10, borderRadius: 6, borderLeft: h.status === 'CLEARED' ? '3px solid #10B981' : '3px solid #EF4444' }}>
+                  <div style={{ background: 'var(--color-surface)', padding: 10, borderRadius: 6, borderLeft: h.status === 'CLEARED' ? '3px solid #10B981' : '3px solid #EF4444' }}>
                     <div><strong>Outcome Remarks:</strong> "{h.outcomeRemarks || 'None'}"</div>
-                    <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 4 }}>Conducted on {h.outcomeRecordedAt ? new Date(h.outcomeRecordedAt).toLocaleDateString() : 'N/A'}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Conducted on {h.outcomeRecordedAt ? new Date(h.outcomeRecordedAt).toLocaleDateString() : 'N/A'}</div>
                   </div>
                 </div>
               ))}
@@ -3004,7 +3004,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
               <div>
                 <strong>Email (Username):</strong>
-                <input type="text" value={editForm.username || scholar.username || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #E2E8F0', borderRadius: '6px', background: '#F1F5F9', cursor: 'not-allowed', marginTop: '4px' }} />
+                <input type="text" value={editForm.username || scholar.username || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg)', cursor: 'not-allowed', marginTop: '4px' }} />
               </div>
               <div>
                 <strong>Mobile:</strong>
@@ -3016,7 +3016,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
               <div>
                 <strong>Gender:</strong>
-                <select value={editForm.gender || ''} onChange={e => setEditForm({...editForm, gender: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', background: 'white' }}>
+                <select value={editForm.gender || ''} onChange={e => setEditForm({...editForm, gender: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', background: 'var(--color-surface)' }}>
                   <option value="">Select Gender</option>
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
@@ -3046,15 +3046,15 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
-              <div><strong>Email:</strong> <span style={{ color: '#475569' }}>{scholar.username || 'N/A'}</span></div>
-              <div><strong>Mobile:</strong> <span style={{ color: '#475569' }}>{profile.phoneNumber || 'N/A'}</span></div>
-              <div><strong>DOB:</strong> <span style={{ color: '#475569' }}>{profile.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</span></div>
-              <div><strong>Gender:</strong> <span style={{ color: '#475569' }}>{profile.gender || 'N/A'}</span></div>
-              <div><strong>Category:</strong> <span style={{ color: '#475569' }}>{profile.category || 'N/A'}</span></div>
-              <div><strong>Nationality:</strong> <span style={{ color: '#475569' }}>{profile.nationality || 'N/A'}</span></div>
-              <div><strong>Father:</strong> <span style={{ color: '#475569' }}>{profile.fatherName || 'N/A'}</span></div>
-              <div><strong>Mother:</strong> <span style={{ color: '#475569' }}>{profile.motherName || 'N/A'}</span></div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> <span style={{ color: '#475569' }}>{profile.address || 'N/A'}</span></div>
+              <div><strong>Email:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{scholar.username || 'N/A'}</span></div>
+              <div><strong>Mobile:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.phoneNumber || 'N/A'}</span></div>
+              <div><strong>DOB:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</span></div>
+              <div><strong>Gender:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.gender || 'N/A'}</span></div>
+              <div><strong>Category:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.category || 'N/A'}</span></div>
+              <div><strong>Nationality:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.nationality || 'N/A'}</span></div>
+              <div><strong>Father:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.fatherName || 'N/A'}</span></div>
+              <div><strong>Mother:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.motherName || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.address || 'N/A'}</span></div>
             </div>
           )}
         </div>
@@ -3065,7 +3065,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
               <div>
                 <strong>SH no:</strong>
-                <input type="text" value={profile.shNo || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #E2E8F0', borderRadius: '6px', background: '#F1F5F9', cursor: 'not-allowed', marginTop: '4px' }} />
+                <input type="text" value={profile.shNo || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg)', cursor: 'not-allowed', marginTop: '4px' }} />
               </div>
               <div>
                 <strong>Enrollment No:</strong>
@@ -3073,7 +3073,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
               <div>
                 <strong>Department:</strong>
-                <input type="text" value={thesis.department || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #E2E8F0', borderRadius: '6px', background: '#F1F5F9', cursor: 'not-allowed', marginTop: '4px' }} />
+                <input type="text" value={thesis.department || ''} disabled style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg)', cursor: 'not-allowed', marginTop: '4px' }} />
               </div>
               <div>
                 <strong>Admission Date:</strong>
@@ -3081,7 +3081,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
               <div>
                 <strong>Ph.D. Mode:</strong>
-                <select value={editForm.phdMode || ''} onChange={e => setEditForm({...editForm, phdMode: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', background: 'white' }}>
+                <select value={editForm.phdMode || ''} onChange={e => setEditForm({...editForm, phdMode: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px', background: 'var(--color-surface)' }}>
                   <option value="">Select Mode</option>
                   <option value="FULL_TIME">Full Time</option>
                   <option value="PART_TIME">Part Time</option>
@@ -3131,17 +3131,17 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
               <div><strong>SH no:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{profile.shNo || 'N/A'}</span></div>
-              <div><strong>Enrollment No:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{profile.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
-              <div><strong>Department:</strong> <span style={{ color: '#475569' }}>{thesis.department || 'N/A'}</span></div>
-              <div><strong>Admission Date:</strong> <span style={{ color: '#475569' }}>{profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
-              <div><strong>Ph.D. Mode:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{profile.phdMode || 'N/A'}</span></div>
-              <div><strong>Specialization:</strong> <span style={{ color: '#475569' }}>{profile.specialization || 'N/A'}</span></div>
-              <div><strong>Academic Session:</strong> <span style={{ color: '#475569', fontWeight: 600 }}>{profile.academicSession || 'N/A'}</span></div>
-              <div><strong>Degree Type:</strong> <span style={{ color: '#475569' }}>{profile.degreeType || 'N/A'}</span></div>
-              <div><strong>Degree Name:</strong> <span style={{ color: '#475569' }}>{profile.degreeName || 'N/A'}</span></div>
-              <div><strong>Subject:</strong> <span style={{ color: '#475569' }}>{profile.subject || 'N/A'}</span></div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Academic Background:</strong> <span style={{ color: '#475569' }}>{profile.academicBackground || 'N/A'}</span></div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Area of Research Interest:</strong> <span style={{ color: '#475569' }}>{profile.areaOfInterest || 'N/A'}</span></div>
+              <div><strong>Enrollment No:</strong> <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>{profile.enrollmentNumber || thesis.enrollmentNumber || 'N/A'}</span></div>
+              <div><strong>Department:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{thesis.department || 'N/A'}</span></div>
+              <div><strong>Admission Date:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.admissionDate ? new Date(profile.admissionDate).toLocaleDateString() : 'N/A'}</span></div>
+              <div><strong>Ph.D. Mode:</strong> <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>{profile.phdMode || 'N/A'}</span></div>
+              <div><strong>Specialization:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.specialization || 'N/A'}</span></div>
+              <div><strong>Academic Session:</strong> <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>{profile.academicSession || 'N/A'}</span></div>
+              <div><strong>Degree Type:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.degreeType || 'N/A'}</span></div>
+              <div><strong>Degree Name:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.degreeName || 'N/A'}</span></div>
+              <div><strong>Subject:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.subject || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Academic Background:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.academicBackground || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Area of Research Interest:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.areaOfInterest || 'N/A'}</span></div>
               <div style={{ gridColumn: 'span 2' }}>
                 <strong>Preferred Supervisor Choice:</strong>{' '}
                 <span style={{ color: '#4F46E5', fontWeight: 700, background: '#EEF2FF', border: '1px solid #C7D2FE', padding: '2px 8px', borderRadius: '4px', marginLeft: '6px' }}>
@@ -3150,9 +3150,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     : 'None Selected'}
                 </span>
               </div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: '#0F172A', fontWeight: 700 }}>{profile.thesisTitle || thesis.title || 'N/A'}</span></div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: '#475569', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4, marginTop: 4 }}>{profile.thesisSummary || thesis.abstract || 'N/A'}</span></div>
-              <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: '#475569' }}>{profile.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: 'var(--color-text-primary)', fontWeight: 700 }}>{profile.thesisTitle || thesis.title || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: 'var(--color-text-secondary)', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4, marginTop: 4 }}>{profile.thesisSummary || thesis.abstract || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
             </div>
           )}
         </div>
@@ -3172,7 +3172,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <div key={level} className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
                   <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
                     <span>{labels[level]}</span>
-                    {qVal?.certificateUrl ? <a href={`${API_BASE_URL}${qVal.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a> : <span style={{ color: '#94A3B8' }}>Pending</span>}
+                    {qVal?.certificateUrl ? <a href={`${API_BASE_URL}${qVal.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a> : <span style={{ color: 'var(--color-text-muted)' }}>Pending</span>}
                   </div>
                   
                   {isEditing ? (
@@ -3326,7 +3326,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             <button 
               type="button"
               onClick={() => setIsEditing(false)}
-              style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#F1F5F9', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#475569' }}
+              style={{ padding: '8px 16px', fontSize: '0.82rem', background: 'var(--color-bg)', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
             >
               Cancel Edit
             </button>
@@ -3360,8 +3360,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       )}
 
       {!isReadOnly && subRole === 'HOD' && thesis.status !== 'REJECTED' && (
-        <div className="usm-card" style={{ borderTop: '2px solid #E2E8F0', paddingTop: '16px', marginTop: '12px', background: '#F8FAFC', padding: '16px', borderRadius: '10px' }}>
-          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', marginBottom: '8px', marginTop: 0 }}>📋 Verification & Supervisor Assignment</h4>
+        <div className="usm-card" style={{ borderTop: '2px solid #E2E8F0', paddingTop: '16px', marginTop: '12px', background: 'var(--color-bg)', padding: '16px', borderRadius: '10px' }}>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '8px', marginTop: 0 }}>📋 Verification & Supervisor Assignment</h4>
           <p style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: '16px' }}>
             Please review the qualifications and credentials above. Verify the scholar and allocate their Research Advisor (Supervisor).
           </p>
@@ -3381,7 +3381,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
             {/* Supervisor Selection / Info Row */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Supervisor:</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-secondary)', width: '160px' }}>Supervisor:</span>
               {thesis.supervisorId ? (
                 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0369A1', background: '#E0F2FE', padding: '4px 10px', borderRadius: '12px' }}>
                   {thesis.supervisorId?.name || 'Assigned'}
@@ -3445,7 +3445,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <button
                     type="button"
                     onClick={() => setShowRejectPopup(false)}
-                    style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#E2E8F0', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#475569', fontWeight: 600 }}
+                    style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#E2E8F0', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'var(--color-text-secondary)', fontWeight: 600 }}
                   >
                     Cancel
                   </button>
@@ -3453,7 +3453,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', width: '160px' }}>Action:</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-secondary)', width: '160px' }}>Action:</span>
                 {thesis.status === 'REGISTRATION_PENDING' ? (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button
@@ -3744,19 +3744,19 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <div style={{ gridColumn: 'span 2', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontWeight: 700, color: 'var(--color-text-secondary, #475569)' }}>Candidate Submissions History:</span>
                 <div style={{ width: '100%', overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.74rem', background: '#ffffff', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 440 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.74rem', background: 'var(--color-surface)', borderRadius: 8, overflow: 'hidden', border: '1px solid #CBD5E1', minWidth: 440 }}>
                     <thead>
-                      <tr style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '15%' }}>Submission</th>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Date & Time</th>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '25%' }}>Attached File</th>
-                        <th style={{ padding: '6px 10px', fontWeight: 700, color: '#475569', width: '35%' }}>Remarks</th>
+                      <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid #CBD5E1', textAlign: 'left' }}>
+                        <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '15%' }}>Submission</th>
+                        <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Date & Time</th>
+                        <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '25%' }}>Attached File</th>
+                        <th style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--color-text-secondary)', width: '35%' }}>Remarks</th>
                       </tr>
                     </thead>
                     <tbody>
                       {r.submissions && r.submissions.length > 0 ? (
                         r.submissions.map((sub, idx) => (
-                          <tr key={sub._id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <tr key={sub._id || idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                             <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#{idx + 1}</td>
                             <td style={{ padding: '6px 10px', color: '#64748B' }}>{new Date(sub.uploadedAt).toLocaleString()}</td>
                             <td style={{ padding: '6px 10px' }}>
@@ -3765,16 +3765,16 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                                   📄 View File
                                 </a>
                               ) : (
-                                <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                                <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                               )}
                             </td>
-                            <td style={{ padding: '6px 10px', color: '#334155' }}>
-                              {sub.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                            <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                              {sub.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                             </td>
                           </tr>
                         ))
                       ) : (
-                        <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '6px 10px', fontWeight: 600, color: '#1E3A8A' }}>#1</td>
                           <td style={{ padding: '6px 10px', color: '#64748B' }}>—</td>
                           <td style={{ padding: '6px 10px' }}>
@@ -3783,11 +3783,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                                 📄 View File
                               </a>
                             ) : (
-                              <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No file</span>
+                              <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No file</span>
                             )}
                           </td>
-                          <td style={{ padding: '6px 10px', color: '#334155' }}>
-                            {r.studentRemarks || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No remarks</span>}
+                          <td style={{ padding: '6px 10px', color: 'var(--color-text-secondary)' }}>
+                            {r.studentRemarks || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No remarks</span>}
                           </td>
                         </tr>
                       )}
@@ -4025,15 +4025,15 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             {/* Documents Table */}
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12, fontSize: '0.82rem' }}>
               <thead>
-                <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                  <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Document</th>
-                  <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Status</th>
-                  <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: '#475569' }}>Action</th>
+                <tr style={{ background: 'var(--color-bg)', borderBottom: '2px solid #E2E8F0' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Document</th>
+                  <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
+                  <th style={{ textAlign: 'center', padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {/* Thesis / Synopsis Document */}
-                <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                   <td style={{ padding: '10px 12px' }}>
                     <div style={{ fontWeight: 600, color: '#1E293B' }}>📄 {m.type === 'PRE_SUBMISSION' ? 'Rough Thesis Draft' : m.type === 'SYNOPSIS' ? 'Synopsis Document' : 'Thesis Document'}</div>
                   </td>
@@ -4048,13 +4048,13 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     {m.documentUrl ? (
                       <a href={`${API_BASE_URL}${m.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none' }}>📥 View</a>
                     ) : (
-                      <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>—</span>
                     )}
                   </td>
                 </tr>
                 {/* Plagiarism Report (only for PRE_SUBMISSION and FINAL_SUBMISSION) */}
                 {(m.type === 'PRE_SUBMISSION' || m.type === 'FINAL_SUBMISSION') && (
-                  <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ fontWeight: 600, color: '#1E293B' }}>🔍 Turnitin Plagiarism Report</div>
                     </td>
@@ -4069,7 +4069,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                       {m.plagiarismReportUrl ? (
                         <a href={`${API_BASE_URL}${m.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none' }}>📥 View</a>
                       ) : (
-                        <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>—</span>
                       )}
                     </td>
                   </tr>
@@ -4180,12 +4180,12 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{r.type === 'GUIDE_CHANGE' ? '🤝 Supervisor Reallocation' : '📝 Title Change'}</span>
             <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: r.status === 'APPROVED' ? '#D1FAE5' : r.status === 'REJECTED' ? '#FEE2E2' : '#FEF3C7', color: r.status === 'APPROVED' ? '#065F46' : r.status === 'REJECTED' ? '#991B1B' : '#B45309' }}>{r.status}</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div><strong>Current:</strong> {r.currentValue || 'None'}</div>
             <div><strong>Proposed:</strong> {r.proposedValue}</div>
             <div><strong>Reason:</strong> <em>"{r.reason}"</em></div>
-            {r.remarks && <div style={{ background: '#F8FAFC', borderLeft: '3px solid #64748B', padding: '6px 10px', borderRadius: 4, marginTop: 4 }}><strong>HOD Remarks:</strong> "{r.remarks}"</div>}
-            <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 4 }}>Filed: {new Date(r.createdAt).toLocaleString()}</div>
+            {r.remarks && <div style={{ background: 'var(--color-bg)', borderLeft: '3px solid #64748B', padding: '6px 10px', borderRadius: 4, marginTop: 4 }}><strong>HOD Remarks:</strong> "{r.remarks}"</div>}
+            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Filed: {new Date(r.createdAt).toLocaleString()}</div>
             {/* Timeline & History Logs */}
             {renderEvaluationTimelineGeneric(r, thesis, r.type === 'TITLE_CHANGE' ? 'Title Change Request' : 'Supervisor Allocation Request', getChangeRequestVirtualHistory(r, thesis, faculty))}
           </div>
@@ -4202,7 +4202,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <span style={{ fontWeight: 800, color: '#10b981', textTransform: 'uppercase', fontSize: '0.72rem' }}>{log.action}</span>
                 <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{new Date(log.date).toLocaleString()}</span>
               </div>
-              <div style={{ marginTop: 4, color: '#1F2937' }}>{log.note}</div>
+              <div style={{ marginTop: 4, color: 'var(--color-text-primary)' }}>{log.note}</div>
             </div>
           ))}
         </>
@@ -4366,11 +4366,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Dynamic Active Step Action Panel */}
-            <div className="usm-card" style={{ borderLeft: '4px solid #1E40AF', padding: 18, background: '#F8FAFC' }}>
+            <div className="usm-card" style={{ borderLeft: '4px solid #1E40AF', padding: 18, background: 'var(--color-bg)' }}>
               {activeStep === 1 && (
                 <div>
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 1: Student Final Thesis Upload</h4>
-                  <div style={{ fontSize: '0.82rem', color: '#475569' }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
                     Awaiting the student to compile and upload the final hard-bound thesis PDF package.
                   </div>
                 </div>
@@ -4388,7 +4388,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   )}
                   {finalSub.status === 'SUBMITTED' ? (
                     <div style={{ fontSize: '0.82rem' }}>
-                      <p style={{ color: '#475569', margin: '0 0 12px 0' }}>Review the final bound document and check if corrections are incorporated. Click Approval to sign-off and route to HOD.</p>
+                      <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 12px 0' }}>Review the final bound document and check if corrections are incorporated. Click Approval to sign-off and route to HOD.</p>
                       {isSupervisor && !showSupervisorRejectForm && (
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button className="btn-primary" onClick={handleSupervisorApprove} style={{ background: '#059669', padding: '5px 12px', fontSize: '0.75rem' }}>✓ Approve & Sign-off</button>
@@ -4427,7 +4427,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   )}
                   {finalSub.status === 'PENDING_HOD' ? (
                     <div style={{ fontSize: '0.82rem' }}>
-                      <p style={{ color: '#475569', margin: '0 0 12px 0' }}>Supervisor signed off. Review document and approve to dispatch external examiners.</p>
+                      <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 12px 0' }}>Supervisor signed off. Review document and approve to dispatch external examiners.</p>
                       {isHOD && !showHodRejectForm && (
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button className="btn-primary" onClick={handleHodApprove} style={{ background: '#059669', padding: '5px 12px', fontSize: '0.75rem' }}>✓ Approve & Sign-off</button>
@@ -4459,8 +4459,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 4: External Examiner Evaluation</h4>
                   <div style={{ fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {thesis.dispatchDate ? (
-                      <div style={{ background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', marginBottom: 6 }}>📬 Dispatch Details</div>
+                      <div style={{ background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 6 }}>📬 Dispatch Details</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', marginBottom: 8 }}>
                           <div><strong>Dispatch Date:</strong> {new Date(thesis.dispatchDate).toLocaleDateString()}</div>
                           <div><strong>Method:</strong> {thesis.dispatchMethod}</div>
@@ -4481,7 +4481,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                       </div>
                     ) : (
                       <div>
-                        <p style={{ color: '#475569', margin: '0 0 10px 0' }}>HOD cleared the thesis. Log details when package is dispatched offline to external examiners.</p>
+                        <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 10px 0' }}>HOD cleared the thesis. Log details when package is dispatched offline to external examiners.</p>
                         {(isHOD || isAdmin) && !showDispatchForm && (
                           <button onClick={() => {
                             setDispatchForm({ dispatchDate: '', dispatchMethod: 'Speed Post', dispatchTrackingNumber: '', externalEvaluationSentTo: '' });
@@ -4492,14 +4492,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     )}
 
                     {showDispatchForm && (isHOD || isAdmin) && (
-                      <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 4 }}>
+                      <form onSubmit={handleDispatch} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', marginTop: 4 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           <div>
-                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Dispatch Date</label>
+                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Dispatch Date</label>
                             <input type="date" className="form-input" value={dispatchForm.dispatchDate} onChange={e => setDispatchForm({ ...dispatchForm, dispatchDate: e.target.value })} required />
                           </div>
                           <div>
-                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Dispatch Method</label>
+                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Dispatch Method</label>
                             <select className="form-input" value={dispatchForm.dispatchMethod} onChange={e => setDispatchForm({ ...dispatchForm, dispatchMethod: e.target.value })} required>
                               <option value="Speed Post">Speed Post</option>
                               <option value="Registered Post">Registered Post</option>
@@ -4512,11 +4512,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           <div>
-                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Sent To (Examiner Details) *</label>
+                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Sent To (Examiner Details) *</label>
                             <input type="text" className="form-input" placeholder="e.g. Prof. Kumar (IIT), Dr. Sen (JNU)" value={dispatchForm.externalEvaluationSentTo} onChange={e => setDispatchForm({ ...dispatchForm, externalEvaluationSentTo: e.target.value })} required />
                           </div>
                           <div>
-                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Tracking Code / Dispatch Reference</label>
+                            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Tracking Code / Dispatch Reference</label>
                             <input type="text" className="form-input" placeholder="e.g. HPU-EXAM-PHD-2026-99" value={dispatchForm.dispatchTrackingNumber} onChange={e => setDispatchForm({ ...dispatchForm, dispatchTrackingNumber: e.target.value })} />
                           </div>
                         </div>
@@ -4532,14 +4532,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                         {thesis.externalEvaluationStatus !== 'PENDING' ? (
                           <div>
                             <div><strong>Logged On:</strong> {thesis.externalEvaluationLoggedAt ? new Date(thesis.externalEvaluationLoggedAt).toLocaleString() : 'N/A'}</div>
-                            <div style={{ marginTop: 4, background: '#FFF', padding: 8, borderRadius: 6, border: '1px solid #E2E8F0' }}>
+                            <div style={{ marginTop: 4, background: 'var(--color-surface)', padding: 8, borderRadius: 6, border: '1px solid var(--color-border)' }}>
                               <strong>Evaluation Comments / Remarks:</strong>
                               <div style={{ fontStyle: 'italic', marginTop: 2 }}>"{thesis.externalEvaluationRemarks || 'No remarks recorded'}"</div>
                             </div>
                           </div>
                         ) : (
                           <div>
-                            <p style={{ color: '#475569', margin: '0 0 10px 0' }}>Examiners reports received? Record evaluation outcome. A successful outcome unlocks scheduling of the final Viva-Voce defense.</p>
+                            <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 10px 0' }}>Examiners reports received? Record evaluation outcome. A successful outcome unlocks scheduling of the final Viva-Voce defense.</p>
                             {(isHOD || isAdmin) && !showEvalOutcomeForm && (
                               <button onClick={() => setShowEvalOutcomeForm(true)} className="btn-primary" style={{ background: '#3B82F6', padding: '5px 12px', fontSize: '0.75rem' }}>Log Evaluation Outcome</button>
                             )}
@@ -4547,10 +4547,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                         )}
 
                         {showEvalOutcomeForm && (isHOD || isAdmin) && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 8 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', marginTop: 8 }}>
                             <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#1E3A8A' }}>Select Evaluation Outcome</div>
                             <div>
-                              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>Remarks / MoM Summary</label>
+                              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Remarks / MoM Summary</label>
                               <textarea className="form-input" rows="2" placeholder="Detail examiner ratings and remarks..." value={evalRemarks} onChange={e => setEvalRemarks(e.target.value)} required />
                             </div>
                             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -4571,7 +4571,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 5: Viva-Voce Oral Defense Colloquium</h4>
                   
                   {thesis.vivaStatus !== 'NOT_SCHEDULED' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.82rem', marginBottom: 12, background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.82rem', marginBottom: 12, background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)' }}>
                       <div><strong>Date:</strong> {thesis.vivaDate ? new Date(thesis.vivaDate).toLocaleDateString() : 'N/A'}</div>
                       <div><strong>Time:</strong> {thesis.vivaTime}</div>
                       <div><strong>Venue:</strong> {thesis.vivaVenue}</div>
@@ -4579,7 +4579,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                       <div><strong>Coordinator / Convenor:</strong> {thesis.vivaCoordinator || 'None'}</div>
                       <div><strong>Meeting Link (Hybrid/Virtual):</strong> {thesis.vivaMeetingLink ? <a href={thesis.vivaMeetingLink} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', textDecoration: 'underline' }}>Join Viva Meeting</a> : 'Physical Only'}</div>
                       {thesis.vivaRemarks && (
-                        <div style={{ gridColumn: 'span 2', background: '#F8FAFC', padding: 8, borderRadius: 6, border: '1px solid #E2E8F0', marginTop: 4 }}>
+                        <div style={{ gridColumn: 'span 2', background: 'var(--color-bg)', padding: 8, borderRadius: 6, border: '1px solid var(--color-border)', marginTop: 4 }}>
                           <strong>Board Committee Decision Notes:</strong>
                           <div style={{ fontStyle: 'italic', marginTop: 2 }}>"{thesis.vivaRemarks}"</div>
                         </div>
@@ -4618,34 +4618,34 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   )}
 
                   {showVivaForm && (isHOD || isAdmin) && (
-                    <form onSubmit={handleScheduleViva} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 8 }}>
+                    <form onSubmit={handleScheduleViva} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', marginTop: 8 }}>
                       <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#1E40AF' }}>Schedule Viva-Voce Session</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Date *</label>
+                          <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Date *</label>
                           <input type="date" className="form-input" value={vivaForm.vivaDate} onChange={e => setVivaForm({ ...vivaForm, vivaDate: e.target.value })} required />
                         </div>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Time *</label>
+                          <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Time *</label>
                           <input type="text" className="form-input" placeholder="e.g. 12:00 PM" value={vivaForm.vivaTime} onChange={e => setVivaForm({ ...vivaForm, vivaTime: e.target.value })} required />
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Venue *</label>
+                          <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Venue *</label>
                           <input type="text" className="form-input" placeholder="e.g. Science Colloquium Hall" value={vivaForm.vivaVenue} onChange={e => setVivaForm({ ...vivaForm, vivaVenue: e.target.value })} required />
                         </div>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Coordinator / Convenor</label>
+                          <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Coordinator / Convenor</label>
                           <input type="text" className="form-input" placeholder="e.g. Dr. Rajesh Kumar" value={vivaForm.vivaCoordinator} onChange={e => setVivaForm({ ...vivaForm, vivaCoordinator: e.target.value })} />
                         </div>
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Meeting Link (Virtual/Hybrid - Optional)</label>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Meeting Link (Virtual/Hybrid - Optional)</label>
                         <input type="url" className="form-input" placeholder="e.g. https://meet.google.com/abc-defg-hij" value={vivaForm.vivaMeetingLink} onChange={e => setVivaForm({ ...vivaForm, vivaMeetingLink: e.target.value })} />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Panel Members</label>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Panel Members</label>
                         <input type="text" className="form-input" placeholder="External Examiner, Supervisor, DRC members" value={vivaForm.vivaPanel} onChange={e => setVivaForm({ ...vivaForm, vivaPanel: e.target.value })} />
                       </div>
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -4656,18 +4656,18 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   )}
 
                   {showVivaOutcomeForm && (isHOD || isAdmin) && (
-                    <form onSubmit={handleRecordVivaOutcome} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 8 }}>
+                    <form onSubmit={handleRecordVivaOutcome} style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', marginTop: 8 }}>
                       <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#047857' }}>Record Oral Defense Decision</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Decision</label>
+                          <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Decision</label>
                           <select className="form-input" value={vivaOutcomeForm.vivaStatus} onChange={e => setVivaOutcomeForm({ ...vivaOutcomeForm, vivaStatus: e.target.value })} required>
                             <option value="SUCCESSFUL">SUCCESSFUL (Clear & Pass)</option>
                             <option value="UNSUCCESSFUL">UNSUCCESSFUL (Revisions Required / Fail)</option>
                           </select>
                         </div>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.7rem', color: '#475569', marginBottom: 4 }}>Defense Board Comments / Remarks</label>
+                          <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>Defense Board Comments / Remarks</label>
                           <textarea className="form-input" rows="2" placeholder="Details of corrections or approval reasons..." value={vivaOutcomeForm.remarks} onChange={e => setVivaOutcomeForm({ ...vivaOutcomeForm, remarks: e.target.value })} required />
                         </div>
                       </div>
@@ -4683,7 +4683,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               {activeStep === 6 && (
                 <div>
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#059669' }}>Step 6: Process Cleared & Completed</h4>
-                  <div style={{ fontSize: '0.82rem', color: '#475569' }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
                     🎉 The Ph.D. final bound thesis evaluation and oral defense colloquium has been cleared successfully!
                   </div>
                 </div>
@@ -4692,14 +4692,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
             {/* Chronological Workflow History Logs */}
             <div style={{ marginTop: 20, borderTop: '1px solid #E2E8F0', paddingTop: 20 }}>
-              <h4 style={{ margin: '0 0 16px 0', fontSize: '0.88rem', fontWeight: 800, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 📋 Detailed Final Submission & Evaluation History Logs
               </h4>
               {(() => {
                 const history = getMilestoneHistory(finalSub, thesis) || [];
                 if (history.length === 0) {
                   return (
-                    <div style={{ padding: 16, background: '#F8FAFC', border: '1px dashed #E2E8F0', borderRadius: 8, textAlign: 'center', fontSize: '0.8rem', color: '#64748B' }}>
+                    <div style={{ padding: 16, background: 'var(--color-bg)', border: '1px dashed #E2E8F0', borderRadius: 8, textAlign: 'center', fontSize: '0.8rem', color: '#64748B' }}>
                       No actions recorded in the final submission workflow logs yet.
                     </div>
                   );
@@ -4736,7 +4736,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                       }
                       
                       return (
-                        <div key={idx} style={{ display: 'flex', gap: 12, position: 'relative', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 12 }}>
+                        <div key={idx} style={{ display: 'flex', gap: 12, position: 'relative', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12 }}>
                           {/* Timeline dot */}
                           <div style={{
                             position: 'absolute',
@@ -4760,7 +4760,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1E293B', marginTop: 2 }}>
                               {item.actorName || 'System'} ({item.actorRole || 'System'})
                             </div>
-                            <div style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
                               {item.remarks || 'No remarks recorded.'}
                             </div>
                             {item.documentUrl && (
@@ -4841,14 +4841,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           {!thesis.auditLog || thesis.auditLog.length === 0 ? (
             <div style={{ color: '#64748B', fontSize: '0.82rem' }}>No progression log entries.</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '200px', overflowY: 'auto', paddingRight: 4, background: '#F8FAFC', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '200px', overflowY: 'auto', paddingRight: 4, background: 'var(--color-bg)', padding: 10, borderRadius: 8, border: '1px solid var(--color-border)' }}>
               {[...thesis.auditLog].map((log, index) => (
-                <div key={log._id || index} style={{ fontSize: '0.78rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: 6 }}>
+                <div key={log._id || index} style={{ fontSize: '0.78rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>
                   <div>
                     <span style={{ fontWeight: 800, color: '#4F46E5', marginRight: 8 }}>{log.action}</span>
                     <span style={{ color: 'var(--color-text, #1F2937)' }}>{log.note}</span>
                   </div>
-                  <span style={{ color: '#94A3B8', fontSize: '0.72rem' }}>{new Date(log.date).toLocaleDateString()}</span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem' }}>{new Date(log.date).toLocaleDateString()}</span>
                 </div>
               ))}
             </div>
@@ -4868,7 +4868,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <p style={{ color: '#475569', fontSize: '0.82rem', margin: 0 }}>Record Himachal Pradesh University Academic Board award clearance note and click Award Degree to complete Ph.D. lifecycle.</p>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem', margin: 0 }}>Record Himachal Pradesh University Academic Board award clearance note and click Award Degree to complete Ph.D. lifecycle.</p>
               
               {canAward && (
                 <form onSubmit={handleAwardDegree} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -5157,7 +5157,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   placeholder='Type "confirm"' 
                   value={bypassConfirmText} 
                   onChange={e => setBypassConfirmText(e.target.value)}
-                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FED7AA', background: '#FFFFFF' }}
+                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FED7AA', background: 'var(--color-surface)' }}
                 />
               </div>
 
@@ -5221,7 +5221,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   placeholder='Type "confirm"' 
                   value={provisionalConfirmText} 
                   onChange={e => setProvisionalConfirmText(e.target.value)}
-                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FDE68A', background: '#FFFFFF' }}
+                  style={{ width: '100%', fontSize: '0.88rem', borderColor: '#FDE68A', background: 'var(--color-surface)' }}
                   autoFocus
                 />
               </div>
@@ -5231,7 +5231,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   type="button" 
                   onClick={() => { setShowProvisionalClearModal(false); setProvisionalConfirmText(''); }}
                   className="btn-outline" 
-                  style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: '#CBD5E1', color: '#475569' }}
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: '#CBD5E1', color: 'var(--color-text-secondary)' }}
                 >
                   Cancel
                 </button>

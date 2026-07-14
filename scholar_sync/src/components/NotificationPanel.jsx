@@ -65,9 +65,9 @@ const NotificationPanel = ({ user, onTabChange }) => {
   const profileWarning = user && !user.profileCompleted;
 
   return (
-    <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
-        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+    <div className="card" style={{ padding: '24px', background: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
           <Bell size={20} color="#10B981" />
           <span>🔔 Activity Notification Center</span>
         </h3>
@@ -149,7 +149,7 @@ const NotificationPanel = ({ user, onTabChange }) => {
             <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading alerts...</div>
           </div>
         ) : notifications.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94A3B8', fontSize: '0.85rem', border: '1px dashed #E2E8F0', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)', fontSize: '0.85rem', border: '1px dashed #E2E8F0', borderRadius: '12px' }}>
             <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>🍃</div>
             <strong>All Caught Up!</strong>
             <p style={{ margin: '4px 0 0', color: '#64748B', fontSize: '0.78rem' }}>No new notifications are pending for your account.</p>
@@ -179,9 +179,9 @@ const NotificationPanel = ({ user, onTabChange }) => {
                 <div style={{ flex: 1, paddingRight: n.read ? '0' : '30px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span style={{ fontSize: '0.82rem', fontWeight: 750, color: '#1E293B' }}>{n.title}</span>
-                    <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{new Date(n.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#475569', lineHeight: 1.4 }}>{n.message}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{n.message}</p>
                   
                   {/* Dynamic Nav Button for links */}
                   {n.link && onTabChange && !n.read && (
@@ -219,13 +219,13 @@ const NotificationPanel = ({ user, onTabChange }) => {
                       width: '22px',
                       height: '22px',
                       borderRadius: '50%',
-                      background: 'white',
+                      background: 'var(--color-surface)',
                       border: `1px solid ${border}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      color: '#94A3B8',
+                      color: 'var(--color-text-muted)',
                       transition: 'all 0.2s'
                     }}
                     onMouseOver={e => { e.currentTarget.style.color = '#10B981'; e.currentTarget.style.borderColor = '#10B981'; }}

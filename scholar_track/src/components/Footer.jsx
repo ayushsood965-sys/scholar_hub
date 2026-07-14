@@ -47,17 +47,17 @@ const Footer = () => {
         } : {}}>
           <div className="footer-col">
             <h4>University Links</h4>
-            <Link to="/about" style={{ color: '#6B7280', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>About System</Link>
-            <Link to="/policies" style={{ color: '#6B7280', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Policy Guidelines</Link>
+            <Link to="/about" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>About System</Link>
+            <Link to="/policies" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Policy Guidelines</Link>
           </div>
           <div className="footer-col">
             <h4>Portals</h4>
-            <Link to="/login" style={{ color: '#6B7280', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Scholar Login</Link>
-            <Link to="/signup" style={{ color: '#6B7280', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Register ID</Link>
+            <Link to="/login" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Scholar Login</Link>
+            <Link to="/signup" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Register ID</Link>
           </div>
           <div className="footer-col">
             <h4>Resources</h4>
-            <Link to="/workflow" style={{ color: '#6B7280', fontSize: '0.9rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <Link to="/workflow" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
               <GitBranch size={13} style={{ flexShrink: 0 }} />
               System Workflow
             </Link>
@@ -105,7 +105,7 @@ const Footer = () => {
                   background: 'rgba(15, 23, 42, 0.08)',
                   border: '1px solid rgba(15, 23, 42, 0.15)',
                   borderRadius: '12px',
-                  color: '#0f172a',
+                  color: 'var(--color-text-primary)',
                   fontSize: '0.85rem',
                   textDecoration: 'none',
                   fontWeight: 600,
@@ -128,7 +128,7 @@ const Footer = () => {
                   background: 'rgba(15, 23, 42, 0.08)',
                   border: '1px solid rgba(15, 23, 42, 0.15)',
                   borderRadius: '12px',
-                  color: '#0f172a',
+                  color: 'var(--color-text-primary)',
                   fontSize: '0.85rem',
                   textDecoration: 'none',
                   fontWeight: 600,
@@ -159,7 +159,7 @@ const Footer = () => {
         paddingTop: '20px', 
         borderTop: '1px solid rgba(19, 58, 38, 0.08)', 
         fontSize: '0.82rem', 
-        color: '#6B7280',
+        color: 'var(--color-text-muted)',
         flexWrap: 'wrap',
         gap: '12px'
       }}>
@@ -169,7 +169,7 @@ const Footer = () => {
           <a href="/seed-users" target="_blank" rel="noreferrer" title="Seed User Data" style={{ color: 'inherit', opacity: 0.15, textDecoration: 'none', fontSize: '0.7rem', transition: 'opacity 0.2s' }} onMouseOver={e => e.currentTarget.style.opacity = 0.8} onMouseOut={e => e.currentTarget.style.opacity = 0.15}>👥</a>
           <a href="/clear-all" target="_blank" rel="noreferrer" title="Reset Database" style={{ color: 'inherit', opacity: 0.15, textDecoration: 'none', fontSize: '0.7rem', transition: 'opacity 0.2s' }} onMouseOver={e => e.currentTarget.style.opacity = 0.8} onMouseOut={e => e.currentTarget.style.opacity = 0.15}>🧹</a>
         </div>
-        <div style={{ fontWeight: 500, fontSize: '0.82rem', color: '#4B5563' }}>
+        <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
           Designed and Developed by - <span style={{ color: '#133A26', fontWeight: 700 }}>Ayush Sood</span>
         </div>
       </div>

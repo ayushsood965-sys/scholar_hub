@@ -62,7 +62,7 @@ const EventsPage = () => {
           {/* Header Stats */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Events & Defenses</h1>
-            <p className="page-desc" style={{ maxWidth: '650px', margin: '0 auto 30px', fontSize: '1.05rem', color: '#4B5563' }}>
+            <p className="page-desc" style={{ maxWidth: '650px', margin: '0 auto 30px', fontSize: '1.05rem', color: 'var(--color-text-secondary)' }}>
               Track PhD defense presentations, seminars, DRC sessions, and expert research talks scheduled across departments.
             </p>
 
@@ -110,7 +110,7 @@ const EventsPage = () => {
               <div className="premium-preloader-text">Loading events timeline...</div>
             </div>
           ) : renderedEvents.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
               No academic events currently logged for this period.
             </div>
           ) : (
@@ -133,7 +133,7 @@ const EventsPage = () => {
                         <span style={{ fontSize: '0.72rem', background: style.bg, color: style.color, padding: '3px 8px', borderRadius: '10px', fontWeight: 700 }}>
                           {style.label}
                         </span>
-                        <span style={{ fontSize: '0.8rem', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Clock size={12} /> {evt.time}
                         </span>
                       </div>
@@ -145,10 +145,10 @@ const EventsPage = () => {
                       <p style={{ fontSize: '0.88rem', color: '#374151', fontWeight: 500, margin: 0 }}>
                         📅 {new Date(evt.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                       </p>
-                      <p style={{ fontSize: '0.88rem', color: '#4B5563', margin: 0 }}>
+                      <p style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', margin: 0 }}>
                         📍 <strong>Venue:</strong> {evt.location}
                       </p>
-                      <p style={{ fontSize: '0.88rem', color: '#6B7280', fontStyle: 'italic', margin: 0 }}>
+                      <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', fontStyle: 'italic', margin: 0 }}>
                         👤 {evt.speaker}
                       </p>
                     </div>

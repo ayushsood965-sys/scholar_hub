@@ -154,7 +154,7 @@ const GenericPage = ({ title, description }) => {
 
             {/* Labs Grid */}
             {filteredLabs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>No research labs registered for this department.</div>
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>No research labs registered for this department.</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
                 {filteredLabs.map(lab => {
@@ -167,7 +167,7 @@ const GenericPage = ({ title, description }) => {
                         </div>
                         <div>
                           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#133A26', margin: 0 }}>{lab.name}</h3>
-                          <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: '2px 0 0' }}>{lab.department}</p>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{lab.department}</p>
                         </div>
                       </div>
                       <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
@@ -181,7 +181,7 @@ const GenericPage = ({ title, description }) => {
                         {lab.projects && lab.projects.length > 0 && (
                           <>
                             <strong style={{ fontSize: '0.8rem', color: '#133A26', display: 'block', marginBottom: '6px' }}>Active Projects:</strong>
-                            <ul style={{ paddingLeft: '18px', fontSize: '0.8rem', color: '#4B5563', lineHeight: '1.5' }}>
+                            <ul style={{ paddingLeft: '18px', fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>
                               {lab.projects.map((proj, idx) => <li key={idx}>{proj}</li>)}
                             </ul>
                           </>
@@ -218,7 +218,7 @@ const GenericPage = ({ title, description }) => {
                 placeholder="Search publications by title, author, or journal..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'white' }}
+                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'var(--color-surface)' }}
               />
               <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '15px' }} />
             </div>
@@ -231,7 +231,7 @@ const GenericPage = ({ title, description }) => {
                     <span style={{ fontSize: '0.75rem', background: '#EAF4EE', color: '#133A26', padding: '4px 10px', borderRadius: '12px', fontWeight: 600 }}>
                       {pub.type || 'JOURNAL'}
                     </span>
-                    <span style={{ fontSize: '0.8rem', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <BookOpen size={14} /> Published: <strong>{new Date(pub.publicationDate).toLocaleDateString()}</strong>
                     </span>
                   </div>
@@ -240,13 +240,13 @@ const GenericPage = ({ title, description }) => {
                     {pub.title}
                   </h3>
 
-                  <p style={{ fontSize: '0.85rem', color: '#4B5563', margin: 0 }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', margin: 0 }}>
                     <strong>Authors:</strong> {pub.scholarId?.name || 'Academic Scholar'}, {pub.thesisId?.supervisorId?.name || 'Faculty Guide'}
                   </p>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #E5E7EB', paddingTop: '12px', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
-                      <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>
                         <strong>Journal/Conference:</strong> {pub.journalName} {pub.issn ? `(ISSN: ${pub.issn})` : ''}
                       </p>
                       {pub.doiUrl && (
@@ -288,13 +288,13 @@ const GenericPage = ({ title, description }) => {
             {/* Info & Opportunities */}
             <div>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#133A26', marginBottom: '16px', marginTop: 0 }}>Active Collaboration Calls</h2>
-              <p style={{ color: '#4B5563', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '24px' }}>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '24px' }}>
                 ScholarSync is built to nurture global academic-industry integrations. We actively seek joint doctoral guides, industry project sponsorships, and collaborative research initiatives.
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {collabCalls.length === 0 ? (
-                  <div style={{ padding: '16px', color: '#6B7280', fontSize: '0.85rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ padding: '16px', color: 'var(--color-text-muted)', fontSize: '0.85rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', textAlign: 'center' }}>
                     No active collaboration calls listed at this time.
                   </div>
                 ) : (
@@ -322,7 +322,7 @@ const GenericPage = ({ title, description }) => {
             </div>
 
             {/* Collaboration Request Form */}
-            <div className="card" style={{ background: 'white', borderRadius: '16px', padding: '30px' }}>
+            <div className="card" style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '30px' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#133A26', marginBottom: '16px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Send size={18} /> Partner Inquiry Form
               </h3>
@@ -414,21 +414,21 @@ const GenericPage = ({ title, description }) => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
               <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>₹5.2 Crores</div>
-                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Active Funding Pool</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Active Funding Pool</div>
               </div>
               <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>18 Scholars</div>
-                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Active Grants Supported</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Active Grants Supported</div>
               </div>
               <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>8 Partners</div>
-                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Corporate Sponsors</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Corporate Sponsors</div>
               </div>
             </div>
 
             {/* Grants List */}
             {funding.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>No active funding opportunities registered.</div>
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>No active funding opportunities registered.</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
                 {funding.map(grant => (
@@ -444,15 +444,15 @@ const GenericPage = ({ title, description }) => {
 
                     <div>
                       <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>{grant.title}</h3>
-                      <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}><strong>Agency:</strong> {grant.agency}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}><strong>Agency:</strong> {grant.agency}</p>
                     </div>
 
-                    <p style={{ fontSize: '0.85rem', color: '#4B5563', lineHeight: '1.5', margin: 0 }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: '1.5', margin: 0 }}>
                       {grant.scope}
                     </p>
 
                     <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                         <strong>Duration:</strong> {grant.duration}
                       </span>
                       <a href={`mailto:grants@hpu.ac.in?subject=Application Inquiry: ${grant.title}`} className="btn-outline-small" style={{ fontSize: '0.75rem', padding: '6px 14px', textDecoration: 'none' }}>Apply/Explore ➔</a>
@@ -468,7 +468,7 @@ const GenericPage = ({ title, description }) => {
         return (
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
             {events.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>No academic events scheduled currently.</div>
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>No academic events scheduled currently.</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {events.map(evt => (
@@ -489,10 +489,10 @@ const GenericPage = ({ title, description }) => {
                       <p style={{ fontSize: '0.85rem', color: '#374151', fontWeight: 500, margin: 0 }}>
                         📅 {new Date(evt.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })} &nbsp;|&nbsp; 🕒 {evt.time}
                       </p>
-                      <p style={{ fontSize: '0.85rem', color: '#4B5563', margin: 0 }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', margin: 0 }}>
                         📍 <strong>Venue:</strong> {evt.location}
                       </p>
-                      <p style={{ fontSize: '0.85rem', color: '#6B7280', fontStyle: 'italic', margin: 0 }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', margin: 0 }}>
                         👤 {evt.speaker}
                       </p>
                     </div>
@@ -516,7 +516,7 @@ const GenericPage = ({ title, description }) => {
             {/* Introduction */}
             <div style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#133A26', marginBottom: '12px', marginTop: 0 }}>Empowering the Next Generation of Academicians</h2>
-              <p style={{ color: '#4B5563', fontSize: '0.95rem', lineHeight: '1.7', maxWidth: '700px', margin: '0 auto' }}>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: '1.7', maxWidth: '700px', margin: '0 auto' }}>
                 ScholarSync is an integrated thesis tracking and research management ecosystem designed to streamline, automate, and orchestrate the complete academic lifecycle of Ph.D. scholars, faculty supervisors, and administrative heads at HPU.
               </p>
             </div>
@@ -542,7 +542,7 @@ const GenericPage = ({ title, description }) => {
                   <div key={idx} style={{ position: 'relative' }}>
                     <div style={{ position: 'absolute', left: '-25px', top: '4px', width: '12px', height: '12px', borderRadius: '50%', background: '#133A26', border: '3px solid #EAF4EE' }} />
                     <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#133A26', margin: '0 0 4px' }}>{stage.title}</h4>
-                    <p style={{ fontSize: '0.85rem', color: '#4B5563', lineHeight: '1.5', margin: 0 }}>{stage.desc}</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: '1.5', margin: 0 }}>{stage.desc}</p>
                   </div>
                 ))}
               </div>
@@ -560,7 +560,7 @@ const GenericPage = ({ title, description }) => {
                     <Sparkles size={18} />
                     <strong style={{ fontSize: '0.95rem' }}>{feat.title}</strong>
                   </div>
-                  <p style={{ fontSize: '0.82rem', color: '#6B7280', lineHeight: '1.4', margin: 0 }}>{feat.desc}</p>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', lineHeight: '1.4', margin: 0 }}>{feat.desc}</p>
                 </div>
               ))}
             </div>
@@ -606,12 +606,12 @@ const GenericPage = ({ title, description }) => {
                 placeholder="Search everything..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'white' }}
+                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'var(--color-surface)' }}
               />
               <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '15px' }} />
             </div>
 
-            <div style={{ textAlign: 'center', marginBottom: '32px', color: '#6B7280', fontSize: '0.9rem', fontWeight: 600 }}>
+            <div style={{ textAlign: 'center', marginBottom: '32px', color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>
               Found {totalResults} matching results for "{searchQuery}"
             </div>
 
@@ -633,18 +633,18 @@ const GenericPage = ({ title, description }) => {
                       {matchingLabs.map(lab => {
                         const LabIcon = getLabIcon(lab.name);
                         return (
-                          <div key={lab._id} className="card" style={{ padding: '20px', background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                          <div key={lab._id} className="card" style={{ padding: '20px', background: 'var(--color-surface)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                               <div style={{ background: '#EAF4EE', padding: '8px', borderRadius: '8px', color: '#133A26', flexShrink: 0 }}>
                                 <LabIcon size={20} />
                               </div>
                               <div>
                                 <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#133A26', margin: 0 }}>{lab.name}</h4>
-                                <p style={{ fontSize: '0.75rem', color: '#6B7280', margin: '2px 0 0' }}>{lab.department}</p>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{lab.department}</p>
                               </div>
                             </div>
-                            <p style={{ fontSize: '0.8rem', color: '#4B5563', marginTop: '10px', marginBottom: 0 }}><strong>PI Lead:</strong> {lab.leadId?.name || 'Faculty Lead'}</p>
-                            <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px', marginBottom: 0 }}>{lab.focus}</p>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '10px', marginBottom: 0 }}><strong>PI Lead:</strong> {lab.leadId?.name || 'Faculty Lead'}</p>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: 0 }}>{lab.focus}</p>
                           </div>
                         );
                       })}
@@ -660,11 +660,11 @@ const GenericPage = ({ title, description }) => {
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {matchingPubs.map(pub => (
-                        <div key={pub._id} className="card" style={{ padding: '20px', background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                        <div key={pub._id} className="card" style={{ padding: '20px', background: 'var(--color-surface)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                           <span style={{ fontSize: '0.7rem', background: '#EAF4EE', color: '#133A26', padding: '2px 8px', borderRadius: '10px', fontWeight: 600, display: 'inline-block', marginBottom: '8px' }}>{pub.type || 'JOURNAL'}</span>
                           <h4 style={{ fontWeight: 700, fontSize: '1rem', color: '#111827', margin: 0 }}>{pub.title}</h4>
-                          <p style={{ fontSize: '0.8rem', color: '#4B5563', marginTop: '6px', marginBottom: 0 }}><strong>Authors:</strong> {pub.scholarId?.name || 'Scholar'}, {pub.thesisId?.supervisorId?.name || 'Faculty Guide'}</p>
-                          <p style={{ fontSize: '0.75rem', color: '#6B7280', margin: '4px 0 0' }}>{pub.journalName}</p>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '6px', marginBottom: 0 }}><strong>Authors:</strong> {pub.scholarId?.name || 'Scholar'}, {pub.thesisId?.supervisorId?.name || 'Faculty Guide'}</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>{pub.journalName}</p>
                         </div>
                       ))}
                     </div>
@@ -679,13 +679,13 @@ const GenericPage = ({ title, description }) => {
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
                       {matchingFunding.map(grant => (
-                        <div key={grant._id} className="card" style={{ padding: '20px', background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                        <div key={grant._id} className="card" style={{ padding: '20px', background: 'var(--color-surface)', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                             <span style={{ fontSize: '0.7rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>{grant.status}</span>
                             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#133A26' }}>{grant.amount}</span>
                           </div>
                           <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827', margin: 0 }}>{grant.title}</h4>
-                          <p style={{ fontSize: '0.78rem', color: '#4B5563', marginTop: '4px', marginBottom: 0 }}>{grant.scope}</p>
+                          <p style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', marginTop: '4px', marginBottom: 0 }}>{grant.scope}</p>
                         </div>
                       ))}
                     </div>
@@ -700,14 +700,14 @@ const GenericPage = ({ title, description }) => {
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {matchingEvents.map(evt => (
-                        <div key={evt._id} className="card" style={{ padding: '20px', background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        <div key={evt._id} className="card" style={{ padding: '20px', background: 'var(--color-surface)', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: evt.type === 'Defense Viva' ? '#D97706' : '#133A26', color: 'white', padding: '10px 14px', borderRadius: '8px', minWidth: '70px', height: '60px', textAlign: 'center' }}>
                             <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>{evt.type || 'Seminar'}</span>
                           </div>
                           <div>
                             <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827', margin: 0 }}>{evt.title}</h4>
                             <p style={{ fontSize: '0.8rem', color: '#374151', marginTop: '4px', marginBottom: 0 }}>{new Date(evt.date).toLocaleDateString()} | {evt.time}</p>
-                            <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px', marginBottom: 0 }}>{evt.speaker}</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px', marginBottom: 0 }}>{evt.speaker}</p>
                           </div>
                         </div>
                       ))}
@@ -721,7 +721,7 @@ const GenericPage = ({ title, description }) => {
 
       default:
         return (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
             This section is currently under development. Please check back later.
           </div>
         );
@@ -750,7 +750,7 @@ const GenericPage = ({ title, description }) => {
         >
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             <h1 className="page-title" style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '12px' }}>{title}</h1>
-            <p className="page-desc" style={{ maxWidth: '650px', margin: '0 auto', fontSize: '1rem', color: '#4B5563' }}>{description}</p>
+            <p className="page-desc" style={{ maxWidth: '650px', margin: '0 auto', fontSize: '1rem', color: 'var(--color-text-secondary)' }}>{description}</p>
           </div>
           
           {/* Dynamic Rich Content Area */}

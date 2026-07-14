@@ -450,7 +450,7 @@ const Signup = () => {
                       <span style={{
                         transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s ease',
-                        fontSize: '0.8rem', color: '#6B7280'
+                        fontSize: '0.8rem', color: 'var(--color-text-muted)'
                       }}>▼</span>
                     </div>
                     {isDropdownOpen && (
@@ -509,7 +509,7 @@ const Signup = () => {
                               </div>
                             ))
                           ) : (
-                            <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.9rem', textAlign: 'center' }}>
+                            <div style={{ padding: '10px', color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
                               No departments found
                             </div>
                           )}
@@ -602,7 +602,7 @@ const Signup = () => {
                       <span style={{
                         transform: degreeTypeDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s ease',
-                        fontSize: '0.8rem', color: '#6B7280'
+                        fontSize: '0.8rem', color: 'var(--color-text-muted)'
                       }}>▼</span>
                     </div>
                     {degreeTypeDropdownOpen && departmentId && (
@@ -638,7 +638,7 @@ const Signup = () => {
                                 </div>
                               ))
                           ) : (
-                            <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.9rem', textAlign: 'center' }}>
+                            <div style={{ padding: '10px', color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
                               No degree types found
                             </div>
                           )}
@@ -647,7 +647,7 @@ const Signup = () => {
                     )}
                   </div>
                   {!departmentId && (
-                    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                       Please select a department first
                     </div>
                   )}
@@ -685,7 +685,7 @@ const Signup = () => {
                       <span style={{
                         transform: degreeNameDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s ease',
-                        fontSize: '0.8rem', color: '#6B7280'
+                        fontSize: '0.8rem', color: 'var(--color-text-muted)'
                       }}>▼</span>
                     </div>
                     {degreeNameDropdownOpen && degreeTypeId && (
@@ -725,7 +725,7 @@ const Signup = () => {
                                 </div>
                               ))
                           ) : (
-                            <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.9rem', textAlign: 'center' }}>
+                            <div style={{ padding: '10px', color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
                               No degree names found
                             </div>
                           )}
@@ -734,7 +734,7 @@ const Signup = () => {
                     )}
                   </div>
                   {!degreeTypeId && (
-                    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                       Please select a degree type first
                     </div>
                   )}
@@ -873,7 +873,7 @@ const Signup = () => {
                       <span style={{
                         transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s ease',
-                        fontSize: '0.8rem', color: '#6B7280'
+                        fontSize: '0.8rem', color: 'var(--color-text-muted)'
                       }}>▼</span>
                     </div>
                     {isDropdownOpen && (
@@ -927,7 +927,7 @@ const Signup = () => {
                               </div>
                             ))
                           ) : (
-                            <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.9rem', textAlign: 'center' }}>
+                            <div style={{ padding: '10px', color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
                               No departments found
                             </div>
                           )}

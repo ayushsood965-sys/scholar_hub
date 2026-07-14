@@ -364,7 +364,7 @@ const CorrectionLogsTab = () => {
             <motion.div 
               style={{ 
                 maxWidth: '560px', width: '100%', padding: '36px', 
-                background: '#ffffff', borderRadius: '20px', border: '1px solid #f1f5f9',
+                background: 'var(--color-surface)', borderRadius: '20px', border: '1px solid var(--color-border)',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)', position: 'relative'
               }}
               onClick={e => e.stopPropagation()}
@@ -374,27 +374,27 @@ const CorrectionLogsTab = () => {
               transition={{ type: 'spring', duration: 0.4 }}
             >
               {/* Header */}
-              <div className="flex justify-between items-center mb-lg pb-xs" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+              <div className="flex justify-between items-center mb-lg pb-xs" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Calendar size={18} style={{ color: 'var(--color-primary)' }} />
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', letterSpacing: '-0.3px' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)', letterSpacing: '-0.3px' }}>
                       Correction Timeline
                     </h3>
                   </div>
                 </div>
                 <button 
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
                   onClick={() => setSelectedCorrectionDetails(null)}
                 >
-                  <XCircle size={22} style={{ color: '#94a3b8' }} />
+                  <XCircle size={22} style={{ color: 'var(--color-text-muted)' }} />
                 </button>
               </div>
 
               {/* General details */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px', fontSize: '0.9rem', color: '#334155', background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px', fontSize: '0.9rem', color: 'var(--color-text-secondary)', background: 'var(--color-bg)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                 <div><strong>Student Name:</strong> {selectedCorrectionDetails.studentId?.name} ({selectedCorrectionDetails.studentId?.username})</div>
                 <div><strong>Correction Date:</strong> {selectedCorrectionDetails.recordId?.date ? new Date(selectedCorrectionDetails.recordId.date).toLocaleDateString() : 'N/A'}</div>
                 <div><strong>Type Requested:</strong> {selectedCorrectionDetails.correctionType === 'ON_LEAVE' ? `On Leave (${selectedCorrectionDetails.leaveType || ''})` : 'Present'}</div>
@@ -410,7 +410,7 @@ const CorrectionLogsTab = () => {
               </div>
 
               {/* Timeline Stepper */}
-              <h4 style={{ fontSize: '0.98rem', fontWeight: 800, marginBottom: '18px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <h4 style={{ fontSize: '0.98rem', fontWeight: 800, marginBottom: '18px', color: 'var(--color-text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Transition Stages & Remarks
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', paddingLeft: '32px', maxHeight: '300px', overflowY: 'auto' }}>

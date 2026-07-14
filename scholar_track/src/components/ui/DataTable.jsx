@@ -147,7 +147,7 @@ const DataTable = ({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: i * 0.03 }}
                 >
-                  <td style={{ fontWeight: 600, color: '#6B7280' }} data-label="S.No.">{i + 1 + page * pageSize}</td>
+                  <td style={{ fontWeight: 600, color: 'var(--color-text-muted)' }} data-label="S.No.">{i + 1 + page * pageSize}</td>
                   {columns.map(col => (
                     <td key={col.key} data-label={col.header || ''}>
                       {col.render

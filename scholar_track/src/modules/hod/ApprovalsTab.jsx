@@ -523,28 +523,28 @@ const ApprovalsTab = () => {
                   width: '100%',
                   margin: '40px auto',
                   padding: '36px',
-                  background: '#ffffff',
+                  background: 'var(--color-surface)',
                   borderRadius: '20px',
-                  border: '1px solid #f1f5f9',
+                  border: '1px solid var(--color-border)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
                   position: 'relative'
                 }}
               >
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <ShieldCheck size={18} style={{ color: 'var(--color-primary)' }} />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: 0, letterSpacing: '-0.3px' }}>
                         HOD Correction Review
                       </h3>
                       <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0 0' }}>Review and approve or reject this correction request</p>
                     </div>
                   </div>
                   <button
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
                     onClick={() => { setSelectedCorrectionForModal(null); setCorrectionRemarksText(''); }}
                     onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -554,20 +554,20 @@ const ApprovalsTab = () => {
                 </div>
 
                 {/* Student Info */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20, background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20, background: 'var(--color-bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                   <div>
                     <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Student</label>
-                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <User size={14} style={{ color: '#64748b' }} />
                       {selectedCorrectionForModal.studentId?.name || 'N/A'}
                     </p>
-                    <p style={{ fontSize: '0.8rem', color: '#475569', marginTop: 2, paddingLeft: '20px' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2, paddingLeft: '20px' }}>
                       {selectedCorrectionForModal.studentId?.username || ''}
                     </p>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Date of Absence</label>
-                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <CalendarDays size={14} style={{ color: '#64748b' }} />
                       {selectedCorrectionForModal.recordId?.date
                         ? new Date(selectedCorrectionForModal.recordId.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'short' })
@@ -577,8 +577,8 @@ const ApprovalsTab = () => {
                 </div>
 
                 {/* Correction Details */}
-                <div style={{ background: '#ffffff', borderRadius: '12px', padding: '20px', marginBottom: 20, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}>
-                  <label style={{ fontSize: '0.72rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14, display: 'block', fontWeight: 700 }}>
+                <div style={{ background: 'var(--color-surface)', borderRadius: '12px', padding: '20px', marginBottom: 20, border: '1px solid var(--color-border)', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14, display: 'block', fontWeight: 700 }}>
                     <Layers size={14} style={{ display: 'inline', marginRight: 6, color: 'var(--color-primary)' }} /> Correction Specification
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '14px' }}>
@@ -605,7 +605,7 @@ const ApprovalsTab = () => {
                   </div>
                   <div style={{ marginTop: 14 }}>
                     <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Student Appeal Reason</p>
-                    <p style={{ fontSize: '0.9rem', color: '#0f172a', lineHeight: 1.5, marginTop: 6, background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontStyle: 'italic' }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)', lineHeight: 1.5, marginTop: 6, background: 'var(--color-bg)', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontStyle: 'italic' }}>
                       "{selectedCorrectionForModal.reason}"
                     </p>
                   </div>
@@ -638,12 +638,12 @@ const ApprovalsTab = () => {
                                                 const role = log.action === 'SUBMITTED' ? 'Student' : (log.action === 'RECOMMENDED' ? 'Faculty' : 'HOD');
                         const logTime = log.timestamp || log.date || log.createdAt;
                         return (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid #e2e8f0' }}>
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px', background: 'var(--color-bg)', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid var(--color-border)' }}>
                             <span className="badge" style={{ fontSize: '0.65rem', flexShrink: 0, background: tagBg, color: tagColor, padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                               {log.action === 'RECOMMENDED' ? 'FORWARDED' : log.action}
                             </span>
-                            <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
-                              <strong style={{ color: '#0f172a' }}>{log.actorName}</strong> <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({role})</span>: {log.remarks}
+                            <span style={{ color: 'var(--color-text-secondary)', lineHeight: 1.4, width: '100%' }}>
+                              <strong style={{ color: 'var(--color-text-primary)' }}>{log.actorName}</strong> <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({role})</span>: {log.remarks}
                               {logTime && (
                                 <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
                                   {new Date(logTime).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -677,7 +677,7 @@ const ApprovalsTab = () => {
                       onChange={e => setCorrectionRemarksText(e.target.value)}
                       rows={3}
                       placeholder="Provide remarks for your decision (minimum 5 characters)..."
-                      style={{ background: '#ffffff', color: '#111827', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                      style={{ background: 'var(--color-surface)', color: '#111827', border: '1px solid #d1d5db', borderRadius: '8px' }}
                     />
                   </div>
                 )}
@@ -688,7 +688,7 @@ const ApprovalsTab = () => {
                     <>
                       <button
                         type="button"
-                        style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ background: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
                         onClick={() => { setSelectedCorrectionForModal(null); setCorrectionRemarksText(''); }}
                       >
                         Cancel
@@ -723,7 +723,7 @@ const ApprovalsTab = () => {
                   ) : (
                     <button
                       type="button"
-                      style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                      style={{ background: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
                       onClick={() => { setSelectedCorrectionForModal(null); }}
                     >
                       Close
@@ -763,28 +763,28 @@ const ApprovalsTab = () => {
                   width: '100%',
                   margin: '40px auto',
                   padding: '36px',
-                  background: '#ffffff',
+                  background: 'var(--color-surface)',
                   borderRadius: '20px',
-                  border: '1px solid #f1f5f9',
+                  border: '1px solid var(--color-border)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
                   position: 'relative'
                 }}
               >
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <CalendarDays size={18} style={{ color: 'var(--color-primary)' }} />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: 0, letterSpacing: '-0.3px' }}>
                         HOD Leave Review
                       </h3>
                       <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0 0' }}>Review and approve or reject this leave request</p>
                     </div>
                   </div>
                   <button
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
                     onClick={() => { setSelectedLeaveForModal(null); setLeaveRemarksText(''); }}
                     onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -794,32 +794,32 @@ const ApprovalsTab = () => {
                 </div>
 
                 {/* Student Info */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20, background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20, background: 'var(--color-bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                   <div>
                     <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Student</label>
-                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <User size={14} style={{ color: '#64748b' }} />
                       {selectedLeaveForModal.studentId?.name || 'N/A'}
                     </p>
-                    <p style={{ fontSize: '0.8rem', color: '#475569', marginTop: 2, paddingLeft: '20px' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2, paddingLeft: '20px' }}>
                       {selectedLeaveForModal.studentId?.username || ''}
                     </p>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Leave Period</label>
-                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <CalendarDays size={14} style={{ color: '#64748b' }} />
                       {new Date(selectedLeaveForModal.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} — {new Date(selectedLeaveForModal.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
-                    <p style={{ fontSize: '0.8rem', color: '#475569', marginTop: 2, paddingLeft: '20px' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2, paddingLeft: '20px' }}>
                       {selectedLeaveForModal.totalDays} day(s) {selectedLeaveForModal.isHalfDay && '(Half Day)'}
                     </p>
                   </div>
                 </div>
 
                 {/* Leave Details */}
-                <div style={{ background: '#ffffff', borderRadius: '12px', padding: '20px', marginBottom: 20, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}>
-                  <label style={{ fontSize: '0.72rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14, display: 'block', fontWeight: 700 }}>
+                <div style={{ background: 'var(--color-surface)', borderRadius: '12px', padding: '20px', marginBottom: 20, border: '1px solid var(--color-border)', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14, display: 'block', fontWeight: 700 }}>
                     <Layers size={14} style={{ display: 'inline', marginRight: 6, color: 'var(--color-primary)' }} /> Leave Specification
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '14px' }}>
@@ -841,7 +841,7 @@ const ApprovalsTab = () => {
                   </div>
                   <div style={{ marginTop: 14 }}>
                     <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Student Leave Reason</p>
-                    <p style={{ fontSize: '0.9rem', color: '#0f172a', lineHeight: 1.5, marginTop: 6, background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontStyle: 'italic' }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)', lineHeight: 1.5, marginTop: 6, background: 'var(--color-bg)', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontStyle: 'italic' }}>
                       "{selectedLeaveForModal.reason || 'No reason provided'}"
                     </p>
                   </div>
@@ -874,12 +874,12 @@ const ApprovalsTab = () => {
                         const role = log.action === 'SUBMITTED' ? 'Student' : (log.action === 'RECOMMENDED' ? 'Faculty' : 'HOD');
                         const logTime = log.timestamp || log.date || log.createdAt;
                         return (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid #e2e8f0' }}>
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px', background: 'var(--color-bg)', borderRadius: '8px', fontSize: '0.82rem', border: '1px solid var(--color-border)' }}>
                             <span className="badge" style={{ fontSize: '0.65rem', flexShrink: 0, background: tagBg, color: tagColor, padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                               {log.action === 'RECOMMENDED' ? 'FORWARDED' : log.action}
                             </span>
-                            <span style={{ color: '#334155', lineHeight: 1.4, width: '100%' }}>
-                              <strong style={{ color: '#0f172a' }}>{log.actorName}</strong> <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({role})</span>: {log.remarks}
+                            <span style={{ color: 'var(--color-text-secondary)', lineHeight: 1.4, width: '100%' }}>
+                              <strong style={{ color: 'var(--color-text-primary)' }}>{log.actorName}</strong> <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({role})</span>: {log.remarks}
                               {logTime && (
                                 <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
                                   {new Date(logTime).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -905,7 +905,7 @@ const ApprovalsTab = () => {
                       onChange={e => setLeaveRemarksText(e.target.value)}
                       rows={3}
                       placeholder="Provide remarks for your decision (minimum 5 characters)..."
-                      style={{ background: '#ffffff', color: '#111827', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                      style={{ background: 'var(--color-surface)', color: '#111827', border: '1px solid #d1d5db', borderRadius: '8px' }}
                     />
                   </div>
                 )}
@@ -916,7 +916,7 @@ const ApprovalsTab = () => {
                     <>
                       <button
                         type="button"
-                        style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ background: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
                         onClick={() => { setSelectedLeaveForModal(null); setLeaveRemarksText(''); }}
                       >
                         Cancel
@@ -951,7 +951,7 @@ const ApprovalsTab = () => {
                   ) : (
                     <button
                       type="button"
-                      style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                      style={{ background: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
                       onClick={() => { setSelectedLeaveForModal(null); }}
                     >
                       Close

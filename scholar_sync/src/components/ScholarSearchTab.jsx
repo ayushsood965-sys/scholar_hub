@@ -176,7 +176,7 @@ const ScholarSearchTab = ({ user }) => {
         </div>
 
         {/* Search Mode Toggle */}
-        <div style={{ display: 'flex', background: '#F1F5F9', padding: 4, borderRadius: 10, width: 'fit-content', marginBottom: 24 }}>
+        <div style={{ display: 'flex', background: 'var(--color-bg)', padding: 4, borderRadius: 10, width: 'fit-content', marginBottom: 24 }}>
           <button
             onClick={() => { setSearchMode('enrollment'); setHasSearched(false); setResults([]); }}
             style={{
@@ -276,7 +276,7 @@ const ScholarSearchTab = ({ user }) => {
                 {/* Candidate Dropdown (Follow-up) */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
-                    Scholar / Candidate <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#94A3B8' }}>(Optional)</span>
+                    Scholar / Candidate <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>(Optional)</span>
                   </label>
                   <select
                     className="form-input"
@@ -327,7 +327,7 @@ const ScholarSearchTab = ({ user }) => {
       {modalLoading && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
           <Loader className="spin-icon" size={40} color="#7C3AED" />
-          <span style={{ marginTop: 12, fontWeight: 700, color: '#0F172A' }}>Loading scholar profile...</span>
+          <span style={{ marginTop: 12, fontWeight: 700, color: 'var(--color-text-primary)' }}>Loading scholar profile...</span>
         </div>
       )}
 
@@ -385,15 +385,15 @@ const ScholarSearchTab = ({ user }) => {
                       <h5 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text, #0F172A)' }}>
                         {r.scholarId?.name || 'Scholar Name'}
                       </h5>
-                      <span style={{ fontSize: '0.72rem', background: '#F3F4F6', padding: '3px 8px', borderRadius: 12, color: '#4B5563', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.72rem', background: '#F3F4F6', padding: '3px 8px', borderRadius: 12, color: 'var(--color-text-secondary)', fontWeight: 600 }}>
                         {r.status?.replace(/_/g, ' ')}
                       </span>
                     </div>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                      <div><strong>Registration No:</strong> <span style={{ color: '#0F172A', fontWeight: 600 }}>{r.enrollmentNumber || 'N/A'}</span></div>
-                      <div><strong>Department:</strong> <span style={{ color: '#0F172A' }}>{r.department}</span></div>
-                      <div><strong>Supervisor:</strong> <span style={{ color: '#0F172A' }}>{r.supervisorId?.name || 'Not Allocated'}</span></div>
+                      <div><strong>Registration No:</strong> <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{r.enrollmentNumber || 'N/A'}</span></div>
+                      <div><strong>Department:</strong> <span style={{ color: 'var(--color-text-primary)' }}>{r.department}</span></div>
+                      <div><strong>Supervisor:</strong> <span style={{ color: 'var(--color-text-primary)' }}>{r.supervisorId?.name || 'Not Allocated'}</span></div>
                     </div>
                   </div>
 
@@ -401,8 +401,8 @@ const ScholarSearchTab = ({ user }) => {
                     onClick={() => handleOpenProfile(r._id)}
                     className="btn-primary"
                     style={{
-                      background: 'white',
-                      border: '1px solid #E2E8F0',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
                       color: '#4F46E5',
                       padding: '8px 16px',
                       fontSize: '0.82rem',

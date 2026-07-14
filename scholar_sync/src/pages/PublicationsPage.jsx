@@ -111,26 +111,26 @@ const PublicationsPage = () => {
           {/* Header Stats */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Publications Directory</h1>
-            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto 30px', fontSize: '1.05rem', color: '#4B5563' }}>
+            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto 30px', fontSize: '1.05rem', color: 'var(--color-text-secondary)' }}>
               Explore peer-reviewed publications, patents, book chapters, and presentations logged and verified across our university.
             </p>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '16px', borderRadius: '12px' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>{publications.length}</div>
-                <div style={{ fontSize: '0.82rem', color: '#6B7280', fontWeight: 600 }}>Total Verified Papers</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Total Verified Papers</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '16px', borderRadius: '12px' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>
                   {publications.filter(p => p.type === 'PATENT').length}
                 </div>
-                <div style={{ fontSize: '0.82rem', color: '#6B7280', fontWeight: 600 }}>Patents Filed/Granted</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Patents Filed/Granted</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '16px', borderRadius: '12px' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>
                   {new Set(publications.map(p => p.scholarId?._id).filter(Boolean)).size}
                 </div>
-                <div style={{ fontSize: '0.82rem', color: '#6B7280', fontWeight: 600 }}>Contributing Scholars</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Contributing Scholars</div>
               </div>
             </div>
           </div>
@@ -144,7 +144,7 @@ const PublicationsPage = () => {
                 placeholder="Search publications by title, author, or journal..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'white', border: '1px solid #D1D5DB' }}
+                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'var(--color-surface)', border: '1px solid #D1D5DB' }}
               />
               <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '15px' }} />
             </div>
@@ -174,7 +174,7 @@ const PublicationsPage = () => {
 
             {/* Department Filters */}
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', borderTop: '1px dashed #E5E7EB', paddingTop: '16px' }}>
-              <span style={{ alignSelf: 'center', fontSize: '0.82rem', fontWeight: 600, color: '#6B7280' }}>Departments:</span>
+              <span style={{ alignSelf: 'center', fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Departments:</span>
               {availableDepts.map(dept => (
                 <button
                   key={dept}
@@ -203,7 +203,7 @@ const PublicationsPage = () => {
               <div className="premium-preloader-text">Loading publication listings...</div>
             </div>
           ) : filteredPubs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
               No publications matched your search criteria.
             </div>
           ) : (
@@ -214,7 +214,7 @@ const PublicationsPage = () => {
                     <span style={{ fontSize: '0.75rem', background: '#EAF4EE', color: '#133A26', padding: '4px 10px', borderRadius: '12px', fontWeight: 600 }}>
                       {pub.type || 'JOURNAL'}
                     </span>
-                    <span style={{ fontSize: '0.8rem', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <BookOpen size={14} /> Published: <strong>{pub.publicationDate ? new Date(pub.publicationDate).toLocaleDateString() : 'N/A'}</strong>
                     </span>
                   </div>
@@ -223,13 +223,13 @@ const PublicationsPage = () => {
                     {pub.title}
                   </h3>
 
-                  <p style={{ fontSize: '0.88rem', color: '#4B5563', margin: 0 }}>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', margin: 0 }}>
                     <strong>Authors:</strong> {pub.scholarId?.name || 'Academic Scholar'}, {pub.thesisId?.supervisorId?.name || 'Faculty Guide'}
                   </p>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #E5E7EB', paddingTop: '12px', flexWrap: 'wrap', gap: '16px' }}>
                     <div>
-                      <p style={{ fontSize: '0.82rem', color: '#6B7280', margin: 0 }}>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0 }}>
                         <strong>Journal/Conference:</strong> {pub.journalName} {pub.issn ? `(ISSN: ${pub.issn})` : ''}
                       </p>
                       {pub.doiUrl && (
@@ -282,7 +282,7 @@ const PublicationsPage = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 100000, padding: '20px'
         }}>
-          <div className="card" style={{ maxWidth: '600px', width: '100%', padding: '24px', background: 'white', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="card" style={{ maxWidth: '600px', width: '100%', padding: '24px', background: 'var(--color-surface)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#133A26' }}>Generate Citation</h3>
               <button 
@@ -317,7 +317,7 @@ const PublicationsPage = () => {
               background: '#F9FAFB', 
               padding: '16px', 
               borderRadius: '8px', 
-              border: '1px solid #E5E7EB',
+              border: '1px solid var(--color-border)',
               fontFamily: activeCiteFormat === 'BibTeX' ? 'monospace' : 'inherit',
               fontSize: '0.85rem',
               whiteSpace: 'pre-wrap',

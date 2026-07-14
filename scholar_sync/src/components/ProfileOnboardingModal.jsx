@@ -19,7 +19,7 @@ const ProfileOnboardingModal = ({ isOpen, onClose, onGo }) => {
       padding: '20px'
     }}>
       <div style={{
-        background: 'white',
+        background: 'var(--color-surface)',
         borderRadius: '24px',
         padding: '36px',
         width: '100%',

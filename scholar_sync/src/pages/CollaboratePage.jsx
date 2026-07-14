@@ -61,7 +61,7 @@ const CollaboratePage = () => {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Research Collaboration</h1>
-            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto', fontSize: '1.05rem', color: '#4B5563' }}>
+            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto', fontSize: '1.05rem', color: 'var(--color-text-secondary)' }}>
               Bridge the gap between academia, industry, and external laboratories. Propose joint ventures, sponsored doctorates, and technology transfer MoUs.
             </p>
           </div>
@@ -102,7 +102,7 @@ const CollaboratePage = () => {
                   </div>
                   <div>
                     <strong style={{ fontSize: '0.85rem', color: '#133A26', display: 'block' }}>{st.title}</strong>
-                    <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>{st.desc}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{st.desc}</span>
                   </div>
                 </div>
                 {idx < 2 && <ChevronRight size={20} color="#A5D6A7" style={{ display: 'block' }} />}
@@ -114,7 +114,7 @@ const CollaboratePage = () => {
             {/* Info & Opportunities */}
             <div>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#133A26', marginBottom: '16px', marginTop: 0 }}>Active Collaboration Calls</h2>
-              <p style={{ color: '#4B5563', fontSize: '0.92rem', lineHeight: '1.6', marginBottom: '24px' }}>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.92rem', lineHeight: '1.6', marginBottom: '24px' }}>
                 ScholarSync is built to nurture global academic-industry integrations. We actively seek joint doctoral guides, industry project sponsorships, and collaborative research initiatives.
               </p>
 
@@ -125,7 +125,7 @@ const CollaboratePage = () => {
                     <div className="premium-preloader-text">Loading opportunities...</div>
                   </div>
                 ) : collabCalls.length === 0 ? (
-                  <div style={{ padding: '20px', color: '#6B7280', fontSize: '0.85rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', textAlign: 'center' }}>
+                  <div style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.85rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', textAlign: 'center' }}>
                     No active collaboration calls listed at this time.
                   </div>
                 ) : (
@@ -153,7 +153,7 @@ const CollaboratePage = () => {
             </div>
 
             {/* Collaboration Request Form */}
-            <div className="card" style={{ background: 'white', borderRadius: '16px', padding: '30px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+            <div className="card" style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '30px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#133A26', marginBottom: '16px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Send size={18} /> Partner Inquiry Form
               </h3>

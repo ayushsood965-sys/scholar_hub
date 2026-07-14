@@ -529,7 +529,7 @@ const Signup = () => {
                       </div>
                     )
                   ) : (
-                    <div style={{ fontSize: '0.8rem', color: '#6B7280', padding: '10px 0' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', padding: '10px 0' }}>
                       Please select a department first to auto-detect the PhD programme
                     </div>
                   )}
@@ -801,7 +801,7 @@ const Signup = () => {
                       <span style={{
                         transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s ease',
-                        fontSize: '0.8rem', color: '#6B7280'
+                        fontSize: '0.8rem', color: 'var(--color-text-muted)'
                       }}>▼</span>
                     </div>
                     {isDropdownOpen && (
@@ -856,7 +856,7 @@ const Signup = () => {
                               </div>
                             ))
                           ) : (
-                            <div style={{ padding: '10px', color: '#6B7280', fontSize: '0.9rem', textAlign: 'center' }}>
+                            <div style={{ padding: '10px', color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
                               No departments found
                             </div>
                           )}
@@ -948,7 +948,7 @@ const Signup = () => {
                       onClick={() => setShowPwd(!showPwd)}
                       style={{
                         position: 'absolute', right: '12px', top: '50%',
-                        transform: 'translateY(-50%)', color: '#6B7280',
+                        transform: 'translateY(-50%)', color: 'var(--color-text-muted)',
                         background: 'none', border: 'none', cursor: 'pointer',
                         fontSize: '0.85rem'
                       }}
@@ -982,7 +982,7 @@ const Signup = () => {
                       onClick={() => setShowConfirmPwd(!showConfirmPwd)}
                       style={{
                         position: 'absolute', right: '12px', top: '50%',
-                        transform: 'translateY(-50%)', color: '#6B7280',
+                        transform: 'translateY(-50%)', color: 'var(--color-text-muted)',
                         background: 'none', border: 'none', cursor: 'pointer',
                         fontSize: '0.85rem'
                       }}
@@ -1014,7 +1014,7 @@ const Signup = () => {
             )}
           </form>
 
-          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: '#4B5563' }}>
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
             Already have an account? <Link to="/login" style={{ color: '#133A26', fontWeight: 600 }}>Log in</Link>
           </p>
         </div>

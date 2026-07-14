@@ -67,26 +67,26 @@ const ResearchLabsPage = () => {
           {/* Header Stats */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Research Labs</h1>
-            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto 30px', fontSize: '1.05rem', color: '#4B5563' }}>
+            <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto 30px', fontSize: '1.05rem', color: 'var(--color-text-secondary)' }}>
               Explore state-of-the-art departmental laboratories, facilities, and principal research groups steering scientific breakthroughs.
             </p>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '16px', borderRadius: '12px' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>{labs.length}</div>
-                <div style={{ fontSize: '0.82rem', color: '#6B7280', fontWeight: 600 }}>Total Facilities</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Total Facilities</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '16px', borderRadius: '12px' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>
                   {labs.reduce((acc, curr) => acc + (curr.projects?.length || 0), 0)}
                 </div>
-                <div style={{ fontSize: '0.82rem', color: '#6B7280', fontWeight: 600 }}>Active Projects</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Active Projects</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '16px', borderRadius: '12px' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>
                   {new Set(labs.map(l => l.leadId?._id).filter(Boolean)).size}
                 </div>
-                <div style={{ fontSize: '0.82rem', color: '#6B7280', fontWeight: 600 }}>Principal Investigators</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Principal Investigators</div>
               </div>
             </div>
           </div>
@@ -100,7 +100,7 @@ const ResearchLabsPage = () => {
                 placeholder="Search labs by name, focus area, or P.I..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'white', border: '1px solid #D1D5DB' }}
+                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'var(--color-surface)', border: '1px solid #D1D5DB' }}
               />
               <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '15px' }} />
             </div>
@@ -134,7 +134,7 @@ const ResearchLabsPage = () => {
               <div className="premium-preloader-text">Loading research laboratories...</div>
             </div>
           ) : filteredLabs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
               No research labs matched your filters or search.
             </div>
           ) : (
@@ -149,7 +149,7 @@ const ResearchLabsPage = () => {
                       </div>
                       <div>
                         <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#133A26', margin: 0 }}>{lab.name}</h3>
-                        <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: '2px 0 0' }}>{lab.department}</p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{lab.department}</p>
                       </div>
                     </div>
                     
@@ -164,7 +164,7 @@ const ResearchLabsPage = () => {
                       {lab.projects && lab.projects.length > 0 && (
                         <div style={{ marginTop: '12px' }}>
                           <strong style={{ fontSize: '0.82rem', color: '#133A26', display: 'block', marginBottom: '6px' }}>Active Projects:</strong>
-                          <ul style={{ paddingLeft: '18px', fontSize: '0.82rem', color: '#4B5563', lineHeight: '1.5', margin: 0 }}>
+                          <ul style={{ paddingLeft: '18px', fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: '1.5', margin: 0 }}>
                             {lab.projects.map((proj, idx) => <li key={idx}>{proj}</li>)}
                           </ul>
                         </div>
