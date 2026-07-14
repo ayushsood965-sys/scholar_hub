@@ -22,6 +22,8 @@ const studentMappingRoutes = require('./routes/studentMappingRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const fs = require('fs');
 const { seedUserData } = require('./seedUsersHelper');
+const { connectRedis } = require('./config/redis');
+const cacheMiddleware = require('./middleware/cacheMiddleware');
 
 const User = require('./models/User');
 const Thesis = require('./models/Thesis');
@@ -38,6 +40,7 @@ const app = express();
 // Connect to database
 connectDB().then(async () => {
   console.log('✅ Database connected.');
+  await connectRedis();
   try {
     const adminExists = await User.findOne({ username: 'admin' });
     if (!adminExists) {
@@ -290,6 +293,7 @@ app.use('/api/clear-all', loginLimiter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
+app.use('/api', cacheMiddleware(300));
 app.use('/api/auth', authRoutes);
 app.use('/api/thesis', thesisRoutes);
 app.use('/api/milestones', milestoneRoutes);
