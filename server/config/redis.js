@@ -9,19 +9,40 @@ const connectRedis = async () => {
   }
 
   try {
+    let errorLogged = false;
+
     redisClient = redis.createClient({
-      url: process.env.REDIS_URL
+      url: process.env.REDIS_URL,
+      socket: {
+        reconnectStrategy: (retries) => {
+          if (retries > 3) {
+            if (!errorLogged) {
+              console.warn('⚠️ Redis reconnection attempts exceeded. Redis caching is disabled.');
+              errorLogged = true;
+            }
+            return false; // Stop retrying to avoid console spam
+          }
+          return Math.min(retries * 2000, 10000); // Backoff retry delay
+        }
+      }
     });
 
     redisClient.on('error', (err) => {
-      console.error('❌ Redis error:', err);
+      if (err.code === 'ECONNREFUSED') {
+        if (!errorLogged) {
+          console.warn(`⚠️ Redis server is unreachable at ${process.env.REDIS_URL} - running without caching.`);
+          errorLogged = true;
+        }
+      } else {
+        console.error('❌ Redis error:', err);
+      }
     });
 
     await redisClient.connect();
     console.log('✅ Redis connected successfully.');
     return redisClient;
   } catch (err) {
-    console.error('❌ Redis connection failed:', err);
+    console.warn('⚠️ Redis connection failed. Running without caching.');
     redisClient = null;
     return null;
   }
@@ -32,7 +53,6 @@ const getRedisClient = () => redisClient;
 const clearCache = async (pattern = 'cache:*') => {
   if (!redisClient || !redisClient.isOpen) return;
   try {
-    // Note: in high-production keys is blocked, but fine for this scope.
     const keys = await redisClient.keys(pattern);
     if (keys.length > 0) {
       await redisClient.del(keys);
