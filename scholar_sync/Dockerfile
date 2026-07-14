@@ -9,9 +9,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies with npm cache mount
+# Using --mount=type=cache to persist npm cache and node_modules across builds
+# --include=dev ensures dev dependencies (like vite) are installed for the build
 RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
     --mount=type=cache,id=node-modules,target=/app/node_modules \
-    npm ci --prefer-offline
+    npm ci --prefer-offline --include=dev
 
 # Copy source code
 COPY . .
