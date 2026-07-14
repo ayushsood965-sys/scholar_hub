@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 
 # Build stage
 FROM node:20-alpine AS builder
@@ -6,7 +6,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package manager files first for better caching
-COPY package.json package-lock* ./
+COPY package.json package-lock.json ./
 
 # Install dependencies with npm cache mount
 RUN --mount=type=cache,id=npm-cache,target=/root/.npm 
@@ -19,7 +19,7 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Production stage - static file serving
+# Production stage
 FROM nginx:alpine AS production
 
 # Copy built assets to nginx
@@ -35,4 +35,4 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 
     CMD wget -qO- http://localhost:80/ || exit 1
 
-CMD [""nginx"", ""-g"", ""daemon off;""]
+CMD ["nginx", "-g", "daemon off;"]
