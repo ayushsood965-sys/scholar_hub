@@ -948,7 +948,7 @@ const Landing = () => {
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
                 <a 
-                  href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true`}
+                  href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true&src=SCHOLAR_HUB`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -970,7 +970,7 @@ const Landing = () => {
                   <span>🎓</span> <span><strong>Scholar Sync HPU</strong></span>
                 </a>
                 <a 
-                  href={`${SCHOLAR_TRACK_URL || 'http://localhost:5174'}?install=true`}
+                  href={`${SCHOLAR_TRACK_URL || 'http://localhost:5174'}?install=true&src=SCHOLAR_HUB`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

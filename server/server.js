@@ -20,6 +20,7 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 const seedRoutes = require('./routes/seedRoutes');
 const studentMappingRoutes = require('./routes/studentMappingRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
+const installLogRoutes = require('./routes/installLogRoutes');
 const fs = require('fs');
 const { seedUserData } = require('./seedUsersHelper');
 const { connectRedis } = require('./config/redis');
@@ -310,6 +311,7 @@ app.use('/api/config', adminConfigRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/student-mapping', studentMappingRoutes);
 app.use('/api/seed', seedRoutes);
+app.use('/api/install-logs', installLogRoutes);
 
 // Health check endpoint for UptimeRobot
 app.get('/api/health', (req, res) => {

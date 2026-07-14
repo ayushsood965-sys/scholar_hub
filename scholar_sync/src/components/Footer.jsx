@@ -120,7 +120,7 @@ const Footer = () => {
                 <span>🎓</span> <span><strong>Scholar Sync HPU</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
               </a>
               <a 
-                href={`${SCHOLAR_TRACK_URL || 'http://localhost:5174'}?install=true`}
+                href={`${SCHOLAR_TRACK_URL || 'http://localhost:5174'}?install=true&src=SCHOLAR_SYNC`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

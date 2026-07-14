@@ -119,6 +119,7 @@ const roleNavConfig = {
     { kind: "section", label: "📋 SCHOLAR TRACK MANAGERS" },
     { key: "users", icon: ClipboardList, label: "User Verification" },
     { key: "searchEditStudent", icon: UserCog, label: "Search/Edit Student Details" },
+    { key: "appInstallLogs", icon: ClipboardList, label: "App Install Logs" },
 
     { kind: "section", label: "👤 ACCOUNT" },
     { key: "profile", icon: UserCog, label: "My Credentials" },

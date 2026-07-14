@@ -96,7 +96,7 @@ const Footer = () => {
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
               <a 
-                href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true`}
+                href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true&src=SCHOLAR_TRACK`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

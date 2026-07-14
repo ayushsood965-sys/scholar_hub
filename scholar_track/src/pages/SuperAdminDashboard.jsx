@@ -20,6 +20,7 @@ import PolicyConfigTab from "../modules/admin/PolicyConfigTab";
 import LeaveRulesTab from "../modules/admin/LeaveRulesTab";
 import UniversityFacultiesTab from "../modules/admin/UniversityFacultiesTab";
 import SearchEditStudentTab from "../modules/admin/SearchEditStudentTab";
+import AppInstallLogsTab from "../modules/admin/AppInstallLogsTab";
 
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -49,6 +50,7 @@ const SuperAdminDashboard = () => {
     faculty: "Faculty Master",
     hod: "HOD Master",
     profile: "My Credentials",
+    appInstallLogs: "App Install Logs",
   };
 
   return (
@@ -75,6 +77,7 @@ const SuperAdminDashboard = () => {
       {activeTab === "categoryGender" && <CategoryGenderMasterTab />}
       {activeTab === "policies" && <PolicyConfigTab />}
       {activeTab === "leaveRules" && <LeaveRulesTab />}
+      {activeTab === "appInstallLogs" && <AppInstallLogsTab />}
     </DashboardShell>
   );
 };

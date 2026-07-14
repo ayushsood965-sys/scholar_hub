@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config';
+import axios from 'axios';
 
 const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const [showIosInstructions, setShowIosInstructions] = useState(false);
   const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
+  const [srcPortal, setSrcPortal] = useState('SCHOLAR_TRACK');
 
   useEffect(() => {
     // Check if ?install=true is present in the URL
     const queryParams = new URLSearchParams(window.location.search);
     const forceInstall = queryParams.get('install') === 'true';
+    const src = queryParams.get('src');
+    if (src) {
+      setSrcPortal(src);
+    }
 
     // 1. Standalone check
     const isStandalone = 
@@ -36,9 +43,10 @@ const InstallPrompt = () => {
     // If forced via URL, show prompt immediately (ignore dismissed state)
     if (forceInstall) {
       setIsVisible(true);
-      // Clean query parameter from URL
+      // Clean query parameters from URL
       const url = new URL(window.location);
       url.searchParams.delete('install');
+      url.searchParams.delete('src');
       window.history.replaceState({}, document.title, url.pathname + url.search);
     } else if (isIosDevice && !isDismissed) {
       setIsVisible(true);
@@ -81,6 +89,49 @@ const InstallPrompt = () => {
   const handleInstallClick = async () => {
     const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
     
+    // Log the click attempt to the backend
+    const userAgent = navigator.userAgent;
+    const screenResolution = `${window.screen.width}x${window.screen.height}`;
+    const language = navigator.language || navigator.userLanguage || '';
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    
+    // Parse OS
+    let operatingSystem = 'Unknown';
+    if (/android/i.test(userAgent)) operatingSystem = 'Android';
+    else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) operatingSystem = 'iOS';
+    else if (/windows/i.test(userAgent)) operatingSystem = 'Windows';
+    else if (/mac/i.test(userAgent)) operatingSystem = 'macOS';
+    else if (/linux/i.test(userAgent)) operatingSystem = 'Linux';
+
+    // Parse Browser
+    let browserName = 'Unknown';
+    if (/chrome|crios/i.test(userAgent) && !/edge|edg/i.test(userAgent) && !/opr/i.test(userAgent)) browserName = 'Chrome';
+    else if (/safari/i.test(userAgent) && !/chrome|crios/i.test(userAgent)) browserName = 'Safari';
+    else if (/firefox|fxios/i.test(userAgent)) browserName = 'Firefox';
+    else if (/edge|edg/i.test(userAgent)) browserName = 'Edge';
+    else if (/opr/i.test(userAgent)) browserName = 'Opera';
+
+    // Parse Device Type
+    let deviceType = 'Desktop';
+    if (/mobi/i.test(userAgent)) deviceType = 'Mobile';
+    else if (/ipad|tablet/i.test(userAgent)) deviceType = 'Tablet';
+
+    const token = localStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    axios.post(`${API_URL}/install-logs`, {
+      portal: srcPortal,
+      targetApp: 'SCHOLAR_TRACK',
+      installType: (deferredPrompt && !isIosDevice) ? 'Native' : 'Manual',
+      userAgent,
+      operatingSystem,
+      browserName,
+      deviceType,
+      screenResolution,
+      language,
+      timezone
+    }, { headers }).catch(err => console.error('Error logging app install:', err));
+
     if (isIosDevice) {
       // Switch screen to show iOS step-by-step instructions
       setShowIosInstructions(true);
