@@ -4,6 +4,7 @@ const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const [showIosInstructions, setShowIosInstructions] = useState(false);
+  const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
 
   useEffect(() => {
     // Check if ?install=true is present in the URL
@@ -27,19 +28,20 @@ const InstallPrompt = () => {
     // 4. iOS detection
     const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-    // If already installed, dismissed (and not forced), or not on mobile, don't show prompt
-    if (isStandalone || (isDismissed && !forceInstall) || !isMobileDevice) {
+    // If already installed, or not on mobile, don't show prompt
+    if (isStandalone || !isMobileDevice) {
       return;
     }
 
-    // iOS doesn't support 'beforeinstallprompt', so we show prompt directly for iOS Safari
-    if (isIosDevice) {
+    // If forced via URL, show prompt immediately (ignore dismissed state)
+    if (forceInstall) {
       setIsVisible(true);
-      if (forceInstall) {
-        const url = new URL(window.location);
-        url.searchParams.delete('install');
-        window.history.replaceState({}, document.title, url.pathname + url.search);
-      }
+      // Clean query parameter from URL
+      const url = new URL(window.location);
+      url.searchParams.delete('install');
+      window.history.replaceState({}, document.title, url.pathname + url.search);
+    } else if (isIosDevice && !isDismissed) {
+      setIsVisible(true);
     }
 
     const handleBeforeInstallPrompt = (e) => {
@@ -48,12 +50,9 @@ const InstallPrompt = () => {
       // Store the event for triggering later
       setDeferredPrompt(e);
       window.deferredPWAEvent = e;
-      // Show the install modal overlay
-      setIsVisible(true);
-      if (forceInstall) {
-        const url = new URL(window.location);
-        url.searchParams.delete('install');
-        window.history.replaceState({}, document.title, url.pathname + url.search);
+      // Show the install modal if not dismissed, or if forced
+      if (!isDismissed || forceInstall) {
+        setIsVisible(true);
       }
     };
 
@@ -88,7 +87,11 @@ const InstallPrompt = () => {
       return;
     }
 
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // If native prompt is not available, show manual instructions for Android/Chrome
+      setShowAndroidInstructions(true);
+      return;
+    }
 
     // Trigger the install prompt
     deferredPrompt.prompt();
@@ -235,7 +238,7 @@ const InstallPrompt = () => {
           <span>PWA App</span>
         </div>
 
-        {!showIosInstructions ? (
+        {!showIosInstructions && !showAndroidInstructions ? (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -301,7 +304,7 @@ const InstallPrompt = () => {
               </div>
             </button>
           </div>
-        ) : (
+        ) : showIosInstructions ? (
           /* iOS Instructions with green styling */
           <div style={{
             display: 'flex',
@@ -342,6 +345,50 @@ const InstallPrompt = () => {
               <div style={{ background: '#DCFCE7', color: '#065F46', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, border: '1px solid #A7F3D0' }}>3</div>
               <div style={{ lineHeight: '1.4' }}>
                 Tap <strong>Add</strong> in the top-right corner to complete the install.
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Android / General Instructions */
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            width: '100%',
+            background: '#F0FDF4',
+            padding: '18px',
+            borderRadius: '18px',
+            border: '1px solid #A7F3D0',
+            textAlign: 'left'
+          }}>
+            <h4 style={{ fontSize: '0.88rem', fontWeight: 800, margin: '0 0 6px 0', color: '#065F46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>How to Install:</span>
+              <button 
+                onClick={() => setShowAndroidInstructions(false)}
+                style={{ background: 'none', border: 'none', color: '#047857', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                Go Back
+              </button>
+            </h4>
+            
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '0.78rem', color: '#047857' }}>
+              <div style={{ background: '#DCFCE7', color: '#065F46', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, border: '1px solid #A7F3D0' }}>1</div>
+              <div style={{ lineHeight: '1.4' }}>
+                Tap the browser's <strong>Menu</strong> button (three dots <span style={{ fontSize: '1rem' }}>⋮</span> in the top right corner).
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '0.78rem', color: '#047857' }}>
+              <div style={{ background: '#DCFCE7', color: '#065F46', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, border: '1px solid #A7F3D0' }}>2</div>
+              <div style={{ lineHeight: '1.4' }}>
+                Select <strong>Add to Home Screen</strong> or <strong>Install App</strong>.
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '0.78rem', color: '#047857' }}>
+              <div style={{ background: '#DCFCE7', color: '#065F46', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, border: '1px solid #A7F3D0' }}>3</div>
+              <div style={{ lineHeight: '1.4' }}>
+                Follow the browser prompt to complete the installation.
               </div>
             </div>
           </div>

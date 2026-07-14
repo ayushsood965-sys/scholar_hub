@@ -96,28 +96,6 @@ const Footer = () => {
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
               <a 
-                href={`${(GATEWAY_URL && !GATEWAY_URL.includes('5174')) ? GATEWAY_URL : 'http://localhost:5175'}?install=true`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  background: 'rgba(15, 23, 42, 0.08)',
-                  border: '1px solid rgba(15, 23, 42, 0.15)',
-                  borderRadius: '12px',
-                  color: '#0f172a',
-                  fontSize: '0.85rem',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  width: '100%',
-                  maxWidth: '280px',
-                  justifyContent: 'center',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <span>🌐</span> <span><strong>Scholar Hub HPU</strong></span>
-              </a>
-              <a 
                 href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true`}
                 style={{
                   display: 'flex',

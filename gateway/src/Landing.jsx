@@ -948,30 +948,6 @@ const Landing = () => {
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
                 <a 
-                  href="#" 
-                  onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('trigger-pwa-install-modal')); }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 16px',
-                    background: 'rgba(15, 23, 42, 0.08)',
-                    border: '1px solid rgba(15, 23, 42, 0.15)',
-                    borderRadius: '12px',
-                    color: '#0f172a',
-                    fontSize: '0.85rem',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    width: '100%',
-                    maxWidth: '280px',
-                    justifyContent: 'center',
-                    boxSizing: 'border-box',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span>🌐</span> <span><strong>Scholar Hub HPU</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
-                </a>
-                <a 
                   href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true`}
                   style={{
                     display: 'flex',
