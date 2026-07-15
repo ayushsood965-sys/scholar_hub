@@ -1,13 +1,14 @@
 import React, { useState, useContext, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useThemeStyles } from '../context/ThemeContext';
 import { jwtDecode } from 'jwt-decode';
 
 const Login = () => {
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,6 +36,16 @@ const Login = () => {
       } catch { /* token invalid, let them stay */ }
     }
   }, [navigate, toast]);
+
+  // Handle toast parameter
+  useEffect(() => {
+    const toastMsg = searchParams.get('toast');
+    if (toastMsg) {
+      toast.success(toastMsg);
+      // Clean query parameter from URL
+      navigate(window.location.pathname, { replace: true });
+    }
+  }, [searchParams, toast, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

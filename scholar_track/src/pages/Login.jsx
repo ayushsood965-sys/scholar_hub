@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BarChart3, Eye, EyeOff } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
@@ -12,6 +12,7 @@ const Login = () => {
   const { login } = useContext(AuthContext);
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -39,6 +40,16 @@ const Login = () => {
       } catch { /* token invalid, let them stay */ }
     }
   }, [navigate, toast]);
+
+  // Handle toast parameter
+  useEffect(() => {
+    const toastMsg = searchParams.get('toast');
+    if (toastMsg) {
+      toast.success(toastMsg);
+      // Clean query parameter from URL
+      navigate(window.location.pathname, { replace: true });
+    }
+  }, [searchParams, toast, navigate]);
 
   const dashMap = {
     SUPER_ADMIN: '/super-dashboard',
