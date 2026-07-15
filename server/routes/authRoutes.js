@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
-const { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword } = require('../controllers/authController');
+const { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword, logout } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const storage = multer.diskStorage({
@@ -16,6 +16,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // limit extended to 10MB for documents
 
 router.post('/login', login);
+router.post('/logout', logout);
 router.post('/register', register);
 router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerificationEmail);

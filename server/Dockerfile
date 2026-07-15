@@ -27,11 +27,14 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy application source
 COPY --from=builder /app ./
 
-# Create uploads directory
-RUN mkdir -p /app/uploads
+# Create uploads directory and set ownership to node
+RUN mkdir -p /app/uploads && chown -R node:node /app
 
 # Expose port
 EXPOSE 5000
+
+# Switch to non-root node user
+USER node
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=2s --retries=3 \

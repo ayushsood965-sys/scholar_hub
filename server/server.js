@@ -27,6 +27,9 @@ const { seedUserData } = require('./seedUsersHelper');
 const { connectRedis } = require('./config/redis');
 const cacheMiddleware = require('./middleware/cacheMiddleware');
 
+const cookieParser = require('cookie-parser');
+const mongoSanitize = require('express-mongo-sanitize');
+
 const User = require('./models/User');
 const Thesis = require('./models/Thesis');
 const Milestone = require('./models/Milestone');
@@ -60,7 +63,7 @@ connectDB().then(async () => {
           phoneNumber: '+91 99999-88888'
         }
       });
-      console.log(`👑 Super Admin user auto-seeded (admin/${process.env.ADMIN_PASSWORD || 'password'})`);
+      console.log('👑 Super Admin user auto-seeded (admin/********)');
     } else {
       console.log('👑 Super Admin user already exists.');
     }
@@ -254,6 +257,8 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 app.use(helmet({
   contentSecurityPolicy: false // Allowed inline scripts/styles in /clear-all and /seed templates
 }));
+app.use(cookieParser());
+app.use(mongoSanitize());
 
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())

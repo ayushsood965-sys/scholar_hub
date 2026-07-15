@@ -7,6 +7,22 @@ const { createNotification } = require('./notificationController');
 
 const generateToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
+const getCookieOptions = (req) => {
+  const host = req.get('host') || '';
+  const options = {
+    httpOnly: true,
+    secure: true, // TLS/HTTPS only
+    sameSite: 'Lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  };
+  if (host.includes('scholarhubhpu.in')) {
+    options.domain = '.scholarhubhpu.in';
+  } else if (host.startsWith('localhost') || host.startsWith('127.0.0.1')) {
+    options.secure = false;
+  }
+  return options;
+};
+
 // POST /api/auth/login
 const login = async (req, res) => {
   const { username, password, portal } = req.body;
@@ -77,13 +93,16 @@ const login = async (req, res) => {
         if (dept) userDepartmentId = dept._id;
       }
 
+      const token = generateToken(user._id, user.role);
+      res.cookie('token', token, getCookieOptions(req));
+
       res.json({
         _id: user._id, name: user.name, username: user.username,
         role: user.role, subRole: user.subRole, department: user.department,
         departmentId: userDepartmentId,
         isActive: user.isActive, isVerified: user.isVerified, profileCompleted: user.profileCompleted,
         avatarUrl: user.avatarUrl, profile: user.profile,
-        token: generateToken(user._id, user.role),
+        token: token,
       });
     } else {
       res.status(401).json({ message: 'Invalid username or password' });
@@ -1024,4 +1043,10 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword };
+// POST /api/auth/logout
+const logout = async (req, res) => {
+  res.clearCookie('token', getCookieOptions(req));
+  res.json({ success: true, message: 'Logged out successfully' });
+};
+
+module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword, logout };
