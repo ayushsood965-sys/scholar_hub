@@ -60,7 +60,9 @@ jobs:
 
       - name: Trigger Coolify Deployment
         run: |
+          base_url="${{ secrets.COOLIFY_BASE_URL }}"
+          base_url="${base_url%/}"
           curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
-            "https://server.scholarhubhpu.in/api/v1/deploy?uuid=${{ matrix.uuid }}" \
+            "$base_url/api/v1/deploy?uuid=${{ matrix.uuid }}" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
             -H "Content-Type: application/json"
