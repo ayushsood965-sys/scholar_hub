@@ -200,16 +200,6 @@ const register = async (req, res) => {
       profile: profileData
     });
 
-    const { getWelcomeNotificationData } = require('./notificationController');
-    const welcomeData = getWelcomeNotificationData(user);
-    await createNotification({
-      recipient: user._id,
-      title: welcomeData.title,
-      message: welcomeData.message,
-      type: 'WELCOME',
-      link: welcomeData.link
-    });
-
     // Send verification email in background
     let emailSent = false;
     try {
@@ -922,6 +912,22 @@ const verifyEmail = async (req, res) => {
     user.emailVerificationToken = null;
     user.emailVerificationExpires = null;
     await user.save();
+
+    // Create welcome notification after email is verified
+    try {
+      const { createNotification } = require('./notificationController');
+      const { getWelcomeNotificationData } = require('./notificationController');
+      const welcomeData = getWelcomeNotificationData(user);
+      await createNotification({
+        recipient: user._id,
+        title: welcomeData.title,
+        message: welcomeData.message,
+        type: 'WELCOME',
+        link: welcomeData.link
+      });
+    } catch (notificationError) {
+      console.error('Failed to create welcome notification on email verification:', notificationError);
+    }
     
     res.json({ success: true, message: 'Email verified successfully!' });
   } catch (error) {
