@@ -65,4 +65,6 @@ const leaveRequestSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
+leaveRequestSchema.index({ departmentId: 1, status: 1 });
+
 module.exports = mongoose.model('LeaveRequest', leaveRequestSchema);

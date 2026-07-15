@@ -2810,45 +2810,58 @@ exports.updateHoliday = async (req, res) => {
 
 exports.getStudentDashboardStats = async (req, res) => {
   try {
-    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
-    if (!session) return res.status(200).json({ error: 'No active session' });
     const student = req.user;
-    const records = await AttendanceRecord.find({ studentId: student._id, date: { $gte: session.startDate, $lte: session.endDate } });
-    const holidays = await HolidayCalendar.find({ isActive: true });
     const isValidDtId = student.profile?.degreeTypeId && /^[0-9a-fA-F]{24}$/.test(student.profile.degreeTypeId.toString());
-    const dt = isValidDtId ? await DegreeTypeMaster.findById(student.profile.degreeTypeId) : null;
+
+    const [session, holidays, dt, leaveRequests] = await Promise.all([
+      AcademicSessionMaster.findOne({ isCurrent: true }).lean(),
+      HolidayCalendar.find({ isActive: true }).lean(),
+      isValidDtId ? DegreeTypeMaster.findById(student.profile.degreeTypeId).lean() : Promise.resolve(null),
+      LeaveRequest.find({ studentId: student._id })
+        .select('leaveType startDate endDate totalDays status createdAt')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean()
+    ]);
+
+    if (!session) return res.status(200).json({ error: 'No active session' });
+
     const isPhD = student.profile?.isPhD || (dt && dt.code === 'PHD');
-    let timetables = [];
-    let populatedTimetables = [];
-    if (!isPhD) {
-      const studentMapping = await StudentSemesterMapping.findOne({
+
+    const [records, studentMapping] = await Promise.all([
+      AttendanceRecord.find({
+        studentId: student._id,
+        date: { $gte: session.startDate, $lte: session.endDate }
+      }).lean(),
+      isPhD ? Promise.resolve(null) : StudentSemesterMapping.findOne({
         studentId: student._id,
         sessionId: session._id,
         semesterId: student.profile?.semesterId
-      });
+      }).lean()
+    ]);
+
+    let timetables = [];
+    let populatedTimetables = [];
+
+    if (!isPhD) {
       if (studentMapping && studentMapping.mappedSubjects?.length > 0) {
         const slotIds = studentMapping.mappedSubjects.map(ms => ms.timetableSlotId).filter(Boolean);
-        timetables = await TimetableMaster.find({ _id: { $in: slotIds }, isActive: true });
-        populatedTimetables = await TimetableMaster.find({ _id: { $in: slotIds }, isActive: true }).populate('facultyId', 'name');
+        populatedTimetables = await TimetableMaster.find({ _id: { $in: slotIds }, isActive: true })
+          .populate('facultyId', 'name')
+          .lean();
       } else {
-        const queryParams = {
+        populatedTimetables = await TimetableMaster.find({
           sessionId: session._id,
           degreeTypeId: student.profile?.degreeTypeId,
           degreeNameId: student.profile?.degreeNameId,
           semesterId: student.profile?.semesterId,
           isActive: true
-        };
-        timetables = await TimetableMaster.find(queryParams);
-        populatedTimetables = await TimetableMaster.find(queryParams).populate('facultyId', 'name');
+        }).populate('facultyId', 'name').lean();
       }
+      timetables = populatedTimetables;
     }
-    const stats = await calculateStudentStats(student, session, records, holidays, timetables);
 
-    // 1. Fetch last 5 leave requests
-    const leaveRequests = await LeaveRequest.find({ studentId: student._id })
-      .select('leaveType startDate endDate totalDays status createdAt')
-      .sort({ createdAt: -1 })
-      .limit(5);
+    const stats = await calculateStudentStats(student, session, records, holidays, timetables);
 
     // 3. Compute week-over-week trends for subjects
     const now = new Date();
@@ -2954,6 +2967,12 @@ exports.getStudentDashboardStats = async (req, res) => {
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const sortedLogs = [...stats.logs].sort((a, b) => new Date(a.date) - new Date(b.date));
 
+    const preFormattedHolidays = holidays.map(h => ({
+      title: h.title,
+      hStart: new Date(h.startDate).toISOString().split('T')[0],
+      hEnd: new Date(h.endDate).toISOString().split('T')[0]
+    }));
+
     sortedLogs.forEach(log => {
       const d = new Date(log.date);
       const year = d.getFullYear();
@@ -2976,11 +2995,9 @@ exports.getStudentDashboardStats = async (req, res) => {
         }
       }
       
-      const isHoli = holidays.find(h => {
+      const isHoli = preFormattedHolidays.find(h => {
         const dStr = d.toISOString().split('T')[0];
-        const hStart = new Date(h.startDate).toISOString().split('T')[0];
-        const hEnd = new Date(h.endDate).toISOString().split('T')[0];
-        return dStr >= hStart && dStr <= hEnd;
+        return dStr >= h.hStart && dStr <= h.hEnd;
       });
       
       if (isHoli) {
@@ -3052,11 +3069,9 @@ exports.getStudentDashboardStats = async (req, res) => {
         const dayName = dayNames[d.getDay()];
         if (dayName === 'Sunday') continue;
         
-        const dayHoli = holidays.find(h => {
+        const dayHoli = preFormattedHolidays.find(h => {
           const dStr = d.toISOString().split('T')[0];
-          const hStart = new Date(h.startDate).toISOString().split('T')[0];
-          const hEnd = new Date(h.endDate).toISOString().split('T')[0];
-          return dStr >= hStart && dStr <= hEnd;
+          return dStr >= h.hStart && dStr <= h.hEnd;
         });
         if (dayHoli) continue;
         
@@ -3089,29 +3104,43 @@ exports.getStudentDashboardStats = async (req, res) => {
 
 exports.getFacultyDashboardStats = async (req, res) => {
   try {
-    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
-    if (!session) return res.status(200).json({ error: 'No active session' });
-    const facultyId = req.user._id;
-    const deptId = req.user.department;
-
-    // 1. All timetable courses for this faculty
-    const courses = await TimetableMaster.find({ facultyId, isActive: true })
-      .populate('degreeNameId', 'name')
-      .populate('semesterId', 'name');
-
-    // Get today's marked attendance for this faculty
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const todayDayName = dayNames[today.getDay()];
     const todayStr = toLocalDateString(today);
-    const markedToday = await AttendanceRecord.find({
-      facultyId,
-      date: todayStr,
-    }).select('timetableSlotId');
+    const facultyId = req.user._id;
+    const deptId = req.user.department;
+
+    const [
+      session,
+      courses,
+      markedToday,
+      holidays,
+      degreeTypes,
+      activePolicies,
+      scholarsCount,
+      pendingLeavesCount,
+      pendingCorrectionsCount
+    ] = await Promise.all([
+      AcademicSessionMaster.findOne({ isCurrent: true }).lean(),
+      TimetableMaster.find({ facultyId, isActive: true })
+        .populate('degreeNameId', 'name')
+        .populate('semesterId', 'name')
+        .lean(),
+      AttendanceRecord.find({ facultyId, date: todayStr }).select('timetableSlotId').lean(),
+      HolidayCalendar.find({ isActive: true }).lean(),
+      DegreeTypeMaster.find().select('code').lean(),
+      AttendancePolicyMaster.find({ isActive: true }).lean(),
+      User.countDocuments({ department: deptId, role: 'STUDENT', isActive: true }),
+      LeaveRequest.countDocuments({ currentAssigneeId: facultyId, status: { $in: ['PENDING_FACULTY', 'PENDING'] } }),
+      AttendanceCorrection.countDocuments({ facultyId, status: 'PENDING_FACULTY' })
+    ]);
+
+    if (!session) return res.status(200).json({ error: 'No active session' });
 
     // Compute student mappings and stats
-    const allMappings = await StudentSemesterMapping.find({ sessionId: session._id });
+    const allMappings = await StudentSemesterMapping.find({ sessionId: session._id }).lean();
     const courseStudentsMap = {};
     allMappings.forEach(mapping => {
       (mapping.mappedSubjects || []).forEach(sub => {
@@ -3132,36 +3161,55 @@ exports.getFacultyDashboardStats = async (req, res) => {
     });
     const targetStudentIds = Array.from(targetStudentIdsSet);
 
-    const allRecords = await AttendanceRecord.find({
-      studentId: { $in: targetStudentIds },
-      date: { $gte: session.startDate, $lte: session.endDate }
-    });
+    const [allRecords, studentsInfo] = await Promise.all([
+      AttendanceRecord.find({
+        studentId: { $in: targetStudentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      }).lean(),
+      User.find({ _id: { $in: targetStudentIds } }).select('profile department').lean()
+    ]);
 
     const recordsByStudent = {};
     allRecords.forEach(rec => {
       const sid = rec.studentId.toString();
       if (!recordsByStudent[sid]) recordsByStudent[sid] = [];
-      recordsByStudent[sid].push(rec);
+      const classMap = {};
+      if (rec.classes) {
+        rec.classes.forEach(c => {
+          if (c.timetableSlotId) {
+            classMap[c.timetableSlotId.toString()] = c;
+          }
+        });
+      }
+      recordsByStudent[sid].push({
+        ...rec,
+        classMap
+      });
     });
 
-    const holidays = await HolidayCalendar.find({ isActive: true });
-    const studentsInfo = await User.find({ _id: { $in: targetStudentIds } }).select('profile department');
     const studentMap = {};
     studentsInfo.forEach(s => { studentMap[s._id.toString()] = s; });
 
-    const degreeTypes = await DegreeTypeMaster.find().select('code');
     const degreeTypeMap = {};
     degreeTypes.forEach(dt => { degreeTypeMap[dt._id.toString()] = dt.code; });
 
-    const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
     const policyMap = {};
     activePolicies.forEach(p => {
       if (p.degreeNameId) policyMap[p.degreeNameId.toString()] = p;
     });
 
+    // Pre-resolve formatting cache by course slot ID
     const preResolvedLectureDatesCache = {};
-    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(day => {
-      preResolvedLectureDatesCache[day] = getTimetableLectures(session.startDate, session.endDate, day, holidays);
+    courses.forEach(slot => {
+      let dates = getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
+      const limit = slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90;
+      if (dates.length > limit) {
+        dates = dates.slice(0, limit);
+      }
+      preResolvedLectureDatesCache[slot._id.toString()] = dates.map(d => ({
+        value: d,
+        dStr: d.toDateString()
+      }));
     });
 
     const courseStats = [];
@@ -3186,7 +3234,7 @@ exports.getFacultyDashboardStats = async (req, res) => {
         const degreeTypeIdStr = student.profile?.degreeTypeId?.toString();
         const degreeCode = degreeTypeIdStr ? degreeTypeMap[degreeTypeIdStr] : 'PG';
         const preResolvedPolicy = student.profile?.degreeNameId ? policyMap[student.profile.degreeNameId.toString()] : null;
-        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy, preResolvedLectureDatesCache);
+        const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy, preResolvedLectureDatesCache, true);
         
         let studentAttended = 0;
         let studentHeld = 0;
@@ -3206,16 +3254,45 @@ exports.getFacultyDashboardStats = async (req, res) => {
           totalDefaultersSet.add(sid);
         }
 
-        (stats.logs || []).forEach((log, idx) => {
+        // Map student records to string dates for O(1) status lookup
+        const studentRecsMap = {};
+        studentRecs.forEach(rec => {
+          const dStr = new Date(rec.date).toDateString();
+          studentRecsMap[dStr] = {
+            status: rec.status,
+            isLeaveOverride: rec.isLeaveOverride,
+            classItem: rec.classMap && rec.classMap[cid]
+          };
+        });
+
+        const slotDates = preResolvedLectureDatesCache[cid] || [];
+        slotDates.forEach((dt, idx) => {
           const weekNum = Math.floor(idx / 7) + 1;
           const weekLabel = `W${weekNum}`;
           if (!weeklyLogs[weekLabel]) {
             weeklyLogs[weekLabel] = { sum: 0, count: 0 };
           }
-          if (log.status === 'PRESENT') {
+          
+          const rec = studentRecsMap[dt.dStr];
+          let status = 'NOT_MARKED';
+          if (rec) {
+            if (rec.status === 'ON_LEAVE' && rec.isLeaveOverride) {
+              status = 'PRESENT';
+            } else if (rec.classItem && !rec.classItem.isCancelled) {
+              status = rec.classItem.selected ? 'PRESENT' : 'ABSENT';
+            }
+          } else {
+            const todayLimit = new Date();
+            todayLimit.setHours(0,0,0,0);
+            if (dt.value < todayLimit) {
+              status = 'ABSENT';
+            }
+          }
+          
+          if (status === 'PRESENT') {
             weeklyLogs[weekLabel].sum += 100;
             weeklyLogs[weekLabel].count++;
-          } else if (log.status === 'ABSENT') {
+          } else if (status === 'ABSENT') {
             weeklyLogs[weekLabel].count++;
           }
         });
@@ -3280,8 +3357,6 @@ exports.getFacultyDashboardStats = async (req, res) => {
       return a.startTime.localeCompare(b.startTime);
     });
 
-    const pendingLeavesCount = await LeaveRequest.countDocuments({ currentAssigneeId: facultyId, status: { $in: ['PENDING_FACULTY', 'PENDING'] } });
-    const pendingCorrectionsCount = await AttendanceCorrection.countDocuments({ facultyId, status: 'PENDING_FACULTY' });
     const lowAttendanceCount = totalDefaultersSet.size;
 
     const todayClasses = courses
@@ -3295,8 +3370,6 @@ exports.getFacultyDashboardStats = async (req, res) => {
         degreeNameId: c.degreeNameId,
         semesterId: c.semesterId,
       }));
-
-    const scholarsCount = await User.countDocuments({ department: deptId, role: 'STUDENT', isActive: true });
 
     res.status(200).json({
       sessionName: session?.sessionName || 'No Active Session',
@@ -3418,7 +3491,14 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
 
 exports.getHodDashboardStats = async (req, res) => {
   try {
-    const session = await AcademicSessionMaster.findOne({ isCurrent: true });
+    const [session, dept, students] = await Promise.all([
+      AcademicSessionMaster.findOne({ isCurrent: true }).lean(),
+      Department.findOne({ name: req.user.department }).lean(),
+      User.find({ department: req.user.department, role: 'STUDENT', isActive: true })
+        .select('name profile email username department')
+        .lean()
+    ]);
+
     if (!session) {
       return res.status(200).json({
         sessionName: 'No Active Session',
@@ -3436,35 +3516,47 @@ exports.getHodDashboardStats = async (req, res) => {
       });
     }
 
-    const deptName = req.user.department;
-    const deptId = req.user.departmentId;
+    const deptId = req.user.departmentId || dept?._id;
+    const studentIds = students.map(s => s._id);
 
-    const [students, holidays, allTimetables, allMappings] = await Promise.all([
-      User.find({ department: deptName, role: 'STUDENT', isActive: true })
-        .select('name profile email username department'),
-      HolidayCalendar.find({ isActive: true }),
-      TimetableMaster.find({ sessionId: session._id, isActive: true })
+    const [
+      holidays,
+      allTimetables,
+      allMappings,
+      allRecords,
+      degreeTypes,
+      activePolicies,
+      auditLogs,
+      pendingLeaveCount,
+      pendingCorrectionCount
+    ] = await Promise.all([
+      HolidayCalendar.find({ isActive: true }).lean(),
+      TimetableMaster.find({ departmentId: deptId, sessionId: session._id, isActive: true })
         .populate('facultyId', 'name')
         .populate('degreeNameId', 'name')
-        .populate('semesterId', 'name'),
-      StudentSemesterMapping.find({ sessionId: session._id })
+        .populate('semesterId', 'name')
+        .lean(),
+      StudentSemesterMapping.find({ studentId: { $in: studentIds }, sessionId: session._id }).lean(),
+      AttendanceRecord.find({
+        studentId: { $in: studentIds },
+        date: { $gte: session.startDate, $lte: session.endDate }
+      }).select('studentId date status classes isLeaveOverride remarks isLocked').lean(),
+      DegreeTypeMaster.find().select('code').lean(),
+      AttendancePolicyMaster.find({ isActive: true }).lean(),
+      AttendanceRecord.find({ departmentId: deptId })
+        .populate('studentId', 'name')
+        .populate('markedBy', 'name')
+        .sort({ updatedAt: -1 })
+        .limit(20)
+        .lean(),
+      LeaveRequest.countDocuments({ departmentId: deptId, status: 'PENDING_HOD' }),
+      AttendanceCorrection.countDocuments({ studentId: { $in: studentIds }, status: 'PENDING_HOD' })
     ]);
-
-    const studentIds = students.map(s => s._id);
 
     const studentSlotsMap = {};
     allMappings.forEach(m => {
       studentSlotsMap[m.studentId.toString()] = m.mappedSubjects || [];
     });
-
-    const [allRecords, degreeTypes, activePolicies] = await Promise.all([
-      AttendanceRecord.find({
-        studentId: { $in: studentIds },
-        date: { $gte: session.startDate, $lte: session.endDate }
-      }).select('studentId date status classes isLeaveOverride remarks isLocked'),
-      DegreeTypeMaster.find().select('code'),
-      AttendancePolicyMaster.find({ isActive: true })
-    ]);
 
     const recordsByStudent = {};
     allRecords.forEach(rec => {
@@ -3482,14 +3574,41 @@ exports.getHodDashboardStats = async (req, res) => {
     });
 
     const preResolvedLectureDatesCache = {};
-    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(day => {
-      preResolvedLectureDatesCache[day] = getTimetableLectures(session.startDate, session.endDate, day, holidays);
+    allTimetables.forEach(slot => {
+      let dates = getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
+      const limit = slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90;
+      if (dates.length > limit) {
+        dates = dates.slice(0, limit);
+      }
+      preResolvedLectureDatesCache[slot._id.toString()] = dates.map(d => ({
+        value: d,
+        dStr: d.toDateString()
+      }));
     });
 
     const scholarStatsList = [];
     const defaulters = [];
     const warnings = [];
     const weeklyLogs = {};
+    allRecords.forEach(rec => {
+      const diffTime = new Date(rec.date).getTime() - new Date(session.startDate).getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return;
+      const weekLabel = `W${Math.floor(diffDays / 7) + 1}`;
+      if (!weeklyLogs[weekLabel]) {
+        weeklyLogs[weekLabel] = { sum: 0, count: 0 };
+      }
+      if (rec.status === 'PRESENT') {
+        weeklyLogs[weekLabel].sum += 100;
+        weeklyLogs[weekLabel].count++;
+      } else if (rec.status === 'ABSENT') {
+        weeklyLogs[weekLabel].count++;
+      } else if (rec.status === 'ON_LEAVE' && rec.isLeaveOverride) {
+        weeklyLogs[weekLabel].sum += 100;
+        weeklyLogs[weekLabel].count++;
+      }
+    });
+
     const facultyDataMap = {};
     const courseDataMap = {};
 
@@ -3507,7 +3626,7 @@ exports.getHodDashboardStats = async (req, res) => {
         studentTimetables = allTimetables.filter(t => slotIds.includes(t._id.toString()));
       }
 
-      const stats = await calculateStudentStats(student, session, records, holidays, studentTimetables, degreeCode, preResolvedPolicy, preResolvedLectureDatesCache);
+      const stats = await calculateStudentStats(student, session, records, holidays, studentTimetables, degreeCode, preResolvedPolicy, preResolvedLectureDatesCache, true);
       
       const sData = {
         studentId: student._id,
@@ -3522,20 +3641,6 @@ exports.getHodDashboardStats = async (req, res) => {
       scholarStatsList.push(sData);
       if (stats.isDefaulter) defaulters.push(sData);
       if (stats.isWarning) warnings.push(sData);
-
-      // Group weekly logs for HOD trend
-      (stats.logs || []).forEach((log, idx) => {
-        const weekLabel = `W${Math.floor(idx / 7) + 1}`;
-        if (!weeklyLogs[weekLabel]) {
-          weeklyLogs[weekLabel] = { sum: 0, count: 0 };
-        }
-        if (log.status === 'PRESENT') {
-          weeklyLogs[weekLabel].sum += 100;
-          weeklyLogs[weekLabel].count++;
-        } else if (log.status === 'ABSENT') {
-          weeklyLogs[weekLabel].count++;
-        }
-      });
 
       // Group subject-wise statistics for comparisons
       if (!isPhD) {
@@ -3598,12 +3703,6 @@ exports.getHodDashboardStats = async (req, res) => {
       ? parseFloat((scholarStatsList.reduce((acc, curr) => acc + curr.percentage, 0) / scholarStatsList.length).toFixed(2)) 
       : 100;
 
-    const auditLogs = await AttendanceRecord.find({ departmentId: deptId })
-      .populate('studentId', 'name')
-      .populate('markedBy', 'name')
-      .sort({ updatedAt: -1 })
-      .limit(20);
-
     const facultyStats = Object.values(facultyDataMap).map(f => ({
       facultyId: f.facultyId,
       facultyName: f.facultyName,
@@ -3629,9 +3728,6 @@ exports.getHodDashboardStats = async (req, res) => {
       weekLabel: label,
       percentage: data.count > 0 ? Math.round(data.sum / data.count) : 100
     })).slice(-8);
-
-    const pendingLeaveCount = await LeaveRequest.countDocuments({ departmentId: deptId, status: 'PENDING_HOD' });
-    const pendingCorrectionCount = await AttendanceCorrection.countDocuments({ status: 'PENDING_HOD' });
 
     res.status(200).json({
       sessionName: session?.sessionName,

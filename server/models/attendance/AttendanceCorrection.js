@@ -73,4 +73,6 @@ const attendanceCorrectionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+attendanceCorrectionSchema.index({ studentId: 1, status: 1 });
+
 module.exports = mongoose.model('AttendanceCorrection', attendanceCorrectionSchema);

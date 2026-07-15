@@ -155,5 +155,6 @@ const attendanceRecordSchema = new mongoose.Schema(
 
 // Ensure a single record per student per slot/date combination
 attendanceRecordSchema.index({ studentId: 1, date: 1, timetableId: 1, courseCode: 1 }, { unique: true });
+attendanceRecordSchema.index({ departmentId: 1, updatedAt: -1 });
 
 module.exports = mongoose.model('AttendanceRecord', attendanceRecordSchema);

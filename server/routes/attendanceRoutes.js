@@ -5,6 +5,15 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const requireDepartment = require('../middleware/requireDepartment');
 const multer = require('multer');
 const path = require('path');
+const { clearCalculatorCache } = require('../utils/attendanceCalculator');
+
+// Invalidate in-memory calculations cache on any write operation
+router.use((req, res, next) => {
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    clearCalculatorCache();
+  }
+  next();
+});
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

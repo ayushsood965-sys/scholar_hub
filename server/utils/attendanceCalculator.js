@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const HolidayCalendar = require('../models/attendance/HolidayCalendar');
 const AttendancePolicyMaster = require('../models/attendance/AttendancePolicyMaster');
 const LeaveTypeMaster = require('../models/attendance/LeaveTypeMaster');
@@ -97,12 +98,29 @@ const isDateWithinTimetableLimit = (session, slot, date, holidays) => {
   return allowedLectures.some(ld => ld.setHours(0, 0, 0, 0) === targetTime);
 };
 
-const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables, preResolvedDegreeCode = null, preResolvedPolicy = null, preResolvedLectureDatesCache = null) => {
+let deptCache = {};
+let degreeTypeCache = {};
+let policyCache = {};
+
+const clearCalculatorCache = () => {
+  deptCache = {};
+  degreeTypeCache = {};
+  policyCache = {};
+};
+
+const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables, preResolvedDegreeCode = null, preResolvedPolicy = null, preResolvedLectureDatesCache = null, excludeLogs = false) => {
   let deptId = student.departmentId || null;
   if (!deptId && student.department) {
-    const Department = mongoose.model('Department');
-    const dept = await Department.findOne({ name: student.department });
-    if (dept) deptId = dept._id.toString();
+    if (deptCache[student.department]) {
+      deptId = deptCache[student.department];
+    } else {
+      const Department = mongoose.model('Department');
+      const dept = await Department.findOne({ name: student.department });
+      if (dept) {
+        deptId = dept._id.toString();
+        deptCache[student.department] = deptId;
+      }
+    }
   }
   
   // Resolve programType from degreeTypeId
@@ -110,34 +128,56 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   let programType = preResolvedDegreeCode || (isPhD ? 'PHD' : 'PG');
   if (!preResolvedDegreeCode && student.profile?.degreeTypeId) {
     const dtId = student.profile.degreeTypeId.toString();
-    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(dtId);
-    const dt = isValidObjectId ? await DegreeTypeMaster.findById(dtId) : null;
-    if (dt) {
-      programType = dt.code;
-      if (dt.code === 'PHD') isPhD = true;
+    if (degreeTypeCache[dtId]) {
+      const cached = degreeTypeCache[dtId];
+      programType = cached.code;
+      if (cached.code === 'PHD') isPhD = true;
+    } else {
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(dtId);
+      const dt = isValidObjectId ? await DegreeTypeMaster.findById(dtId) : null;
+      if (dt) {
+        programType = dt.code;
+        if (dt.code === 'PHD') isPhD = true;
+        degreeTypeCache[dtId] = { code: dt.code };
+      }
     }
   }
 
   // 1. Fetch policy
   let policy = preResolvedPolicy;
   const degreeNameId = student.profile?.degreeNameId || null;
-  if (!policy && degreeNameId) {
-    policy = await AttendancePolicyMaster.findOne({
-      degreeNameId,
-      isActive: true,
-      $or: [
-        ...(deptId ? [{ departmentId: deptId }] : []),
-        { departmentId: null }
-      ]
-    }).sort({ departmentId: -1 });
-  }
-
-  if (!policy && degreeNameId) {
-    policy = await AttendancePolicyMaster.findOne({ degreeNameId, isActive: true });
+  const isValidDegreeNameId = degreeNameId && /^[0-9a-fA-F]{24}$/.test(degreeNameId.toString());
+  const policyKey = `${deptId || 'global'}_${degreeNameId || 'global'}`;
+  
+  if (!policy && isValidDegreeNameId) {
+    if (policyCache[policyKey]) {
+      policy = policyCache[policyKey] === 'NULL_POLICY' ? null : policyCache[policyKey];
+    } else {
+      policy = await AttendancePolicyMaster.findOne({
+        degreeNameId,
+        isActive: true,
+        $or: [
+          ...(deptId ? [{ departmentId: deptId }] : []),
+          { departmentId: null }
+        ]
+      }).sort({ departmentId: -1 });
+      
+      if (!policy) {
+        policy = await AttendancePolicyMaster.findOne({ degreeNameId, isActive: true });
+      }
+      
+      policyCache[policyKey] = policy || 'NULL_POLICY';
+    }
   }
 
   if (!policy) {
-    policy = await AttendancePolicyMaster.findOne({ departmentId: null, isActive: true });
+    const globalKey = 'global_fallback';
+    if (policyCache[globalKey]) {
+      policy = policyCache[globalKey] === 'NULL_POLICY' ? null : policyCache[globalKey];
+    } else {
+      policy = await AttendancePolicyMaster.findOne({ departmentId: null, isActive: true });
+      policyCache[globalKey] = policy || 'NULL_POLICY';
+    }
   }
 
   if (!policy) {
@@ -156,32 +196,45 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   const recordMap = {};
   records.forEach(rec => {
     const dStr = new Date(rec.date).toDateString();
-    recordMap[dStr] = rec;
+    const classMap = {};
+    if (rec.classes) {
+      rec.classes.forEach(c => {
+        if (c.timetableSlotId) {
+          classMap[c.timetableSlotId.toString()] = c;
+        }
+      });
+    }
+    recordMap[dStr] = {
+      ...rec,
+      classMap
+    };
   });
+
+  const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const allowedSlotIds = (rawTimetables || []).map(t => t._id.toString());
 
   let totalWorkingDays = 0;
   let expectedDates = [];
   let totalExpectedClasses = 0;
 
   if (isPhD) {
-    expectedDates = getWorkingDays(session.startDate, session.endDate, holidays, false); // PhD has Sat working
+    const rawDates = getWorkingDays(session.startDate, session.endDate, holidays, false); // PhD has Sat working
+    expectedDates = rawDates.map(d => ({ value: d, dStr: d.toDateString() }));
     totalWorkingDays = expectedDates.length;
     totalExpectedClasses = totalWorkingDays;
   } else {
     const studentSlots = rawTimetables || [];
     const datesSet = new Set();
     studentSlots.forEach(slot => {
-      let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
-        ? preResolvedLectureDatesCache[slot.dayOfWeek]
-        : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
-      const limit = slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90;
-      if (dates.length > limit) {
-        dates = dates.slice(0, limit);
-      }
+      const slotIdStr = slot._id.toString();
+      let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slotIdStr]
+        ? preResolvedLectureDatesCache[slotIdStr]
+        : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays).slice(0, slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90).map(d => ({ value: d, dStr: d.toDateString() }));
+
       dates.forEach(dt => {
-        const dStr = dt.toDateString();
+        const dStr = dt.dStr;
         const existingRecord = recordMap[dStr];
-        const classItem = existingRecord && existingRecord.classes && existingRecord.classes.find(c => c.timetableSlotId?.toString() === slot._id.toString());
+        const classItem = existingRecord && existingRecord.classMap && existingRecord.classMap[slotIdStr];
         const isConducted = classItem && !classItem.isCancelled;
         const isCancelled = classItem && classItem.isCancelled;
         if (isConducted) {
@@ -192,7 +245,7 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         }
       });
     });
-    expectedDates = Array.from(datesSet).map(ds => new Date(ds)).sort((a,b) => a-b);
+    expectedDates = Array.from(datesSet).map(ds => ({ value: new Date(ds), dStr: ds })).sort((a,b) => a.value - b.value);
     totalWorkingDays = expectedDates.length;
   }
 
@@ -200,8 +253,11 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   let absentCount = 0;
   let excusedLeavesCount = 0;
 
-  const processedLogs = expectedDates.map(date => {
-    const dateStr = date.toDateString();
+  const processedLogs = [];
+
+  expectedDates.forEach(dt => {
+    const date = dt.value;
+    const dateStr = dt.dStr;
     const existingRecord = recordMap[dateStr];
     
     let status = 'NOT_MARKED';
@@ -217,7 +273,6 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         isLocked = existingRecord.isLocked;
         recordId = existingRecord._id;
         classes = existingRecord.classes || [];
-        // Do not update present/absent stats for pending HOD verification
       } else {
         status = existingRecord.status;
         remarks = existingRecord.remarks || '';
@@ -227,20 +282,19 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
 
         if (isPhD) {
           if (status === 'PRESENT') presentCount++;
-          else if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) presentCount++; // Auto-credited
+          else if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) presentCount++;
           else if (status === 'ABSENT' || status === 'NOT_MARKED') absentCount++;
         } else {
           if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
-            // Leave override acts as present for all scheduled classes that day that are not cancelled
+            const dayName = DAYS_OF_WEEK[date.getDay()];
             const scheduledClassesToday = rawTimetables.filter(t => {
-              if (t.dayOfWeek !== ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]) return false;
-              const isSlotCancelled = existingRecord && existingRecord.classes && existingRecord.classes.some(c => c.timetableSlotId?.toString() === t._id.toString() && c.isCancelled);
+              if (t.dayOfWeek !== dayName) return false;
+              const classItem = existingRecord && existingRecord.classMap && existingRecord.classMap[t._id.toString()];
+              const isSlotCancelled = classItem && classItem.isCancelled;
               return !isSlotCancelled;
             }).length;
             presentCount += scheduledClassesToday;
           } else {
-            // Count class level checkboxes (excluding cancelled classes)
-            const allowedSlotIds = rawTimetables.map(t => t._id.toString());
             classes.forEach(c => {
               if (!allowedSlotIds.includes(c.timetableSlotId?.toString())) {
                 return;
@@ -262,7 +316,8 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
       if (date < today) {
         if (isPhD) absentCount++;
         else {
-          const scheduledClassesToday = rawTimetables.filter(t => t.dayOfWeek === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]).length;
+          const dayName = DAYS_OF_WEEK[date.getDay()];
+          const scheduledClassesToday = rawTimetables.filter(t => t.dayOfWeek === dayName).length;
           absentCount += scheduledClassesToday;
         }
       } else {
@@ -270,14 +325,16 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
       }
     }
 
-    return {
-      date: date.toISOString(),
-      status,
-      remarks,
-      isLocked,
-      recordId,
-      classes
-    };
+    if (!excludeLogs) {
+      processedLogs.push({
+        date: date.toISOString(),
+        status,
+        remarks,
+        isLocked,
+        recordId,
+        classes
+      });
+    }
   });
 
   const percentage = totalExpectedClasses > 0 
@@ -311,21 +368,19 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   if (!isPhD) {
     const studentSlots = rawTimetables || [];
     studentSlots.forEach(slot => {
-      let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
-        ? preResolvedLectureDatesCache[slot.dayOfWeek]
-        : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
-      const limit = slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90;
-      if (dates.length > limit) {
-        dates = dates.slice(0, limit);
-      }
+      const slotIdStr = slot._id.toString();
+      let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slotIdStr]
+        ? preResolvedLectureDatesCache[slotIdStr]
+        : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays).slice(0, slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90).map(d => ({ value: d, dStr: d.toDateString() }));
+
       let subjectPresent = 0;
       let subjectAbsent = 0;
       
-      dates.forEach(date => {
-        const dStr = date.toDateString();
+      dates.forEach(dt => {
+        const dStr = dt.dStr;
         const existingRecord = recordMap[dStr];
 
-        const classItem = existingRecord && existingRecord.classes && existingRecord.classes.find(c => c.timetableSlotId?.toString() === slot._id.toString());
+        const classItem = existingRecord && existingRecord.classMap && existingRecord.classMap[slotIdStr];
         const isConducted = classItem && !classItem.isCancelled;
         if (!isConducted) {
           return;
@@ -392,7 +447,7 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
     warningThreshold: warningLevel,
     safeAbsencesRemaining: safeAbsences,
     consecutiveClassesToAttend: classesToAttend,
-    logs: processedLogs.reverse(),
+    logs: excludeLogs ? [] : processedLogs.reverse(),
     subjectWiseAttendance,
     isPhD
   };
@@ -404,5 +459,6 @@ module.exports = {
   getWorkingDays,
   getTimetableLectures,
   isDateWithinTimetableLimit,
-  calculateStudentStats
+  calculateStudentStats,
+  clearCalculatorCache
 };

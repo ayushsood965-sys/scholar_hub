@@ -155,5 +155,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+userSchema.index({ department: 1, role: 1 });
+
 const User = mongoose.model('User', userSchema);
 module.exports = User;
