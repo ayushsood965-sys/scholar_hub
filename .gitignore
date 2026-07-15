@@ -51,3 +51,5 @@ server/update_pubs.js
 scholar_track/test_*.cjs
 .vercel
 .env*
+coolify_id_ed25519
+
