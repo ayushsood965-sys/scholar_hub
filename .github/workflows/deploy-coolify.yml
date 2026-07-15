@@ -62,7 +62,7 @@ jobs:
             # Trigger new deployment
             echo "Triggering new deployment for $app_name..."
             response=$(curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
-              "$base_url/api/v1/deploy?uuid=$app_uuid&force=false" \
+              "$base_url/api/v1/deploy?uuid=$app_uuid" \
               -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
               -H "Content-Type: application/json")
             echo "Deployment trigger response: $response"
