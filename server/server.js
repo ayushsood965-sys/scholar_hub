@@ -292,6 +292,16 @@ app.use('/api/auth/login', loginLimiter);
 app.use('/api/seed-users', loginLimiter);
 app.use('/api/clear-all', loginLimiter);
 
+// Global API rate limiting to protect against DDoS
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per 15 minutes
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api/', apiLimiter);
+
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
