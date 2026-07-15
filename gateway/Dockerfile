@@ -17,6 +17,15 @@ RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
 # Copy source code
 COPY . .
 
+# Expose build-time environment variables for Vite
+ARG VITE_API_URL
+ARG VITE_SCHOLAR_SYNC_URL
+ARG VITE_SCHOLAR_TRACK_URL
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SCHOLAR_SYNC_URL=$VITE_SCHOLAR_SYNC_URL
+ENV VITE_SCHOLAR_TRACK_URL=$VITE_SCHOLAR_TRACK_URL
+
 # Build the application
 RUN npm run build
 
