@@ -1,14 +1,14 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useThemeStyles } from '../context/ThemeContext';
 import { jwtDecode } from 'jwt-decode';
 
 const Login = () => {
-  const [searchParams] = useSearchParams();
+  const toastFired = useRef(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,6 +17,19 @@ const Login = () => {
   const toast = useToast();
   const navigate = useNavigate();
   const theme = useThemeStyles();
+
+  // Handle toast query parameter from logout redirect
+  useEffect(() => {
+    if (toastFired.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const toastMsg = params.get('toast');
+    if (toastMsg) {
+      toastFired.current = true;
+      toast.success(toastMsg);
+      // Clean the URL without triggering React re-render
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [toast]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -36,16 +49,6 @@ const Login = () => {
       } catch { /* token invalid, let them stay */ }
     }
   }, [navigate, toast]);
-
-  // Handle toast parameter
-  useEffect(() => {
-    const toastMsg = searchParams.get('toast');
-    if (toastMsg) {
-      toast.success(toastMsg);
-      // Clean query parameter from URL
-      navigate(window.location.pathname, { replace: true });
-    }
-  }, [searchParams, toast, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
