@@ -34,7 +34,7 @@ RUN mkdir -p /app/uploads
 EXPOSE 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=2s --retries=3 \
     CMD wget -qO- http://localhost:5000/api/health || exit 1
 
 # Start the server
