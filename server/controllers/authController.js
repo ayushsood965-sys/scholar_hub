@@ -970,6 +970,29 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+// GET /api/auth/verify-reset-token
+const verifyResetToken = async (req, res) => {
+  const { token } = req.query;
+  try {
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required.' });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Reset token is invalid or has expired.' });
+    }
+
+    res.json({ success: true, message: 'Reset token is valid.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // POST /api/auth/reset-password
 const resetPassword = async (req, res) => {
   const { token, password } = req.body;
@@ -1001,4 +1024,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword };
+module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword };

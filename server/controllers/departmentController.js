@@ -21,7 +21,7 @@ exports.createDepartment = async (req, res) => {
     // Check if duplicate name or code exists
     const duplicate = await Department.findOne({
       $or: [
-        { name: name.trim() },
+        { name: { $regex: new RegExp('^' + name.trim() + '$', 'i') } },
         { code: code.trim().toUpperCase() }
       ]
     });
@@ -62,7 +62,7 @@ exports.updateDepartment = async (req, res) => {
     const duplicate = await Department.findOne({
       _id: { $ne: id },
       $or: [
-        { name: dept.name },
+        { name: { $regex: new RegExp('^' + dept.name + '$', 'i') } },
         { code: dept.code }
       ]
     });

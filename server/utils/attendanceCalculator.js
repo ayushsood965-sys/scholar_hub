@@ -74,9 +74,36 @@ const getTimetableLectures = (startDate, endDate, dayOfWeek, holidays) => {
   return lectureDates;
 };
 
+const isDateWithinTimetableLimit = (session, slot, date, holidays) => {
+  const dayMap = {
+    'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+    'Thursday': 4, 'Friday': 5, 'Saturday': 6
+  };
+  const targetDay = dayMap[slot.dayOfWeek];
+  const start = new Date(session.startDate);
+  const end = new Date(session.endDate);
+
+  const allLectures = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    if (d.getDay() === targetDay && !isHoliday(d, holidays)) {
+      allLectures.push(new Date(d));
+    }
+  }
+
+  const limit = slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90;
+  const allowedLectures = allLectures.slice(0, limit);
+
+  const targetTime = new Date(date).setHours(0, 0, 0, 0);
+  return allowedLectures.some(ld => ld.setHours(0, 0, 0, 0) === targetTime);
+};
+
 const calculateStudentStats = async (student, session, records, rawHolidays, rawTimetables, preResolvedDegreeCode = null, preResolvedPolicy = null, preResolvedLectureDatesCache = null) => {
-  const departmentId = student.department; // String name or ID, but policy uses ID. Wait, policy uses ObjectId
-  const deptQuery = student.departmentId || null; // Might need to resolve actual dept ID from user if needed, but fallback to global
+  let deptId = student.departmentId || null;
+  if (!deptId && student.department) {
+    const Department = mongoose.model('Department');
+    const dept = await Department.findOne({ name: student.department });
+    if (dept) deptId = dept._id.toString();
+  }
   
   // Resolve programType from degreeTypeId
   let isPhD = student.profile?.isPhD || preResolvedDegreeCode === 'PHD';
@@ -93,22 +120,38 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
 
   // 1. Fetch policy
   let policy = preResolvedPolicy;
-  if (!policy) {
-    policy = await AttendancePolicyMaster.findOne({ programType, isActive: true }).sort({ departmentId: -1 });
+  const degreeNameId = student.profile?.degreeNameId || null;
+  if (!policy && degreeNameId) {
+    policy = await AttendancePolicyMaster.findOne({
+      degreeNameId,
+      isActive: true,
+      $or: [
+        ...(deptId ? [{ departmentId: deptId }] : []),
+        { departmentId: null }
+      ]
+    }).sort({ departmentId: -1 });
   }
+
+  if (!policy && degreeNameId) {
+    policy = await AttendancePolicyMaster.findOne({ degreeNameId, isActive: true });
+  }
+
+  if (!policy) {
+    policy = await AttendancePolicyMaster.findOne({ departmentId: null, isActive: true });
+  }
+
   if (!policy) {
     policy = {
       minRequiredPercentage: 75,
       warningThreshold: 80,
       maxCondonationPercentage: 10,
-      editLockHours: 48,
+      editLockHours: 72,
       isActive: true
     };
   }
 
   // Filter holidays applicable to this department or global
-  // Assuming student.departmentId is populated or we rely on string matching if rawHolidays has department ref
-  const holidays = rawHolidays.filter(h => !h.departmentId || (student.departmentId && h.departmentId.toString() === student.departmentId.toString()));
+  const holidays = rawHolidays.filter(h => !h.departmentId || (deptId && h.departmentId.toString() === deptId.toString()));
 
   const recordMap = {};
   records.forEach(rec => {
@@ -128,9 +171,13 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
     const studentSlots = rawTimetables || [];
     const datesSet = new Set();
     studentSlots.forEach(slot => {
-      const dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
+      let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
         ? preResolvedLectureDatesCache[slot.dayOfWeek]
         : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
+      const limit = slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90;
+      if (dates.length > limit) {
+        dates = dates.slice(0, limit);
+      }
       dates.forEach(dt => {
         const dStr = dt.toDateString();
         const existingRecord = recordMap[dStr];
@@ -264,9 +311,13 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   if (!isPhD) {
     const studentSlots = rawTimetables || [];
     studentSlots.forEach(slot => {
-      const dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
+      let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slot.dayOfWeek]
         ? preResolvedLectureDatesCache[slot.dayOfWeek]
         : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays);
+      const limit = slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90;
+      if (dates.length > limit) {
+        dates = dates.slice(0, limit);
+      }
       let subjectPresent = 0;
       let subjectAbsent = 0;
       
@@ -352,5 +403,6 @@ module.exports = {
   isHoliday,
   getWorkingDays,
   getTimetableLectures,
+  isDateWithinTimetableLimit,
   calculateStudentStats
 };

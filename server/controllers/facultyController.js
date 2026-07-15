@@ -20,7 +20,7 @@ exports.createFaculty = async (req, res) => {
 
     const duplicate = await FacultyMaster.findOne({
       $or: [
-        { name: name.trim() },
+        { name: { $regex: new RegExp('^' + name.trim() + '$', 'i') } },
         { code: code.trim().toUpperCase() }
       ]
     });
@@ -58,7 +58,7 @@ exports.updateFaculty = async (req, res) => {
     const duplicate = await FacultyMaster.findOne({
       _id: { $ne: id },
       $or: [
-        { name: faculty.name },
+        { name: { $regex: new RegExp('^' + faculty.name + '$', 'i') } },
         { code: faculty.code }
       ]
     });

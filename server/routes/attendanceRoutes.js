@@ -70,6 +70,7 @@ router.get('/public/masters/degree-names', attendanceController.getDegreeNames);
 // ==========================================
 router.get('/policies', protect, requireDepartment, attendanceController.getPolicies);
 router.post('/policies', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.createOrUpdatePolicy);
+router.post('/policies/seed', protect, authorize('SUPER_ADMIN'), attendanceController.seedPoliciesOnly);
 router.delete('/policies/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.deletePolicy);
 
 // ==========================================

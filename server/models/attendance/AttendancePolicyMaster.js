@@ -8,8 +8,9 @@ const attendancePolicyMasterSchema = new mongoose.Schema(
       index: true,
       default: null // null indicates Global Default (Super Admin fallback policy)
     },
-    programType: {
-      type: String,
+    degreeNameId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DegreeNameMaster',
       required: true
     },
     minRequiredPercentage: {
@@ -60,7 +61,7 @@ const attendancePolicyMasterSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound index on departmentId + programType
-attendancePolicyMasterSchema.index({ departmentId: 1, programType: 1 }, { unique: true });
+// Compound index on departmentId + degreeNameId
+attendancePolicyMasterSchema.index({ departmentId: 1, degreeNameId: 1 }, { unique: true });
 
 module.exports = mongoose.model('AttendancePolicyMaster', attendancePolicyMasterSchema);

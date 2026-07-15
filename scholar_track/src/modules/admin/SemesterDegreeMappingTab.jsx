@@ -75,9 +75,11 @@ const SemesterDegreeMappingTab = () => {
 
   const handleSeedMappings = async () => {
     if (!window.confirm('This will seed the semester mappings for all degree programs based on their durations. Duplicate mappings will be skipped. Do you want to proceed?')) return;
+    const password = window.prompt('Please enter the seeding password:');
+    if (!password) return;
     setSeeding(true);
     try {
-      const res = await api.post('/attendance/masters/seed-mappings');
+      const res = await api.post('/attendance/masters/seed-mappings', { seedingPassword: password });
       toast.success(res.data.message || 'Semester mappings seeded successfully');
       fetchData();
     } catch (err) {

@@ -91,9 +91,11 @@ const DegreeNameMasterTab = () => {
 
   const handleSeedAllMasters = async () => {
     if (!window.confirm('This will seed the complete list of departments, degree types, and degree names. Duplicate entries will be prevented. Do you want to proceed?')) return;
+    const password = window.prompt('Please enter the seeding password:');
+    if (!password) return;
     setSeeding(true);
     try {
-      const res = await api.post('/attendance/masters/seed-all');
+      const res = await api.post('/attendance/masters/seed-all', { seedingPassword: password });
       toast.success(res.data.message || 'Master data seeded successfully');
       fetchData();
     } catch (err) {

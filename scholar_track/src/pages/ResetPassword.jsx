@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
@@ -16,8 +16,33 @@ const ResetPassword = () => {
   const [generalError, setGeneralError] = useState('');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const [verifying, setVerifying] = useState(!!token);
+  const [isValidToken, setIsValidToken] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
+
+  useEffect(() => {
+    if (!token) return;
+    const verifyToken = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/verify-reset-token?token=${token}`);
+        if (response.ok) {
+          setIsValidToken(true);
+        } else {
+          const data = await response.json();
+          setGeneralError(data.message || 'The password reset link is invalid or has expired.');
+          setIsValidToken(false);
+        }
+      } catch (err) {
+        console.error(err);
+        setGeneralError('Connection to server failed. Could not verify reset link.');
+        setIsValidToken(false);
+      } finally {
+        setVerifying(false);
+      }
+    };
+    verifyToken();
+  }, [token]);
 
   const validatePassword = () => {
     const errors = {};
@@ -130,9 +155,15 @@ const ResetPassword = () => {
             </motion.div>
           )}
 
-          {!token ? (
+          {verifying ? (
+            <div style={{ textAlign: 'center', margin: '20px 0', color: 'var(--color-text-secondary)' }}>
+              Verifying your password reset link...
+            </div>
+          ) : !isValidToken ? (
             <div style={{ textAlign: 'center', margin: '20px 0' }}>
-              <p style={{ color: 'var(--color-text-secondary)' }}>The password reset link appears to be invalid or incomplete. Please request a new recovery email.</p>
+              <p style={{ color: 'var(--color-text-secondary)' }}>
+                {generalError || 'The password reset link appears to be invalid or incomplete. Please request a new recovery email.'}
+              </p>
               <Link to="/forgot-password" className="btn btn-primary btn-lg" style={{ display: 'inline-block', textDecoration: 'none', marginTop: '16px' }}>
                 Go to Forgot Password
               </Link>

@@ -11,23 +11,40 @@ const PolicyConfigTab = () => {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [formData, setFormData] = useState({
-    programType: 'PG', minRequiredPercentage: 75, warningThreshold: 80,
-    maxCondonationPercentage: 10, editLockHours: 48,
+    degreeNameId: '', minRequiredPercentage: 75, warningThreshold: 80,
+    maxCondonationPercentage: 10, editLockHours: 72,
     allowHalfDay: true, allowMedicalLeave: true, allowDutyLeave: true,
     allowCorrection: true, correctionWindowDays: 14
   });
-  const [degreeTypes, setDegreeTypes] = useState([]);
+  const [degreeNames, setDegreeNames] = useState([]);
+  const [seeding, setSeeding] = useState(false);
   const api = useApi();
   const toast = useToast();
 
+  const handleSeedPolicies = async () => {
+    if (!window.confirm('This will delete all current policies and seed default policies with 72 edit lock hours for all courses. Do you want to proceed?')) return;
+    const password = window.prompt('Please enter the seeding password:');
+    if (!password) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/attendance/policies/seed', { seedingPassword: password });
+      toast.success(res.data.message || 'Policies seeded successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to seed policies');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const fetchData = async () => {
     try {
-      const [policiesRes, dtRes] = await Promise.all([
+      const [policiesRes, dnRes] = await Promise.all([
         api.get('/attendance/policies'),
-        api.get('/attendance/masters/degree-types')
+        api.get('/attendance/masters/degree-names')
       ]);
       setData(policiesRes.data);
-      setDegreeTypes(dtRes.data);
+      setDegreeNames(dnRes.data);
     } catch (err) {
       toast.error('Failed to load policies');
     } finally {
@@ -50,7 +67,10 @@ const PolicyConfigTab = () => {
   };
 
   const handleEdit = (policy) => {
-    setFormData(policy);
+    setFormData({
+      ...policy,
+      degreeNameId: policy.degreeNameId?._id || policy.degreeNameId
+    });
     setFormOpen(true);
   };
 
@@ -66,7 +86,7 @@ const PolicyConfigTab = () => {
   };
 
   const columns = [
-    { header: 'Program Type', accessor: 'programType' },
+    { header: 'Course/Degree Name', accessor: (row) => row.degreeNameId ? `${row.degreeNameId.name} (${row.degreeNameId.code})` : 'Global Default' },
     { header: 'Min Required %', accessor: 'minRequiredPercentage' },
     { header: 'Warning %', accessor: 'warningThreshold' },
     { header: 'Lock Hours', accessor: 'editLockHours' },
@@ -92,21 +112,28 @@ const PolicyConfigTab = () => {
       <div className="flex justify-between items-center mb-lg">
         <div>
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>Policy Configuration</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Configure attendance policies per program type.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Configure attendance policies per Course/Degree Name.</p>
         </div>
-        {!formOpen && (
-          <button className="btn btn-primary" onClick={() => {
-            setFormData({
-              programType: 'PG', minRequiredPercentage: 75, warningThreshold: 80,
-              maxCondonationPercentage: 10, editLockHours: 48,
-              allowHalfDay: true, allowMedicalLeave: true, allowDutyLeave: true,
-              allowCorrection: true, correctionWindowDays: 14
-            });
-            setFormOpen(true);
-          }}>
-            <Plus size={16} /> Add/Update Policy
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {!formOpen && (
+            <>
+              <button className="btn btn-outline" onClick={handleSeedPolicies} disabled={seeding}>
+                {seeding ? 'Seeding...' : 'Seed Policies'}
+              </button>
+              <button className="btn btn-primary" onClick={() => {
+                setFormData({
+                  degreeNameId: '', minRequiredPercentage: 75, warningThreshold: 80,
+                  maxCondonationPercentage: 10, editLockHours: 72,
+                  allowHalfDay: true, allowMedicalLeave: true, allowDutyLeave: true,
+                  allowCorrection: true, correctionWindowDays: 14
+                });
+                setFormOpen(true);
+              }}>
+                <Plus size={16} /> Add/Update Policy
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -130,15 +157,15 @@ const PolicyConfigTab = () => {
               <form onSubmit={handleSubmit}>
                 <div className="grid-3">
                   <div className="form-group">
-                    <label className="form-label">Program Type</label>
-                    <select className="form-input" required value={formData.programType} onChange={e => setFormData({...formData, programType: e.target.value})}>
-                      <option value="">Select Program Type...</option>
-                      {degreeTypes.map(dt => {
-                        const configuredProgramTypes = data.map(p => p.programType);
-                        const isConfigured = configuredProgramTypes.includes(dt.code) && (!formData._id || formData.programType !== dt.code);
+                    <label className="form-label">Course/Degree Name</label>
+                    <select className="form-input" required value={formData.degreeNameId || ''} onChange={e => setFormData({...formData, degreeNameId: e.target.value})}>
+                      <option value="">Select Course/Degree...</option>
+                      {degreeNames.map(dn => {
+                        const configuredDegreeNames = data.map(p => p.degreeNameId?._id || p.degreeNameId);
+                        const isConfigured = configuredDegreeNames.includes(dn._id) && (!formData._id || (formData.degreeNameId?._id || formData.degreeNameId) !== dn._id);
                         return (
-                          <option key={dt._id} value={dt.code} disabled={isConfigured}>
-                            {dt.name} ({dt.code}) {isConfigured ? '— Configured' : ''}
+                          <option key={dn._id} value={dn._id} disabled={isConfigured}>
+                            {dn.name} ({dn.code}) {isConfigured ? '— Configured' : ''}
                           </option>
                         );
                       })}

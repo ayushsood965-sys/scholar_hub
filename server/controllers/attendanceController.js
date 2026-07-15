@@ -20,7 +20,7 @@ const SemesterMaster = require('../models/attendance/SemesterMaster');
 const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 const CategoryGenderMaster = require('../models/CategoryGenderMaster');
 
-const { calculateStudentStats, getTimetableLectures, getWorkingDays } = require('../utils/attendanceCalculator');
+const { calculateStudentStats, getTimetableLectures, getWorkingDays, isDateWithinTimetableLimit } = require('../utils/attendanceCalculator');
 const { createNotification } = require('./notificationController');
 
 const createSystemNotification = async (recipientId, title, message, type = 'INFO', link = '') => {
@@ -68,7 +68,7 @@ exports.createDegreeType = async (req, res) => {
     }
     const duplicate = await DegreeTypeMaster.findOne({
       $or: [
-        { name: name.trim() },
+        { name: { $regex: new RegExp('^' + name.trim() + '$', 'i') } },
         { code: code.trim().toUpperCase() }
       ]
     });
@@ -103,8 +103,24 @@ exports.updateDegreeType = async (req, res) => {
     const { name, code, isActive } = req.body;
     const data = await DegreeTypeMaster.findById(req.params.id);
     if (!data) return res.status(404).json({ message: 'Degree Type not found' });
-    if (name) data.name = name;
-    if (code) data.code = code.toUpperCase();
+    
+    if (name || code) {
+      const checkName = name ? name.trim() : data.name;
+      const checkCode = code ? code.trim().toUpperCase() : data.code;
+      const duplicate = await DegreeTypeMaster.findOne({
+        _id: { $ne: req.params.id },
+        $or: [
+          { name: { $regex: new RegExp('^' + checkName + '$', 'i') } },
+          { code: checkCode }
+        ]
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: 'Degree Type Name or Code already exists' });
+      }
+    }
+
+    if (name) data.name = name.trim();
+    if (code) data.code = code.trim().toUpperCase();
     if (isActive !== undefined) data.isActive = isActive;
     await data.save();
     res.status(200).json(data);
@@ -133,15 +149,28 @@ exports.getDegreeNames = async (req, res) => {
 exports.createDegreeName = async (req, res) => {
   try {
     const { name, code, degreeTypeId, departmentId } = req.body;
-    // Duplicate validation: check for existing active degree name with same name+code+degreeTypeId+departmentId
-    const duplicateQuery = { isActive: true, name: name.trim(), code: code.trim().toUpperCase() };
-    if (degreeTypeId) duplicateQuery.degreeTypeId = degreeTypeId;
-    if (departmentId) duplicateQuery.departmentId = departmentId;
+    if (!name || !code || !degreeTypeId || !departmentId) {
+      return res.status(400).json({ message: 'Name, Code, Degree Type, and Department are required' });
+    }
+
+    const duplicateQuery = {
+      isActive: true,
+      degreeTypeId,
+      departmentId,
+      $or: [
+        { name: { $regex: new RegExp('^' + name.trim() + '$', 'i') } },
+        { code: code.trim().toUpperCase() }
+      ]
+    };
     const existing = await DegreeNameMaster.findOne(duplicateQuery);
     if (existing) {
-      return res.status(409).json({ message: 'A degree name with this name, code, degree type, and department combination already exists.' });
+      return res.status(409).json({ message: 'A degree name with this name or code already exists in this department and degree type.' });
     }
-    const data = await DegreeNameMaster.create(req.body);
+    const data = await DegreeNameMaster.create({
+      ...req.body,
+      name: name.trim(),
+      code: code.trim().toUpperCase()
+    });
     res.status(201).json(data);
   } catch (error) {
     if (error.code === 11000) {
@@ -158,16 +187,36 @@ exports.createDegreeName = async (req, res) => {
 exports.updateDegreeName = async (req, res) => {
   try {
     const { name, code, degreeTypeId, departmentId } = req.body;
-    // Duplicate validation: exclude current record
-    const duplicateQuery = { isActive: true, _id: { $ne: req.params.id }, name: name.trim(), code: code.trim().toUpperCase() };
-    if (degreeTypeId) duplicateQuery.degreeTypeId = degreeTypeId;
-    if (departmentId) duplicateQuery.departmentId = departmentId;
+    const data = await DegreeNameMaster.findById(req.params.id);
+    if (!data) return res.status(404).json({ message: 'Degree name not found' });
+
+    const checkName = name !== undefined ? name.trim() : data.name;
+    const checkCode = code !== undefined ? code.trim().toUpperCase() : data.code;
+    const checkDegreeTypeId = degreeTypeId !== undefined ? degreeTypeId : data.degreeTypeId;
+    const checkDepartmentId = departmentId !== undefined ? departmentId : data.departmentId;
+
+    const duplicateQuery = {
+      isActive: true,
+      _id: { $ne: req.params.id },
+      degreeTypeId: checkDegreeTypeId,
+      departmentId: checkDepartmentId,
+      $or: [
+        { name: { $regex: new RegExp('^' + checkName + '$', 'i') } },
+        { code: checkCode }
+      ]
+    };
     const existing = await DegreeNameMaster.findOne(duplicateQuery);
     if (existing) {
-      return res.status(409).json({ message: 'A degree name with this name, code, degree type, and department combination already exists.' });
+      return res.status(409).json({ message: 'Another degree name with this name or code already exists in this department and degree type.' });
     }
-    const data = await DegreeNameMaster.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!data) return res.status(404).json({ message: 'Degree name not found' });
+    
+    if (name !== undefined) data.name = name.trim();
+    if (code !== undefined) data.code = code.trim().toUpperCase();
+    if (degreeTypeId !== undefined) data.degreeTypeId = degreeTypeId;
+    if (departmentId !== undefined) data.departmentId = departmentId;
+    if (req.body.isActive !== undefined) data.isActive = req.body.isActive;
+    
+    await data.save();
     res.status(200).json(data);
   } catch (error) {
     if (error.code === 11000) {
@@ -204,7 +253,24 @@ exports.getSemesters = async (req, res) => {
 };
 exports.createSemester = async (req, res) => {
   try {
-    const data = await SemesterMaster.create(req.body);
+    const { name, number } = req.body;
+    if (!name || number === undefined) {
+      return res.status(400).json({ message: 'Semester Name and Number are required' });
+    }
+    const duplicate = await SemesterMaster.findOne({
+      isActive: true,
+      $or: [
+        { name: { $regex: new RegExp('^' + name.trim() + '$', 'i') } },
+        { number }
+      ]
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: 'Semester Name or Number already exists' });
+    }
+    const data = await SemesterMaster.create({
+      name: name.trim(),
+      number
+    });
     res.status(201).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -219,7 +285,25 @@ exports.updateSemester = async (req, res) => {
     const { name, number, isActive } = req.body;
     const data = await SemesterMaster.findById(req.params.id);
     if (!data) return res.status(404).json({ message: 'Semester not found' });
-    if (name) data.name = name;
+    
+    if (name !== undefined || number !== undefined) {
+      const checkName = name !== undefined ? name.trim() : data.name;
+      const checkNumber = number !== undefined ? number : data.number;
+      
+      const duplicate = await SemesterMaster.findOne({
+        _id: { $ne: req.params.id },
+        isActive: true,
+        $or: [
+          { name: { $regex: new RegExp('^' + checkName + '$', 'i') } },
+          { number: checkNumber }
+        ]
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: 'Another semester already uses this Name or Number' });
+      }
+    }
+
+    if (name) data.name = name.trim();
     if (number !== undefined) data.number = number;
     if (isActive !== undefined) data.isActive = isActive;
     await data.save();
@@ -289,6 +373,16 @@ exports.getSessions = async (req, res) => {
 };
 exports.createSession = async (req, res) => {
   try {
+    const { sessionName } = req.body;
+    if (!sessionName) {
+      return res.status(400).json({ message: 'Session Name is required' });
+    }
+    const duplicate = await AcademicSessionMaster.findOne({
+      sessionName: { $regex: new RegExp('^' + sessionName.trim() + '$', 'i') }
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: 'Academic Session Name already exists' });
+    }
     const session = await AcademicSessionMaster.create(req.body);
     res.status(201).json(session);
   } catch (error) { res.status(500).json({ message: error.message }); }
@@ -305,7 +399,16 @@ exports.updateSession = async (req, res) => {
     const { sessionName, startDate, endDate, isActive } = req.body;
     const session = await AcademicSessionMaster.findById(req.params.id);
     if (!session) return res.status(404).json({ message: 'Session not found' });
-    if (sessionName) session.sessionName = sessionName;
+    if (sessionName) {
+      const duplicate = await AcademicSessionMaster.findOne({
+        _id: { $ne: req.params.id },
+        sessionName: { $regex: new RegExp('^' + sessionName.trim() + '$', 'i') }
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: 'Academic Session Name already exists' });
+      }
+      session.sessionName = sessionName.trim();
+    }
     if (startDate) session.startDate = startDate;
     if (endDate) session.endDate = endDate;
     if (isActive !== undefined) session.isActive = isActive;
@@ -332,41 +435,46 @@ exports.getPolicies = async (req, res) => {
   try {
     const query = req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN'
       ? {} : { departmentId: req.user.departmentId };
-    const policies = await AttendancePolicyMaster.find({ ...query, isActive: true }).populate('departmentId');
+    const policies = await AttendancePolicyMaster.find({ ...query, isActive: true })
+      .populate('departmentId')
+      .populate('degreeNameId');
     res.status(200).json(policies);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 exports.createOrUpdatePolicy = async (req, res) => {
   try {
-    const { _id, programType, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays } = req.body;
+    const { _id, degreeNameId, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays } = req.body;
+    if (!degreeNameId) {
+      return res.status(400).json({ message: 'Course/Degree Name is required' });
+    }
     const departmentId = req.user.role === 'SUPER_ADMIN' ? null : req.user.departmentId;
     
-    // Check if another active policy exists for the same program type
+    // Check if another active policy exists for the same course/degree name
     const existingActivePolicy = await AttendancePolicyMaster.findOne({
       departmentId,
-      programType,
+      degreeNameId,
       isActive: true,
       ...(_id ? { _id: { $ne: _id } } : {})
     });
     
     if (existingActivePolicy) {
-      return res.status(400).json({ message: `A policy configuration for program type '${programType}' already exists.` });
+      return res.status(400).json({ message: `A policy configuration for this course already exists.` });
     }
 
     let policy;
     if (_id) {
       policy = await AttendancePolicyMaster.findById(_id);
       if (policy) {
-        Object.assign(policy, { minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays, isActive: true });
+        Object.assign(policy, { degreeNameId, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays, isActive: true });
         await policy.save();
       }
     } else {
-      policy = await AttendancePolicyMaster.findOne({ departmentId, programType });
+      policy = await AttendancePolicyMaster.findOne({ departmentId, degreeNameId });
       if (policy) {
         Object.assign(policy, { minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays, isActive: true });
         await policy.save();
       } else {
-        policy = await AttendancePolicyMaster.create({ departmentId, programType, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays });
+        policy = await AttendancePolicyMaster.create({ departmentId, degreeNameId, minRequiredPercentage, warningThreshold, maxCondonationPercentage, editLockHours, allowHalfDay, allowMedicalLeave, allowDutyLeave, allowCorrection, correctionWindowDays });
       }
     }
     res.status(200).json(policy);
@@ -377,6 +485,37 @@ exports.deletePolicy = async (req, res) => {
     const policy = await AttendancePolicyMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
     res.status(200).json(policy);
   } catch (error) { res.status(500).json({ message: error.message }); }
+};
+exports.seedPoliciesOnly = async (req, res) => {
+  try {
+    const { seedingPassword } = req.body;
+    if (!seedingPassword || seedingPassword !== process.env.UTILITY_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid or missing seeding password' });
+    }
+    await AttendancePolicyMaster.deleteMany({});
+    const allDegreeNames = await DegreeNameMaster.find({ isActive: true });
+    let policiesAdded = 0;
+    for (const dn of allDegreeNames) {
+      await AttendancePolicyMaster.create({
+        departmentId: null,
+        degreeNameId: dn._id,
+        minRequiredPercentage: 75,
+        warningThreshold: 80,
+        maxCondonationPercentage: 10,
+        editLockHours: 72,
+        allowHalfDay: true,
+        allowMedicalLeave: true,
+        allowDutyLeave: true,
+        allowCorrection: true,
+        correctionWindowDays: 14,
+        isActive: true
+      });
+      policiesAdded++;
+    }
+    res.status(200).json({ message: `Successfully seeded ${policiesAdded} course policies with 72 lock hours.` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.getLeaveTypes = async (req, res) => {
@@ -391,8 +530,23 @@ exports.getLeaveTypes = async (req, res) => {
 };
 exports.createLeaveType = async (req, res) => {
   try {
+    const { leaveName, leaveCode } = req.body;
+    if (!leaveName || !leaveCode) {
+      return res.status(400).json({ message: 'Leave Name and Leave Code are required' });
+    }
     const deptId = req.user.role === 'SUPER_ADMIN' ? null : req.user.departmentId;
-    const leaveType = await LeaveTypeMaster.create({ ...req.body, departmentId: deptId });
+    const duplicate = await LeaveTypeMaster.findOne({
+      departmentId: deptId,
+      isActive: true,
+      $or: [
+        { leaveName: { $regex: new RegExp('^' + leaveName.trim() + '$', 'i') } },
+        { leaveCode: leaveCode.trim().toUpperCase() }
+      ]
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: 'Leave Name or Leave Code already exists for this department.' });
+    }
+    const leaveType = await LeaveTypeMaster.create({ ...req.body, departmentId: deptId, leaveName: leaveName.trim(), leaveCode: leaveCode.trim().toUpperCase() });
     res.status(201).json(leaveType);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -404,9 +558,33 @@ exports.deleteLeaveType = async (req, res) => {
 };
 exports.updateLeaveType = async (req, res) => {
   try {
-    const data = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const { leaveName, leaveCode } = req.body;
+    const data = await LeaveTypeMaster.findById(req.params.id);
     if (!data) return res.status(404).json({ message: 'Leave type not found' });
-    res.status(200).json(data);
+    
+    if (leaveName !== undefined || leaveCode !== undefined) {
+      const checkName = leaveName !== undefined ? leaveName.trim() : data.leaveName;
+      const checkCode = leaveCode !== undefined ? leaveCode.trim().toUpperCase() : data.leaveCode;
+      const duplicate = await LeaveTypeMaster.findOne({
+        _id: { $ne: req.params.id },
+        departmentId: data.departmentId,
+        isActive: true,
+        $or: [
+          { leaveName: { $regex: new RegExp('^' + checkName + '$', 'i') } },
+          { leaveCode: checkCode }
+        ]
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: 'Another Leave Name or Leave Code already exists for this department.' });
+      }
+    }
+    
+    const updatedData = { ...req.body };
+    if (leaveName !== undefined) updatedData.leaveName = leaveName.trim();
+    if (leaveCode !== undefined) updatedData.leaveCode = leaveCode.trim().toUpperCase();
+    
+    const updated = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
+    res.status(200).json(updated);
   } catch (error) {
     if (error.code === 11000) {
       let dupMessage = 'A duplicate entry already exists in the database.';
@@ -650,6 +828,13 @@ exports.getAttendanceMatrix = async (req, res) => {
         timetableQuery.facultyId = req.user._id;
       }
       classes = await TimetableMaster.find(timetableQuery).populate('facultyId', 'name');
+
+      // Filter classes to ensure they are within their semester limit
+      const sessionObj = await AcademicSessionMaster.findById(sessionId);
+      if (sessionObj) {
+        const holidays = await HolidayCalendar.find({ isActive: true });
+        classes = classes.filter(c => isDateWithinTimetableLimit(sessionObj, c, targetDate, holidays));
+      }
     }
 
     // ── Fetch StudentSemesterMapping to determine which students are mapped to which subjects ──
@@ -733,9 +918,9 @@ exports.getAttendanceMatrix = async (req, res) => {
     });
 
     // Calculate lock status based on policy
-    let policy = await AttendancePolicyMaster.findOne({ departmentId, programType: dt?.code || 'PG' });
+    let policy = await AttendancePolicyMaster.findOne({ departmentId, degreeNameId, isActive: true });
     if (!policy) {
-      policy = await AttendancePolicyMaster.findOne({ departmentId: null, programType: dt?.code || 'PG' });
+      policy = await AttendancePolicyMaster.findOne({ departmentId: null, degreeNameId, isActive: true });
     }
     const editLockHours = policy ? policy.editLockHours : 48;
 
@@ -815,10 +1000,39 @@ exports.markAttendanceBulk = async (req, res) => {
       });
     }
 
+    // Validate classes against totalClassesInSemester limit
+    if (!isPhD) {
+      const sessionObj = await AcademicSessionMaster.findById(sessionId);
+      const holidays = await HolidayCalendar.find({ isActive: true });
+      
+      const slotIds = new Set();
+      records.forEach(r => {
+        (r.classes || []).forEach(c => {
+          if (c.timetableSlotId) slotIds.add(c.timetableSlotId.toString());
+        });
+      });
+      
+      if (slotIds.size > 0) {
+        const slots = await TimetableMaster.find({ _id: { $in: Array.from(slotIds) } });
+        const invalidSlots = [];
+        for (const slot of slots) {
+          const isValid = isDateWithinTimetableLimit(sessionObj, slot, targetDate, holidays);
+          if (!isValid) {
+            invalidSlots.push(slot.subjectName);
+          }
+        }
+        if (invalidSlots.length > 0) {
+          return res.status(400).json({
+            message: `Cannot mark attendance. The class "${invalidSlots.join(', ')}" is not scheduled on ${targetDate.toLocaleDateString()} because the semester limit of classes has been reached.`
+          });
+        }
+      }
+    }
+
     // Get policy lock duration
-    let policy = await AttendancePolicyMaster.findOne({ departmentId, programType: dt?.code || 'PG' });
+    let policy = await AttendancePolicyMaster.findOne({ departmentId, degreeNameId, isActive: true });
     if (!policy) {
-      policy = await AttendancePolicyMaster.findOne({ departmentId: null, programType: dt?.code || 'PG' });
+      policy = await AttendancePolicyMaster.findOne({ departmentId: null, degreeNameId, isActive: true });
     }
     const editLockHours = policy ? policy.editLockHours : 48;
 
@@ -2011,6 +2225,10 @@ exports.getHolidays = async (req, res) => {
 
 exports.seedHolidays = async (req, res) => {
   try {
+    const { seedingPassword } = req.body;
+    if (!seedingPassword || seedingPassword !== process.env.UTILITY_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid or missing seeding password' });
+    }
     await HolidayCalendar.deleteMany({});
     const hpHolidays = [
       { title: "Statehood Day", startDate: new Date("2026-01-25T00:00:00.000Z"), endDate: new Date("2026-01-25T00:00:00.000Z"), holidayType: "STATE" },
@@ -2045,6 +2263,10 @@ exports.seedHolidays = async (req, res) => {
 
 exports.seedAllMasters = async (req, res) => {
   try {
+    const { seedingPassword } = req.body;
+    if (!seedingPassword || seedingPassword !== process.env.UTILITY_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid or missing seeding password' });
+    }
     // 1. Seed Degree Types
     const degreeTypesToSeed = [
       { name: 'Undergraduate', code: 'UG' },
@@ -2296,18 +2518,20 @@ exports.seedAllMasters = async (req, res) => {
       }
     }
 
-    // 4. Seed default policies for newly created/active degree types
+    // 4. Seed default policies for newly created/active degree names (courses)
     let policiesAdded = 0;
-    for (const dtCode of Object.keys(degreeTypesMap)) {
-      const exists = await AttendancePolicyMaster.findOne({ departmentId: null, programType: dtCode });
+    await AttendancePolicyMaster.deleteMany({});
+    const allDegreeNames = await DegreeNameMaster.find({ isActive: true });
+    for (const dn of allDegreeNames) {
+      const exists = await AttendancePolicyMaster.findOne({ departmentId: null, degreeNameId: dn._id });
       if (!exists) {
         await AttendancePolicyMaster.create({
           departmentId: null,
-          programType: dtCode,
+          degreeNameId: dn._id,
           minRequiredPercentage: 75,
           warningThreshold: 80,
           maxCondonationPercentage: 10,
-          editLockHours: 48,
+          editLockHours: 72, // Seed 72 hours as requested
           allowHalfDay: true,
           allowMedicalLeave: true,
           allowDutyLeave: true,
@@ -2437,6 +2661,10 @@ exports.seedAllMasters = async (req, res) => {
 
 exports.seedSemesterDegreeMappings = async (req, res) => {
   try {
+    const { seedingPassword } = req.body;
+    if (!seedingPassword || seedingPassword !== process.env.UTILITY_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid or missing seeding password' });
+    }
     // 1. Ensure semesters 1 to 10 exist
     const semestersMap = {};
     for (let i = 1; i <= 10; i++) {
@@ -2523,6 +2751,19 @@ exports.seedSemesterDegreeMappings = async (req, res) => {
 
 exports.createHoliday = async (req, res) => {
   try {
+    const { title, startDate, departmentId } = req.body;
+    if (!title || !startDate) {
+      return res.status(400).json({ message: 'Title and Start Date are required' });
+    }
+    const duplicate = await HolidayCalendar.findOne({
+      title: { $regex: new RegExp('^' + title.trim() + '$', 'i') },
+      startDate: new Date(startDate),
+      departmentId: departmentId || null,
+      isActive: true
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: 'A holiday with this title already exists on the selected date.' });
+    }
     const holiday = await HolidayCalendar.create(req.body);
     res.status(201).json(holiday);
   } catch (error) { res.status(500).json({ message: error.message }); }
@@ -2535,14 +2776,33 @@ exports.deleteHoliday = async (req, res) => {
 };
 exports.updateHoliday = async (req, res) => {
   try {
-    const { title, startDate, endDate, isRecurring, isActive } = req.body;
+    const { title, startDate, endDate, isRecurring, isActive, departmentId } = req.body;
     const data = await HolidayCalendar.findById(req.params.id);
     if (!data) return res.status(404).json({ message: 'Holiday not found' });
-    if (title) data.title = title;
+    
+    if (title !== undefined || startDate !== undefined) {
+      const checkTitle = title !== undefined ? title.trim() : data.title;
+      const checkStartDate = startDate !== undefined ? new Date(startDate) : data.startDate;
+      const checkDeptId = departmentId !== undefined ? departmentId : data.departmentId;
+      
+      const duplicate = await HolidayCalendar.findOne({
+        _id: { $ne: req.params.id },
+        title: { $regex: new RegExp('^' + checkTitle + '$', 'i') },
+        startDate: checkStartDate,
+        departmentId: checkDeptId || null,
+        isActive: true
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: 'Another holiday with this title already exists on this date.' });
+      }
+    }
+
+    if (title) data.title = title.trim();
     if (startDate) data.startDate = startDate;
     if (endDate) data.endDate = endDate;
     if (isRecurring !== undefined) data.isRecurring = isRecurring;
     if (isActive !== undefined) data.isActive = isActive;
+    if (departmentId !== undefined) data.departmentId = departmentId || null;
     await data.save();
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
@@ -2895,7 +3155,9 @@ exports.getFacultyDashboardStats = async (req, res) => {
 
     const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
     const policyMap = {};
-    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+    activePolicies.forEach(p => {
+      if (p.degreeNameId) policyMap[p.degreeNameId.toString()] = p;
+    });
 
     const preResolvedLectureDatesCache = {};
     ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(day => {
@@ -2923,7 +3185,7 @@ exports.getFacultyDashboardStats = async (req, res) => {
         const studentRecs = recordsByStudent[sid] || [];
         const degreeTypeIdStr = student.profile?.degreeTypeId?.toString();
         const degreeCode = degreeTypeIdStr ? degreeTypeMap[degreeTypeIdStr] : 'PG';
-        const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+        const preResolvedPolicy = student.profile?.degreeNameId ? policyMap[student.profile.degreeNameId.toString()] : null;
         const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy, preResolvedLectureDatesCache);
         
         let studentAttended = 0;
@@ -3107,7 +3369,9 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
     for (const dt of degreeTypes) degreeTypeMap[dt._id.toString()] = dt.code;
 
     const policyMap = {};
-    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+    activePolicies.forEach(p => {
+      if (p.degreeNameId) policyMap[p.degreeNameId.toString()] = p;
+    });
 
     const studentSemesterMap = {};
     for (const s of students) {
@@ -3126,7 +3390,7 @@ exports.getFacultyLowAttendanceStudents = async (req, res) => {
       const records = recordsByStudent[sid] || [];
       const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
       const isPhD = degreeCode === 'PHD';
-      const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+      const preResolvedPolicy = student.profile?.degreeNameId ? policyMap[student.profile.degreeNameId.toString()] : null;
 
       // Get timetables for this student's semester
       const timetables = !isPhD ? allTimetables.filter(t =>
@@ -3213,7 +3477,9 @@ exports.getHodDashboardStats = async (req, res) => {
     degreeTypes.forEach(dt => { degreeTypeMap[dt._id.toString()] = dt.code; });
 
     const policyMap = {};
-    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+    activePolicies.forEach(p => {
+      if (p.degreeNameId) policyMap[p.degreeNameId.toString()] = p;
+    });
 
     const preResolvedLectureDatesCache = {};
     ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(day => {
@@ -3233,7 +3499,7 @@ exports.getHodDashboardStats = async (req, res) => {
       const degreeTypeIdStr = student.profile?.degreeTypeId?.toString();
       const degreeCode = degreeTypeIdStr ? degreeTypeMap[degreeTypeIdStr] : 'PG';
       const isPhD = degreeCode === 'PHD';
-      const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+      const preResolvedPolicy = student.profile?.degreeNameId ? policyMap[student.profile.degreeNameId.toString()] : null;
 
       let studentTimetables = [];
       if (!isPhD && studentSlotsMap[sid]) {
@@ -3602,6 +3868,17 @@ exports.createCategoryGenderMaster = async (req, res) => {
     if (!type || !label || !value) {
       return res.status(400).json({ message: 'Type, label, and value are required' });
     }
+    const duplicate = await CategoryGenderMaster.findOne({
+      type: type.toUpperCase(),
+      isActive: true,
+      $or: [
+        { label: { $regex: new RegExp('^' + label.trim() + '$', 'i') } },
+        { value: { $regex: new RegExp('^' + value.trim() + '$', 'i') } }
+      ]
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: 'A record with this label or value already exists for this type.' });
+    }
     const data = await CategoryGenderMaster.create({
       type: type.toUpperCase(),
       label,
@@ -3622,6 +3899,24 @@ exports.updateCategoryGenderMaster = async (req, res) => {
     const { label, value, sortOrder, isActive } = req.body;
     const data = await CategoryGenderMaster.findById(req.params.id);
     if (!data) return res.status(404).json({ message: 'Record not found' });
+
+    if (label !== undefined || value !== undefined) {
+      const checkLabel = label !== undefined ? label.trim() : data.label;
+      const checkValue = value !== undefined ? value.trim() : data.value;
+      const duplicate = await CategoryGenderMaster.findOne({
+        _id: { $ne: req.params.id },
+        type: data.type,
+        isActive: true,
+        $or: [
+          { label: { $regex: new RegExp('^' + checkLabel + '$', 'i') } },
+          { value: { $regex: new RegExp('^' + checkValue + '$', 'i') } }
+        ]
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: 'A record with this label or value already exists for this type.' });
+      }
+    }
+
     if (label) data.label = label;
     if (value) data.value = value;
     if (sortOrder !== undefined) data.sortOrder = sortOrder;
@@ -3673,7 +3968,9 @@ exports.getFacultyCourseDefaulters = async (req, res) => {
 
     const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
     const policyMap = {};
-    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+    activePolicies.forEach(p => {
+      if (p.degreeNameId) policyMap[p.degreeNameId.toString()] = p;
+    });
 
     const holidays = await HolidayCalendar.find({ isActive: true });
     const list = [];
@@ -3681,7 +3978,7 @@ exports.getFacultyCourseDefaulters = async (req, res) => {
     for (const student of students) {
       const studentRecs = recordsByStudent[student._id.toString()] || [];
       const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
-      const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+      const preResolvedPolicy = student.profile?.degreeNameId ? policyMap[student.profile.degreeNameId.toString()] : null;
       const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy);
       
       if (stats.isDefaulter) {
@@ -3717,7 +4014,9 @@ exports.getHodDrillDown = async (req, res) => {
 
     const activePolicies = await AttendancePolicyMaster.find({ isActive: true });
     const policyMap = {};
-    activePolicies.forEach(p => { policyMap[p.programType] = p; });
+    activePolicies.forEach(p => {
+      if (p.degreeNameId) policyMap[p.degreeNameId.toString()] = p;
+    });
 
     if (view === 'faculty') {
       const courses = await TimetableMaster.find({ facultyId: id, sessionId: session._id, isActive: true });
@@ -3748,7 +4047,7 @@ exports.getHodDrillDown = async (req, res) => {
       for (const student of students) {
         const studentRecs = recordsByStudent[student._id.toString()] || [];
         const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
-        const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+        const preResolvedPolicy = student.profile?.degreeNameId ? policyMap[student.profile.degreeNameId.toString()] : null;
         const stats = await calculateStudentStats(student, session, studentRecs, holidays, courses, degreeCode, preResolvedPolicy);
 
         list.push({
@@ -3792,7 +4091,7 @@ exports.getHodDrillDown = async (req, res) => {
       for (const student of students) {
         const studentRecs = recordsByStudent[student._id.toString()] || [];
         const degreeCode = student.profile?.degreeTypeId ? degreeTypeMap[student.profile.degreeTypeId.toString()] : null;
-        const preResolvedPolicy = policyMap[degreeCode] || policyMap['PG'];
+        const preResolvedPolicy = student.profile?.degreeNameId ? policyMap[student.profile.degreeNameId.toString()] : null;
         const stats = await calculateStudentStats(student, session, studentRecs, holidays, [course], degreeCode, preResolvedPolicy);
 
         list.push({

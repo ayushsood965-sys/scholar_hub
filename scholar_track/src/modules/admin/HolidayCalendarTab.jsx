@@ -65,9 +65,11 @@ const HolidayCalendarTab = () => {
 
   const handleSeedHolidays = async () => {
     if (!window.confirm('This will delete all current holidays and seed the Himachal Pradesh 2026 Gazetted Holidays. Do you want to proceed?')) return;
+    const password = window.prompt('Please enter the seeding password:');
+    if (!password) return;
     setSeeding(true);
     try {
-      const res = await api.post('/attendance/holidays/seed');
+      const res = await api.post('/attendance/holidays/seed', { seedingPassword: password });
       toast.success(res.data.message || 'Holidays seeded successfully');
       fetchData();
     } catch (err) {
