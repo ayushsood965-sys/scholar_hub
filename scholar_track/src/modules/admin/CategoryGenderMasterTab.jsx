@@ -12,8 +12,25 @@ const CategoryGenderMasterTab = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ type: 'GENDER', label: '', value: '', sortOrder: 0 });
+  const [seeding, setSeeding] = useState(false);
   const api = useApi();
   const toast = useToast();
+
+  const handleSeedCategoryGender = async () => {
+    if (!window.confirm('This will delete all current category and gender options and seed standard configurations. Do you want to proceed?')) return;
+    const password = window.prompt('Please enter the seeding password:');
+    if (!password) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/attendance/masters/category-gender/seed', { seedingPassword: password });
+      toast.success(res.data.message || 'Seeded successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to seed data');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -116,9 +133,14 @@ const CategoryGenderMasterTab = () => {
           </p>
         </div>
         {!formOpen && (
-          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
-            <Plus size={16} /> Add New Option
-          </button>
+          <div className="flex gap-md">
+            <button className="btn btn-secondary" onClick={handleSeedCategoryGender} disabled={seeding}>
+              {seeding ? 'Seeding...' : 'Seed Categories & Genders'}
+            </button>
+            <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+              <Plus size={16} /> Add New Option
+            </button>
+          </div>
         )}
       </div>
 

@@ -2543,12 +2543,14 @@ exports.seedAllMasters = async (req, res) => {
       }
     }
 
-    // 5. Seed UGC Leave Types (Global)
+    // 5. Seed UGC/HPU Leave Types (Global)
+    await LeaveTypeMaster.deleteMany({});
     const leaveTypesToSeed = [
       {
         leaveName: 'Casual Leave',
         leaveCode: 'CL',
-        maxDaysPerYear: 8,
+        maxDaysPerYear: 30,
+        maxDaysLimit: 30,
         maxDaysLimitType: 'year',
         documentUploadRule: 'optional',
         requiresDocument: false,
@@ -2564,7 +2566,8 @@ exports.seedAllMasters = async (req, res) => {
       {
         leaveName: 'Medical Leave',
         leaveCode: 'ML',
-        maxDaysPerYear: 15,
+        maxDaysPerYear: 30,
+        maxDaysLimit: 30,
         maxDaysLimitType: 'year',
         documentUploadRule: 'mandatory',
         requiresDocument: true,
@@ -2581,6 +2584,7 @@ exports.seedAllMasters = async (req, res) => {
         leaveName: 'Duty Leave',
         leaveCode: 'DL',
         maxDaysPerYear: null,
+        maxDaysLimit: null,
         maxDaysLimitType: 'year',
         documentUploadRule: 'mandatory',
         requiresDocument: true,
@@ -2597,6 +2601,7 @@ exports.seedAllMasters = async (req, res) => {
         leaveName: 'Maternity Leave',
         leaveCode: 'MAT',
         maxDaysPerYear: 240,
+        maxDaysLimit: 240,
         maxDaysLimitType: 'year',
         documentUploadRule: 'mandatory',
         requiresDocument: true,
@@ -2613,6 +2618,7 @@ exports.seedAllMasters = async (req, res) => {
         leaveName: 'Paternity Leave',
         leaveCode: 'PAT',
         maxDaysPerYear: 15,
+        maxDaysLimit: 15,
         maxDaysLimitType: 'year',
         documentUploadRule: 'mandatory',
         requiresDocument: true,
@@ -2624,17 +2630,45 @@ exports.seedAllMasters = async (req, res) => {
         applicableGender: 'Male',
         isActive: true,
         departmentId: null
+      },
+      {
+        leaveName: 'Child Care Leave',
+        leaveCode: 'CCL',
+        maxDaysPerYear: 240,
+        maxDaysLimit: 240,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: true,
+        countsAsPresent: false,
+        minDaysPerRequest: 5,
+        advanceNoticeDays: 15,
+        allowHalfDay: false,
+        applicableGender: 'Female',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Academic / Special Leave',
+        leaveCode: 'AL',
+        maxDaysPerYear: 30,
+        maxDaysLimit: 30,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: false,
+        countsAsPresent: false,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 3,
+        allowHalfDay: false,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
       }
     ];
 
-    let leaveTypesAdded = 0;
-    for (const lt of leaveTypesToSeed) {
-      const exists = await LeaveTypeMaster.findOne({ leaveCode: lt.leaveCode, departmentId: null });
-      if (!exists) {
-        await LeaveTypeMaster.create(lt);
-        leaveTypesAdded++;
-      }
-    }
+    await LeaveTypeMaster.insertMany(leaveTypesToSeed);
+    const leaveTypesAdded = leaveTypesToSeed.length;
 
     res.status(201).json({
       message: `Master seeding complete successfully!`,
@@ -4548,6 +4582,173 @@ exports.getStudentMappedSubjects = async (req, res) => {
     }
 
     res.status(200).json(mappedSubjects);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.seedLeaveTypes = async (req, res) => {
+  try {
+    const { seedingPassword } = req.body;
+    if (!seedingPassword || seedingPassword !== process.env.UTILITY_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid or missing seeding password' });
+    }
+
+    await LeaveTypeMaster.deleteMany({});
+
+    const leaveTypesToSeed = [
+      {
+        leaveName: 'Casual Leave',
+        leaveCode: 'CL',
+        maxDaysPerYear: 30,
+        maxDaysLimit: 30,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'optional',
+        requiresDocument: false,
+        includeHolidays: false,
+        countsAsPresent: false,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 1,
+        allowHalfDay: true,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Medical Leave',
+        leaveCode: 'ML',
+        maxDaysPerYear: 30,
+        maxDaysLimit: 30,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: false,
+        countsAsPresent: false,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 0,
+        allowHalfDay: false,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Duty Leave',
+        leaveCode: 'DL',
+        maxDaysPerYear: null,
+        maxDaysLimit: null,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: false,
+        countsAsPresent: true,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 2,
+        allowHalfDay: true,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Maternity Leave',
+        leaveCode: 'MAT',
+        maxDaysPerYear: 240,
+        maxDaysLimit: 240,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: true,
+        countsAsPresent: false,
+        minDaysPerRequest: 5,
+        advanceNoticeDays: 15,
+        allowHalfDay: false,
+        applicableGender: 'Female',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Paternity Leave',
+        leaveCode: 'PAT',
+        maxDaysPerYear: 15,
+        maxDaysLimit: 15,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: true,
+        countsAsPresent: false,
+        minDaysPerRequest: 3,
+        advanceNoticeDays: 7,
+        allowHalfDay: false,
+        applicableGender: 'Male',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Child Care Leave',
+        leaveCode: 'CCL',
+        maxDaysPerYear: 240,
+        maxDaysLimit: 240,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: true,
+        countsAsPresent: false,
+        minDaysPerRequest: 5,
+        advanceNoticeDays: 15,
+        allowHalfDay: false,
+        applicableGender: 'Female',
+        isActive: true,
+        departmentId: null
+      },
+      {
+        leaveName: 'Academic / Special Leave',
+        leaveCode: 'AL',
+        maxDaysPerYear: 30,
+        maxDaysLimit: 30,
+        maxDaysLimitType: 'year',
+        documentUploadRule: 'mandatory',
+        requiresDocument: true,
+        includeHolidays: false,
+        countsAsPresent: false,
+        minDaysPerRequest: 1,
+        advanceNoticeDays: 3,
+        allowHalfDay: false,
+        applicableGender: 'All',
+        isActive: true,
+        departmentId: null
+      }
+    ];
+
+    await LeaveTypeMaster.insertMany(leaveTypesToSeed);
+
+    res.status(201).json({ message: 'UGC and HPU Student Leave Rules seeded successfully!' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.seedCategoryGenderMaster = async (req, res) => {
+  try {
+    const { seedingPassword } = req.body;
+    if (!seedingPassword || seedingPassword !== process.env.UTILITY_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid or missing seeding password' });
+    }
+
+    await CategoryGenderMaster.deleteMany({});
+
+    const itemsToSeed = [
+      { type: 'GENDER', label: 'Male', value: 'Male', sortOrder: 1 },
+      { type: 'GENDER', label: 'Female', value: 'Female', sortOrder: 2 },
+      { type: 'GENDER', label: 'Other', value: 'Other', sortOrder: 3 },
+      { type: 'CATEGORY', label: 'General (UR)', value: 'GEN', sortOrder: 1 },
+      { type: 'CATEGORY', label: 'Scheduled Caste (SC)', value: 'SC', sortOrder: 2 },
+      { type: 'CATEGORY', label: 'Scheduled Tribe (ST)', value: 'ST', sortOrder: 3 },
+      { type: 'CATEGORY', label: 'Other Backward Classes (OBC)', value: 'OBC', sortOrder: 4 },
+      { type: 'CATEGORY', label: 'Economically Weaker Section (EWS)', value: 'EWS', sortOrder: 5 }
+    ];
+
+    await CategoryGenderMaster.insertMany(itemsToSeed);
+
+    res.status(201).json({ message: 'Category & Gender Master seeded successfully!' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

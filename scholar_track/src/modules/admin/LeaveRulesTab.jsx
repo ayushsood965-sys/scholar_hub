@@ -16,8 +16,25 @@ const LeaveRulesTab = () => {
     documentUploadRule: 'none', includeHolidays: false, countsAsPresent: false,
     minDaysPerRequest: 1, advanceNoticeDays: 0, allowHalfDay: false, applicableGender: 'All'
   });
+  const [seeding, setSeeding] = useState(false);
   const api = useApi();
   const toast = useToast();
+
+  const handleSeedLeaveRules = async () => {
+    if (!window.confirm('This will delete all current leave rules and seed standard UGC/HPU student leave rules. Do you want to proceed?')) return;
+    const password = window.prompt('Please enter the seeding password:');
+    if (!password) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/attendance/leave-types/seed', { seedingPassword: password });
+      toast.success(res.data.message || 'Leave rules seeded successfully');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to seed leave rules');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -127,9 +144,14 @@ const LeaveRulesTab = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Configure allowed leave types.</p>
         </div>
         {!formOpen && (
-          <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
-            <Plus size={16} /> Add Leave Type
-          </button>
+          <div className="flex gap-md">
+            <button className="btn btn-secondary" onClick={handleSeedLeaveRules} disabled={seeding}>
+              {seeding ? 'Seeding...' : 'Seed Leave Rules'}
+            </button>
+            <button className="btn btn-primary" onClick={() => setFormOpen(true)}>
+              <Plus size={16} /> Add Leave Type
+            </button>
+          </div>
         )}
       </div>
 

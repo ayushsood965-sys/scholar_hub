@@ -61,6 +61,7 @@ router.delete('/masters/semester-degree-mappings/:id', protect, authorize('SUPER
 // Category & Gender Master (Super Admin)
 router.get('/masters/category-gender', protect, attendanceController.getCategoryGenderMasters);
 router.post('/masters/category-gender', protect, authorize('SUPER_ADMIN'), attendanceController.createCategoryGenderMaster);
+router.post('/masters/category-gender/seed', protect, authorize('SUPER_ADMIN'), attendanceController.seedCategoryGenderMaster);
 router.put('/masters/category-gender/:id', protect, authorize('SUPER_ADMIN'), attendanceController.updateCategoryGenderMaster);
 router.delete('/masters/category-gender/:id', protect, authorize('SUPER_ADMIN'), attendanceController.deleteCategoryGenderMaster);
 
@@ -87,6 +88,7 @@ router.delete('/policies/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attenda
 // ==========================================
 router.get('/leave-types', protect, requireDepartment, attendanceController.getLeaveTypes);
 router.post('/leave-types', protect, authorize('HOD', 'SUPER_ADMIN'), requireDepartment, attendanceController.createLeaveType);
+router.post('/leave-types/seed', protect, authorize('SUPER_ADMIN'), attendanceController.seedLeaveTypes);
 router.delete('/leave-types/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.deleteLeaveType);
 router.put('/leave-types/:id', protect, authorize('HOD', 'SUPER_ADMIN'), attendanceController.updateLeaveType);
 
