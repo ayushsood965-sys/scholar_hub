@@ -22,8 +22,8 @@ export default function LogoutBridge() {
 
       const toastMsg = searchParams.get('toast');
       const redirectUrl = toastMsg
-        ? `${GATEWAY_URL}?toast=${encodeURIComponent(toastMsg)}`
-        : GATEWAY_URL;
+        ? `/login?toast=${encodeURIComponent(toastMsg)}`
+        : `/login`;
       
       setTimeout(() => {
         window.location.href = redirectUrl;
