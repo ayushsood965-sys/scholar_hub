@@ -19,18 +19,31 @@ jobs:
             context: ./gateway
             image: ghcr.io/ayushsood965-sys/scholar_hub/gateway
             uuid: smjga68kbt0ouj9ulrmzt3ib
+            build-args: |
+              VITE_API_URL=https://server.scholarhubhpu.in
+              VITE_SCHOLAR_SYNC_URL=https://sync.scholarhubhpu.in
+              VITE_SCHOLAR_TRACK_URL=https://track.scholarhubhpu.in
           - name: scholar_sync
             context: ./scholar_sync
             image: ghcr.io/ayushsood965-sys/scholar_hub/scholar_sync
             uuid: v144s58g2wr1ppkigyjqkib7
+            build-args: |
+              VITE_API_URL=https://server.scholarhubhpu.in
+              VITE_TRACK_URL=https://track.scholarhubhpu.in
+              VITE_GATEWAY_URL=https://scholarhubhpu.in
           - name: scholar_track
             context: ./scholar_track
             image: ghcr.io/ayushsood965-sys/scholar_hub/scholar_track
             uuid: gmo2b0t8j5wtwmd96c0b8urq
+            build-args: |
+              VITE_API_URL=https://server.scholarhubhpu.in
+              VITE_SYNC_URL=https://sync.scholarhubhpu.in
+              VITE_GATEWAY_URL=https://scholarhubhpu.in
           - name: server
             context: ./server
             image: ghcr.io/ayushsood965-sys/scholar_hub/server
             uuid: z6yvvn6x1l555x48nwoz8zdq
+            build-args: ""
 
     steps:
       - name: Checkout repository
@@ -57,6 +70,7 @@ jobs:
           tags: ${{ matrix.image }}:latest,${{ matrix.image }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: ${{ matrix.build-args }}
 
       - name: Trigger Coolify Deployment
         run: |
