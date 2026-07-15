@@ -28,7 +28,6 @@ const { connectRedis } = require('./config/redis');
 const cacheMiddleware = require('./middleware/cacheMiddleware');
 
 const cookieParser = require('cookie-parser');
-const mongoSanitize = require('express-mongo-sanitize');
 
 const User = require('./models/User');
 const Thesis = require('./models/Thesis');
@@ -258,7 +257,25 @@ app.use(helmet({
   contentSecurityPolicy: false // Allowed inline scripts/styles in /clear-all and /seed templates
 }));
 app.use(cookieParser());
-app.use(mongoSanitize());
+
+// Custom NoSQL Query Sanitizer for Express 5 Compatibility
+const sanitizeObject = (obj) => {
+  if (obj && typeof obj === 'object') {
+    Object.keys(obj).forEach(key => {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete obj[key];
+      } else {
+        sanitizeObject(obj[key]);
+      }
+    });
+  }
+};
+app.use((req, res, next) => {
+  if (req.body) sanitizeObject(req.body);
+  if (req.query) sanitizeObject(req.query);
+  if (req.params) sanitizeObject(req.params);
+  next();
+});
 
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
