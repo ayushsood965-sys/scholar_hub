@@ -8659,22 +8659,24 @@ const ProfileTab = () => {
   }, [user?.department]);
 
   const isGeneralInfoComplete = () => {
+    const p = user?.profile;
+    if (!p) return false;
     return !!(
-      dob && dob.trim() &&
-      gender && gender.trim() &&
-      category && category.trim() &&
-      nationality && nationality.trim() &&
-      fatherName && fatherName.trim() &&
-      motherName && motherName.trim() &&
-      phoneNumber && phoneNumber.trim() &&
-      address && address.trim() &&
-      admissionDate && admissionDate.trim() &&
-      phdMode && phdMode.trim() &&
-      specialization && specialization.trim() &&
-      areaOfInterest && areaOfInterest.trim() &&
-      thesisTitle && thesisTitle.trim() &&
-      thesisSummary && thesisSummary.trim() &&
-      academicSession && academicSession.trim()
+      p.dob && p.dob.trim() &&
+      p.gender && p.gender.trim() &&
+      p.category && p.category.trim() &&
+      p.nationality && p.nationality.trim() &&
+      p.fatherName && p.fatherName.trim() &&
+      p.motherName && p.motherName.trim() &&
+      p.phoneNumber && p.phoneNumber.trim() &&
+      p.address && p.address.trim() &&
+      p.admissionDate && p.admissionDate.trim() &&
+      p.phdMode && p.phdMode.trim() &&
+      p.specialization && p.specialization.trim() &&
+      p.areaOfInterest && p.areaOfInterest.trim() &&
+      p.thesisTitle && p.thesisTitle.trim() &&
+      p.thesisSummary && p.thesisSummary.trim() &&
+      p.academicSession && p.academicSession.trim()
     );
   };
 
@@ -8682,21 +8684,21 @@ const ProfileTab = () => {
     const q = user?.profile?.qualifications;
     if (!q) return false;
 
-    // Check roll numbers, marks, board/school/college/university, percentages, and certificates
-    const class10Ok = !!(class10Roll && class10Board && class10School && class10Marks && class10Total && class10Percentage && q?.class10?.certificateUrl);
-    const class12Ok = !!(class12Roll && class12Board && class12School && class12Marks && class12Total && class12Percentage && q?.class12?.certificateUrl);
-    const gradOk = !!(gradRoll && gradDegree && gradCollege && gradUniversity && gradMarks && gradTotal && gradPercentage && q?.graduation?.certificateUrl);
-    const pgOk = !!(pgRoll && pgDegree && pgCollege && pgUniversity && pgMarks && pgTotal && pgPercentage && q?.postGraduation?.certificateUrl);
+    // Check database record directly
+    const class10Ok = !!(q.class10?.rollNo && q.class10?.board && q.class10?.school && q.class10?.marksObtained && q.class10?.totalMarks && q.class10?.percentage && q.class10?.certificateUrl);
+    const class12Ok = !!(q.class12?.rollNo && q.class12?.board && q.class12?.school && q.class12?.marksObtained && q.class12?.totalMarks && q.class12?.percentage && q.class12?.certificateUrl);
+    const gradOk = !!(q.graduation?.rollNo && q.graduation?.degree && q.graduation?.college && q.graduation?.university && q.graduation?.marksObtained && q.graduation?.totalMarks && q.graduation?.percentage && q.graduation?.certificateUrl);
+    const pgOk = !!(q.postGraduation?.rollNo && q.postGraduation?.degree && q.postGraduation?.college && q.postGraduation?.university && q.postGraduation?.marksObtained && q.postGraduation?.totalMarks && q.postGraduation?.percentage && q.postGraduation?.certificateUrl);
 
     if (!class10Ok || !class12Ok || !gradOk || !pgOk) return false;
 
-    if (mphilDone === 'YES') {
-      const mphilOk = !!(mphilUniversity && mphilPassingYear && mphilTotalMarks && mphilMarksObtained && mphilPercentage && q?.mphil?.certificateUrl);
+    if (q.mphil?.done === true) {
+      const mphilOk = !!(q.mphil?.university && q.mphil?.passingYear && q.mphil?.totalMarks && q.mphil?.marksObtained && q.mphil?.percentage && q.mphil?.certificateUrl);
       if (!mphilOk) return false;
     }
 
-    if (netJrfQualified === 'YES') {
-      const netJrfOk = !!(netJrfCertNumber && netJrfRoll && q?.netJrf?.certificateUrl);
+    if (q.netJrf?.qualified === true) {
+      const netJrfOk = !!(q.netJrf?.certNumber && q.netJrf?.rollNo && q.netJrf?.certificateUrl);
       if (!netJrfOk) return false;
     }
 
