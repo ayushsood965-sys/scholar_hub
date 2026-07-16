@@ -8424,6 +8424,7 @@ const ProfileTab = () => {
     user?.profile?.qualifications?.netJrf?.qualified === true ? 'YES' : 
     user?.profile?.qualifications?.netJrf?.qualified === false ? 'NO' : ''
   );
+  const [netJrfExamType, setNetJrfExamType] = useState(user?.profile?.qualifications?.netJrf?.examType || '');
   const [netJrfCertNumber, setNetJrfCertNumber] = useState(user?.profile?.qualifications?.netJrf?.certNumber || '');
   const [netJrfRoll, setNetJrfRoll] = useState(user?.profile?.qualifications?.netJrf?.rollNo || '');
   const [netJrfRank, setNetJrfRank] = useState(user?.profile?.qualifications?.netJrf?.rank || '');
@@ -8527,6 +8528,7 @@ const ProfileTab = () => {
           q?.netJrf?.qualified === true ? 'YES' : 
           q?.netJrf?.qualified === false ? 'NO' : ''
         );
+        setNetJrfExamType(q?.netJrf?.examType || '');
         setNetJrfCertNumber(q?.netJrf?.certNumber || '');
         setNetJrfRoll(q?.netJrf?.rollNo || '');
         setNetJrfRank(q?.netJrf?.rank || '');
@@ -8671,7 +8673,7 @@ const ProfileTab = () => {
     }
 
     if (netJrfQualified === 'YES') {
-      const netJrfOk = !!(netJrfCertNumber && netJrfRoll && netJrfRank && netJrfScore && netJrfIssueDate && q?.netJrf?.certificateUrl);
+      const netJrfOk = !!(netJrfExamType && netJrfCertNumber && netJrfRoll && netJrfRank && netJrfScore && netJrfIssueDate && q?.netJrf?.certificateUrl);
       if (!netJrfOk) return false;
     }
 
@@ -8724,7 +8726,7 @@ const ProfileTab = () => {
       }
     }
     if (netJrfQualified === 'YES') {
-      if (!netJrfCertNumber || !netJrfRoll || !netJrfRank || !netJrfScore || !netJrfIssueDate || !q?.netJrf?.certificateUrl) {
+      if (!netJrfExamType || !netJrfCertNumber || !netJrfRoll || !netJrfRank || !netJrfScore || !netJrfIssueDate || !q?.netJrf?.certificateUrl) {
         return 'Please complete and save NET JRF Details including certificate upload.';
       }
     }
@@ -8820,6 +8822,7 @@ const ProfileTab = () => {
         q?.netJrf?.qualified === true ? 'YES' : 
         q?.netJrf?.qualified === false ? 'NO' : ''
       );
+      setNetJrfExamType(q?.netJrf?.examType || '');
       setNetJrfCertNumber(q?.netJrf?.certNumber || '');
       setNetJrfRoll(q?.netJrf?.rollNo || '');
       setNetJrfRank(q?.netJrf?.rank || '');
@@ -9065,7 +9068,7 @@ const ProfileTab = () => {
         return;
       }
       if (netJrfQualified === 'YES') {
-        if (!netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
+        if (!netJrfExamType.trim() || !netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
           toast.error('Please fill in all NET JRF details before saving.');
           setLoading(false);
           return;
@@ -9174,6 +9177,7 @@ const ProfileTab = () => {
     } else if (sectionKey === 'netJrf') {
       sectionData = {
         qualified: netJrfQualified === 'YES',
+        examType: netJrfExamType,
         certNumber: netJrfCertNumber,
         rollNo: netJrfRoll,
         rank: netJrfRank,
@@ -9283,6 +9287,7 @@ const ProfileTab = () => {
       setLoading(false);
       if (res.success) {
         toast.success(`Qualification #${rowIndex + 1} saved successfully!`);
+        setOtherQuals(listToSave);
       } else {
         toast.error(`Failed to save: ${res.message}`);
       }
@@ -9361,6 +9366,7 @@ const ProfileTab = () => {
       setLoading(false);
       if (res.success) {
         toast.success(`Fellowship #${rowIndex + 1} saved successfully!`);
+        setFellowships(listToSave);
       } else {
         toast.error(`Failed to save: ${res.message}`);
       }
@@ -9525,6 +9531,11 @@ const ProfileTab = () => {
     setLoading(false);
     if (res.success) {
       toast.success(`${sectionKey === 'otherQuals' ? 'Other Qualifications' : 'Fellowships'} saved successfully!`);
+      if (sectionKey === 'otherQuals') {
+        setOtherQuals(listToSave);
+      } else {
+        setFellowships(listToSave);
+      }
       setEditModes(prev => ({ ...prev, [sectionKey]: false }));
     } else {
       toast.error(`Failed to save: ${res.message}`);
@@ -9765,6 +9776,7 @@ const ProfileTab = () => {
           },
           netJrf: {
             qualified: netJrfQualified === 'YES',
+            examType: netJrfExamType,
             certNumber: netJrfCertNumber,
             rollNo: netJrfRoll,
             rank: netJrfRank,
@@ -9861,6 +9873,7 @@ const ProfileTab = () => {
         },
         netJrf: {
           qualified: netJrfQualified === 'YES',
+          examType: netJrfExamType,
           certNumber: netJrfCertNumber,
           rollNo: netJrfRoll,
           rank: netJrfRank,
@@ -11240,6 +11253,10 @@ const ProfileTab = () => {
                     {netJrfQualified === 'YES' && (
                       <>
                         <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Exam Type</span>
+                          <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{netJrfExamType || '—'}</strong>
+                        </div>
+                        <div>
                           <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Award Letter Number</span>
                           <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{netJrfCertNumber || '—'}</strong>
                         </div>
@@ -11278,7 +11295,7 @@ const ProfileTab = () => {
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: netJrfQualified === 'YES' ? '1fr 1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '12px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Have you qualified NET JRF?</label>
                       <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
@@ -11289,6 +11306,17 @@ const ProfileTab = () => {
                     </div>
                     {netJrfQualified === 'YES' && (
                       <>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Select Exam</label>
+                          <select className="form-input" value={netJrfExamType} onChange={e => setNetJrfExamType(e.target.value)}>
+                            <option value="">Select Exam...</option>
+                            <option value="NET">NET</option>
+                            <option value="JRF">JRF</option>
+                            <option value="GATE">GATE</option>
+                            <option value="SET">SET</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Certification / Award Letter Number</label>
                           <input type="text" className="form-input" placeholder="Cert Number" value={netJrfCertNumber} onChange={e => setNetJrfCertNumber(e.target.value)} />
