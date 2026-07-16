@@ -309,7 +309,6 @@ const Landing = () => {
           <button onClick={() => scrollToSection('home')} className="nav-link-btn">Home</button>
           <button onClick={() => scrollToSection('about')} className="nav-link-btn">About</button>
           <button onClick={() => scrollToSection('portals')} className="nav-link-btn">Portals</button>
-          <button onClick={() => scrollToSection('announcements')} className="nav-link-btn">Directory</button>
         </div>
 
         <div className="nav-actions">
@@ -826,45 +825,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Bulletins & Directory Grid */}
-      <section 
-        id="announcements"
-        ref={announcementsRef}
-        className={`bulletins-directory-section reveal-element ${announcementsRevealed ? 'revealed' : ''}`}
-      >
-        <div className="bulletins-grid">
-          {/* Quick Links & Directory */}
-          <div className="glass-panel directory-box" id="directory">
-            <h3 className="box-title">University Directory</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '20px', lineHeight: '1.4' }}>
-              Access external HP University systems or monitor integration migrations status.
-            </p>
-            
-            <div className="directory-list">
-              {quickLinks.map((link, idx) => (
-                <a 
-                  key={idx}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="clay-card directory-item"
-                >
-                  <div className="directory-link-left">
-                    <div className="directory-icon">{link.icon}</div>
-                    <span>{link.name}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
-                    <span className={`status-badge-link ${link.status.toLowerCase().replace(' ', '-')}`}>
-                      {link.status}
-                    </span>
-                    <ArrowUpRight size={14} className="directory-arrow" />
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Footer */}
       <footer className="footer">

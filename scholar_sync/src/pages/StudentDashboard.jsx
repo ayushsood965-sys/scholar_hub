@@ -8426,7 +8426,16 @@ const ProfileTab = () => {
     user?.profile?.qualifications?.netJrf?.qualified === true ? 'YES' : 
     user?.profile?.qualifications?.netJrf?.qualified === false ? 'NO' : ''
   );
-  const [netJrfExamType, setNetJrfExamType] = useState(user?.profile?.qualifications?.netJrf?.examType || '');
+  const [netJrfExamType, setNetJrfExamType] = useState(() => {
+    const dbType = user?.profile?.qualifications?.netJrf?.examType || '';
+    const predefined = ['NET', 'JRF', 'GATE', 'SET'];
+    return predefined.includes(dbType) ? dbType : (dbType ? 'Other' : '');
+  });
+  const [netJrfOtherExamType, setNetJrfOtherExamType] = useState(() => {
+    const dbType = user?.profile?.qualifications?.netJrf?.examType || '';
+    const predefined = ['NET', 'JRF', 'GATE', 'SET'];
+    return predefined.includes(dbType) ? '' : dbType;
+  });
   const [netJrfCertNumber, setNetJrfCertNumber] = useState(user?.profile?.qualifications?.netJrf?.certNumber || '');
   const [netJrfRoll, setNetJrfRoll] = useState(user?.profile?.qualifications?.netJrf?.rollNo || '');
   const [netJrfRank, setNetJrfRank] = useState(user?.profile?.qualifications?.netJrf?.rank || '');
@@ -8530,7 +8539,15 @@ const ProfileTab = () => {
           q?.netJrf?.qualified === true ? 'YES' : 
           q?.netJrf?.qualified === false ? 'NO' : ''
         );
-        setNetJrfExamType(q?.netJrf?.examType || '');
+        const dbExamType = q?.netJrf?.examType || '';
+        const predefinedTypes = ['NET', 'JRF', 'GATE', 'SET'];
+        if (dbExamType && !predefinedTypes.includes(dbExamType)) {
+          setNetJrfExamType('Other');
+          setNetJrfOtherExamType(dbExamType);
+        } else {
+          setNetJrfExamType(dbExamType);
+          setNetJrfOtherExamType('');
+        }
         setNetJrfCertNumber(q?.netJrf?.certNumber || '');
         setNetJrfRoll(q?.netJrf?.rollNo || '');
         setNetJrfRank(q?.netJrf?.rank || '');
@@ -8847,7 +8864,15 @@ const ProfileTab = () => {
         q?.netJrf?.qualified === true ? 'YES' : 
         q?.netJrf?.qualified === false ? 'NO' : ''
       );
-      setNetJrfExamType(q?.netJrf?.examType || '');
+      const dbExamType = q?.netJrf?.examType || '';
+      const predefinedTypes = ['NET', 'JRF', 'GATE', 'SET'];
+      if (dbExamType && !predefinedTypes.includes(dbExamType)) {
+        setNetJrfExamType('Other');
+        setNetJrfOtherExamType(dbExamType);
+      } else {
+        setNetJrfExamType(dbExamType);
+        setNetJrfOtherExamType('');
+      }
       setNetJrfCertNumber(q?.netJrf?.certNumber || '');
       setNetJrfRoll(q?.netJrf?.rollNo || '');
       setNetJrfRank(q?.netJrf?.rank || '');
@@ -9093,7 +9118,8 @@ const ProfileTab = () => {
         return;
       }
       if (netJrfQualified === 'YES') {
-        if (!netJrfExamType.trim() || !netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
+        const examTypeToCheck = netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType;
+        if (!examTypeToCheck || !examTypeToCheck.trim() || !netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
           toast.error('Please fill in all NET JRF details before saving.');
           setLoading(false);
           return;
@@ -9202,7 +9228,7 @@ const ProfileTab = () => {
     } else if (sectionKey === 'netJrf') {
       sectionData = {
         qualified: netJrfQualified === 'YES',
-        examType: netJrfExamType,
+        examType: netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType,
         certNumber: netJrfCertNumber,
         rollNo: netJrfRoll,
         rank: netJrfRank,
@@ -9814,7 +9840,7 @@ const ProfileTab = () => {
           },
           netJrf: {
             qualified: netJrfQualified === 'YES',
-            examType: netJrfExamType,
+            examType: netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType,
             certNumber: netJrfCertNumber,
             rollNo: netJrfRoll,
             rank: netJrfRank,
@@ -9911,7 +9937,7 @@ const ProfileTab = () => {
         },
         netJrf: {
           qualified: netJrfQualified === 'YES',
-          examType: netJrfExamType,
+          examType: netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType,
           certNumber: netJrfCertNumber,
           rollNo: netJrfRoll,
           rank: netJrfRank,
@@ -11301,7 +11327,7 @@ const ProfileTab = () => {
                       <>
                         <div>
                           <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Exam Type</span>
-                          <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{netJrfExamType || '—'}</strong>
+                          <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{netJrfExamType === 'Other' ? netJrfOtherExamType : (netJrfExamType || '—')}</strong>
                         </div>
                         <div>
                           <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Award Letter Number</span>
@@ -11342,7 +11368,7 @@ const ProfileTab = () => {
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: netJrfQualified === 'YES' ? '1fr 1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: netJrfQualified === 'YES' ? (netJrfExamType === 'Other' ? '1fr 1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr') : '1fr', gap: '12px', marginBottom: '12px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Have you qualified NET JRF?</label>
                       <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
@@ -11364,6 +11390,12 @@ const ProfileTab = () => {
                             <option value="Other">Other</option>
                           </select>
                         </div>
+                        {netJrfExamType === 'Other' && (
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Specify Exam Name</label>
+                            <input type="text" className="form-input" placeholder="Enter exam name" value={netJrfOtherExamType} onChange={e => setNetJrfOtherExamType(e.target.value)} />
+                          </div>
+                        )}
                         <div>
                           <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Certification / Award Letter Number</label>
                           <input type="text" className="form-input" placeholder="Cert Number" value={netJrfCertNumber} onChange={e => setNetJrfCertNumber(e.target.value)} />
