@@ -4827,7 +4827,6 @@ const adminHODNavItems = [
   { key: 'profile', label: 'My Profile', Icon: User },
   { kind: 'section', label: '🎓 Scholar Management' },
   { key: 'scholars', label: 'Manage Scholars', Icon: GraduationCap },
-  { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
   { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
   { kind: 'section', label: '📅 Academic Activities' },
   { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
@@ -5236,8 +5235,7 @@ const AdminDashboard = () => {
     defaulters: 'Progress Report Defaulter Tracking',
     scholar_search: 'Search Scholar Details',
     detailed_reports: 'Detailed Academic Reports',
-    public_config: 'Public Portal Config',
-    coursework_approvals: 'Coursework Approvals'
+    public_config: 'Public Portal Config'
   };
 
   const renderContent = () => {
@@ -5279,7 +5277,6 @@ const AdminDashboard = () => {
     switch (activeTab) {
       case 'overview': return <OverviewPage theses={allTheses} onSelectThesis={handleSelectThesis} user={user} setActiveTab={handleTabChange} />;
       case 'scholars': return <ManageScholars theses={allTheses} onSelectThesis={handleSelectThesis} onAction={handleAction} subRole={user?.role} />;
-      case 'coursework_approvals': return <ManageScholars theses={allTheses.filter(t => t.status === 'COURSEWORK' && t.courseworkStatus === 'PENDING_HOD')} onSelectThesis={handleSelectThesis} onAction={handleAction} subRole="HOD" />;
       case 'global_transfers': return <GlobalTransfersTab theses={allTheses} onRefresh={fetchAllTheses} />;
       case 'requests': return <HODChangeRequestsTab user={user} />;
       case 'meetings': return <MeetingsTab user={user} />;

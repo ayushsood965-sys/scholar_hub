@@ -49,7 +49,6 @@ const hodNavItems = [
   { key: 'dept', label: 'Department Scholars', Icon: Users },
   { key: 'my_lab_funding', label: 'My Lab & Funding', Icon: Coins },
   { key: 'registrations', label: 'Registration Requests', Icon: ShieldCheck },
-  { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
   { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
   { kind: 'section', label: '📅 Academic Activities' },
   { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
