@@ -8346,6 +8346,7 @@ const ProfileTab = () => {
     guide: false
   });
   const [academicUnlocked, setAcademicUnlocked] = useState(false);
+  const [hasInitializedAcademic, setHasInitializedAcademic] = useState(false);
   const isEditingAcademic = !!(
     editModes.class10 ||
     editModes.class12 ||
@@ -8607,11 +8608,32 @@ const ProfileTab = () => {
         guide: true
       });
     }
-    if (user?.profile?.preferredGuideId || thesis) {
+    const dbClass10Ok = !!(q?.class10?.rollNo && q?.class10?.certificateUrl);
+    const dbClass12Ok = !!(q?.class12?.rollNo && q?.class12?.certificateUrl);
+    const dbGradOk = !!(q?.graduation?.rollNo && q?.graduation?.certificateUrl);
+    const dbPgOk = !!(q?.postGraduation?.rollNo && q?.postGraduation?.certificateUrl);
+
+    let dbMphilOk = true;
+    if (q?.mphil?.done === true) {
+      dbMphilOk = !!(q?.mphil?.university && q?.mphil?.certificateUrl);
+    }
+    let dbNetJrfOk = true;
+    if (q?.netJrf?.qualified === true) {
+      dbNetJrfOk = !!(q?.netJrf?.rollNo && q?.netJrf?.certificateUrl);
+    }
+
+    const isDbComplete = dbClass10Ok && dbClass12Ok && dbGradOk && dbPgOk && dbMphilOk && dbNetJrfOk;
+
+    if (!hasInitializedAcademic && user?.profile) {
+      setAcademicUnlocked(!isDbComplete);
+      setHasInitializedAcademic(true);
+    }
+
+    if (isDbComplete || user?.profile?.preferredGuideId || thesis) {
       setGuideUnlocked(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, thesis]);
+  }, [user, thesis, hasInitializedAcademic]);
 
   // Fetch category and gender masters
   useEffect(() => {
@@ -9910,6 +9932,7 @@ const ProfileTab = () => {
     setLoading(false);
     if (res.success) {
       setGuideUnlocked(true);
+      setAcademicUnlocked(false);
       const isComplete = isAcademicQualificationsComplete();
       toast.success(`Academic qualifications ${isComplete ? 'updated' : 'saved'} successfully! Proceeding to Supervisor Selection.`);
       setEditModes(prev => ({
@@ -11505,7 +11528,7 @@ const ProfileTab = () => {
                 <button
                   type="button"
                   onClick={(e) => {
-                    if (isEditingAcademic) {
+                    if (academicUnlocked) {
                       handleProceedToGuide(e);
                     } else {
                       setAcademicUnlocked(true);
@@ -11527,16 +11550,7 @@ const ProfileTab = () => {
                     gap: '8px'
                   }}
                 >
-                  {!(
-                    editModes.class10 ||
-                    editModes.class12 ||
-                    editModes.graduation ||
-                    editModes.postGraduation ||
-                    editModes.otherQuals ||
-                    editModes.mphil ||
-                    editModes.netJrf ||
-                    editModes.fellowships
-                  ) ? (
+                  {!academicUnlocked ? (
                     <>✏️ Edit Academic Qualifications</>
                   ) : (
                     <>{guideUnlocked ? '🔓' : '🔒'} Save Academic Qualifications & Move to Preferred Supervisor</>
