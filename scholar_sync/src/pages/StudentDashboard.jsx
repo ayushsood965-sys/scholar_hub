@@ -9971,7 +9971,7 @@ const ProfileTab = () => {
     user?.profile?.qualifications?.class12?.certificateUrl
   );
   const canProceedToGuide = class10Saved && class12Saved;
-  const canSubmit = isGeneralInfoComplete() && isAcademicQualificationsComplete() && !!preferredGuideId;
+  const canSubmit = isGeneralInfoComplete() && isAcademicQualificationsComplete() && !!user?.profile?.preferredGuideId && !editModes.guide;
   console.log('canSubmit debug:', {
     canSubmit,
     isGeneralInfoComplete: isGeneralInfoComplete(),
@@ -10168,7 +10168,7 @@ const ProfileTab = () => {
               const isCompleted = 
                 (item.key === 'personal' && isGeneralInfoComplete() && isPersonalInfoSavedState) ||
                 (item.key === 'education' && isAcademicQualificationsComplete()) ||
-                (item.key === 'supervisor' && !!preferredGuideId);
+                (item.key === 'supervisor' && !!user?.profile?.preferredGuideId && !editModes.guide);
 
               return (
                 <button
