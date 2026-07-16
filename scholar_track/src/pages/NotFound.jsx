@@ -4,11 +4,6 @@ import { Home, Compass, GraduationCap, CalendarRange, HelpCircle, ArrowLeft } fr
 
 const NotFound = () => {
   const navigate = useNavigate();
-  const hostname = window.location.hostname;
-
-  const isSync = hostname.includes('sync');
-  const isTrack = hostname.includes('track') || hostname.includes('localhost'); // local development acts as ScholarTrack context
-  const isGateway = !isSync && !isTrack;
 
   useEffect(() => {
     const styleId = 'notfound-animations';
@@ -40,14 +35,15 @@ const NotFound = () => {
         
         .nf-btn-hover:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(244, 63, 94, 0.4) !important;
-          border-color: rgba(244, 63, 94, 0.8) !important;
+          box-shadow: 0 8px 25px rgba(16, 185, 129, 0.25) !important;
+          border-color: rgba(16, 185, 129, 0.5) !important;
         }
 
         .nf-link-card:hover {
           transform: translateY(-4px);
-          background: rgba(255, 255, 255, 0.08) !important;
-          border-color: rgba(255, 255, 255, 0.2) !important;
+          background: #ffffff !important;
+          border-color: rgba(16, 185, 129, 0.3) !important;
+          box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.08) !important;
         }
       `;
       document.head.appendChild(style);
@@ -56,7 +52,7 @@ const NotFound = () => {
 
   return (
     <div className="nf-container" style={styles.wrapper}>
-      {/* Background Mesh Gradients */}
+      {/* Background Mint Mesh Gradients */}
       <div style={{ ...styles.blurBlob, ...styles.blob1 }} />
       <div style={{ ...styles.blurBlob, ...styles.blob2 }} />
       <div style={{ ...styles.blurBlob, ...styles.blob3 }} />
@@ -95,7 +91,7 @@ const NotFound = () => {
 
         <div style={styles.portalLinks}>
           <a href="https://scholarhubhpu.in" style={styles.linkCard} className="nf-link-card">
-            <Compass size={22} color="#38bdf8" />
+            <Compass size={22} color="#059669" />
             <div style={styles.linkInfo}>
               <span style={styles.linkLabel}>Gateway Hub</span>
               <span style={styles.linkDesc}>Central Router Page</span>
@@ -103,7 +99,7 @@ const NotFound = () => {
           </a>
 
           <a href="https://sync.scholarhubhpu.in" style={styles.linkCard} className="nf-link-card">
-            <GraduationCap size={22} color="#34d399" />
+            <GraduationCap size={22} color="#10b981" />
             <div style={styles.linkInfo}>
               <span style={styles.linkLabel}>ScholarSync</span>
               <span style={styles.linkDesc}>Ph.D. Lifecycle Tracker</span>
@@ -121,7 +117,7 @@ const NotFound = () => {
   );
 };
 
-// Sleek Dark Theme + Glassmorphism Styles (Inline)
+// Clean Green Light Theme Styles (Inline)
 const styles = {
   wrapper: {
     position: 'relative',
@@ -130,8 +126,8 @@ const styles = {
     justifyContent: 'center',
     minHeight: '100vh',
     width: '100vw',
-    backgroundColor: '#030712',
-    color: '#f3f4f6',
+    backgroundColor: '#f4fbf7', // Minty off-white background
+    color: '#1e293b',
     overflow: 'hidden',
     padding: '20px',
     boxSizing: 'border-box',
@@ -140,13 +136,13 @@ const styles = {
     position: 'absolute',
     borderRadius: '50%',
     filter: 'blur(100px)',
-    opacity: 0.15,
+    opacity: 0.35,
     pointerEvents: 'none',
   },
   blob1: {
     width: '450px',
     height: '450px',
-    backgroundColor: '#f43f5e', // Rose/Track theme
+    backgroundColor: '#a7f3d0', // Light Emerald
     top: '-10%',
     left: '10%',
     animation: 'drift 25s infinite alternate ease-in-out',
@@ -154,7 +150,7 @@ const styles = {
   blob2: {
     width: '500px',
     height: '500px',
-    backgroundColor: '#be123c', // Rose/Track Dark
+    backgroundColor: '#d1fae5', // Very light mint
     bottom: '-15%',
     right: '5%',
     animation: 'driftReverse 30s infinite alternate ease-in-out',
@@ -162,7 +158,7 @@ const styles = {
   blob3: {
     width: '350px',
     height: '350px',
-    backgroundColor: '#38bdf8', // Cyan
+    backgroundColor: '#6ee7b7', // Vibrant Mint
     bottom: '20%',
     left: '-5%',
     animation: 'drift 20s infinite alternate ease-in-out',
@@ -172,14 +168,14 @@ const styles = {
     zIndex: 10,
     width: '100%',
     maxWidth: '560px',
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)', // High opacity white
     backdropFilter: 'blur(24px)',
     WebkitBackdropFilter: 'blur(24px)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid rgba(16, 185, 129, 0.15)', // Thin green border
     borderRadius: '24px',
     padding: '40px 30px',
     textAlign: 'center',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+    boxShadow: '0 25px 50px -12px rgba(19, 58, 38, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
     boxSizing: 'border-box',
   },
   logoContainer: {
@@ -197,7 +193,7 @@ const styles = {
     fontSize: '0.95rem',
     fontWeight: '600',
     letterSpacing: '0.05em',
-    color: '#e5e7eb',
+    color: '#0f172a',
     textTransform: 'uppercase',
   },
   glitchBox: {
@@ -208,23 +204,23 @@ const styles = {
     fontWeight: '800',
     margin: '0',
     lineHeight: '1',
-    background: 'linear-gradient(135deg, #f43f5e 0%, #be123c 50%, #38bdf8 100%)',
+    background: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)', // Emerald-Mint gradient
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     letterSpacing: '-0.02em',
-    textShadow: '0 10px 40px rgba(244, 63, 94, 0.15)',
+    textShadow: '0 10px 40px rgba(16, 185, 129, 0.1)',
   },
   title: {
     fontSize: '1.8rem',
     fontWeight: '600',
     margin: '20px 0 10px 0',
-    color: '#ffffff',
+    color: '#0f172a',
     letterSpacing: '-0.01em',
   },
   subtitle: {
     fontSize: '0.98rem',
     lineHeight: '1.6',
-    color: '#9ca3af',
+    color: '#475569',
     margin: '0 0 30px 0',
     padding: '0 10px',
   },
@@ -240,14 +236,14 @@ const styles = {
     justifyContent: 'center',
     padding: '12px 24px',
     borderRadius: '12px',
-    border: '1px solid rgba(244, 63, 94, 0.5)',
-    background: 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
     color: '#ffffff',
     fontSize: '0.95rem',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.25s ease',
-    boxShadow: '0 4px 15px rgba(190, 18, 60, 0.25)',
+    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.15)',
   },
   btnOutline: {
     display: 'inline-flex',
@@ -255,9 +251,9 @@ const styles = {
     justifyContent: 'center',
     padding: '12px 24px',
     borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    background: 'rgba(255, 255, 255, 0.03)',
-    color: '#e5e7eb',
+    border: '1px solid rgba(16, 185, 129, 0.2)',
+    background: 'rgba(255, 255, 255, 0.8)',
+    color: '#059669',
     fontSize: '0.95rem',
     fontWeight: '600',
     cursor: 'pointer',
@@ -274,12 +270,12 @@ const styles = {
     fontSize: '0.78rem',
     textTransform: 'uppercase',
     letterSpacing: '0.1em',
-    color: '#6b7280',
-    backgroundColor: '#0a1020',
-    padding: '0 12px',
+    color: '#64748b',
+    backgroundColor: '#f3fdf8',
+    padding: '4px 12px',
     zIndex: 2,
-    borderRadius: '4px',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    borderRadius: '8px',
+    border: '1px solid rgba(16, 185, 129, 0.08)',
   },
   portalLinks: {
     display: 'flex',
@@ -293,8 +289,8 @@ const styles = {
     gap: '15px',
     padding: '14px 20px',
     borderRadius: '14px',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
-    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(16, 185, 129, 0.1)',
+    background: 'rgba(255, 255, 255, 0.7)',
     textDecoration: 'none',
     transition: 'all 0.25s ease',
     textAlign: 'left',
@@ -307,11 +303,11 @@ const styles = {
   linkLabel: {
     fontSize: '0.92rem',
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#0f172a',
   },
   linkDesc: {
     fontSize: '0.75rem',
-    color: '#9ca3af',
+    color: '#64748b',
     marginTop: '2px',
   },
   footer: {
@@ -320,7 +316,7 @@ const styles = {
     justifyContent: 'center',
     marginTop: '25px',
     fontSize: '0.72rem',
-    color: '#6b7280',
+    color: '#64748b',
     lineHeight: '1.4',
     padding: '0 10px',
   },
