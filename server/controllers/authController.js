@@ -259,6 +259,13 @@ const updateProfile = async (req, res) => {
     if (!user.profile) {
       user.profile = {};
     }
+
+    if (profileData.yearsOfService === '') {
+      profileData.yearsOfService = 0;
+    } else if (profileData.yearsOfService !== undefined && profileData.yearsOfService !== null) {
+      profileData.yearsOfService = Number(profileData.yearsOfService) || 0;
+    }
+
     Object.keys(profileData).forEach(key => {
       user.profile[key] = profileData[key];
     });
@@ -856,6 +863,13 @@ const updateUserProfileByHod = async (req, res) => {
     if (!targetUser.profile) {
       targetUser.profile = {};
     }
+
+    if (profileData.yearsOfService === '') {
+      profileData.yearsOfService = 0;
+    } else if (profileData.yearsOfService !== undefined && profileData.yearsOfService !== null) {
+      profileData.yearsOfService = Number(profileData.yearsOfService) || 0;
+    }
+
     Object.keys(profileData).forEach(key => {
       targetUser.profile[key] = profileData[key];
     });

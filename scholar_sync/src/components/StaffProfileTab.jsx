@@ -1700,7 +1700,7 @@ const StaffProfileTab = ({ thesis }) => {
                           onChange={e => setPersonalForm({ ...personalForm, officeRoom: e.target.value })} 
                         />
                       </div>
-                      {user?.role === 'HOD' && (
+                      {user?.role !== 'STUDENT' && (
                         <>
                           <div className="form-group">
                             <label className="form-label">Years of Service</label>
@@ -1798,7 +1798,7 @@ const StaffProfileTab = ({ thesis }) => {
                       <span style={{ color: '#64748B', display: 'block' }}>Office Room</span>
                       <strong style={{ color: 'var(--color-text-primary)' }}>{profile.officeRoom || 'N/A'}</strong>
                     </div>
-                    {user?.role === 'HOD' && (
+                    {user?.role !== 'STUDENT' && (
                       <>
                         <div>
                           <span style={{ color: '#64748B', display: 'block' }}>Years of Service</span>
@@ -3327,7 +3327,7 @@ const StaffProfileTab = ({ thesis }) => {
                     />
                     <Eye size={14} style={{ color: '#10b981' }} /> Public
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '#1F2937', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="documentVisibility" 
