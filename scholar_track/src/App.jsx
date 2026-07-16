@@ -15,6 +15,8 @@ import HodDashboard from "./pages/HodDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import InstallPrompt from "./components/InstallPrompt";
+import NotFound from "./pages/NotFound";
+
 
 const App = () => {
   useEffect(() => {
@@ -102,7 +104,7 @@ const App = () => {
         />
 
         {/* Fallback Catch-All */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

@@ -18,6 +18,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UtilityAction from './components/UtilityAction';
 import ErrorBoundary from './components/ErrorBoundary';
 import InstallPrompt from './components/InstallPrompt';
+import NotFound from './pages/NotFound';
+
 
 // Premium landing pages
 import ResearchLabsPage from './pages/ResearchLabsPage';
@@ -121,6 +123,8 @@ function App() {
         <Route path="/clear-all" element={<UtilityAction type="clear" />} />
         <Route path="/seed" element={<UtilityAction type="seed" />} />
         <Route path="/seed-users" element={<UtilityAction type="seed-users" />} />
+        {/* Fallback Catch-All Route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       </Router>
     </ErrorBoundary>
