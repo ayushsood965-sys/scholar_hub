@@ -1346,7 +1346,28 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           rollNo: q.postGraduation?.rollNo || '',
           percentage: q.postGraduation?.percentage || '',
           certificateUrl: q.postGraduation?.certificateUrl || ''
-        }
+        },
+        mphil: {
+          done: q.mphil?.done || false,
+          university: q.mphil?.university || '',
+          passingYear: q.mphil?.passingYear || '',
+          totalMarks: q.mphil?.totalMarks || '',
+          marksObtained: q.mphil?.marksObtained || '',
+          percentage: q.mphil?.percentage || '',
+          certificateUrl: q.mphil?.certificateUrl || ''
+        },
+        netJrf: {
+          qualified: q.netJrf?.qualified || false,
+          examType: q.netJrf?.examType || '',
+          certNumber: q.netJrf?.certNumber || '',
+          rollNo: q.netJrf?.rollNo || '',
+          rank: q.netJrf?.rank || '',
+          score: q.netJrf?.score || '',
+          issueDate: q.netJrf?.issueDate || '',
+          certificateUrl: q.netJrf?.certificateUrl || ''
+        },
+        fellowships: q.fellowships || [],
+        otherQuals: q.otherQuals || []
       }
     });
     setIsEditing(true);
@@ -3318,6 +3339,87 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 </div>
               );
             })}
+
+            {/* M.Phil details card if filled */}
+            {qualifications.mphil?.done && (
+              <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>M.Phil Details</span>
+                  {qualifications.mphil.certificateUrl ? (
+                    <a href={`${API_BASE_URL}${qualifications.mphil.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a>
+                  ) : (
+                    <span style={{ color: 'var(--color-text-muted)' }}>Pending</span>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
+                  <div><strong>University:</strong> {qualifications.mphil.university || '—'}</div>
+                  <div><strong>Passing Year:</strong> {qualifications.mphil.passingYear || '—'}</div>
+                  <div><strong>Marks/CGPA:</strong> {qualifications.mphil.marksObtained}/{qualifications.mphil.totalMarks || '—'} ({qualifications.mphil.percentage}%)</div>
+                </div>
+              </div>
+            )}
+
+            {/* NET JRF details card if qualified */}
+            {qualifications.netJrf?.qualified && (
+              <div className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>National Level Exam ({qualifications.netJrf.examType || 'NET / JRF'})</span>
+                  {qualifications.netJrf.certificateUrl ? (
+                    <a href={`${API_BASE_URL}${qualifications.netJrf.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a>
+                  ) : (
+                    <span style={{ color: 'var(--color-text-muted)' }}>Pending</span>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
+                  <div><strong>Exam Type:</strong> {qualifications.netJrf.examType || '—'}</div>
+                  <div><strong>Award Letter No:</strong> {qualifications.netJrf.certNumber || '—'}</div>
+                  <div><strong>Roll Number:</strong> {qualifications.netJrf.rollNo || '—'}</div>
+                  <div><strong>AIR Rank:</strong> {qualifications.netJrf.rank || '—'}</div>
+                  <div><strong>Normalized Score:</strong> {qualifications.netJrf.score || '—'}</div>
+                  <div><strong>Issue Date:</strong> {qualifications.netJrf.issueDate ? new Date(qualifications.netJrf.issueDate).toLocaleDateString() : '—'}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Fellowships if filled */}
+            {qualifications.fellowships && qualifications.fellowships.length > 0 && qualifications.fellowships.map((f, idx) => (
+              <div key={`fellowship-${idx}`} className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Fellowship: {f.name || `Fellowship ${idx + 1}`}</span>
+                  {f.certificateUrl ? (
+                    <a href={`${API_BASE_URL}${f.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a>
+                  ) : (
+                    <span style={{ color: 'var(--color-text-muted)' }}>Pending</span>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
+                  <div><strong>Awarding Body:</strong> {f.awardingBody || '—'}</div>
+                  <div><strong>Year:</strong> {f.year || '—'}</div>
+                  <div><strong>Amount:</strong> {f.amount || '—'}</div>
+                  <div><strong>Duration:</strong> {f.duration || '—'}</div>
+                </div>
+              </div>
+            ))}
+
+            {/* Other Qualifications if filled */}
+            {qualifications.otherQuals && qualifications.otherQuals.length > 0 && qualifications.otherQuals.map((oq, idx) => (
+              <div key={`otherQual-${idx}`} className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Other Qualification: {oq.name || `Qualification ${idx + 1}`}</span>
+                  {oq.certificateUrl ? (
+                    <a href={`${API_BASE_URL}${oq.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a>
+                  ) : (
+                    <span style={{ color: 'var(--color-text-muted)' }}>Pending</span>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
+                  <div><strong>Institution:</strong> {oq.institution || '—'}</div>
+                  <div><strong>Year:</strong> {oq.year || '—'}</div>
+                  <div><strong>Grade/Score:</strong> {oq.grade || '—'}</div>
+                  <div style={{ gridColumn: 'span 3' }}><strong>Details:</strong> {oq.details || '—'}</div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
         
