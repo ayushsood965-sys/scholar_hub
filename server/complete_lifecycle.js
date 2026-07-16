@@ -42,6 +42,7 @@ async function run() {
       department: 'Department of Forensic Science',
       isActive: true,
       isVerified: true,
+      isEmailVerified: true,
       profileCompleted: true,
       profile: {
         phoneNumber: '+91 94180-12345',
@@ -66,6 +67,7 @@ async function run() {
       department: 'Department of Forensic Science',
       isActive: true,
       isVerified: true,
+      isEmailVerified: true,
       profileCompleted: true,
       profile: {
         phoneNumber: '+91 98160-54321',
@@ -89,6 +91,7 @@ async function run() {
       department: 'Department of Forensic Science',
       isActive: true,
       isVerified: true, // will be verified by HOD
+      isEmailVerified: true,
       profileCompleted: true,
       profile: {
         phoneNumber: '+91 98765-43210',

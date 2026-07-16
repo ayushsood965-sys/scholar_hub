@@ -1922,8 +1922,36 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                           <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: r.status === 'APPROVED' ? '#D1FAE5' : r.status === 'REVISION_REQUIRED' ? '#FEE2E2' : r.status === 'SUBMITTED' ? '#DBEAFE' : '#FEF3C7', color: r.status === 'APPROVED' ? '#065F46' : r.status === 'REVISION_REQUIRED' ? '#991B1B' : r.status === 'SUBMITTED' ? '#1D4ED8' : '#D97706' }}>{r.status}</span>
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)', marginBottom: 8 }}>Due Date: {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'N/A'}</div>
-                        {r.documentUrl && (
+                         {r.documentUrl && (
                           <a href={`${API_BASE_URL}${r.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: '#3B82F6', fontWeight: 600, display: 'inline-block', marginBottom: 8 }}>📄 View Submitted Progress Report</a>
+                        )}
+                        {r.feeDetails?.periodFrom && r.status !== 'DRAFT' && (
+                          <div style={{ 
+                            marginTop: '10px', 
+                            marginBottom: '10px', 
+                            background: 'var(--color-surface, #F8FAFC)', 
+                            padding: '12px', 
+                            borderRadius: '8px', 
+                            border: '1px solid var(--color-border, #E2E8F0)',
+                            fontSize: '0.8rem'
+                          }}>
+                            <div style={{ fontWeight: 700, color: '#059669', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span>💰</span> Fee Payment Details
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--color-text-secondary, #475569)' }}>
+                              <div><strong>Fee Period:</strong> {new Date(r.feeDetails.periodFrom).toLocaleDateString()} to {new Date(r.feeDetails.periodTo).toLocaleDateString()} ({r.feeDetails.durationMonths}m, {r.feeDetails.durationDays}d)</div>
+                              <div><strong>Total Deposited:</strong> INR {r.feeDetails.totalFeeDeposited || 'N/A'}</div>
+                              <div><strong>Remarks:</strong> {r.feeDetails.remarks || 'No remarks.'}</div>
+                              {r.feeDetails.feeReceiptUrl && (
+                                <div style={{ marginTop: 2 }}>
+                                  <strong>Receipt:</strong>{' '}
+                                  <a href={`${API_BASE_URL}${r.feeDetails.feeReceiptUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'underline' }}>
+                                    View Receipt PDF 📄
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         )}
                         {r.comments?.length > 0 && (
                           <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', color: '#92400E', margin: '8px 0' }}>

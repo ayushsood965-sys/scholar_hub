@@ -1,0 +1,59 @@
+# ScholarHub HPU Site Map
+
+This sitemap documents all publicly accessible modules, pages, and entry points of the ScholarHub platform across the Gateway and the respective sub-portals (ScholarSync and ScholarTrack).
+
+---
+
+## 1. Main Gateway
+* **Base URL**: `https://scholarhubhpu.in`
+* **Route Layout**:
+  * [Landing / Portal Selector Page](https://scholarhubhpu.in/) (`/`) - Central gateway allowing users to route to either ScholarSync (academic lifecycle tracking) or ScholarTrack (daily attendance/leave management).
+
+---
+
+## 2. ScholarSync Portal (Ph.D. Lifecycle Tracker)
+* **Base URL**: `https://sync.scholarhubhpu.in`
+* **Public Accessible Routes**:
+  * [Home / Landing Page](https://sync.scholarhubhpu.in/) (`/`)
+  * [Sign In / Access Portal](https://sync.scholarhubhpu.in/login) (`/login`)
+  * [Register Scholar Account](https://sync.scholarhubhpu.in/signup) (`/signup`)
+  * [Email Verification Awaiting](https://sync.scholarhubhpu.in/verify-email-pending) (`/verify-email-pending`)
+  * [Verify Account Action](https://sync.scholarhubhpu.in/verify-email) (`/verify-email`)
+  * [Forgot Password](https://sync.scholarhubhpu.in/forgot-password) (`/forgot-password`)
+  * [Reset Password Callback](https://sync.scholarhubhpu.in/reset-password) (`/reset-password`)
+  * [Academic Lifecycle Roadmap](https://sync.scholarhubhpu.in/workflow) (`/workflow`)
+  * [Departments & Research Labs](https://sync.scholarhubhpu.in/labs) (`/labs`)
+  * [Collaborative Research Board](https://sync.scholarhubhpu.in/collaborate) (`/collaborate`)
+  * [Publications Search Directory](https://sync.scholarhubhpu.in/publications) (`/publications`)
+  * [Fellowships & Grants Portal](https://sync.scholarhubhpu.in/funding) (`/funding`)
+  * [Workshops & Academic Events](https://sync.scholarhubhpu.in/events) (`/events`)
+  * [Platform Information (About)](https://sync.scholarhubhpu.in/about) (`/about`)
+  * [Scholar Directory Search](https://sync.scholarhubhpu.in/search) (`/search`)
+
+---
+
+## 3. ScholarTrack Portal (Attendance & Leave Tracker)
+* **Base URL**: `https://track.scholarhubhpu.in`
+* **Public Accessible Routes**:
+  * [Home / Welcome Page](https://track.scholarhubhpu.in/) (`/`)
+  * [Sign In / Access Portal](https://track.scholarhubhpu.in/login) (`/login`)
+  * [Register Scholar Account](https://track.scholarhubhpu.in/signup) (`/signup`)
+  * [Email Verification Awaiting](https://track.scholarhubhpu.in/verify-email-pending) (`/verify-email-pending`)
+  * [Verify Account Action](https://track.scholarhubhpu.in/verify-email) (`/verify-email`)
+  * [Forgot Password](https://track.scholarhubhpu.in/forgot-password) (`/forgot-password`)
+  * [Reset Password Callback](https://track.scholarhubhpu.in/reset-password) (`/reset-password`)
+
+---
+
+## 4. Protected / Dashboard Interfaces (Overview)
+* Access to these dashboards is restricted via roles (`STUDENT`, `FACULTY`, `HOD`, `ADMIN`, `SUPER_ADMIN`) and requires authentication:
+  * **ScholarSync Dashboards**:
+    * Student: `/student-dashboard`
+    * Supervisor: `/faculty-dashboard`
+    * HOD / Department Head: `/admin-dashboard`
+    * Super Administrator: `/super-dashboard`
+  * **ScholarTrack Dashboards**:
+    * Student: `/student-dashboard`
+    * Supervisor: `/faculty-dashboard`
+    * HOD / Department Head: `/hod-dashboard`
+    * Super Administrator: `/super-dashboard`

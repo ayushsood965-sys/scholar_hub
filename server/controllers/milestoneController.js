@@ -601,6 +601,10 @@ const updateFeeDetails = async (req, res) => {
       feeReceiptUrl
     };
 
+    if (milestone.type === '6_MONTH_REPORT' && !milestone.documentUrl) {
+      milestone.status = 'DRAFT';
+    }
+
     milestone.markModified('feeDetails');
     await milestone.save();
 

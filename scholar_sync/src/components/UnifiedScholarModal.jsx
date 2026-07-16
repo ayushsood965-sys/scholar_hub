@@ -3857,6 +3857,34 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             </div>
             {item.dueDate && <div style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: 8 }}>Due: {new Date(item.dueDate).toLocaleDateString()}</div>}
             {item.documentUrl && <a href={`${API_BASE_URL}${item.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: '#3B82F6', fontWeight: 600, display: 'inline-block', marginBottom: 8 }}>📄 View Document</a>}
+            {type === 'reports' && item.feeDetails?.periodFrom && ['SUBMITTED', 'PENDING', 'UNDER_REVIEW_HOD', 'APPROVED', 'REVISION_REQUIRED'].includes(item.status) && item.status !== 'DRAFT' && (
+              <div style={{ 
+                marginTop: '10px', 
+                marginBottom: '10px', 
+                background: 'var(--color-surface, #F8FAFC)', 
+                padding: '12px', 
+                borderRadius: '8px', 
+                border: '1px solid var(--color-border, #E2E8F0)',
+                fontSize: '0.8rem'
+              }}>
+                <div style={{ fontWeight: 700, color: '#059669', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>💰</span> Fee Payment Details
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--color-text-secondary, #475569)' }}>
+                  <div><strong>Fee Period:</strong> {new Date(item.feeDetails.periodFrom).toLocaleDateString()} to {new Date(item.feeDetails.periodTo).toLocaleDateString()} ({item.feeDetails.durationMonths}m, {item.feeDetails.durationDays}d)</div>
+                  <div><strong>Total Deposited:</strong> INR {item.feeDetails.totalFeeDeposited || 'N/A'}</div>
+                  <div><strong>Remarks:</strong> {item.feeDetails.remarks || 'No remarks.'}</div>
+                  {item.feeDetails.feeReceiptUrl && (
+                    <div style={{ marginTop: 2 }}>
+                      <strong>Receipt:</strong>{' '}
+                      <a href={`${API_BASE_URL}${item.feeDetails.feeReceiptUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'underline' }}>
+                        View Receipt PDF 📄
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {item.comments?.length > 0 && (
               <div style={{ background: '#FFFBEB', borderLeft: '3px solid #F59E0B', padding: '6px 10px', borderRadius: 6, fontSize: '0.8rem', color: '#92400E', margin: '8px 0' }}><strong>Feedback:</strong> {item.comments[item.comments.length - 1].text}</div>
             )}

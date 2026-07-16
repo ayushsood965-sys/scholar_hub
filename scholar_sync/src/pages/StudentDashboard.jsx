@@ -7327,6 +7327,7 @@ const CertificatesTab = ({ thesis }) => {
 
 // ── Phase 5 Active Research Tab views ──
 const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
+  const { fetchMyThesis } = useContext(ThesisContext);
   const toast = useToast();
   const reports = milestones.filter(m => m.type === '6_MONTH_REPORT') || [];
   const [file, setFile] = useState(null);
@@ -7398,10 +7399,7 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
       setSavingFeeId(null);
       
       // Sync state back
-      const { data: updatedData } = await axios.get(`${API}/thesis/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      onSubmit && onSubmit(null, null, true); // trigger context re-fetch
+      await fetchMyThesis();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save fee details.');
     } finally {
@@ -7446,7 +7444,7 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
             const isPending = report.status === 'PENDING';
             const isRejectedBySupervisor = report.status === 'REJECTED_BY_SUPERVISOR';
             const isRejectedByHod = report.status === 'REJECTED_BY_HOD';
-            const isDraft = report.status === 'DRAFT' || !report.status;
+            const isDraft = report.status === 'DRAFT' || !report.status || (report.status === 'PENDING' && !report.documentUrl);
 
             let dotBg = '#CBD5E1';
             let titleColor = '#475569';
@@ -7466,7 +7464,7 @@ const SixMonthReportsTab = ({ thesis, milestones = [], onSubmit }) => {
               badgeBg = '#DBEAFE';
               badgeColor = '#1D4ED8';
               statusText = 'UNDER REVIEW (HOD)';
-            } else if (isPending) {
+            } else if (isPending && report.documentUrl) {
               dotBg = '#F59E0B';
               titleColor = '#B45309';
               badgeBg = '#FEF3C7';
