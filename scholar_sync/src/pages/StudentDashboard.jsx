@@ -8607,7 +8607,8 @@ const ProfileTab = () => {
     if (user?.profile?.preferredGuideId || thesis) {
       setGuideUnlocked(true);
     }
-  }, [user, thesis, editModes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, thesis]);
 
   // Fetch category and gender masters
   useEffect(() => {
@@ -8753,6 +8754,78 @@ const ProfileTab = () => {
 
   const handleCancel = (sectionKey) => {
     setEditModes(prev => ({ ...prev, [sectionKey]: false }));
+    const q = user?.profile?.qualifications;
+    if (sectionKey === 'general') {
+      setDob(user?.profile?.dob ? user.profile.dob.split('T')[0] : '');
+      setGender(user?.profile?.gender || '');
+      setCategory(user?.profile?.category || '');
+      setFatherName(user?.profile?.fatherName || '');
+      setMotherName(user?.profile?.motherName || '');
+      setNationality(user?.profile?.nationality || 'Indian');
+      setAdmissionDate(user?.profile?.admissionDate ? user.profile.admissionDate.split('T')[0] : '');
+      setEnrollmentNumber(user?.profile?.enrollmentNumber || '');
+      setPhdMode(user?.profile?.phdMode || '');
+      setSpecialization(user?.profile?.specialization || '');
+      setPhoneNumber(user?.profile?.phoneNumber || '');
+      setAddress(user?.profile?.address || '');
+      setAreaOfInterest(user?.profile?.areaOfInterest || '');
+      setAcademicBackground(user?.profile?.academicBackground || '');
+      setThesisTitle(user?.profile?.thesisTitle || '');
+      setThesisSummary(user?.profile?.thesisSummary || '');
+      setThesisKeywords(user?.profile?.thesisKeywords || '');
+      setAcademicSession(user?.profile?.academicSession || '');
+      setDegreeType(user?.profile?.degreeType || 'Ph.D.');
+    } else if (sectionKey === 'class10') {
+      setClass10Roll(q?.class10?.rollNo || '');
+      setClass10Board(q?.class10?.board || '');
+      setClass10School(q?.class10?.school || '');
+      setClass10Marks(q?.class10?.marksObtained || '');
+      setClass10Total(q?.class10?.totalMarks || '');
+      setClass10Percentage(q?.class10?.percentage || '');
+    } else if (sectionKey === 'class12') {
+      setClass12Roll(q?.class12?.rollNo || '');
+      setClass12Board(q?.class12?.board || '');
+      setClass12School(q?.class12?.school || '');
+      setClass12Marks(q?.class12?.marksObtained || '');
+      setClass12Total(q?.class12?.totalMarks || '');
+      setClass12Percentage(q?.class12?.percentage || '');
+    } else if (sectionKey === 'graduation') {
+      setGradRoll(q?.graduation?.rollNo || '');
+      setGradDegree(q?.graduation?.degree || '');
+      setGradCollege(q?.graduation?.college || '');
+      setGradUniversity(q?.graduation?.university || '');
+      setGradMarks(q?.graduation?.marksObtained || '');
+      setGradTotal(q?.graduation?.totalMarks || '');
+      setGradPercentage(q?.graduation?.percentage || '');
+    } else if (sectionKey === 'postGraduation') {
+      setPgRoll(q?.postGraduation?.rollNo || '');
+      setPgDegree(q?.postGraduation?.degree || '');
+      setPgCollege(q?.postGraduation?.college || '');
+      setPgUniversity(q?.postGraduation?.university || '');
+      setPgMarks(q?.postGraduation?.marksObtained || '');
+      setPgTotal(q?.postGraduation?.totalMarks || '');
+      setPgPercentage(q?.postGraduation?.percentage || '');
+    } else if (sectionKey === 'mphil') {
+      setMphilDone(
+        q?.mphil?.done === true ? 'YES' : 
+        q?.mphil?.done === false ? 'NO' : ''
+      );
+      setMphilUniversity(q?.mphil?.university || '');
+      setMphilPassingYear(q?.mphil?.passingYear || '');
+      setMphilTotalMarks(q?.mphil?.totalMarks || '');
+      setMphilMarksObtained(q?.mphil?.marksObtained || '');
+      setMphilPercentage(q?.mphil?.percentage || '');
+    } else if (sectionKey === 'netJrf') {
+      setNetJrfQualified(
+        q?.netJrf?.qualified === true ? 'YES' : 
+        q?.netJrf?.qualified === false ? 'NO' : ''
+      );
+      setNetJrfCertNumber(q?.netJrf?.certNumber || '');
+      setNetJrfRoll(q?.netJrf?.rollNo || '');
+      setNetJrfRank(q?.netJrf?.rank || '');
+      setNetJrfScore(q?.netJrf?.score || '');
+      setNetJrfIssueDate(q?.netJrf?.issueDate ? q.netJrf.issueDate.split('T')[0] : '');
+    }
     setPendingFiles(prev => {
       const next = { ...prev };
       delete next[sectionKey];
@@ -10394,7 +10467,7 @@ const ProfileTab = () => {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
                     <button
                       type="button"
-                      onClick={() => setEditModes(prev => ({ ...prev, general: false }))}
+                      onClick={() => handleCancel('general')}
                       style={{ background: '#6B7280', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
                     >
                       Cancel
