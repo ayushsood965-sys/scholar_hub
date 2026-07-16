@@ -3403,10 +3403,24 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             ))}
 
             {/* Other Qualifications if filled */}
-            {qualifications.otherQuals && qualifications.otherQuals.length > 0 && qualifications.otherQuals.map((oq, idx) => (
+            {qualifications.otherQuals && qualifications.otherQuals.filter(oq => (
+              (oq.type && oq.type.trim()) ||
+              (oq.otherType && oq.otherType.trim()) ||
+              (oq.rollNo && oq.rollNo.toString().trim()) ||
+              (oq.board && oq.board.trim()) ||
+              (oq.school && oq.school.trim()) ||
+              (oq.percentage && oq.percentage.toString().trim())
+            )).length > 0 && qualifications.otherQuals.filter(oq => (
+              (oq.type && oq.type.trim()) ||
+              (oq.otherType && oq.otherType.trim()) ||
+              (oq.rollNo && oq.rollNo.toString().trim()) ||
+              (oq.board && oq.board.trim()) ||
+              (oq.school && oq.school.trim()) ||
+              (oq.percentage && oq.percentage.toString().trim())
+            )).map((oq, idx) => (
               <div key={`otherQual-${idx}`} className="usm-card" style={{ padding: 10, fontSize: '0.78rem' }}>
                 <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Other Qualification: {oq.name || `Qualification ${idx + 1}`}</span>
+                  <span>Other Qualification: {oq.type === 'Other' ? oq.otherType : oq.type}</span>
                   {oq.certificateUrl ? (
                     <a href={`${API_BASE_URL}${oq.certificateUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 600 }}>📄 Certificate</a>
                   ) : (
@@ -3414,10 +3428,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   )}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
-                  <div><strong>Institution:</strong> {oq.institution || '—'}</div>
-                  <div><strong>Year:</strong> {oq.year || '—'}</div>
-                  <div><strong>Grade/Score:</strong> {oq.grade || '—'}</div>
-                  <div style={{ gridColumn: 'span 3' }}><strong>Details:</strong> {oq.details || '—'}</div>
+                  <div><strong>Institution/School:</strong> {oq.school || '—'}</div>
+                  <div><strong>Board/University:</strong> {oq.board || '—'}</div>
+                  <div><strong>Roll Number:</strong> {oq.rollNo || '—'}</div>
+                  <div><strong>Marks Obtained:</strong> {oq.marksObtained ? `${oq.marksObtained} / ${oq.totalMarks || '—'}` : '—'}</div>
+                  <div><strong>Percentage:</strong> {oq.percentage || '—'}</div>
                 </div>
               </div>
             ))}

@@ -1006,18 +1006,33 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                     </div>
                   )}
 
-                  {/* Other Qualifications — only if at least one entry exists */}
-                  {qualifications.otherQuals?.length > 0 && (
+                  {/* Other Qualifications — only if at least one entry has values */}
+                  {qualifications.otherQuals && qualifications.otherQuals.filter(o => (
+                    (o.type && o.type.trim()) ||
+                    (o.otherType && o.otherType.trim()) ||
+                    (o.rollNo && o.rollNo.toString().trim()) ||
+                    (o.board && o.board.trim()) ||
+                    (o.school && o.school.trim()) ||
+                    (o.percentage && o.percentage.toString().trim())
+                  )).length > 0 && (
                     <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
                       <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0E7490', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>📋 Other Academic Qualifications</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.8rem' }}>
-                        {qualifications.otherQuals.map((o, i) => (
+                        {qualifications.otherQuals.filter(o => (
+                          (o.type && o.type.trim()) ||
+                          (o.otherType && o.otherType.trim()) ||
+                          (o.rollNo && o.rollNo.toString().trim()) ||
+                          (o.board && o.board.trim()) ||
+                          (o.school && o.school.trim()) ||
+                          (o.percentage && o.percentage.toString().trim())
+                        )).map((o, i) => (
                           <div key={i} style={{ borderBottom: i < qualifications.otherQuals.length - 1 ? '1px dashed #CBD5E1' : 'none', paddingBottom: i < qualifications.otherQuals.length - 1 ? 10 : 0 }}>
-                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{o.name || `Qualification ${i + 1}`}</div>
-                            {o.institution && <div><strong>Institution:</strong> {o.institution}</div>}
-                            {o.year && <div><strong>Year:</strong> {o.year}</div>}
-                            {o.grade && <div><strong>Grade / Score:</strong> {o.grade}</div>}
-                            {o.details && <div><strong>Details:</strong> {o.details}</div>}
+                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{o.type === 'Other' ? o.otherType : o.type}</div>
+                            {o.school && <div><strong>Institution/School:</strong> {o.school}</div>}
+                            {o.board && <div><strong>Board/University:</strong> {o.board}</div>}
+                            {o.rollNo && <div><strong>Roll Number:</strong> {o.rollNo}</div>}
+                            {o.marksObtained && <div><strong>Marks Obtained:</strong> {o.marksObtained} / {o.totalMarks || '—'}</div>}
+                            {o.percentage && <div><strong>Percentage:</strong> {o.percentage}</div>}
                             {o.certificateUrl && (
                               <div style={{ marginTop: 6 }}>
                                 <a href={`${API_BASE_URL}${o.certificateUrl}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0E7490', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}>
