@@ -8444,119 +8444,138 @@ const ProfileTab = () => {
 
   useEffect(() => {
     if (user?.profile) {
-      setDob(user.profile.dob ? user.profile.dob.split('T')[0] : '');
-      setGender(user.profile.gender || '');
-      setCategory(user.profile.category || '');
-      setFatherName(user.profile.fatherName || '');
-      setMotherName(user.profile.motherName || '');
-      setNationality(user.profile.nationality || 'Indian');
-      setAdmissionDate(user.profile.admissionDate ? user.profile.admissionDate.split('T')[0] : '');
-      setEnrollmentNumber(user.profile.enrollmentNumber || '');
-      setPhdMode(user.profile.phdMode || '');
-      setSpecialization(user.profile.specialization || '');
-      setPhoneNumber(user.profile.phoneNumber || '');
-      setAddress(user.profile.address || '');
-      setAreaOfInterest(user.profile.areaOfInterest || '');
-      setAcademicBackground(user.profile.academicBackground || '');
+      if (!editModes.general) {
+        setDob(user.profile.dob ? user.profile.dob.split('T')[0] : '');
+        setGender(user.profile.gender || '');
+        setCategory(user.profile.category || '');
+        setFatherName(user.profile.fatherName || '');
+        setMotherName(user.profile.motherName || '');
+        setNationality(user.profile.nationality || 'Indian');
+        setAdmissionDate(user.profile.admissionDate ? user.profile.admissionDate.split('T')[0] : '');
+        setEnrollmentNumber(user.profile.enrollmentNumber || '');
+        setPhdMode(user.profile.phdMode || '');
+        setSpecialization(user.profile.specialization || '');
+        setPhoneNumber(user.profile.phoneNumber || '');
+        setAddress(user.profile.address || '');
+        setAreaOfInterest(user.profile.areaOfInterest || '');
+        setAcademicBackground(user.profile.academicBackground || '');
+        setThesisTitle(user.profile.thesisTitle || '');
+        setThesisSummary(user.profile.thesisSummary || '');
+        setThesisKeywords(user.profile.thesisKeywords || '');
+        setAcademicSession(user.profile.academicSession || '');
+        setDegreeType(user.profile.degreeType || 'Ph.D.');
+      }
       setPreferredGuideId(user.profile.preferredGuideId || '');
-      setThesisTitle(user.profile.thesisTitle || '');
-      setThesisSummary(user.profile.thesisSummary || '');
-      setThesisKeywords(user.profile.thesisKeywords || '');
-      setAcademicSession(user.profile.academicSession || '');
-      setDegreeType(user.profile.degreeType || 'Ph.D.');
       const q = user.profile.qualifications;
-      setClass10Roll(q?.class10?.rollNo || '');
-      setClass10Board(q?.class10?.board || '');
-      setClass10School(q?.class10?.school || '');
-      setClass10Marks(q?.class10?.marksObtained || '');
-      setClass10Total(q?.class10?.totalMarks || '');
-      setClass10Percentage(q?.class10?.percentage || '');
+
+      if (!editModes.class10) {
+        setClass10Roll(q?.class10?.rollNo || '');
+        setClass10Board(q?.class10?.board || '');
+        setClass10School(q?.class10?.school || '');
+        setClass10Marks(q?.class10?.marksObtained || '');
+        setClass10Total(q?.class10?.totalMarks || '');
+        setClass10Percentage(q?.class10?.percentage || '');
+      }
 
       // Class 12
-      setClass12Roll(q?.class12?.rollNo || '');
-      setClass12Board(q?.class12?.board || '');
-      setClass12School(q?.class12?.school || '');
-      setClass12Marks(q?.class12?.marksObtained || '');
-      setClass12Total(q?.class12?.totalMarks || '');
-      setClass12Percentage(q?.class12?.percentage || '');
+      if (!editModes.class12) {
+        setClass12Roll(q?.class12?.rollNo || '');
+        setClass12Board(q?.class12?.board || '');
+        setClass12School(q?.class12?.school || '');
+        setClass12Marks(q?.class12?.marksObtained || '');
+        setClass12Total(q?.class12?.totalMarks || '');
+        setClass12Percentage(q?.class12?.percentage || '');
+      }
 
       // Graduation
-      setGradRoll(q?.graduation?.rollNo || '');
-      setGradDegree(q?.graduation?.degree || '');
-      setGradCollege(q?.graduation?.college || '');
-      setGradUniversity(q?.graduation?.university || '');
-      setGradMarks(q?.graduation?.marksObtained || '');
-      setGradTotal(q?.graduation?.totalMarks || '');
-      setGradPercentage(q?.graduation?.percentage || '');
+      if (!editModes.graduation) {
+        setGradRoll(q?.graduation?.rollNo || '');
+        setGradDegree(q?.graduation?.degree || '');
+        setGradCollege(q?.graduation?.college || '');
+        setGradUniversity(q?.graduation?.university || '');
+        setGradMarks(q?.graduation?.marksObtained || '');
+        setGradTotal(q?.graduation?.totalMarks || '');
+        setGradPercentage(q?.graduation?.percentage || '');
+      }
 
       // Post Graduation
-      setPgRoll(q?.postGraduation?.rollNo || '');
-      setPgDegree(q?.postGraduation?.degree || '');
-      setPgCollege(q?.postGraduation?.college || '');
-      setPgUniversity(q?.postGraduation?.university || '');
-      setPgMarks(q?.postGraduation?.marksObtained || '');
-      setPgTotal(q?.postGraduation?.totalMarks || '');
-      setPgPercentage(q?.postGraduation?.percentage || '');
+      if (!editModes.postGraduation) {
+        setPgRoll(q?.postGraduation?.rollNo || '');
+        setPgDegree(q?.postGraduation?.degree || '');
+        setPgCollege(q?.postGraduation?.college || '');
+        setPgUniversity(q?.postGraduation?.university || '');
+        setPgMarks(q?.postGraduation?.marksObtained || '');
+        setPgTotal(q?.postGraduation?.totalMarks || '');
+        setPgPercentage(q?.postGraduation?.percentage || '');
+      }
 
       // NET JRF
-      setMphilDone(
-        q?.mphil?.done === true ? 'YES' : 
-        q?.mphil?.done === false ? 'NO' : ''
-      );
-      setMphilUniversity(q?.mphil?.university || '');
-      setMphilPassingYear(q?.mphil?.passingYear || '');
-      setMphilTotalMarks(q?.mphil?.totalMarks || '');
-      setMphilMarksObtained(q?.mphil?.marksObtained || '');
-      setMphilPercentage(q?.mphil?.percentage || '');
+      if (!editModes.mphil) {
+        setMphilDone(
+          q?.mphil?.done === true ? 'YES' : 
+          q?.mphil?.done === false ? 'NO' : ''
+        );
+        setMphilUniversity(q?.mphil?.university || '');
+        setMphilPassingYear(q?.mphil?.passingYear || '');
+        setMphilTotalMarks(q?.mphil?.totalMarks || '');
+        setMphilMarksObtained(q?.mphil?.marksObtained || '');
+        setMphilPercentage(q?.mphil?.percentage || '');
+      }
 
-      setNetJrfQualified(
-        q?.netJrf?.qualified === true ? 'YES' : 
-        q?.netJrf?.qualified === false ? 'NO' : ''
-      );
-      setNetJrfCertNumber(q?.netJrf?.certNumber || '');
-      setNetJrfRoll(q?.netJrf?.rollNo || '');
-      setNetJrfRank(q?.netJrf?.rank || '');
-      setNetJrfScore(q?.netJrf?.score || '');
-      setNetJrfIssueDate(q?.netJrf?.issueDate ? q.netJrf.issueDate.split('T')[0] : '');
+      if (!editModes.netJrf) {
+        setNetJrfQualified(
+          q?.netJrf?.qualified === true ? 'YES' : 
+          q?.netJrf?.qualified === false ? 'NO' : ''
+        );
+        setNetJrfCertNumber(q?.netJrf?.certNumber || '');
+        setNetJrfRoll(q?.netJrf?.rollNo || '');
+        setNetJrfRank(q?.netJrf?.rank || '');
+        setNetJrfScore(q?.netJrf?.score || '');
+        setNetJrfIssueDate(q?.netJrf?.issueDate ? q.netJrf.issueDate.split('T')[0] : '');
+      }
 
       // Other
-      setFellowships(prev => {
-        const dbFellowships = q?.fellowships || [];
-        if (!prev || prev.length === 0) return dbFellowships;
-        const merged = prev.map((localRow, idx) => {
-          if (idx < dbFellowships.length) {
-            return {
-              ...dbFellowships[idx],
-              ...localRow,
-              certificateUrl: dbFellowships[idx]?.certificateUrl || localRow.certificateUrl
-            };
+      if (!editModes.fellowships) {
+        setFellowships(prev => {
+          const dbFellowships = q?.fellowships || [];
+          if (!prev || prev.length === 0) return dbFellowships;
+          const merged = prev.map((localRow, idx) => {
+            if (idx < dbFellowships.length) {
+              return {
+                ...dbFellowships[idx],
+                ...localRow,
+                certificateUrl: dbFellowships[idx]?.certificateUrl || localRow.certificateUrl
+              };
+            }
+            return localRow;
+          });
+          if (dbFellowships.length > prev.length) {
+            merged.push(...dbFellowships.slice(prev.length));
           }
-          return localRow;
+          return merged;
         });
-        if (dbFellowships.length > prev.length) {
-          merged.push(...dbFellowships.slice(prev.length));
-        }
-        return merged;
-      });
+      }
 
-      setOtherQuals(prev => {
-        const dbQuals = q?.otherQuals || [];
-        if (!prev || prev.length === 0) return dbQuals;
-        const merged = prev.map((localRow, idx) => {
-          if (idx < dbQuals.length) {
-            return {
-              ...dbQuals[idx],
-              ...localRow,
-              certificateUrl: dbQuals[idx]?.certificateUrl || localRow.certificateUrl
-            };
+      if (!editModes.otherQuals) {
+        setOtherQuals(prev => {
+          const dbQuals = q?.otherQuals || [];
+          if (!prev || prev.length === 0) return dbQuals;
+          const merged = prev.map((localRow, idx) => {
+            if (idx < dbQuals.length) {
+              return {
+                ...dbQuals[idx],
+                ...localRow,
+                certificateUrl: dbQuals[idx]?.certificateUrl || localRow.certificateUrl
+              };
+            }
+            return localRow;
+          });
+          if (dbQuals.length > prev.length) {
+            merged.push(...dbQuals.slice(prev.length));
           }
-          return localRow;
+          return merged;
         });
-        if (dbQuals.length > prev.length) {
-          merged.push(...dbQuals.slice(prev.length));
-        }
-        return merged;
-      });
+      }
 
       // Initialize editModes based on if database has values
       setEditModes(prev => ({
@@ -8588,7 +8607,7 @@ const ProfileTab = () => {
     if (user?.profile?.preferredGuideId || thesis) {
       setGuideUnlocked(true);
     }
-  }, [user, thesis]);
+  }, [user, thesis, editModes]);
 
   // Fetch category and gender masters
   useEffect(() => {
@@ -8623,14 +8642,12 @@ const ProfileTab = () => {
       motherName && motherName.trim() &&
       phoneNumber && phoneNumber.trim() &&
       address && address.trim() &&
-      enrollmentNumber && enrollmentNumber.trim() &&
       admissionDate && admissionDate.trim() &&
       phdMode && phdMode.trim() &&
       specialization && specialization.trim() &&
       areaOfInterest && areaOfInterest.trim() &&
       thesisTitle && thesisTitle.trim() &&
       thesisSummary && thesisSummary.trim() &&
-      thesisKeywords && thesisKeywords.trim() &&
       academicSession && academicSession.trim()
     );
   };
@@ -8675,14 +8692,12 @@ const ProfileTab = () => {
     }
     if (!address || !address.trim()) return 'Residential Address is required.';
     if (!academicSession) return 'Academic Session is required.';
-    if (!enrollmentNumber || !enrollmentNumber.trim()) return 'Enrollment Number is required.';
     if (!admissionDate) return 'Date of Admission is required.';
     if (!phdMode) return 'Mode of Ph.D. is required.';
     if (!specialization || !specialization.trim()) return 'Area of Specialization is required.';
     if (!areaOfInterest || !areaOfInterest.trim()) return 'Area of Research Interest is required.';
     if (!thesisTitle || !thesisTitle.trim()) return 'Thesis Title is required.';
     if (!thesisSummary || !thesisSummary.trim()) return 'Thesis Summary / Abstract is required.';
-    if (!thesisKeywords || !thesisKeywords.trim()) return 'Keywords are required.';
     return null;
   };
 
@@ -9541,9 +9556,9 @@ const ProfileTab = () => {
     // 1. General & ERP Details check
     if (
       !dob || !gender || !category || !fatherName || !motherName || !nationality || 
-      !admissionDate || !enrollmentNumber || !phdMode || !specialization || 
+      !admissionDate || !phdMode || !specialization || 
       !phoneNumber || !address || !areaOfInterest ||
-      !thesisTitle || !thesisSummary || !thesisKeywords || !academicSession
+      !thesisTitle || !thesisSummary || !academicSession
     ) {
       toast.error('please fill in all the details before submitting the form.');
       return;
@@ -10320,8 +10335,8 @@ const ProfileTab = () => {
                     <input type="text" className="form-input" value={user?.profile?.shNo || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', border: '1px solid var(--color-border)', cursor: 'not-allowed' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>University Enrollment Number <span style={{ color: '#EF4444' }}>*</span></label>
-                    <input type="text" className="form-input" placeholder="Enter enrollment number" value={enrollmentNumber} onChange={e => setEnrollmentNumber(e.target.value)} required />
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>University Enrollment Number</label>
+                    <input type="text" className="form-input" placeholder="Enter enrollment number" value={enrollmentNumber} onChange={e => setEnrollmentNumber(e.target.value)} />
                   </div>
                 </div>
 
@@ -10370,8 +10385,8 @@ const ProfileTab = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Keywords <span style={{ color: '#EF4444' }}>*</span></label>
-                    <input type="text" className="form-input" placeholder="e.g. Deep Learning, Image Segmentation, Healthcare (comma separated)" value={thesisKeywords} onChange={e => setThesisKeywords(e.target.value)} required />
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Keywords</label>
+                    <input type="text" className="form-input" placeholder="e.g. Deep Learning, Image Segmentation, Healthcare (comma separated)" value={thesisKeywords} onChange={e => setThesisKeywords(e.target.value)} />
                   </div>
                 </div>
 

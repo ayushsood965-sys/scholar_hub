@@ -6,7 +6,7 @@ const thesisSchema = new mongoose.Schema(
     supervisorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     department: { type: String, required: true },
     title: { type: String, required: true },
-    enrollmentNumber: { type: String, required: true },
+    enrollmentNumber: { type: String, default: '' },
     abstract: { type: String, required: true },
     keywords: { type: String, default: '' },
     status: {

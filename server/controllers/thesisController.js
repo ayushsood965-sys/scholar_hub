@@ -59,7 +59,7 @@ const createThesis = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Ensure the student has completed their profile details first!
-    if (!user.profile?.enrollmentNumber || !user.department || !user.profile?.thesisTitle || !user.profile?.thesisSummary || !user.profile?.thesisKeywords) {
+    if (!user.department || !user.profile?.thesisTitle || !user.profile?.thesisSummary) {
       return res.status(400).json({ 
         message: 'Please complete all required fields (General Info, Qualifications, and Preferred Guide) in your Profile tab first and click Save Profile before submitting for approval.' 
       });
@@ -77,7 +77,7 @@ const createThesis = async (req, res) => {
       if (existing.status === 'REJECTED') {
         existing.status = 'REGISTRATION_PENDING';
         existing.title = user.profile.thesisTitle || user.profile.areaOfInterest || "Ph.D. Research Candidate";
-        existing.enrollmentNumber = user.profile.enrollmentNumber;
+        existing.enrollmentNumber = user.profile.enrollmentNumber || '';
         existing.abstract = user.profile.thesisSummary || `Specialization: ${user.profile.specialization || "N/A"}. Mode: ${user.profile.phdMode || "N/A"}. Candidate has completed and submitted their academic profile details for HOD registration review.`;
         existing.keywords = user.profile.thesisKeywords || '';
 
@@ -110,7 +110,7 @@ const createThesis = async (req, res) => {
       scholarId: req.user._id,
       department: user.department,
       title: user.profile.thesisTitle || user.profile.areaOfInterest || "Ph.D. Research Candidate",
-      enrollmentNumber: user.profile.enrollmentNumber,
+      enrollmentNumber: user.profile.enrollmentNumber || '',
       abstract: user.profile.thesisSummary || `Specialization: ${user.profile.specialization || "N/A"}. Mode: ${user.profile.phdMode || "N/A"}. Candidate has completed and submitted their academic profile details for HOD registration review.`,
       keywords: user.profile.thesisKeywords || '',
       status: 'REGISTRATION_PENDING',
