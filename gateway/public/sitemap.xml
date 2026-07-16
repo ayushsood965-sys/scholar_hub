@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Gateway Route -->
+  <url>
+    <loc>https://scholarhubhpu.in/</loc>
+    <priority>1.00</priority>
+  </url>
+  <!-- ScholarSync Routes -->
+  <url>
+    <loc>https://sync.scholarhubhpu.in/</loc>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/login</loc>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/signup</loc>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/workflow</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/labs</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/collaborate</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/publications</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/funding</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/events</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/about</loc>
+    <priority>0.60</priority>
+  </url>
+  <url>
+    <loc>https://sync.scholarhubhpu.in/search</loc>
+    <priority>0.60</priority>
+  </url>
+  <!-- ScholarTrack Routes -->
+  <url>
+    <loc>https://track.scholarhubhpu.in/</loc>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://track.scholarhubhpu.in/login</loc>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://track.scholarhubhpu.in/signup</loc>
+    <priority>0.80</priority>
+  </url>
+</urlset>
