@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/unit/*.test.js tests/integration/*.test.js tests/e2e/api.test.js",
+    "test:live": "node --test tests/e2e/live_production.test.js",
     "db": "\"C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe\" --dbpath \"C:\\Program Files\\MongoDB\\Server\\8.2\\data\"",
     "start": "node server.js",
     "dev": "node server.js"
