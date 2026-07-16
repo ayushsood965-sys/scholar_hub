@@ -17,7 +17,7 @@ const renderAdminPage = (type, error = '', successData = null) => {
     ? 'Deletes all records from the database and removes all uploaded PDF/DOCX files. This action resets the portal to a fresh state and is irreversible.'
     : isSeedUsers
     ? 'Seeds the database with 10 students, 5 faculties, and 1 HOD in each department (730+ users), complete with full historical milestones, RAC reviews, DRC meetings, and publications using sample.pdf.'
-    : 'Seeds the database with academic departments.';
+    : 'Seeds the database with the Super Administrator account.';
 
   let contentHtml = '';
 

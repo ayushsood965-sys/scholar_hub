@@ -450,18 +450,6 @@ const handleSeedPost = async (req, res) => {
   }
 
   try {
-    // Seed Departments
-    const departmentsToSeed = require('./utils/departmentsData');
-
-    let deptsAdded = 0;
-    for (const d of departmentsToSeed) {
-      const exists = await Department.findOne({ $or: [{ name: d.name }, { code: d.code }] });
-      if (!exists) {
-        await Department.create(d);
-        deptsAdded++;
-      }
-    }
-
     // Ensure Super Admin exists
     const adminExists = await User.findOne({ username: 'admin' });
     let adminStatus = 'Super Admin already exists.';
@@ -481,7 +469,6 @@ const handleSeedPost = async (req, res) => {
 
     const successData = {
       seeded: [
-        { name: 'Departments Seeded', status: `Seeded ${deptsAdded} new departments.` },
         { name: 'Super Administrator', status: adminStatus }
       ]
     };
