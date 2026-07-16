@@ -4690,6 +4690,10 @@ const FacultyDashboard = () => {
   const titles = { overview: 'Faculty Dashboard', registrations: 'Registration Requests', coursework_approvals: 'Coursework Approvals', scholars: 'My Scholars', my_lab_funding: 'My Lab & Funding', reviews: 'Pending Reviews', dept: 'Department Scholars', meetings: 'Guidance Consultations & Meetings', requests: 'Student Change Requests Desk', profile: 'My Profile', defaulters: 'Progress Report Defaulters', scholar_search: 'Search Scholar Details', detailed_reports: 'Detailed Academic Reports', public_config: 'Public Portal Config' };
 
   const renderContent = () => {
+    if (activeTab === 'profile') {
+      return <ProfileTab />;
+    }
+
     if (!user?.isVerified) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: 24 }}>

@@ -5162,6 +5162,10 @@ const AdminDashboard = () => {
   };
 
   const renderContent = () => {
+    if (activeTab === 'profile') {
+      return <ProfileTab />;
+    }
+
     if (!user?.isVerified) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: 24 }}>

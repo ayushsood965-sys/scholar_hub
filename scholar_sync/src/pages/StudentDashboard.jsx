@@ -12248,6 +12248,10 @@ const StudentDashboard = () => {
       );
     }
 
+    if (activeTab === 'profile') {
+      return <ProfileTab />;
+    }
+
     if (!thesis) {
       return (
         <div className="card" style={{ maxWidth: 650, margin: '40px auto', textAlign: 'center', padding: 48 }}>
@@ -12269,7 +12273,6 @@ const StudentDashboard = () => {
     }
 
     if (thesis.status === 'REGISTRATION_PENDING') {
-      if (activeTab === 'profile') return <ProfileTab />;
       return <WaitingRoom thesis={thesis} />;
     }
 
