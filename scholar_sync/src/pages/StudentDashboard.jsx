@@ -8446,6 +8446,7 @@ const ProfileTab = () => {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
+    const q = user?.profile?.qualifications;
     if (user?.profile) {
       if (!editModes.general) {
         setDob(user.profile.dob ? user.profile.dob.split('T')[0] : '');
@@ -8469,7 +8470,6 @@ const ProfileTab = () => {
         setDegreeType(user.profile.degreeType || 'Ph.D.');
       }
       setPreferredGuideId(user.profile.preferredGuideId || '');
-      const q = user.profile.qualifications;
 
       if (!editModes.class10) {
         setClass10Roll(q?.class10?.rollNo || '');
