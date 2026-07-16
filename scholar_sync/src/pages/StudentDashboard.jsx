@@ -9200,6 +9200,7 @@ const ProfileTab = () => {
     if (res.success) {
       const prettyName = sectionKey === 'netJrf' ? 'NET JRF' : sectionKey === 'otherQuals' ? 'Other Qualifications' : sectionKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
       toast.success(`${prettyName} details saved successfully!`);
+      setSelectedFileNames(prev => { const next = { ...prev }; delete next[sectionKey]; return next; });
       setEditModes(prev => ({ ...prev, [sectionKey]: false }));
     } else {
       toast.error(`Failed to save details: ${res.message}`);
@@ -9288,6 +9289,7 @@ const ProfileTab = () => {
       if (res.success) {
         toast.success(`Qualification #${rowIndex + 1} saved successfully!`);
         setOtherQuals(listToSave);
+        setSelectedFileNames(prev => { const next = { ...prev }; delete next[`otherQuals_${rowIndex}`]; return next; });
       } else {
         toast.error(`Failed to save: ${res.message}`);
       }
@@ -9367,6 +9369,7 @@ const ProfileTab = () => {
       if (res.success) {
         toast.success(`Fellowship #${rowIndex + 1} saved successfully!`);
         setFellowships(listToSave);
+        setSelectedFileNames(prev => { const next = { ...prev }; delete next[`fellowship_${rowIndex}`]; return next; });
       } else {
         toast.error(`Failed to save: ${res.message}`);
       }
@@ -9533,8 +9536,18 @@ const ProfileTab = () => {
       toast.success(`${sectionKey === 'otherQuals' ? 'Other Qualifications' : 'Fellowships'} saved successfully!`);
       if (sectionKey === 'otherQuals') {
         setOtherQuals(listToSave);
+        setSelectedFileNames(prev => {
+          const next = { ...prev };
+          list.forEach((_, i) => { delete next[`otherQuals_${i}`]; });
+          return next;
+        });
       } else {
         setFellowships(listToSave);
+        setSelectedFileNames(prev => {
+          const next = { ...prev };
+          list.forEach((_, i) => { delete next[`fellowship_${i}`]; });
+          return next;
+        });
       }
       setEditModes(prev => ({ ...prev, [sectionKey]: false }));
     } else {
