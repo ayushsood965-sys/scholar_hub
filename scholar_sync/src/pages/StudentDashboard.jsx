@@ -9972,6 +9972,14 @@ const ProfileTab = () => {
   );
   const canProceedToGuide = class10Saved && class12Saved;
   const canSubmit = isGeneralInfoComplete() && isAcademicQualificationsComplete() && !!preferredGuideId;
+  console.log('canSubmit debug:', {
+    canSubmit,
+    isGeneralInfoComplete: isGeneralInfoComplete(),
+    isAcademicQualificationsComplete: isAcademicQualificationsComplete(),
+    preferredGuideId,
+    editModesGuide: editModes.guide,
+    userPreferredGuide: user?.profile?.preferredGuideId
+  });
 
   return (
     <div className="profile-tab-wrapper" style={{ position: 'relative' }}>
