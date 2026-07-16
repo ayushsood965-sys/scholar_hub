@@ -309,7 +309,7 @@ const Landing = () => {
           <button onClick={() => scrollToSection('home')} className="nav-link-btn">Home</button>
           <button onClick={() => scrollToSection('about')} className="nav-link-btn">About</button>
           <button onClick={() => scrollToSection('portals')} className="nav-link-btn">Portals</button>
-          <button onClick={() => scrollToSection('announcements')} className="nav-link-btn">Bulletins</button>
+          <button onClick={() => scrollToSection('announcements')} className="nav-link-btn">Directory</button>
         </div>
 
         <div className="nav-actions">
@@ -833,31 +833,6 @@ const Landing = () => {
         className={`bulletins-directory-section reveal-element ${announcementsRevealed ? 'revealed' : ''}`}
       >
         <div className="bulletins-grid">
-          {/* Announcements block */}
-          <div className="glass-panel bulletins-box">
-            <h3 className="box-title">
-              <BellRing size={22} className="bulletins-icon" /> Campus Announcements & Bulletins
-            </h3>
-            
-            <div className="announcements-stack">
-              {announcements.map(notice => (
-                <div key={notice.id} className="announcement-item">
-                  <div className="announcement-tag-wrapper">
-                    <span className={`announcement-badge ${notice.badgeClass}`}>{notice.tag}</span>
-                  </div>
-                  <div className="announcement-content-block">
-                    <h4>{notice.title}</h4>
-                    <span className="announcement-date">{notice.date}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="sample-disclaimer">
-              <Sparkle size={12} /> Notice board displays mock updates for portal demonstrations.
-            </div>
-          </div>
-
           {/* Quick Links & Directory */}
           <div className="glass-panel directory-box" id="directory">
             <h3 className="box-title">University Directory</h3>

@@ -1349,8 +1349,8 @@ a {
 }
 
 .bulletins-grid {
-  display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
+  display: flex;
+  justify-content: center;
   gap: 40px;
 }
 
@@ -1448,6 +1448,8 @@ a {
 .directory-box {
   padding: 36px;
   background: var(--glass-bg);
+  max-width: 800px;
+  width: 100%;
 }
 
 .directory-list {
