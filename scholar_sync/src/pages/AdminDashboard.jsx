@@ -924,49 +924,113 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                       </div>
                     </div>
 
-                    {/* NET-JRF details Card */}
-                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#B45309', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>📝 National Level Exams (NET / JRF)</div>
-                      {qualifications.netJrf?.qualified ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
-                          <div><strong>NET/JRF Qualified:</strong> <span style={{ color: '#D97706', fontWeight: 800 }}>YES</span></div>
-                          <div><strong>Certificate Number:</strong> {qualifications.netJrf.certNumber || '—'}</div>
-                          <div><strong>Roll Number:</strong> {qualifications.netJrf.rollNo || '—'}</div>
-                          <div><strong>Rank / Score:</strong> Rank {qualifications.netJrf.rank || 'N/A'} | Score {qualifications.netJrf.score || 'N/A'}</div>
-                          {qualifications.netJrf.issueDate && <div><strong>Certificate Issue Date:</strong> {new Date(qualifications.netJrf.issueDate).toLocaleDateString()}</div>}
-                          {qualifications.netJrf.certificateUrl && (
-                            <div style={{ marginTop: 8, borderTop: '1px dashed #CBD5E1', paddingTop: 8 }}>
-                              <a 
-                                href={`${API_BASE_URL}${qualifications.netJrf.certificateUrl}`} 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#B45309', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}
-                              >
-                                📄 View NET-JRF Certificate
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
+                    {/* NET-JRF Status Card — shows only if NOT qualified */}
+                    {qualifications.netJrf?.qualified !== true && (
+                      <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#B45309', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>📝 National Level Exams (NET / JRF)</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <span style={{ fontSize: '0.78rem', color: '#64748B', fontStyle: 'italic' }}>No NET/JRF qualification reported by student.</span>
-                          {qualifications.other?.details && <div style={{ fontSize: '0.8rem', background: 'var(--color-bg)', padding: '6px 10px', borderRadius: 6, marginTop: 4 }}><strong>Other details:</strong> {qualifications.other.details}</div>}
-                          {qualifications.other?.certificateUrl && (
-                            <div style={{ marginTop: 8, borderTop: '1px dashed #CBD5E1', paddingTop: 8 }}>
-                              <a 
-                                href={`${API_BASE_URL}${qualifications.other.certificateUrl}`} 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary)', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}
-                              >
-                                📄 View Uploaded Certificate
-                              </a>
-                            </div>
-                          )}
+                          <div><strong>Qualified:</strong> <span style={{ color: '#64748B' }}>NO</span></div>
+                          <span style={{ fontSize: '0.78rem', color: '#64748B', fontStyle: 'italic' }}>Student has not reported NET/JRF qualification.</span>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
+                </div>
+
+                {/* Full-width row: M.Phil, NET-JRF (with examType), Fellowships, Other Quals */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+
+                  {/* M.Phil Card — only if filled */}
+                  {qualifications.mphil?.done === true && (
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#5B21B6', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>🎓 M.Phil Details</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem' }}>
+                        <div><strong>University:</strong> {qualifications.mphil.university || '—'}</div>
+                        <div><strong>Passing Year:</strong> {qualifications.mphil.passingYear || '—'}</div>
+                        <div><strong>Score:</strong> {qualifications.mphil.marksObtained} / {qualifications.mphil.totalMarks} ({qualifications.mphil.percentage}%)</div>
+                        {qualifications.mphil.certificateUrl && (
+                          <div style={{ marginTop: 8, borderTop: '1px dashed #CBD5E1', paddingTop: 8 }}>
+                            <a href={`${API_BASE_URL}${qualifications.mphil.certificateUrl}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#5B21B6', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}>
+                              📄 View M.Phil Certificate
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NET JRF — show with examType if qualified */}
+                  {qualifications.netJrf?.qualified === true && (
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#B45309', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>📝 National Entrance Exam (NET / JRF / GATE / SET)</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 24px', fontSize: '0.8rem' }}>
+                        <div><strong>Exam:</strong> {qualifications.netJrf.examType || '—'}</div>
+                        <div><strong>Certificate No.:</strong> {qualifications.netJrf.certNumber || '—'}</div>
+                        <div><strong>Roll No.:</strong> {qualifications.netJrf.rollNo || '—'}</div>
+                        <div><strong>AIR Rank:</strong> {qualifications.netJrf.rank || '—'}</div>
+                        <div><strong>Score:</strong> {qualifications.netJrf.score || '—'}</div>
+                        {qualifications.netJrf.issueDate && <div><strong>Issue Date:</strong> {new Date(qualifications.netJrf.issueDate).toLocaleDateString()}</div>}
+                        {qualifications.netJrf.certificateUrl && (
+                          <div style={{ width: '100%', marginTop: 8, borderTop: '1px dashed #CBD5E1', paddingTop: 8 }}>
+                            <a href={`${API_BASE_URL}${qualifications.netJrf.certificateUrl}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#B45309', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}>
+                              📄 View NET/JRF Certificate
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fellowships — only if at least one entry exists */}
+                  {qualifications.fellowships?.length > 0 && (
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#065F46', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>🏅 National &amp; International Fellowships</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.8rem' }}>
+                        {qualifications.fellowships.map((f, i) => (
+                          <div key={i} style={{ borderBottom: i < qualifications.fellowships.length - 1 ? '1px dashed #CBD5E1' : 'none', paddingBottom: i < qualifications.fellowships.length - 1 ? 10 : 0 }}>
+                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{f.name || `Fellowship ${i + 1}`}</div>
+                            {f.awardingBody && <div><strong>Awarding Body:</strong> {f.awardingBody}</div>}
+                            {f.year && <div><strong>Year:</strong> {f.year}</div>}
+                            {f.amount && <div><strong>Amount:</strong> {f.amount}</div>}
+                            {f.duration && <div><strong>Duration:</strong> {f.duration}</div>}
+                            {f.certificateUrl && (
+                              <div style={{ marginTop: 6 }}>
+                                <a href={`${API_BASE_URL}${f.certificateUrl}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#065F46', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}>
+                                  📄 View Fellowship Certificate
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other Qualifications — only if at least one entry exists */}
+                  {qualifications.otherQuals?.length > 0 && (
+                    <div style={{ border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 16, background: 'var(--color-bg)' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0E7490', borderBottom: '1px solid var(--color-border)', paddingBottom: 6, marginBottom: 10 }}>📋 Other Academic Qualifications</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.8rem' }}>
+                        {qualifications.otherQuals.map((o, i) => (
+                          <div key={i} style={{ borderBottom: i < qualifications.otherQuals.length - 1 ? '1px dashed #CBD5E1' : 'none', paddingBottom: i < qualifications.otherQuals.length - 1 ? 10 : 0 }}>
+                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{o.name || `Qualification ${i + 1}`}</div>
+                            {o.institution && <div><strong>Institution:</strong> {o.institution}</div>}
+                            {o.year && <div><strong>Year:</strong> {o.year}</div>}
+                            {o.grade && <div><strong>Grade / Score:</strong> {o.grade}</div>}
+                            {o.details && <div><strong>Details:</strong> {o.details}</div>}
+                            {o.certificateUrl && (
+                              <div style={{ marginTop: 6 }}>
+                                <a href={`${API_BASE_URL}${o.certificateUrl}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0E7490', fontWeight: 700, textDecoration: 'none', fontSize: '0.78rem' }}>
+                                  📄 View Certificate
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
             )}
