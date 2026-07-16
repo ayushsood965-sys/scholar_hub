@@ -1265,6 +1265,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [rejectRemarks, setRejectRemarks] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [isVerifyingAndAssigning, setIsVerifyingAndAssigning] = useState(false);
 
   const handleRejectAndSendToStudent = async () => {
     if (!rejectRemarks.trim()) {
@@ -3561,8 +3562,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     <button
                       type="button"
                       onClick={() => setShowRejectPopup(true)}
-                      disabled={loading}
-                      style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#EF4444', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white', fontWeight: 600 }}
+                      disabled={loading || isVerifyingAndAssigning}
+                      style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#EF4444', border: 'none', borderRadius: '6px', cursor: (loading || isVerifyingAndAssigning) ? 'not-allowed' : 'pointer', color: 'white', fontWeight: 600 }}
                     >
                       Reject Request
                     </button>
@@ -3575,6 +3576,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                             return;
                           }
                           setLoading(true);
+                          setIsVerifyingAndAssigning(true);
                           try {
                             await onAssign(selSupervisor);
                             await onVerify();
@@ -3583,17 +3585,20 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                             toast.error(err.response?.data?.message || 'Error executing action.');
                           } finally {
                             setLoading(false);
+                            setIsVerifyingAndAssigning(false);
                           }
                         } else {
                           act(onVerify);
                         }
                       }} 
-                      disabled={loading} 
-                      style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white' }}
+                      disabled={loading || isVerifyingAndAssigning} 
+                      style={{ padding: '8px 16px', fontSize: '0.82rem', background: '#059669', border: 'none', borderRadius: '6px', cursor: (loading || isVerifyingAndAssigning) ? 'not-allowed' : 'pointer', color: 'white' }}
                     >
-                      {!thesis.supervisorId 
-                        ? 'Verify Profile, Assign Supervisor & Move to Coursework' 
-                        : 'Verify Enrollment & Move to Coursework'}
+                      {loading || isVerifyingAndAssigning
+                        ? 'Processing...'
+                        : !thesis.supervisorId 
+                          ? 'Verify Profile, Assign Supervisor & Move to Coursework' 
+                          : 'Verify Enrollment & Move to Coursework'}
                     </button>
                   </div>
                 ) : (
