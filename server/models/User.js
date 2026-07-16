@@ -120,6 +120,11 @@ const userSchema = new mongoose.Schema(
         }
       },
     },
+    labId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ResearchLab',
+      default: null
+    }
   },
   {
     timestamps: true,

@@ -153,6 +153,7 @@ const thesisSchema = new mongoose.Schema(
       default: 'NOT_SCHEDULED',
     },
     vivaRemarks: { type: String, default: '' },
+    fundingSource: { type: String, default: '' },
     registrationHistory: [
       {
         action: { type: String, required: true },

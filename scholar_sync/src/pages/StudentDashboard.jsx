@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -1372,6 +1372,7 @@ const studentNavItems = [
   { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
   { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
   { key: 'publications', label: 'Research Outputs', Icon: Award },
+  { key: 'funding', label: 'My Funding & Lab', Icon: Coins },
   { key: 'meetings', label: 'Meetings', Icon: Calendar },
 
   { kind: 'section', label: '🎓 Thesis Submission' },
@@ -1427,6 +1428,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
               'sixMonthReports', 
               'chapterDrafts', 
               'publications', 
+              'funding',
               'meetings', 
               'documents', 
               'changes'
@@ -1743,6 +1745,186 @@ const EnrollmentForm = ({ onSubmit }) => {
           {loading ? 'Submitting...' : 'Submit Registration'}
         </button>
       </form>
+    </div>
+  );
+};
+
+// ── My Funding & Lab Tab ──
+const MyFundingAndLabTab = ({ thesis }) => {
+  const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(true);
+  const [awards, setAwards] = useState([]);
+  const [lab, setLab] = useState(null);
+
+  const getAuthHeader = () => ({
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [awardsRes, labsRes] = await Promise.all([
+          axios.get(`${API_URL}/public/dashboard/scholar/funding`, getAuthHeader()),
+          axios.get(`${API_URL}/public/labs`, getAuthHeader())
+        ]);
+        setAwards(awardsRes.data || []);
+        
+        const myLab = labsRes.data.find(l => 
+          l.members?.some(m => (m._id || m) === user._id) || 
+          (l.leadId?._id || l.leadId) === thesis.supervisorId?._id
+        );
+        if (myLab) {
+          const detailRes = await axios.get(`${API_URL}/public/labs/${myLab._id}`);
+          setLab(detailRes.data);
+        }
+      } catch (err) {
+        console.error('Error fetching student funding/lab data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user, thesis]);
+
+  if (loading) {
+    return (
+      <div className="premium-preloader-container" style={{ padding: '40px 0' }}>
+        <div className="premium-preloader-spinner"></div>
+        <div className="premium-preloader-text">Loading funding and lab allocation details...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Funding Awards */}
+      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
+        <h3 className="card-title" style={{ marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
+          <Coins size={20} /> My Fellowships & Grants
+        </h3>
+
+        {awards.length === 0 ? (
+          <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            No active fellowship awards mapped to your profile. Please contact the HOD/Admin if you are receiving JRF/SRF/HIMCOSTE funding.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {awards.map(award => (
+              <div key={award._id} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '18px', background: 'var(--color-bg)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--color-text-primary)' }}>{award.awardTitle}</h4>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                      Scheme Linked: <strong>{award.fundingOpportunityId?.title || 'Direct Award'}</strong> ({award.fundingOpportunityId?.agency || 'HPU'})
+                    </p>
+                  </div>
+                  <span style={{ 
+                    fontSize: '0.7rem', 
+                    background: award.status === 'ACTIVE' ? '#D1FAE5' : award.status === 'PENDING_RENEWAL' ? '#FEF3C7' : '#F3F4F6',
+                    color: award.status === 'ACTIVE' ? '#065F46' : award.status === 'PENDING_RENEWAL' ? '#D97706' : '#374151',
+                    padding: '3px 10px', 
+                    borderRadius: '12px',
+                    fontWeight: 700
+                  }}>
+                    {award.status}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '14px', fontSize: '0.82rem', color: 'var(--color-text-secondary)', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                  <div>💰 <strong>Monthly Stipend / Amount:</strong> {award.amountSanctioned}</div>
+                  <div>💰 <strong>Total Disbursed:</strong> {award.amountDisbursed || '₹0'}</div>
+                  <div>📅 <strong>Start Date:</strong> {award.startDate ? new Date(award.startDate).toLocaleDateString() : 'N/A'}</div>
+                  <div>📅 <strong>End Date:</strong> {award.endDate ? new Date(award.endDate).toLocaleDateString() : 'N/A'}</div>
+                </div>
+
+                {award.remarks && (
+                  <div style={{ marginTop: '12px', fontSize: '0.8rem', fontStyle: 'italic', color: '#059669', background: '#ECFDF5', padding: '8px 12px', borderRadius: '6px' }}>
+                    <strong>Note:</strong> {award.remarks}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lab Allocation */}
+      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
+        <h3 className="card-title" style={{ marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
+          <Users size={20} /> My Research Lab & Group
+        </h3>
+
+        {!lab ? (
+          <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            You are not currently allocated to a registered departmental research lab. Ask your supervisor (PI Lead) to add you via the admin panel.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#133A26' }}>{lab.name}</h4>
+                <span style={{ fontSize: '0.72rem', background: '#E0F2FE', color: '#0369A1', padding: '3px 10px', borderRadius: '12px', fontWeight: 700 }}>{lab.labType}</span>
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: '0.88rem', color: 'var(--color-text-secondary)' }}>
+                📍 Location: <strong>{lab.location || 'N/A'}</strong> | P.I. Supervisor: <strong>{lab.leadId?.name || 'Faculty'}</strong>
+              </p>
+              {lab.website && (
+                <a href={lab.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#133A26', display: 'inline-block', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                  🌐 Visit Lab Website ➔
+                </a>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '20px', alignItems: 'start' }}>
+              
+              {/* Lab Focus & Members */}
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '4px' }}>Lab Research Focus:</strong>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{lab.focus}</p>
+                </div>
+
+                <div>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '8px' }}>Lab Members ({lab.members?.length || 0}):</strong>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {lab.members?.map(m => (
+                      <div key={m._id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px' }}>
+                        <div style={{ width: '28px', height: '28px', background: '#94A3B8', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                          {m.name?.charAt(0)}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{m.role}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Shared Equipment */}
+              <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px' }}>
+                <strong style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '10px' }}>Instruments & Equipment:</strong>
+                {(!lab.equipment || lab.equipment.length === 0) ? (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>No lab equipment logged.</span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {lab.equipment.map((eq, idx) => (
+                      <div key={idx} style={{ fontSize: '0.76rem', background: 'var(--color-surface)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{eq.name}</div>
+                        {eq.isShared && <span style={{ fontSize: '0.6rem', color: '#065F46', background: '#D1FAE5', padding: '1px 4px', borderRadius: '3px', fontWeight: 700 }}>SHARED</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };
@@ -12046,6 +12228,7 @@ const StudentDashboard = () => {
     synopsis: 'Research Synopsis',
     rac: 'RAC Progress', 
     publications: 'Research Outputs', 
+    funding: 'My Funding & Lab',
     sixMonthReports: '6-Month Progress Reports',
     chapterDrafts: 'Chapter Drafts Workspace',
     preSubmission: 'Pre-Submission Package',
@@ -12065,38 +12248,18 @@ const StudentDashboard = () => {
       );
     }
 
-    if (!thesis || thesis.status === 'REJECTED') {
-      if (activeTab === 'profile') return <ProfileTab />;
+    if (!thesis) {
       return (
-        <div className="card" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center', padding: 48 }}>
-          {user?.profile?.rejectionRemarks ? (
+        <div className="card" style={{ maxWidth: 650, margin: '40px auto', textAlign: 'center', padding: 48 }}>
+          <AlertCircle size={64} color="#10B981" style={{ margin: '0 auto 16px' }} />
+          {user && user.profileCompleted ? (
             <>
-              <AlertCircle size={64} color="#EF4444" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Status: Rejected by HOD and Awaiting Re-submission</h3>
-              <p style={{ color: 'var(--color-text-muted)', marginBottom: 12 }}>
-                Your Ph.D. Profile has been rejected by the HOD with the following remarks:
-              </p>
-              <div style={{
-                background: '#FEF2F2',
-                border: '1px solid #FCA5A5',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                color: '#991B1B',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                marginBottom: 24,
-                textAlign: 'left'
-              }}>
-                "{user.profile.rejectionRemarks}"
-              </div>
-              <p style={{ color: 'var(--color-text-muted)', marginBottom: 24 }}>
-                Please go to the Profile tab, update the required fields, and re-submit your profile for approval.
-              </p>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Profile Under HOD Review</h3>
+              <p style={{ color: 'var(--color-text-muted)', marginBottom: 24 }}>You have submitted your Ph.D. profile details. Once the HOD approves your registration, your workspace will be unlocked.</p>
             </>
           ) : (
             <>
-              <ClipboardList size={64} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Ph.D. Profile Registration Required</h3>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Complete Your PhD Profile</h3>
               <p style={{ color: 'var(--color-text-muted)', marginBottom: 24 }}>Please complete all required details in the **Profile** tab and click **Submit PhD Profile for HOD Approval** to register and unlock the student portal features.</p>
             </>
           )}
@@ -12116,6 +12279,7 @@ const StudentDashboard = () => {
       case 'synopsis': return <SynopsisPhase thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
       case 'rac': return <RACProgressTab thesis={thesis} />;
       case 'publications': return <ResearchOutputsTab thesis={thesis} />;
+      case 'funding': return <MyFundingAndLabTab thesis={thesis} />;
       case 'preSubmission': return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} user={user} />;
       case 'finalSubmission': return <FinalSubmission thesis={thesis} milestones={milestones} onSubmit={fetchMyThesis} user={user} />;
       case 'sixMonthReports': return <SixMonthReportsTab thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;

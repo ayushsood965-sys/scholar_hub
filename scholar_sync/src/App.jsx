@@ -23,6 +23,7 @@ import NotFound from './pages/NotFound';
 
 // Premium landing pages
 import ResearchLabsPage from './pages/ResearchLabsPage';
+import LabDetailPage from './pages/LabDetailPage';
 import PublicationsPage from './pages/PublicationsPage';
 import FundingPage from './pages/FundingPage';
 import EventsPage from './pages/EventsPage';
@@ -112,6 +113,7 @@ function App() {
         <Route path="/logout-bridge" element={<LogoutBridge />} />
         <Route path="/workflow" element={<WorkflowPage />} />
         <Route path="/labs" element={<ResearchLabsPage />} />
+        <Route path="/labs/:id" element={<LabDetailPage />} />
         <Route path="/collaborate" element={<CollaboratePage />} />
         <Route path="/publications" element={<PublicationsPage />} />
         <Route path="/funding" element={<FundingPage />} />

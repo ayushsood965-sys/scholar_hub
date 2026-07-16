@@ -18,7 +18,16 @@ const {
   deleteDoctoralProject,
   createCollaborationCall,
   updateCollaborationCall,
-  deleteCollaborationCall
+  deleteCollaborationCall,
+  createFundingAward,
+  getFundingAwards,
+  updateFundingAward,
+  deleteFundingAward,
+  createPartnership,
+  updatePartnership,
+  deletePartnership,
+  assignInquiry,
+  addInquiryNote
 } = require('../controllers/adminConfigController');
 
 // All config routes require authentication and HOD/Admin/Super Admin/Faculty privileges
@@ -33,11 +42,24 @@ router.delete('/labs/:id', deleteLab);
 // Inquiries
 router.get('/inquiries', getInquiries);
 router.put('/inquiries/:id', updateInquiry);
+router.put('/inquiries/:id/assign', assignInquiry);
+router.put('/inquiries/:id/notes', addInquiryNote);
 
 // Funding
 router.post('/funding', createFunding);
 router.put('/funding/:id', updateFunding);
 router.delete('/funding/:id', deleteFunding);
+
+// Funding Awards
+router.post('/funding-awards', createFundingAward);
+router.get('/funding-awards', getFundingAwards);
+router.put('/funding-awards/:id', updateFundingAward);
+router.delete('/funding-awards/:id', deleteFundingAward);
+
+// Partnerships
+router.post('/partnerships', createPartnership);
+router.put('/partnerships/:id', updatePartnership);
+router.delete('/partnerships/:id', deletePartnership);
 
 // Events
 router.post('/events', createEvent);

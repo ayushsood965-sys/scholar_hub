@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileText, Users, Calendar, User, LogOut, Bell, CheckCircle2, XCircle, Layers, Award, Upload, ShieldCheck, Edit, AlertTriangle, Plus, Settings, Search, BookOpen } from 'lucide-react';
+import { Home, FileText, Users, Calendar, User, LogOut, Bell, CheckCircle2, XCircle, Layers, Award, Upload, ShieldCheck, Edit, AlertTriangle, Plus, Settings, Search, BookOpen, Coins, Mail } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 
@@ -29,6 +29,7 @@ const supervisorNavItems = [
   { key: 'profile', label: 'Profile', Icon: User },
   { kind: 'section', label: '🎓 Scholar Management' },
   { key: 'scholars', label: 'My Scholars', Icon: Users },
+  { key: 'my_lab_funding', label: 'My Lab & Funding', Icon: Coins },
   { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
   { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
   { kind: 'section', label: '📅 Academic Activities' },
@@ -46,6 +47,7 @@ const hodNavItems = [
   { key: 'profile', label: 'Profile', Icon: User },
   { kind: 'section', label: '🎓 Scholar Management' },
   { key: 'dept', label: 'Department Scholars', Icon: Users },
+  { key: 'my_lab_funding', label: 'My Lab & Funding', Icon: Coins },
   { key: 'registrations', label: 'Registration Requests', Icon: ShieldCheck },
   { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
   { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
@@ -58,6 +60,261 @@ const hodNavItems = [
   { kind: 'section', label: '⚙️ Portal Settings' },
   { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
 ];
+
+const FacultyLabAndFundingTab = () => {
+  const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(true);
+  const [lab, setLab] = useState(null);
+  const [scholarAwards, setScholarAwards] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
+  const [noteForm, setNoteForm] = useState({ inquiryId: '', text: '' });
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [labsRes, awardsRes, inquiriesRes] = await Promise.all([
+        axios.get(`${API_URL}/public/labs`, getAuthHeader()),
+        axios.get(`${API_URL}/public/dashboard/faculty/funding`, getAuthHeader()),
+        axios.get(`${API_URL}/public/dashboard/faculty/inquiries`, getAuthHeader())
+      ]);
+
+      setScholarAwards(awardsRes.data || []);
+      setInquiries(inquiriesRes.data || []);
+
+      const myLab = labsRes.data.find(l => (l.leadId?._id || l.leadId) === user._id);
+      if (myLab) {
+        const detailRes = await axios.get(`${API_URL}/public/labs/${myLab._id}`);
+        setLab(detailRes.data);
+      }
+    } catch (err) {
+      console.error('Error fetching faculty lab & funding data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [user]);
+
+  const handleAddNote = async (e) => {
+    e.preventDefault();
+    if (!noteForm.text.trim()) return;
+    setActionLoading(true);
+    try {
+      await axios.put(`${API_URL}/config/inquiries/${noteForm.inquiryId}/notes`, {
+        text: noteForm.text
+      }, getAuthHeader());
+      setNoteForm({ inquiryId: '', text: '' });
+      loadData();
+    } catch (err) {
+      console.error('Failed to add note');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="premium-preloader-container" style={{ padding: '40px 0' }}>
+        <div className="premium-preloader-spinner"></div>
+        <div className="premium-preloader-text">Loading Lab and Funding Desk...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Lab Allocation */}
+      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
+        <h3 className="card-title" style={{ marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
+          <Users size={20} /> My Research Lab Center
+        </h3>
+
+        {!lab ? (
+          <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            You do not have a registered Lab. You can register one via the <strong>Public Portal Config</strong> tab.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#133A26' }}>{lab.name}</h4>
+                <span style={{ fontSize: '0.72rem', background: '#E0F2FE', color: '#0369A1', padding: '3px 10px', borderRadius: '12px', fontWeight: 700 }}>{lab.labType}</span>
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: '0.88rem', color: 'var(--color-text-secondary)' }}>
+                📍 Location: <strong>{lab.location || 'N/A'}</strong> | Status: <strong>{lab.status}</strong>
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '20px', alignItems: 'start' }}>
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '4px' }}>Lab Research Focus:</strong>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{lab.focus}</p>
+                </div>
+
+                <div>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '8px' }}>Lab Members ({lab.members?.length || 0}):</strong>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {lab.members?.map(m => (
+                      <div key={m._id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px' }}>
+                        <div style={{ width: '28px', height: '28px', background: '#94A3B8', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                          {m.name?.charAt(0)}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{m.role}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px' }}>
+                <strong style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '10px' }}>Instruments & Equipment:</strong>
+                {(!lab.equipment || lab.equipment.length === 0) ? (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>No lab equipment logged.</span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {lab.equipment.map((eq, idx) => (
+                      <div key={idx} style={{ fontSize: '0.76rem', background: 'var(--color-surface)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{eq.name}</div>
+                        {eq.isShared && <span style={{ fontSize: '0.6rem', color: '#065F46', background: '#D1FAE5', padding: '1px 4px', borderRadius: '3px', fontWeight: 700 }}>SHARED</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Scholars Funding */}
+      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
+        <h3 className="card-title" style={{ marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
+          <Coins size={20} /> Supervised Scholars Fellowships
+        </h3>
+
+        {scholarAwards.length === 0 ? (
+          <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            No active fellowship/stipend awards mapped to scholars under your guidance.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                  <th style={{ padding: '10px', textAlign: 'left' }}>Scholar Name</th>
+                  <th style={{ padding: '10px', textAlign: 'left' }}>Award Scheme</th>
+                  <th style={{ padding: '10px', textAlign: 'left' }}>Sanctioned Stipend</th>
+                  <th style={{ padding: '10px', textAlign: 'left' }}>Disbursed So Far</th>
+                  <th style={{ padding: '10px', textAlign: 'left' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scholarAwards.map(award => (
+                  <tr key={award._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <td style={{ padding: '10px', fontWeight: 600 }}>{award.scholarId?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px' }}>{award.awardTitle}</td>
+                    <td style={{ padding: '10px' }}>{award.amountSanctioned}</td>
+                    <td style={{ padding: '10px' }}>{award.amountDisbursed || '₹0'}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ 
+                        fontSize: '0.7rem', 
+                        background: award.status === 'ACTIVE' ? '#D1FAE5' : award.status === 'PENDING_RENEWAL' ? '#FEF3C7' : '#F3F4F6',
+                        color: award.status === 'ACTIVE' ? '#065F46' : award.status === 'PENDING_RENEWAL' ? '#D97706' : '#374151',
+                        padding: '2px 8px', 
+                        borderRadius: '8px', 
+                        fontWeight: 700 
+                      }}>{award.status}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Collaboration Proposals */}
+      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
+        <h3 className="card-title" style={{ marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
+          <Mail size={20} /> Assigned Collaboration Proposals
+        </h3>
+
+        {inquiries.length === 0 ? (
+          <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            No public collaboration proposals assigned to you for review.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {inquiries.map(inq => (
+              <div key={inq._id} style={{ padding: '18px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--color-text-primary)' }}>{inq.project}</h4>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                      Proposed by: <strong>{inq.name}</strong> ({inq.institution}) | email: {inq.email}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.68rem', background: '#F3F4F6', color: '#374151', padding: '2px 8px', borderRadius: '8px', fontWeight: 600 }}>{inq.priority || 'MEDIUM'} Priority</span>
+                    <span style={{ 
+                      fontSize: '0.7rem', 
+                      background: inq.status === 'PENDING' ? '#FEF3C7' : inq.status === 'REVIEWED' ? '#DBEAFE' : '#D1FAE5',
+                      color: inq.status === 'PENDING' ? '#D97706' : inq.status === 'REVIEWED' ? '#1E40AF' : '#065F46',
+                      padding: '3px 10px', 
+                      borderRadius: '12px',
+                      fontWeight: 700
+                    }}>{inq.status}</span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                  {inq.details}
+                </div>
+
+                {inq.notes && inq.notes.length > 0 && (
+                  <div style={{ marginTop: '12px', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
+                    <strong style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Log timeline:</strong>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                      {inq.notes.map((note, idx) => (
+                        <div key={idx} style={{ fontSize: '0.72rem', background: '#F8FAFC', padding: '4px 8px', borderRadius: '4px' }}>
+                          <span>{note.text}</span>
+                          <span style={{ fontSize: '0.62rem', color: '#94A3B8', marginLeft: '6px' }}>- {new Date(note.date).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleAddNote} style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Type progress note or interview update..." 
+                    value={noteForm.inquiryId === inq._id ? noteForm.text : ''} 
+                    onChange={e => setNoteForm({ inquiryId: inq._id, text: e.target.value })}
+                    style={{ fontSize: '0.8rem', padding: '6px 12px', flex: 1 }}
+                  />
+                  <button type="submit" onClick={() => setNoteForm({...noteForm, inquiryId: inq._id})} disabled={actionLoading} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                    Add Note
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+};
 
 const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
   const { logout } = useContext(AuthContext);
@@ -4430,7 +4687,7 @@ const FacultyDashboard = () => {
     if (subRole === 'HOD') fetchDeptTheses(); else fetchAssignedTheses();
   };
 
-  const titles = { overview: 'Faculty Dashboard', registrations: 'Registration Requests', coursework_approvals: 'Coursework Approvals', scholars: 'My Scholars', reviews: 'Pending Reviews', dept: 'Department Scholars', meetings: 'Guidance Consultations & Meetings', requests: 'Student Change Requests Desk', profile: 'My Profile', defaulters: 'Progress Report Defaulters', scholar_search: 'Search Scholar Details', detailed_reports: 'Detailed Academic Reports', public_config: 'Public Portal Config' };
+  const titles = { overview: 'Faculty Dashboard', registrations: 'Registration Requests', coursework_approvals: 'Coursework Approvals', scholars: 'My Scholars', my_lab_funding: 'My Lab & Funding', reviews: 'Pending Reviews', dept: 'Department Scholars', meetings: 'Guidance Consultations & Meetings', requests: 'Student Change Requests Desk', profile: 'My Profile', defaulters: 'Progress Report Defaulters', scholar_search: 'Search Scholar Details', detailed_reports: 'Detailed Academic Reports', public_config: 'Public Portal Config' };
 
   const renderContent = () => {
     if (!user?.isVerified) {
@@ -4474,6 +4731,7 @@ const FacultyDashboard = () => {
         return <ScholarList theses={pendingTheses} onSelect={handleSelectThesis} title="Scholars Awaiting Coursework Approval" subRole={subRole} />;
       }
       case 'scholars': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="My Assigned Scholars" subRole={subRole} />;
+      case 'my_lab_funding': return <FacultyLabAndFundingTab />;
       case 'dept': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="All Department Scholars" subRole={subRole} />;
       case 'meetings': return <MeetingsTab user={user} />;
       case 'reviews': return <PendingReviewsQueue theses={allTheses} user={user} />;

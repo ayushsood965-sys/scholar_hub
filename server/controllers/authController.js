@@ -228,8 +228,8 @@ const register = async (req, res) => {
 const getFacultyList = async (req, res) => {
   try {
     const query = { role: { $in: ['FACULTY', 'HOD'] }, isActive: true };
-    // HOD and FACULTY should only see users from their own department
-    if (req.user.role === 'HOD' || req.user.role === 'FACULTY') {
+    // HOD and FACULTY should only see users from their own department unless ?all=true
+    if ((req.user.role === 'HOD' || req.user.role === 'FACULTY') && req.query.all !== 'true') {
       query.department = req.user.department;
     }
     const faculty = await User.find(query).select('name username role subRole department isActive isVerified isEmailVerified');
@@ -614,7 +614,7 @@ const getStudentsFiltered = async (req, res) => {
       role: 'STUDENT'
     };
 
-    if (req.user.role === 'SUPER_ADMIN') {
+    if (req.user.role === 'SUPER_ADMIN' || req.query.all === 'true') {
       if (department) query.department = department;
       if (req.query.isActive !== undefined) {
         query.isActive = req.query.isActive === 'true';

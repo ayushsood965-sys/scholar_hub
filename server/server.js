@@ -40,6 +40,7 @@ const Department = require('./models/Department');
 const Notification = require('./models/Notification');
 
 const app = express();
+app.set('trust proxy', true);
 
 // Connect to database
 connectDB().then(async () => {
@@ -69,177 +70,322 @@ connectDB().then(async () => {
 
 
 
-    // Auto-seed research labs, funding opportunities, and events
+    // Auto-seed research labs, funding opportunities, events, partnerships, and calls
     const ResearchLab = require('./models/ResearchLab');
     const FundingOpportunity = require('./models/FundingOpportunity');
     const Event = require('./models/Event');
+    const Partnership = require('./models/Partnership');
+    const CollaborationCall = require('./models/CollaborationCall');
+    const DoctoralProject = require('./models/DoctoralProject');
+
+    let leadUser = await User.findOne({ role: 'FACULTY' });
+    if (!leadUser) {
+      leadUser = await User.findOne({ username: 'admin' });
+    }
 
     const labCount = await ResearchLab.countDocuments();
-    if (labCount === 0) {
-      let leadUser = await User.findOne({ role: 'FACULTY' });
-      if (!leadUser) {
-        leadUser = await User.findOne({ username: 'admin' });
-      }
-      
-      if (leadUser) {
-        const labsToSeed = [
-          {
-            name: "AI & Neural Systems Laboratory",
-            department: "Department of Computer Science",
-            leadId: leadUser._id,
-            focus: "Deep Learning, Autonomous Agents, NLP",
-            projects: ["Transformers in Medical Imaging", "Reinforcement Learning for Autonomous Drone Swarms"],
-            status: "Actively Recruiting Scholars"
-          },
-          {
-            name: "Quantum Mechanics & Advanced Materials Lab",
-            department: "Department of Physics",
-            leadId: leadUser._id,
-            focus: "Superconductors, Quantum Cryptography, Nanotubes",
-            projects: ["High-Temp Superconductivity in Hydrides", "Quantum Cryptographic Protocol Validation"],
-            status: "2 Research Slots Open"
-          },
-          {
-            name: "Bio-Informatics & Genomics Centre",
-            department: "Department of Data Science and Artificial Intelligence",
-            leadId: leadUser._id,
-            focus: "Cancer Genome Sequencing, Neural Protein Folding",
-            projects: ["AlphaFold Pipelines for Enzyme Optimization", "High-Throughput DNA Sequence Alignment"],
-            status: "Collaborating with Biotech Inc."
-          },
-          {
-            name: "Chemical Kinetics & Environmental Synthesis Lab",
-            department: "Department of Chemistry",
-            leadId: leadUser._id,
-            focus: "Green Catalysts, Photochemistry, CO2 Capture",
-            projects: ["Organocatalytic Hydrogen Generation", "Solar-Driven Polymeric CO2 Sequestration"],
-            status: "Grant Funded by DST-SERB"
-          }
-        ];
-        await ResearchLab.insertMany(labsToSeed);
-        console.log('🔬 Auto-seeded default research labs.');
-      }
+    if (labCount === 0 && leadUser) {
+      const labsToSeed = [
+        {
+          name: "Computational Intelligence & AI Lab",
+          department: "Department of Computer Science",
+          leadId: leadUser._id,
+          focus: "Machine Learning, NLP, Computer Vision",
+          projects: ["Unsupervised Dialect Translation", "Real-time Edge Intelligence"],
+          status: "Actively Recruiting Scholars",
+          description: "Focuses on developing next-generation language models and computer vision pipelines for regional applications.",
+          researchAreas: ["Machine Learning", "NLP", "Computer Vision"],
+          equipment: [
+            { name: "NVIDIA RTX 4090 Workstation", description: "Deep learning model training", isShared: true },
+            { name: "Edge AI Kits", description: "IoT deployment testing", isShared: false }
+          ],
+          website: "https://ai.hpushimla.in",
+          location: "Room 304, Multi-Faculty Science Block",
+          imageUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+          contactEmail: "ailab@hpu.ac.in",
+          labType: "Departmental",
+          fundingSupport: ["DST-SERB", "UGC"],
+          establishedYear: 2020
+        },
+        {
+          name: "Centre for Green Energy & Nano Technology",
+          department: "Department of Physics",
+          leadId: leadUser._id,
+          focus: "Solar Cells, Nanomaterials, Quantum Dot Syntheses",
+          projects: ["Perovskite Solar Cell Optimization", "Nanoparticle Thin Film Gas Sensors"],
+          status: "2 Research Slots Open",
+          description: "Synthesizing and characterizing novel nanomaterials to create highly efficient, low-cost solar panels.",
+          researchAreas: ["Solar energy materials", "Nanotechnology"],
+          equipment: [
+            { name: "UV-Vis Spectrophotometer", description: "Absorption spectra logging", isShared: true },
+            { name: "Spin Coater", description: "Thin-film deposition", isShared: false }
+          ],
+          website: "https://nanotech.hpushimla.in",
+          location: "Ground Floor, Physics Block",
+          imageUrl: "https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=800&q=80",
+          contactEmail: "nanotech@hpu.ac.in",
+          labType: "Centre of Excellence",
+          fundingSupport: ["HIMCOSTE", "DST-FIST"],
+          establishedYear: 2019
+        },
+        {
+          name: "Bioinformatics Centre",
+          department: "Department of Bio Technology",
+          leadId: leadUser._id,
+          focus: "Genomics, Proteomics, Molecular Docking",
+          projects: ["Himalayan Flora Gene Sequencing", "Protein Folding for Cold-Adapted Enzymes"],
+          status: "Collaborating with Biotech Inc.",
+          description: "Applying computational algorithms to biological datasets to discover novel therapeutics from Himalayan medicinal plants.",
+          researchAreas: ["Genomics", "Structural Bioinformatics"],
+          equipment: [
+            { name: "High-Performance Compute Cluster", description: "Sequence alignment and molecular simulations", isShared: true }
+          ],
+          website: "https://bioinfo.hpushimla.in",
+          location: "Room 102, Biotech Building",
+          imageUrl: "https://images.unsplash.com/photo-1532187643603-ba119ca4109e?auto=format&fit=crop&w=800&q=80",
+          contactEmail: "bioinfo@hpu.ac.in",
+          labType: "Central Instrumentation",
+          fundingSupport: ["DBT", "RUSA"],
+          establishedYear: 2021
+        },
+        {
+          name: "Molecular & Forensic Genetics Lab",
+          department: "Department of Forensic Science",
+          leadId: leadUser._id,
+          focus: "DNA Fingerprinting, Crime Genetics",
+          projects: ["DNA Profile Standards for Himachali Populations"],
+          status: "Actively Recruiting Scholars",
+          description: "Establishes population-level genetic databases for forensic investigations and human identification projects.",
+          researchAreas: ["Forensic Genetics", "DNA Phenotyping"],
+          equipment: [
+            { name: "PCR Thermocycler", description: "DNA amplification", isShared: true },
+            { name: "Genetic Analyzer", description: "Capillary electrophoresis sequencing", isShared: false }
+          ],
+          website: "https://forensic.hpushimla.in",
+          location: "Room 205, Biotech Building",
+          imageUrl: "https://images.unsplash.com/photo-1530210120071-01b5140b943d?auto=format&fit=crop&w=800&q=80",
+          contactEmail: "forensiclab@hpu.ac.in",
+          labType: "Departmental",
+          fundingSupport: ["University Grant", "State Police Dept"],
+          establishedYear: 2022
+        }
+      ];
+      await ResearchLab.insertMany(labsToSeed);
+      console.log('🔬 Auto-seeded HPU-specific research labs.');
     }
 
     const fundingCount = await FundingOpportunity.countDocuments();
     if (fundingCount === 0) {
       const fundingToSeed = [
         {
-          title: "DST-SERB Core Research Grant",
-          agency: "Department of Science and Technology, Govt. of India",
+          title: "UGC-NET JRF Fellowship 2026-27",
+          agency: "University Grants Commission (UGC)",
+          amount: "₹37,000 / Month + HRA",
+          duration: "5 Years",
+          scope: "Provides financial assistance to NET JRF qualified doctoral scholars in all streams.",
+          status: "Applications Open",
+          type: "Fellowship",
+          eligibilityDepartments: [],
+          eligibilityCriteria: "UGC-NET JRF qualified, registered full-time Ph.D. scholar.",
+          applicationUrl: "https://scholarships.gov.in",
+          contactEmail: "ugcjrf@hpu.ac.in",
+          documentsRequired: ["NET JRF Award Letter", "Admission Receipt", "Supervisor Joining Report"],
+          fundingBody: "UGC",
+          recurrence: "Monthly"
+        },
+        {
+          title: "CSIR-NET JRF for Sciences",
+          agency: "Council of Scientific & Industrial Research (CSIR)",
+          amount: "₹37,00,000 (Total Pool)",
+          duration: "5 Years",
+          scope: "Fellowship for researchers pursuing science streams (Chemistry, Physics, Biotech).",
+          status: "Applications Open",
+          type: "Fellowship",
+          eligibilityDepartments: ["Department of Chemistry", "Department of Physics", "Department of Bio Sciences", "Department of Bio Technology"],
+          eligibilityCriteria: "CSIR-NET JRF qualified.",
+          applicationUrl: "https://csirhrdg.res.in",
+          contactEmail: "csirjrf@hpu.ac.in",
+          documentsRequired: ["CSIR JRF Award Letter", "Annual Progress Report"],
+          fundingBody: "CSIR",
+          recurrence: "Monthly"
+        },
+        {
+          title: "DST-SERB Core Research Grant (CRG)",
+          agency: "Science and Engineering Research Board (SERB), DST",
           amount: "₹45,00,000",
           duration: "3 Years",
-          scope: "Supports fundamental research in science, technology, and advanced AI frameworks.",
-          status: "Applications Open"
+          scope: "Funding for core research proposals in all fields of Science and Technology.",
+          status: "Applications Open",
+          type: "Project Grant",
+          eligibilityDepartments: [],
+          eligibilityCriteria: "Faculty Principal Investigator with full-time Ph.D. scholars.",
+          applicationUrl: "https://serbonline.in",
+          contactEmail: "serb@hpu.ac.in",
+          documentsRequired: ["Detailed Research Proposal", "Budget Endorsement", "PI Bio-Data"],
+          fundingBody: "SERB",
+          recurrence: "Project-based"
         },
         {
-          title: "ScholarSync Corporate Innovation Fellowship",
-          agency: "Kizen Tech Corp",
-          amount: "₹8,00,000 / Year + Stipend",
-          duration: "Ongoing",
-          scope: "Awarded to elite scholars focusing on industrial automation and cloud-native database orchestration.",
-          status: "Actively Reviewing"
-        },
-        {
-          title: "Global Green-Tech Council Research Grant",
-          agency: "Global Green-Tech Alliance",
-          amount: "$120,000",
+          title: "HIMCOSTE R&D Project Grant",
+          agency: "HP State Council for Science, Technology & Environment",
+          amount: "₹8,00,000",
           duration: "2 Years",
-          scope: "Granted to breakthrough green chemistry, solar conversion, and environmental recycling concepts.",
-          status: "Call Ends July 2026"
+          scope: "Supports R&D projects with local relevance to Himachal Pradesh (biodiversity, ecology, tech).",
+          status: "Applications Open",
+          type: "Project Grant",
+          eligibilityDepartments: ["Department of Bio Sciences", "Department of Bio Technology", "Department of Environmental Science", "Department of Geography"],
+          eligibilityCriteria: "Research projects addressing HP-specific ecological or developmental problems.",
+          applicationUrl: "http://himcoste.hp.gov.in",
+          contactEmail: "himcoste@hp.gov.in",
+          documentsRequired: ["HPU Endorsement Form", "Proposal Pitch", "Budget Template"],
+          fundingBody: "HIMCOSTE",
+          recurrence: "Project-based"
+        },
+        {
+          title: "HP State Research Fellowship",
+          agency: "Government of Himachal Pradesh",
+          amount: "₹20,000 / Month",
+          duration: "3 Years",
+          scope: "Fellowship for Himachali domicile scholars who do not receive any other financial support.",
+          status: "Applications Open",
+          type: "State Scholarship",
+          eligibilityDepartments: [],
+          eligibilityCriteria: "HP Domicile, Non-JRF registered Ph.D. scholar.",
+          applicationUrl: "https://hp.gov.in/scholarships",
+          contactEmail: "statefellowship@hpu.ac.in",
+          documentsRequired: ["Domicile Certificate", "Non-Fellowship Affidavit", "Bonafide Himachali Proof"],
+          fundingBody: "HP State Govt",
+          recurrence: "Monthly"
         }
       ];
       await FundingOpportunity.insertMany(fundingToSeed);
-      console.log('💰 Auto-seeded default funding opportunities.');
+      console.log('💰 Auto-seeded HPU-specific funding opportunities.');
     }
+
     const eventCount = await Event.countDocuments();
     if (eventCount === 0) {
       const eventsToSeed = [
         {
-          title: "Annual University Research Symposium & Doctoral Colloquium 2026",
-          date: new Date('2026-06-12T09:30:00'),
+          title: "HPU Annual University Research Symposium & Doctoral Colloquium 2026",
+          date: new Date('2026-09-12T09:30:00'),
           time: "09:30 AM - 05:30 PM",
-          location: "Auditorium & Virtual Stream",
-          speaker: "Keynote: Dr. Andrew Ng (Co-Founder, Coursera & DeepLearning.AI)",
+          location: "Auditorium & Virtual Stream, HPU Summer Hill",
+          speaker: "Keynote: Prof. C.N.R. Rao (Bharat Ratna, Solid State Scientist)",
           type: "Conference"
         },
         {
-          title: "Hands-on Workshop: Scalable Machine Learning Pipelines with PyTorch & Ray",
-          date: new Date('2026-06-28T14:00:00'),
+          title: "Workshop: High-Performance Computing Tools for Academic Data Modeling",
+          date: new Date('2026-10-18T14:00:00'),
           time: "02:00 PM - 06:00 PM",
-          location: "Data Science Lab-4",
-          speaker: "Conducted by: Elena Rostova & Core AI Faculty",
+          location: "Computational Intelligence Lab, Room 304",
+          speaker: "Conducted by: Core IT Faculty & CDAC Experts",
           type: "Workshop"
         }
       ];
       await Event.insertMany(eventsToSeed);
-      console.log('📅 Auto-seeded default events.');
+      console.log('📅 Auto-seeded HPU-specific events.');
     }
 
-    // Auto-seed default doctoral projects
-    const DoctoralProject = require('./models/DoctoralProject');
     const projectCount = await DoctoralProject.countDocuments();
     if (projectCount === 0) {
       const projectsToSeed = [
         {
-          title: "Neural Machine Translation for Low-Resource Languages",
-          department: "Department of Computer Science Engineering",
-          abstract: "Investigating unsupervised pre-training techniques and multilingual adapter modules to improve translation accuracy for regional dialects.",
+          title: "Neural Machine Translation for Western Pahari Dialects",
+          department: "Department of Computer Science",
+          abstract: "Investigating unsupervised pre-training techniques and multilingual adapter modules to improve translation accuracy for regional dialects of Himachal Pradesh.",
           scholarName: "Piyush Sharma",
           supervisorName: "Dr. Mahinder Singh",
-          status: "Awarded"
+          status: "ACTIVE_RESEARCH"
         },
         {
-          title: "Secure Distributed Ledger Orchestration for Smart Grids",
-          department: "Department of Electrical Engineering",
-          abstract: "Designing consensus mechanisms and lightweight cryptographic architectures for real-time peer-to-peer energy trading in smart grids.",
+          title: "Advanced Solar Perovskite Thin-Films for High Altitude Performance",
+          department: "Department of Physics",
+          abstract: "Designing and analyzing quantum dot solar cell architectures optimized for high ultraviolet exposure and sub-zero temperature environments.",
           scholarName: "Aditya Verma",
           supervisorName: "Dr. Rajesh Kumar",
-          status: "Awarded"
-        },
-        {
-          title: "Synthesizing Novel Biocompatible Catalysts for Green Hydrogen Production",
-          department: "Department of Chemistry",
-          abstract: "Leveraging organic co-polymers and transition-metal nanoparticles to construct stable and highly efficient water-splitting catalysts.",
-          scholarName: "Sneha Patel",
-          supervisorName: "Dr. Anjali Mehta",
-          status: "Awarded"
-        },
-        {
-          title: "Applying Deep Learning to Cancer Genomics and Protein Folding",
-          department: "Department of Data Science and Artificial Intelligence",
-          abstract: "Utilizing transformer architectures and multimodal sequence embeddings to predict protein-protein interaction interfaces and accelerate enzyme design.",
-          scholarName: "Rohan Das",
-          supervisorName: "Dr. Vikram Malhotra",
-          status: "Awarded"
+          status: "ACTIVE_RESEARCH"
         }
       ];
       await DoctoralProject.insertMany(projectsToSeed);
-      console.log('🎓 Auto-seeded default doctoral projects.');
+      console.log('🎓 Auto-seeded HPU doctoral projects.');
     }
 
-    // Auto-seed default collaboration calls
-    const CollaborationCall = require('./models/CollaborationCall');
     const callCount = await CollaborationCall.countDocuments();
     if (callCount === 0) {
       const callsToSeed = [
         {
-          title: "Call for Industry Mentors: AI in Agriculture",
-          description: "Department of Computer Science is seeking domain partners to guide Ph.D. scholars on crop disease detection frameworks.",
+          title: "Industry Co-Supervision for PhD in Pahari Language Processing",
+          description: "Department of Computer Science is seeking industry partners or language scholars to co-supervise research on pahari dialect NLP pipelines.",
           type: "Industry Partner",
           department: "Department of Computer Science",
-          status: "Active"
+          status: "Active",
+          partnerType: "Industry",
+          fundingAmount: "Negotiable",
+          contactPerson: "Dr. Mahinder Singh",
+          contactEmail: "msingh@hpu.ac.in",
+          eligibleDepartments: ["Department of Computer Science", "Department of English"],
+          outcomes: ["Joint Pahari Text Corpus", "Pahari NLP Tool Library"]
         },
         {
-          title: "Inter-Dept Initiative: Materials Science & Physics",
-          description: "Joint grant proposal for high-energy battery substrates. Seeking specialized mathematical modelers.",
+          title: "Joint Research Call: Apple Crop Disease Analytics using Drone Imaging",
+          description: "Seeking collaboration from agricultural institutes to build automatic Apple scab and blight classification models.",
           type: "Inter-Departmental",
-          department: "Department of Physics",
-          status: "Active"
+          department: "Department of Computer Science",
+          status: "Active",
+          partnerType: "Academic",
+          fundingAmount: "₹5,00,000 Seed Fund",
+          contactPerson: "Dr. Rajesh Kumar",
+          contactEmail: "rkumar@hpu.ac.in",
+          eligibleDepartments: ["Department of Computer Science", "Department of Bio Sciences", "Department of Bio Technology"],
+          outcomes: ["Drone Image Dataset of Apple Orchards", "Disease Detection Mobile App"]
         }
       ];
       await CollaborationCall.insertMany(callsToSeed);
-      console.log(' Auto-seeded default collaboration calls.');
+      console.log('🤝 Auto-seeded HPU collaboration calls.');
+    }
+
+    const partnershipCount = await Partnership.countDocuments();
+    if (partnershipCount === 0) {
+      const partnershipsToSeed = [
+        {
+          partnerName: "Indian Army (ARTRAC Shimla)",
+          partnerType: "Defense",
+          title: "MoU for Joint R&D in Drone Technology, Cybersecurity & Himalayan Ecology",
+          description: "Strategic research agreement to co-develop security architectures for high-altitude communications and drone navigation in mountain terrains.",
+          departments: ["Department of Computer Science", "Department of Physics", "Department of Environmental Science"],
+          startDate: new Date('2025-11-10'),
+          outcomes: ["Secure high-altitude routing protocol", "Joint mountain terrain GIS mapping"],
+          status: "ACTIVE",
+          contactPerson: "Dean of Research, HPU",
+          contactEmail: "deanresearch@hpu.ac.in"
+        },
+        {
+          partnerName: "Cosmo Ferrites Limited",
+          partnerType: "Industry",
+          title: "MoU for Collaborative Green Energy & Soft Magnetic Materials Research",
+          description: "Partnership focused on industrial syntheses of manganese-zinc and nickel-zinc ferrites for energy-efficient transformers.",
+          departments: ["Department of Physics", "Department of Chemistry"],
+          startDate: new Date('2025-06-01'),
+          outcomes: ["Co-developed high-frequency magnetic substrates", "PhD industrial internships"],
+          status: "ACTIVE",
+          contactPerson: "Prof. Rajesh Kumar",
+          contactEmail: "rkumar@hpu.ac.in"
+        },
+        {
+          partnerName: "DRDO (Institute of Nuclear Medicine & Allied Sciences)",
+          partnerType: "Government",
+          title: "Collaborative Biomedical Research and Resource Sharing Agreement",
+          description: "Provides HPU doctoral scholars shared access to advanced instrumentation labs for cold-adapted molecular research.",
+          departments: ["Department of Bio Sciences", "Department of Bio Technology", "Department of Chemistry"],
+          startDate: new Date('2025-08-15'),
+          outcomes: ["Shared lab access logs", "2 joint patent applications in bio-preservation"],
+          status: "ACTIVE",
+          contactPerson: "Prof. Anjali Mehta",
+          contactEmail: "amehta@hpu.ac.in"
+        }
+      ];
+      await Partnership.insertMany(partnershipsToSeed);
+      console.log('🤝 Auto-seeded HPU partnerships.');
     }
 
 

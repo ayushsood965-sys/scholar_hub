@@ -8,14 +8,46 @@ const Event = require('../models/Event');
 const CollaborationInquiry = require('../models/CollaborationInquiry');
 const DoctoralProject = require('../models/DoctoralProject');
 const CollaborationCall = require('../models/CollaborationCall');
+const FundingAward = require('../models/FundingAward');
+const Partnership = require('../models/Partnership');
 
 // GET /api/public/labs
 const getLabs = async (req, res) => {
   try {
     const labs = await ResearchLab.find({})
-      .populate('leadId', 'name profile')
+      .populate('leadId', 'name profile username')
       .sort('name');
-    res.status(200).json(labs);
+
+    const enrichedLabs = await Promise.all(labs.map(async (lab) => {
+      const theses = await Thesis.find({ supervisorId: lab.leadId });
+      const scholarIdsFromTheses = theses.map(t => t.scholarId);
+
+      const members = await User.find({
+        $or: [
+          { labId: lab._id },
+          { _id: { $in: scholarIdsFromTheses } },
+          { _id: lab.leadId }
+        ]
+      }, 'name role avatarUrl profile department');
+
+      const scholarIds = members.filter(m => m.role === 'STUDENT').map(m => m._id);
+      const activeProjectsCount = lab.projects ? lab.projects.length : 0;
+
+      const publicationCount = await Publication.countDocuments({
+        scholarId: { $in: scholarIds },
+        status: 'VERIFIED'
+      });
+
+      return {
+        ...lab.toObject(),
+        members,
+        memberCount: members.length,
+        activeProjectsCount,
+        publicationCount
+      };
+    }));
+
+    res.status(200).json(enrichedLabs);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -150,6 +182,133 @@ const getCollaborationCalls = async (req, res) => {
   }
 };
 
+const getLabById = async (req, res) => {
+  try {
+    const lab = await ResearchLab.findById(req.params.id)
+      .populate('leadId', 'name profile username')
+      .populate('members', 'name role avatarUrl profile department');
+    if (!lab) return res.status(404).json({ message: 'Lab not found' });
+
+    // Gather supervised scholars
+    const theses = await Thesis.find({ supervisorId: lab.leadId }).populate('scholarId', 'name profile avatarUrl department');
+    const supervisedScholars = theses.map(t => t.scholarId).filter(Boolean);
+
+    const memberMap = new Map();
+    if (lab.members) {
+      lab.members.forEach(m => memberMap.set(m._id.toString(), m));
+    }
+    supervisedScholars.forEach(s => memberMap.set(s._id.toString(), s));
+    if (lab.leadId) {
+      memberMap.set(lab.leadId._id.toString(), lab.leadId);
+    }
+    const allMembers = Array.from(memberMap.values());
+    const scholarIds = allMembers.filter(m => m.role === 'STUDENT').map(m => m._id);
+
+    // Fetch publications for all members
+    const publications = await Publication.find({
+      scholarId: { $in: scholarIds },
+      status: 'VERIFIED'
+    }).populate('scholarId', 'name').sort('-publicationDate');
+
+    res.status(200).json({
+      ...lab.toObject(),
+      members: allMembers,
+      publications,
+      theses
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getFundingStats = async (req, res) => {
+  try {
+    const opportunities = await FundingOpportunity.find({});
+    const activeAwards = await FundingAward.find({ status: 'ACTIVE' });
+    const activeScholarsCount = new Set(activeAwards.map(a => a.scholarId.toString())).size;
+
+    res.status(200).json({
+      totalOpportunities: opportunities.length,
+      activeFellowshipsCount: activeScholarsCount,
+      totalActivePool: "₹5.2 Crores",
+      activeAwardsCount: activeAwards.length
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getFundingById = async (req, res) => {
+  try {
+    const funding = await FundingOpportunity.findById(req.params.id);
+    if (!funding) return res.status(404).json({ message: 'Funding opportunity not found' });
+    res.status(200).json(funding);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getPartnerships = async (req, res) => {
+  try {
+    const partnerships = await Partnership.find({}).sort('-createdAt');
+    res.status(200).json(partnerships);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getPartnershipById = async (req, res) => {
+  try {
+    const partnership = await Partnership.findById(req.params.id)
+      .populate('linkedLabIds', 'name department focus');
+    if (!partnership) return res.status(404).json({ message: 'Partnership not found' });
+    res.status(200).json(partnership);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getScholarFunding = async (req, res) => {
+  try {
+    const scholarId = req.user._id;
+    const awards = await FundingAward.find({ scholarId })
+      .populate('fundingOpportunityId', 'title agency amount duration scope')
+      .populate('thesisId', 'title')
+      .sort('-createdAt');
+    res.status(200).json(awards);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getFacultyScholarsFunding = async (req, res) => {
+  try {
+    const supervisorId = req.user._id;
+    const theses = await Thesis.find({ supervisorId });
+    const scholarIds = theses.map(t => t.scholarId);
+
+    const awards = await FundingAward.find({ scholarId: { $in: scholarIds } })
+      .populate('scholarId', 'name department profile')
+      .populate('thesisId', 'title')
+      .populate('fundingOpportunityId', 'title agency')
+      .sort('-createdAt');
+
+    res.status(200).json(awards);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getFacultyAssignedInquiries = async (req, res) => {
+  try {
+    const inquiries = await CollaborationInquiry.find({ assignedTo: req.user._id })
+      .sort('-createdAt');
+    res.status(200).json(inquiries);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getLabs,
   getPublications,
@@ -158,5 +317,13 @@ module.exports = {
   getStats,
   submitInquiry,
   getDoctoralProjects,
-  getCollaborationCalls
+  getCollaborationCalls,
+  getLabById,
+  getFundingStats,
+  getFundingById,
+  getPartnerships,
+  getPartnershipById,
+  getScholarFunding,
+  getFacultyScholarsFunding,
+  getFacultyAssignedInquiries
 };

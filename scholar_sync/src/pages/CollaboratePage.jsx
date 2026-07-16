@@ -4,34 +4,36 @@ import Footer from '../components/Footer';
 import axios from 'axios';
 import { API_URL } from '../config';
 import { 
-  Send, 
-  Users, 
-  Briefcase, 
-  CheckCircle, 
-  Sparkles,
-  Link,
-  ChevronRight
+  Send, Users, Briefcase, CheckCircle, Sparkles, Link as LinkIcon, 
+  ChevronRight, Calendar, AlertCircle, Phone, Info, Building
 } from 'lucide-react';
 
 const CollaboratePage = () => {
   const [collabCalls, setCollabCalls] = useState([]);
+  const [partnerships, setPartnerships] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [collabForm, setCollabForm] = useState({ name: '', email: '', institution: '', project: '', details: '' });
+  const [collabForm, setCollabForm] = useState({ 
+    name: '', email: '', phone: '', institution: '', project: '', details: '', type: 'Sponsored Research' 
+  });
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
-    const fetchCollabs = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(`${API_URL}/public/collab-calls`);
-        setCollabCalls(res.data || []);
+        const [callsRes, partnersRes] = await Promise.all([
+          axios.get(`${API_URL}/public/collab-calls`),
+          axios.get(`${API_URL}/public/partnerships`)
+        ]);
+        setCollabCalls(callsRes.data || []);
+        setPartnerships(partnersRes.data || []);
       } catch (err) {
-        console.error('Error fetching collaboration calls:', err);
+        console.error('Error fetching collaborate page data:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchCollabs();
+    fetchData();
   }, []);
 
   const handleCollabSubmit = async (e) => {
@@ -40,8 +42,8 @@ const CollaboratePage = () => {
     try {
       await axios.post(`${API_URL}/public/collaborate/inquiry`, collabForm);
       setFormSubmitted(true);
-      setCollabForm({ name: '', email: '', institution: '', project: '', details: '' });
-      setTimeout(() => setFormSubmitted(false), 4000);
+      setCollabForm({ name: '', email: '', phone: '', institution: '', project: '', details: '', type: 'Sponsored Research' });
+      setTimeout(() => setFormSubmitted(false), 5000);
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to submit inquiry. Please try again.');
     }
@@ -57,16 +59,56 @@ const CollaboratePage = () => {
       <Navbar />
 
       <div style={{ flex: 1, padding: '40px 20px' }}>
-        <div className="glass-panel" style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px' }}>
+        <div className="glass-panel" style={{ maxWidth: '1150px', margin: '0 auto', padding: '40px' }}>
+          
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Research Collaboration</h1>
+            <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Research Collaboration Portal</h1>
             <p className="page-desc" style={{ maxWidth: '700px', margin: '0 auto', fontSize: '1.05rem', color: 'var(--color-text-secondary)' }}>
-              Bridge the gap between academia, industry, and external laboratories. Propose joint ventures, sponsored doctorates, and technology transfer MoUs.
+              Bridge the gap between academia, industry, and defense forces. Explore active university MoUs, join open research calls, or submit a partnership proposal.
             </p>
           </div>
 
-          {/* Collaboration Onboarding Flow Indicator */}
+          {/* Active Partnerships Showcase */}
+          <div style={{ marginBottom: '50px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#133A26', marginBottom: '20px', borderBottom: '1px solid rgba(19,58,38,0.1)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Building size={22} /> Active MoUs & Strategic Partnerships ({partnerships.length})
+            </h2>
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>Loading partnerships...</div>
+            ) : partnerships.length === 0 ? (
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>No active partnerships registered.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                {partnerships.map(partner => (
+                  <div key={partner._id} style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid rgba(19, 58, 38, 0.1)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.68rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '8px', fontWeight: 700 }}>{partner.partnerType}</span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>Since: {partner.startDate ? new Date(partner.startDate).getFullYear() : 'N/A'}</span>
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '4px 0 2px', fontWeight: 700, color: '#133A26', fontSize: '1.05rem' }}>{partner.partnerName}</h4>
+                      <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>{partner.title}</p>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{partner.description}</p>
+                    {partner.outcomes && partner.outcomes.length > 0 && (
+                      <div style={{ marginTop: 'auto', borderTop: '1px solid #E2E8F0', paddingTop: '10px' }}>
+                        <strong style={{ fontSize: '0.76rem', color: '#64748B' }}>Outcomes:</strong>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+                          {partner.outcomes.map(o => (
+                            <span key={o} style={{ fontSize: '0.68rem', background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '1px 6px', borderRadius: '4px' }}>{o}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Workflow Flowchart */}
           <div style={{ 
             background: 'rgba(255, 255, 255, 0.6)', 
             border: '1px solid rgba(19, 58, 38, 0.1)', 
@@ -80,9 +122,9 @@ const CollaboratePage = () => {
             marginBottom: '40px'
           }}>
             {[
-              { step: '1', title: 'Submit Inquiry', desc: 'Detail your proposal/project outline.' },
-              { step: '2', title: 'Advisory Review', desc: 'Faculty Board evaluates target synergy.' },
-              { step: '3', title: 'MoU & Kickoff', desc: 'Formalize agreement and start research.' }
+              { step: '1', title: 'Submit Inquiry', desc: 'Specify project scope/MoU interest.' },
+              { step: '2', title: 'Advisory Review', desc: 'Assigned faculty reviews synergy.' },
+              { step: '3', title: 'Kickoff R&D', desc: 'MoU signed & scholars linked.' }
             ].map((st, idx) => (
               <React.Fragment key={st.step}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '240px' }}>
@@ -111,40 +153,42 @@ const CollaboratePage = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '40px' }}>
-            {/* Info & Opportunities */}
+            
+            {/* Info & Open Calls */}
             <div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#133A26', marginBottom: '16px', marginTop: 0 }}>Active Collaboration Calls</h2>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#133A26', marginBottom: '16px', marginTop: 0 }}>Open Research Collaboration Calls</h2>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.92rem', lineHeight: '1.6', marginBottom: '24px' }}>
-                ScholarSync is built to nurture global academic-industry integrations. We actively seek joint doctoral guides, industry project sponsorships, and collaborative research initiatives.
+                Join HPU in active projects funded by central agencies, state environment councils, or corporate innovation cells.
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {loading ? (
-                  <div className="premium-preloader-container" style={{ padding: '30px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="premium-preloader-spinner"></div>
-                    <div className="premium-preloader-text">Loading opportunities...</div>
-                  </div>
+                  <div style={{ padding: '20px', textAlign: 'center' }}>Loading calls...</div>
                 ) : collabCalls.length === 0 ? (
                   <div style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.85rem', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', textAlign: 'center' }}>
                     No active collaboration calls listed at this time.
                   </div>
                 ) : (
                   collabCalls.map((call) => {
-                    const isIndustry = (call.type || '').toLowerCase().includes('industry') || (call.type || '').toLowerCase().includes('mentor');
+                    const isIndustry = (call.partnerType || '').toLowerCase() === 'industry';
                     const bg = isIndustry ? '#FFF3CD' : '#E0F2FE';
                     const border = isIndustry ? '4px solid #D97706' : '4px solid #2563EB';
                     const titleColor = isIndustry ? '#92400E' : '#1E40AF';
                     const textColor = isIndustry ? '#78350F' : '#1E3A8A';
-                    const emoji = isIndustry ? '🏭' : '🎓';
 
                     return (
                       <div key={call._id} style={{ background: bg, borderLeft: border, padding: '16px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
-                        <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: titleColor, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>{emoji}</span> {call.title}
+                        <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: titleColor, margin: '0 0 6px' }}>
+                          {call.title}
                         </h4>
-                        <p style={{ fontSize: '0.82rem', color: textColor, margin: 0, lineHeight: '1.4' }}>
+                        <p style={{ fontSize: '0.82rem', color: textColor, margin: '0 0 8px', lineHeight: '1.4' }}>
                           {call.description}
                         </p>
+                        <div style={{ display: 'flex', gap: '10px', fontSize: '0.74rem', color: 'var(--color-text-muted)', flexWrap: 'wrap', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '6px' }}>
+                          {call.fundingAmount && <span>💰 Fund: {call.fundingAmount}</span>}
+                          {call.deadline && <span>⏰ Deadline: {new Date(call.deadline).toLocaleDateString()}</span>}
+                          <span>Contact: {call.contactPerson}</span>
+                        </div>
                       </div>
                     );
                   })
@@ -152,7 +196,7 @@ const CollaboratePage = () => {
               </div>
             </div>
 
-            {/* Collaboration Request Form */}
+            {/* Proposal Submission Card */}
             <div className="card" style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '30px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#133A26', marginBottom: '16px', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Send size={18} /> Partner Inquiry Form
@@ -164,71 +208,98 @@ const CollaboratePage = () => {
                   <p style={{ fontSize: '0.88rem', margin: 0 }}>Thank you for expressing interest. Our research board will contact you shortly.</p>
                 </div>
               ) : (
-                <form onSubmit={handleCollabSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <form onSubmit={handleCollabSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {formError && (
                     <div style={{ background: '#FEE2E2', border: '1px solid #EF4444', color: '#991B1B', padding: '10px', borderRadius: '8px', fontSize: '0.8rem' }}>
                       {formError}
                     </div>
                   )}
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.82rem', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Your Name / Title</label>
-                    <input 
-                      type="text" 
-                      required 
-                      className="form-input" 
-                      value={collabForm.name} 
-                      onChange={e => setCollabForm({...collabForm, name: e.target.value})} 
-                      style={{ fontSize: '0.88rem', padding: '10px 14px' }} 
-                    />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Your Name / Title</label>
+                      <input 
+                        type="text" 
+                        required 
+                        className="form-input" 
+                        value={collabForm.name} 
+                        onChange={e => setCollabForm({...collabForm, name: e.target.value})} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Collaboration Type</label>
+                      <select 
+                        className="form-input" 
+                        value={collabForm.type} 
+                        onChange={e => setCollabForm({...collabForm, type: e.target.value})}
+                      >
+                        <option value="Sponsored Research">Sponsored Research</option>
+                        <option value="Consulting">Consulting</option>
+                        <option value="Joint PhD">Joint PhD</option>
+                        <option value="Internship">Internship</option>
+                        <option value="Technology Transfer">Technology Transfer</option>
+                        <option value="Faculty Exchange">Faculty Exchange</option>
+                        <option value="MoU">MoU Proposal</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Email Address</label>
+                      <input 
+                        type="email" 
+                        required 
+                        className="form-input" 
+                        value={collabForm.email} 
+                        onChange={e => setCollabForm({...collabForm, email: e.target.value})} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Phone Number</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. +91 98..."
+                        className="form-input" 
+                        value={collabForm.phone} 
+                        onChange={e => setCollabForm({...collabForm, phone: e.target.value})} 
+                      />
+                    </div>
                   </div>
                   
                   <div>
-                    <label className="form-label" style={{ fontSize: '0.82rem', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Email Address</label>
-                    <input 
-                      type="email" 
-                      required 
-                      className="form-input" 
-                      value={collabForm.email} 
-                      onChange={e => setCollabForm({...collabForm, email: e.target.value})} 
-                      style={{ fontSize: '0.88rem', padding: '10px 14px' }} 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.82rem', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Organization / Institution</label>
+                    <label className="form-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Organization / Institution</label>
                     <input 
                       type="text" 
                       required 
                       className="form-input" 
                       value={collabForm.institution} 
                       onChange={e => setCollabForm({...collabForm, institution: e.target.value})} 
-                      style={{ fontSize: '0.88rem', padding: '10px 14px' }} 
                     />
                   </div>
                   
                   <div>
-                    <label className="form-label" style={{ fontSize: '0.82rem', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Subject Focus / Project Title</label>
+                    <label className="form-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Subject Focus / Project Title</label>
                     <input 
                       type="text" 
                       required 
                       className="form-input" 
-                      placeholder="e.g. Joint PhD Mentoring Call" 
+                      placeholder="e.g. High altitude sensor grid" 
                       value={collabForm.project} 
                       onChange={e => setCollabForm({...collabForm, project: e.target.value})} 
-                      style={{ fontSize: '0.88rem', padding: '10px 14px' }} 
                     />
                   </div>
                   
                   <div>
-                    <label className="form-label" style={{ fontSize: '0.82rem', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Brief Proposal Details</label>
+                    <label className="form-label" style={{ fontSize: '0.8rem', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Brief Proposal Details</label>
                     <textarea 
                       required 
-                      rows={4} 
+                      rows={3} 
                       className="form-input" 
                       placeholder="Detail your requirements, project scope, or guidance parameters..."
                       value={collabForm.details} 
                       onChange={e => setCollabForm({...collabForm, details: e.target.value})} 
-                      style={{ fontSize: '0.88rem', padding: '10px 14px', resize: 'none', fontFamily: 'inherit' }} 
+                      style={{ resize: 'none', fontFamily: 'inherit' }} 
                     />
                   </div>
                   
