@@ -8696,7 +8696,7 @@ const ProfileTab = () => {
     }
 
     if (netJrfQualified === 'YES') {
-      const netJrfOk = !!(netJrfExamType && netJrfCertNumber && netJrfRoll && netJrfRank && netJrfScore && netJrfIssueDate && q?.netJrf?.certificateUrl);
+      const netJrfOk = !!(netJrfCertNumber && netJrfRoll && q?.netJrf?.certificateUrl);
       if (!netJrfOk) return false;
     }
 
@@ -8749,7 +8749,7 @@ const ProfileTab = () => {
       }
     }
     if (netJrfQualified === 'YES') {
-      if (!netJrfExamType || !netJrfCertNumber || !netJrfRoll || !netJrfRank || !netJrfScore || !netJrfIssueDate || !q?.netJrf?.certificateUrl) {
+      if (!netJrfCertNumber || !netJrfRoll || !q?.netJrf?.certificateUrl) {
         return 'Please complete and save NET JRF Details including certificate upload.';
       }
     }
@@ -9705,7 +9705,7 @@ const ProfileTab = () => {
     }
 
     if (netJrfQualified === 'YES') {
-      if (!netJrfCertNumber || !netJrfRoll || !netJrfRank || !netJrfScore || !netJrfIssueDate || !q?.netJrf?.certificateUrl) {
+      if (!netJrfCertNumber || !netJrfRoll || !q?.netJrf?.certificateUrl) {
         toast.error('please fill in all the details before submitting the form.');
         return;
       }
