@@ -10238,7 +10238,7 @@ const ProfileTab = () => {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Gender <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }}>
+                    <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required>
                       <option value="">Select...</option>
                       {genders.map(g => <option key={g._id} value={g.value}>{g.label}</option>)}
                     </select>
@@ -10248,7 +10248,7 @@ const ProfileTab = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Social Category <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={category} onChange={e => setCategory(e.target.value)} required disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }}>
+                    <select className="form-input" value={category} onChange={e => setCategory(e.target.value)} required>
                       <option value="">Select Category...</option>
                       {categories.map(c => <option key={c._id} value={c.value}>{c.label}</option>)}
                     </select>
