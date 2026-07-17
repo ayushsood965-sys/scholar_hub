@@ -14,7 +14,7 @@ const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMappin
 // ==========================================
 exports.getFilterData = async (req, res) => {
   try {
-    const sessions = await AcademicSessionMaster.find({}).sort({ startDate: -1 });
+    const sessions = await AcademicSessionMaster.find({ isActive: { $ne: false } }).sort({ startDate: -1 });
     
     const degreeNameQuery = { isActive: true };
     if ((req.user.role === 'FACULTY' || req.user.role === 'HOD') && req.user.departmentId) {

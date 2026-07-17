@@ -367,7 +367,7 @@ exports.updateSemesterDegreeMapping = async (req, res) => {
 // ==========================================
 exports.getSessions = async (req, res) => {
   try {
-    const sessions = await AcademicSessionMaster.find().sort({ startDate: -1 });
+    const sessions = await AcademicSessionMaster.find({ isActive: { $ne: false } }).sort({ startDate: -1 });
     res.status(200).json(sessions);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
