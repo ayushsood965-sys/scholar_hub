@@ -2,6 +2,12 @@ const { getRedisClient, clearCache } = require('../config/redis');
 
 const cacheMiddleware = (ttl = 300) => {
   return async (req, res, next) => {
+    // Bypass caching entirely for auth endpoints (registration, verification, reset password, etc.)
+    const url = req.originalUrl || req.url || '';
+    if (url.includes('/api/auth') || url.includes('/api/install-logs') || url.includes('/api/email-logs')) {
+      return next();
+    }
+
     // If it's a mutating request (POST, PUT, DELETE, PATCH), invalidate cached views upon success
     if (req.method !== 'GET') {
       const originalSend = res.send;
