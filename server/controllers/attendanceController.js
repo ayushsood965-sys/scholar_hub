@@ -94,7 +94,7 @@ exports.createDegreeType = async (req, res) => {
 };
 exports.deleteDegreeType = async (req, res) => {
   try {
-    const data = await DegreeTypeMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const data = await DegreeTypeMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -232,7 +232,7 @@ exports.updateDegreeName = async (req, res) => {
 };
 exports.deleteDegreeName = async (req, res) => {
   try {
-    const data = await DegreeNameMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const data = await DegreeNameMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -276,7 +276,7 @@ exports.createSemester = async (req, res) => {
 };
 exports.deleteSemester = async (req, res) => {
   try {
-    const data = await SemesterMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const data = await SemesterMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -344,7 +344,7 @@ exports.createSemesterDegreeMapping = async (req, res) => {
 };
 exports.deleteSemesterDegreeMapping = async (req, res) => {
   try {
-    const data = await SemesterDegreeMapping.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const data = await SemesterDegreeMapping.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(data);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -355,7 +355,7 @@ exports.updateSemesterDegreeMapping = async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'This semester is already mapped to the selected degree.' });
     }
-    const data = await SemesterDegreeMapping.findByIdAndUpdate(req.params.id, { degreeNameId, semesterId }, { new: true })
+    const data = await SemesterDegreeMapping.findByIdAndUpdate(req.params.id, { degreeNameId, semesterId }, { returnDocument: 'after' })
       .populate('degreeNameId')
       .populate('semesterId');
     res.status(200).json(data);
@@ -390,7 +390,7 @@ exports.createSession = async (req, res) => {
 exports.setCurrentSession = async (req, res) => {
   try {
     await AcademicSessionMaster.updateMany({}, { isCurrent: false });
-    const session = await AcademicSessionMaster.findByIdAndUpdate(req.params.id, { isCurrent: true }, { new: true });
+    const session = await AcademicSessionMaster.findByIdAndUpdate(req.params.id, { isCurrent: true }, { returnDocument: 'after' });
     res.status(200).json(session);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -423,7 +423,7 @@ exports.deleteSession = async (req, res) => {
     if (session.isCurrent) {
       return res.status(400).json({ message: 'Cannot delete the active/current session. Please set another session as current first.' });
     }
-    await AcademicSessionMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    await AcademicSessionMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json({ message: 'Session deleted successfully' });
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -482,7 +482,7 @@ exports.createOrUpdatePolicy = async (req, res) => {
 };
 exports.deletePolicy = async (req, res) => {
   try {
-    const policy = await AttendancePolicyMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const policy = await AttendancePolicyMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(policy);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -552,7 +552,7 @@ exports.createLeaveType = async (req, res) => {
 };
 exports.deleteLeaveType = async (req, res) => {
   try {
-    const leaveType = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const leaveType = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(leaveType);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -583,7 +583,7 @@ exports.updateLeaveType = async (req, res) => {
     if (leaveName !== undefined) updatedData.leaveName = leaveName.trim();
     if (leaveCode !== undefined) updatedData.leaveCode = leaveCode.trim().toUpperCase();
     
-    const updated = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, updatedData, { new: true, runValidators: true });
+    const updated = await LeaveTypeMaster.findByIdAndUpdate(req.params.id, updatedData, { returnDocument: 'after', runValidators: true });
     res.status(200).json(updated);
   } catch (error) {
     if (error.code === 11000) {
@@ -681,7 +681,7 @@ exports.createTimetableSlot = async (req, res) => {
 };
 exports.deleteTimetableSlot = async (req, res) => {
   try {
-    const slot = await TimetableMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const slot = await TimetableMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(slot);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -734,7 +734,7 @@ exports.updateTimetableSlot = async (req, res) => {
     const slot = await TimetableMaster.findByIdAndUpdate(
       req.params.id,
       { ...req.body, departmentId: req.user.departmentId },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!slot) return res.status(404).json({ message: 'Slot not found' });
     res.status(200).json(slot);
@@ -2705,7 +2705,7 @@ exports.seedSemesterDegreeMappings = async (req, res) => {
       const sem = await SemesterMaster.findOneAndUpdate(
         { number: i },
         { $setOnInsert: { name: `Semester ${i}`, number: i, isActive: true } },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
       semestersMap[i] = sem._id;
     }
@@ -2804,7 +2804,7 @@ exports.createHoliday = async (req, res) => {
 };
 exports.deleteHoliday = async (req, res) => {
   try {
-    const holiday = await HolidayCalendar.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const holiday = await HolidayCalendar.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     res.status(200).json(holiday);
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -4058,7 +4058,7 @@ exports.updateCategoryGenderMaster = async (req, res) => {
 
 exports.deleteCategoryGenderMaster = async (req, res) => {
   try {
-    const data = await CategoryGenderMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    const data = await CategoryGenderMaster.findByIdAndUpdate(req.params.id, { isActive: false }, { returnDocument: 'after' });
     if (!data) return res.status(404).json({ message: 'Record not found' });
     res.status(200).json({ message: 'Deleted successfully', data });
   } catch (error) { res.status(500).json({ message: error.message }); }

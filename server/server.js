@@ -41,7 +41,7 @@ const Department = require('./models/Department');
 const Notification = require('./models/Notification');
 
 const app = express();
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // Connect to database
 connectDB().then(async () => {

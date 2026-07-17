@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Home, FileText, Users, Calendar, User, LogOut, Bell, CheckCircle2, XCircle, Layers, Award, Upload, ShieldCheck, Edit, AlertTriangle, Plus, Settings, Search, BookOpen, Coins, Mail } from 'lucide-react';
@@ -30,11 +30,9 @@ const supervisorNavItems = [
   { kind: 'section', label: '🎓 Scholar Management' },
   { key: 'scholars', label: 'My Scholars', Icon: Users },
   { key: 'my_lab_funding', label: 'My Lab & Funding', Icon: Coins },
-  { key: 'coursework_approvals', label: 'Coursework Approvals', Icon: BookOpen },
   { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
   { kind: 'section', label: '📅 Academic Activities' },
   { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
-  { key: 'reviews', label: 'Pending Reviews', Icon: FileText },
   { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
   { key: 'defaulters', label: 'Defaulter Scholars', Icon: AlertTriangle },
   { kind: 'section', label: '⚙️ Portal Settings' },
@@ -2747,12 +2745,119 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
 };
 
 // ── Scholar List ──
+const resolvePendingAction = (t, subRole) => {
+  const isHOD = subRole === 'HOD' || subRole === 'ADMIN';
+  
+  if (isHOD) {
+    if (t.status === 'REGISTRATION_PENDING') {
+      return { text: 'Verify Registration', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+    }
+    if (t.status === 'COURSEWORK' && t.courseworkStatus === 'PENDING_HOD') {
+      return { text: 'Approve Coursework', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+    }
+    if (t.status === 'SYNOPSIS_PENDING') {
+      if (t.synopsisStatus === 'PENDING_HOD') {
+        return { text: 'Approve Synopsis', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+      }
+      if (t.synopsisStatus === 'APPROVED') {
+        return { text: 'Conduct DRC Evaluation', color: '#6D28D9', bg: '#EDE9FE', border: '#D8B4FE' };
+      }
+    }
+    if (t.status === 'PRE_SUBMISSION') {
+      if (t.preSubMilestoneStatus === 'PENDING_HOD') {
+        return { text: 'Sign-off Pre-Sub Draft', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+      }
+      if (t.preSubMilestoneStatus === 'APPROVED' && (!t.preSubmissionSeminar?.status || t.preSubmissionSeminar.status === 'PENDING')) {
+        return { text: 'Schedule Pre-Sub Seminar', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' };
+      }
+      if (t.preSubmissionSeminar?.status === 'SCHEDULED') {
+        return { text: 'Record Seminar Outcome', color: '#6D28D9', bg: '#EDE9FE', border: '#D8B4FE' };
+      }
+    }
+    if (t.publications && t.publications.some(p => p.status === 'UNDER_REVIEW_HOD')) {
+      return { text: 'Verify Publications', color: '#D97706', bg: '#FFFBEB', border: '#FEF3C7' };
+    }
+    if (t.status === 'PENDING_HOD' || (t.status === 'SUBMITTED' && t.finalSubStatus === 'SUBMITTED')) {
+      return { text: 'Approve & Dispatch Thesis', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+    }
+    if (t.status === 'SUBMITTED' && t.finalSubStatus === 'APPROVED' && t.externalEvaluationStatus === 'SUCCESSFUL') {
+      if (!t.vivaStatus || t.vivaStatus === 'PENDING') {
+        return { text: 'Schedule/Conduct Viva', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' };
+      }
+      if (t.vivaStatus === 'SUCCESSFUL') {
+        return { text: 'Award Ph.D. Degree', color: '#047857', bg: '#ECFDF5', border: '#A7F3D0' };
+      }
+    }
+  } else {
+    // Faculty / Supervisor actions
+    if (t.status === 'COURSEWORK' && t.courseworkStatus === 'PENDING_FACULTY') {
+      return { text: 'Approve Coursework', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+    }
+    if (t.status === 'SYNOPSIS_PENDING' && t.synopsisStatus === 'SUBMITTED') {
+      return { text: 'Review Synopsis', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+    }
+    if (t.status === 'PRE_SUBMISSION' && t.preSubMilestoneStatus === 'SUBMITTED') {
+      return { text: 'Review Pre-Sub Draft', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+    }
+    if (t.publications && t.publications.some(p => p.status === 'PENDING')) {
+      return { text: 'Verify Publications', color: '#D97706', bg: '#FFFBEB', border: '#FEF3C7' };
+    }
+    if (t.status === 'SUBMITTED' && t.finalSubStatus === 'SUBMITTED') {
+      return { text: 'Approve Final Thesis', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
+    }
+  }
+  return { text: 'No Pending Action', color: '#475569', bg: '#F1F5F9', border: '#E2E8F0' };
+};
+
+// ── Scholar List ──
 const ScholarList = ({ theses, onSelect, title, subRole }) => {
   const { loading } = useContext(ThesisContext);
-  const { paginatedData, currentPage, pageSize, renderGridControls } = useGridControl(
-    theses,
+  const [filter, setFilter] = useState('');
+  const [sortBy, setSortBy] = useState('DEFAULT');
+
+  const processedTheses = useMemo(() => {
+    let result = [...theses];
+    if (filter) {
+      result = result.filter(t => t.status === filter);
+    }
+    if (sortBy === 'ACTION_REQUIRED' || sortBy === 'PENDING_ACTION_ASC') {
+      result.sort((a, b) => {
+        const actA = resolvePendingAction(a, subRole).text;
+        const actB = resolvePendingAction(b, subRole).text;
+        const weightA = actA === 'No Pending Action' ? 10 : 1;
+        const weightB = actB === 'No Pending Action' ? 10 : 1;
+        if (weightA !== weightB) {
+          return weightA - weightB;
+        }
+        return actA.localeCompare(actB);
+      });
+    } else if (sortBy === 'PENDING_ACTION_DESC') {
+      result.sort((a, b) => {
+        const actA = resolvePendingAction(a, subRole).text;
+        const actB = resolvePendingAction(b, subRole).text;
+        const weightA = actA === 'No Pending Action' ? 10 : 1;
+        const weightB = actB === 'No Pending Action' ? 10 : 1;
+        if (weightA !== weightB) {
+          return weightB - weightA;
+        }
+        return actB.localeCompare(actA);
+      });
+    } else if (sortBy === 'NAME_ASC') {
+      result.sort((a, b) => (a.scholarId?.name || '').localeCompare(b.scholarId?.name || ''));
+    } else if (sortBy === 'NAME_DESC') {
+      result.sort((a, b) => (b.scholarId?.name || '').localeCompare(a.scholarId?.name || ''));
+    }
+    return result;
+  }, [theses, filter, sortBy, subRole]);
+
+  const { paginatedData, currentPage, pageSize, totalPages, setCurrentPage, setPageSize, searchTerm, setSearchTerm } = useGridControl(
+    processedTheses,
     ['scholarId.name', 'department', 'title']
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, sortBy]);
 
   return (
     <div className="card documents-card">
@@ -2764,42 +2869,253 @@ const ScholarList = ({ theses, onSelect, title, subRole }) => {
         </div>
       ) : (
         <>
-          {renderGridControls()}
-          {paginatedData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF' }}>No records found.</div>
-          ) : (
-            <div className="file-list">
-              <div className="file-header">
-                <div style={{ flex: '0.5' }}>S.No.</div>
-                <div style={{ flex: 1.5 }}>Scholar</div>
-                <div style={{ flex: 1 }}>Dept</div>
-                <div style={{ flex: 2 }}>Title</div>
-                <div style={{ flex: 1.2 }}>Status</div>
-                <div style={{ flex: 0.8 }}>Action</div>
+          {/* Redesigned Premium 2-Row Controls Bar */}
+          <div style={{
+            background: 'var(--color-bg, #F8FAFC)',
+            borderRadius: '12px',
+            border: '1px solid var(--color-border, #E2E8F0)',
+            padding: '16px',
+            marginBottom: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            {/* Row 1: Search & Pagination */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '16px',
+              flexWrap: 'wrap'
+            }}>
+              {/* Search Bar */}
+              <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+                <input
+                  type="text"
+                  placeholder="Search scholars..."
+                  className="form-input search-input"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', fontSize: '0.9rem' }}
+                />
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>🔍</span>
               </div>
-              {paginatedData.map((t, idx) => (
-                <div key={t._id} className="file-item">
-                  <div style={{ flex: '0.5', fontWeight: 600, color: 'var(--color-text-muted)' }}>{idx + 1 + (currentPage - 1) * pageSize}</div>
-                  <div className="file-name" style={{ flex: 1.5 }}>{t.scholarId?.name || <span style={{ color: '#DC2626', fontStyle: 'italic', fontSize: '0.8rem' }}>⚠️ Unassigned</span>}</div>
-                  <div className="file-date" style={{ flex: 1 }}>{t.department}</div>
-                  <div style={{ flex: 2, fontSize: '0.85rem', color: '#374151' }}>{t.title?.substring(0, 40)}...</div>
-                  <div style={{ flex: 1.2 }}>
-                    {(() => {
-                      const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status, t.externalEvaluationStatus, t.vivaStatus);
-                      return (
-                        <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 600, background: badge.bg, color: badge.color }}>
+
+              {/* Pagination controls on the right */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary, #64748B)' }}>Show:</span>
+                  <select
+                    className="form-input page-size-select"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    style={{ width: 'auto', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', cursor: 'pointer', fontSize: '0.85rem' }}
+                  >
+                    <option value="10">10 rows</option>
+                    <option value="20">20 rows</option>
+                    <option value="30">30 rows</option>
+                  </select>
+                </div>
+
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className="btn-outline-small"
+                      style={{ 
+                        padding: '6px 10px', 
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-border, #CBD5E1)',
+                        background: 'white',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        opacity: currentPage === 1 ? 0.5 : 1
+                      }}
+                    >
+                      ◀
+                    </button>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary, #1F2937)' }}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      className="btn-outline-small"
+                      style={{ 
+                        padding: '6px 10px', 
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-border, #CBD5E1)',
+                        background: 'white',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        opacity: currentPage === totalPages ? 0.5 : 1
+                      }}
+                    >
+                      ▶
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Divider Line */}
+            <div style={{ height: '1px', background: '#E2E8F0' }}></div>
+
+            {/* Row 2: Filters & Sort */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '16px',
+              flexWrap: 'wrap'
+            }}>
+              {/* Filters on the left */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>⚙️</span> Filters:
+                </span>
+                
+                <select className="form-input" style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', cursor: 'pointer', fontSize: '0.85rem', width: 'auto', minWidth: '140px' }} value={filter} onChange={e => setFilter(e.target.value)}>
+                  <option value="">All Statuses</option>
+                  {['REGISTRATION_PENDING','COURSEWORK','SYNOPSIS_PENDING','ACTIVE_RESEARCH','PRE_SUBMISSION','SUBMITTED','AWARDED'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              {/* Sort on the right */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>⇅</span> Sort by:
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="form-input"
+                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', cursor: 'pointer', fontSize: '0.85rem', minWidth: '180px' }}
+                >
+                  <option value="DEFAULT">Default Order</option>
+                  <option value="PENDING_ACTION_ASC">Pending Actions First (A-Z)</option>
+                  <option value="PENDING_ACTION_DESC">Pending Actions Last (Z-A)</option>
+                  <option value="NAME_ASC">Scholar Name (A-Z)</option>
+                  <option value="NAME_DESC">Scholar Name (Z-A)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="table-container" style={{ 
+            overflowX: 'auto', 
+            borderRadius: '12px', 
+            border: '1px solid var(--color-border, #E2E8F0)',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            background: 'white'
+          }}>
+            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                  <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '60px' }}>S.No.</th>
+                  <th 
+                    style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => setSortBy(prev => prev === 'NAME_ASC' ? 'NAME_DESC' : 'NAME_ASC')}
+                  >
+                    Scholar {sortBy === 'NAME_ASC' ? '▲' : sortBy === 'NAME_DESC' ? '▼' : '⇅'}
+                  </th>
+                  <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '100px' }}>Dept</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Research Title</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '130px' }}>Status</th>
+                  <th 
+                    style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '180px', cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => setSortBy(prev => prev === 'PENDING_ACTION_ASC' ? 'PENDING_ACTION_DESC' : 'PENDING_ACTION_ASC')}
+                  >
+                    Pending Action {sortBy === 'PENDING_ACTION_ASC' ? '▲' : sortBy === 'PENDING_ACTION_DESC' ? '▼' : '⇅'}
+                  </th>
+                  <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '100px', textAlign: 'center' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((t, idx) => {
+                  const pendingAction = resolvePendingAction(t, subRole);
+                  const badge = resolveDetailedStatus(t.status, t.synopsisStatus, t.finalSubStatus, subRole, t.preSubMilestoneStatus, t.preSubmissionSeminar?.status, t.externalEvaluationStatus, t.vivaStatus);
+                  
+                  return (
+                    <tr 
+                      key={t._id} 
+                      style={{ 
+                        borderBottom: '1px solid #E2E8F0', 
+                        transition: 'background-color 0.2s',
+                        verticalAlign: 'middle'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'} 
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      {/* S.No */}
+                      <td style={{ padding: '14px 16px', fontWeight: 600, color: '#64748B' }}>
+                        {idx + 1 + (currentPage - 1) * pageSize}
+                      </td>
+
+                      {/* Scholar */}
+                      <td style={{ padding: '14px 16px', fontWeight: 600, color: '#1E293B' }}>
+                        {t.scholarId?.name || <span style={{ color: '#DC2626', fontStyle: 'italic', fontSize: '0.8rem' }}>⚠️ Unassigned</span>}
+                      </td>
+
+                      {/* Dept */}
+                      <td style={{ padding: '14px 16px', color: '#475569', fontWeight: 500 }}>
+                        {t.department}
+                      </td>
+
+                      {/* Title */}
+                      <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#334155' }}>
+                        {t.title ? (t.title.length > 50 ? `${t.title.substring(0, 50)}...` : t.title) : <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>No title declared</span>}
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '14px 16px' }}>
+                        <span style={{ padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, background: badge.bg, color: badge.color, border: `1px solid ${badge.color}22` }}>
                           {badge.text}
                         </span>
-                      );
-                    })()}
-                  </div>
-                  <div className="file-actions" style={{ flex: 0.8 }}>
-                    <button className="btn-action" onClick={() => onSelect(t._id)}>Review</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                      </td>
+
+                      {/* Pending Action */}
+                      <td style={{ padding: '14px 16px' }}>
+                        <span style={{
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: pendingAction.bg,
+                          color: pendingAction.color,
+                          border: `1px solid ${pendingAction.border}`
+                        }}>
+                          {pendingAction.text}
+                        </span>
+                      </td>
+
+                      {/* Action */}
+                      <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                        <button 
+                          className="btn-action" 
+                          onClick={() => onSelect(t._id)}
+                          style={{
+                            background: pendingAction.text !== 'No Pending Action' ? 'var(--color-primary, #2563EB)' : '#64748B',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.opacity = 0.9}
+                          onMouseOut={(e) => e.currentTarget.style.opacity = 1}
+                        >
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>
