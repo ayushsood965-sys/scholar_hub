@@ -907,6 +907,9 @@ const updateUserProfileByHod = async (req, res) => {
 
 // GET /api/auth/verify-email
 const verifyEmail = async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   const { token } = req.query;
   try {
     if (!token) {
@@ -1010,6 +1013,9 @@ const forgotPassword = async (req, res) => {
 
 // GET /api/auth/verify-reset-token
 const verifyResetToken = async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   const { token } = req.query;
   try {
     if (!token) {
