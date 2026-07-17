@@ -17,7 +17,8 @@ const StaffProfileTab = ({ thesis }) => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [uploadingDocKey, setUploadingDocKey] = useState(null);
-  const [headerHeight, setHeaderHeight] = useState(64);
+  const [editModes, setEditModes] = useState({});
+  const [pendingEduFiles, setPendingEduFiles] = useState({});
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -146,7 +147,8 @@ const StaffProfileTab = ({ thesis }) => {
     .profile-layout-container {
       display: flex !important;
       gap: 28px !important;
-      max-width: 1280px !important;
+      width: 96% !important;
+      max-width: 1600px !important;
       margin: 0 auto !important;
       padding: 12px !important;
       position: relative !important;
@@ -1115,11 +1117,64 @@ const StaffProfileTab = ({ thesis }) => {
   };
 
   const saveQualification = async (key) => {
-    const updatedQualifications = {
-      ...qualifications,
-      [key]: eduDrafts[key] || {}
-    };
-    await triggerProfileUpdate({ qualifications: updatedQualifications }, `${eduKeys.find(k => k.key === key)?.label || 'Qualification'} details saved`);
+    const info = eduDrafts[key] || {};
+    const board = (info.boardOrUniv || '').trim();
+    const year = (info.yearOfPassing || '').trim();
+    const subject = (info.subject || '').trim();
+    const percentage = (info.percentage || '').trim();
+    const originalInfo = qualifications[key] || {};
+    const hasDoc = originalInfo.certificateUrl || pendingEduFiles[key];
+
+    if (!board || !year || !subject || !percentage || !hasDoc) {
+      toast.error('Please fill all fields and select/upload a certificate file.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let finalCertUrl = originalInfo.certificateUrl || '';
+
+      if (pendingEduFiles[key]) {
+        setUploadingDocKey(key);
+        const res = await uploadProfileDocument(pendingEduFiles[key], key);
+        if (res.success) {
+          finalCertUrl = res.user?.profile?.qualifications?.[key]?.certificateUrl || finalCertUrl;
+          setPendingEduFiles(prev => {
+            const copy = { ...prev };
+            delete copy[key];
+            return copy;
+          });
+        } else {
+          toast.error(res.message || 'File upload failed');
+          setLoading(false);
+          setUploadingDocKey(null);
+          return;
+        }
+        setUploadingDocKey(null);
+      }
+
+      const updatedQualifications = {
+        ...qualifications,
+        [key]: {
+          boardOrUniv: board,
+          yearOfPassing: year,
+          subject: subject,
+          percentage: percentage,
+          certificateUrl: finalCertUrl
+        }
+      };
+      await triggerProfileUpdate({ qualifications: updatedQualifications }, `${eduKeys.find(k => k.key === key)?.label || 'Qualification'} details saved`);
+      
+      setEditModes(prev => ({
+        ...prev,
+        [key]: false
+      }));
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save qualification details');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearQualification = async (key) => {
@@ -1128,6 +1183,11 @@ const StaffProfileTab = ({ thesis }) => {
       ...prev,
       [key]: clearedValue
     }));
+    setPendingEduFiles(prev => {
+      const copy = { ...prev };
+      delete copy[key];
+      return copy;
+    });
     const updatedQualifications = {
       ...qualifications,
       [key]: clearedValue
@@ -1141,29 +1201,27 @@ const StaffProfileTab = ({ thesis }) => {
       cleared[key] = { boardOrUniv: '', yearOfPassing: '', subject: '', percentage: '', certificateUrl: '' };
     });
     setEduDrafts(cleared);
+    setPendingEduFiles({});
     setOtherQualsDraft([]);
     await triggerProfileUpdate({ qualifications: { ...cleared, otherQuals: [] } }, 'All educational qualifications details cleared');
   };
 
-  const handleEduFileChange = async (e, key) => {
+  const handleEduFileChange = (e, key) => {
     const file = e.target.files[0];
     if (!file) return;
-    try {
-      setUploadingDocKey(key);
-      const res = await uploadProfileDocument(file, key);
-      if (res.success) {
-        toast.success('Certificate file uploaded successfully');
-      } else {
-        toast.error(res.message);
-      }
-    } catch (err) {
-      toast.error('File upload process failed');
-    } finally {
-      setUploadingDocKey(null);
-    }
+    setPendingEduFiles(prev => ({
+      ...prev,
+      [key]: file
+    }));
+    toast.success('Document file selected. Remember to save.');
   };
 
   const deleteEduFile = async (key) => {
+    setPendingEduFiles(prev => {
+      const copy = { ...prev };
+      delete copy[key];
+      return copy;
+    });
     const currentEdu = qualifications[key] || {};
     const updatedEdu = { ...currentEdu, certificateUrl: '' };
     const updatedQualifications = { ...qualifications, [key]: updatedEdu };
@@ -2211,7 +2269,7 @@ const StaffProfileTab = ({ thesis }) => {
                       </div>
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Percentage (%)</span>
-                        <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
+                    <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{o.percentage || '—'}</strong>
                       </div>
                       <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center' }}>
                         {renderStudentDocBadge(o.certificateUrl)}
@@ -2226,15 +2284,17 @@ const StaffProfileTab = ({ thesis }) => {
               {eduKeys.map(({ key, label }) => {
                 const info = eduDrafts[key] || {};
                 const originalInfo = qualifications[key] || {};
-                return (
-                  <div key={key} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                    <div className="edu-card-header">
-                      <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)' }}>{label}</strong>
-                      
-                      {/* Document status or upload controls */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {originalInfo.certificateUrl ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                const isEditing = editModes[key] === true || !(originalInfo.boardOrUniv && originalInfo.yearOfPassing);
+
+                if (!isEditing) {
+                  // View Mode Card
+                  return (
+                    <div key={key} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: '#F8FAFC' }}>
+                      <div className="edu-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px dashed var(--color-border-solid, #e5e7eb)', paddingBottom: '8px' }}>
+                        <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)' }}>{label}</strong>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {originalInfo.certificateUrl && (
                             <a 
                               href={`${API_BASE_URL}${originalInfo.certificateUrl}`} 
                               target="_blank" 
@@ -2243,6 +2303,70 @@ const StaffProfileTab = ({ thesis }) => {
                             >
                               <Eye size={12} /> View Doc
                             </a>
+                          )}
+                          <button 
+                            type="button" 
+                            onClick={() => setEditModes(prev => ({ ...prev, [key]: true }))} 
+                            style={btnPrimaryStyle}
+                          >
+                            <Edit size={12} /> Edit {label.split(' ')[0]} details
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', padding: '12px', background: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Board / University</span>
+                          <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.85rem' }}>{originalInfo.boardOrUniv || '—'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Year of Passing</span>
+                          <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.85rem' }}>{originalInfo.yearOfPassing || '—'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Subject / Stream</span>
+                          <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.85rem' }}>{originalInfo.subject || '—'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Marks Obtained / CGPA</span>
+                          <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.85rem' }}>{originalInfo.percentage || '—'}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Edit Mode Card
+                return (
+                  <div key={key} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div className="edu-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px dashed var(--color-border-solid, #e5e7eb)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)' }}>{label}</strong>
+                      
+                      {/* Document status or upload controls */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {pendingEduFiles[key] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#1A5A3B', fontWeight: 700 }}>
+                              📎 {pendingEduFiles[key].name} (Pending Save)
+                            </span>
+                            <button 
+                              onClick={() => setPendingEduFiles(prev => {
+                                const copy = { ...prev };
+                                delete copy[key];
+                                return copy;
+                              })}
+                              style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                              title="Remove selected file"
+                              type="button"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : originalInfo.certificateUrl ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700 }}>
+                              ✓ Document uploaded
+                            </span>
                             <button 
                               onClick={() => deleteEduFile(key)}
                               style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', padding: '4px' }}
@@ -2254,7 +2378,7 @@ const StaffProfileTab = ({ thesis }) => {
                           </div>
                         ) : (
                           <label style={{ ...btnSecondaryStyle, margin: 0 }}>
-                            <Upload size={12} /> {uploadingDocKey === key ? 'Uploading...' : 'Upload Doc'}
+                            <Upload size={12} /> {uploadingDocKey === key ? 'Uploading...' : 'Select Document'}
                             <input 
                               type="file" 
                               accept=".pdf,image/*" 
@@ -2316,6 +2440,18 @@ const StaffProfileTab = ({ thesis }) => {
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      {originalInfo.boardOrUniv && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setEduDrafts(prev => ({ ...prev, [key]: { ...originalInfo } }));
+                            setEditModes(prev => ({ ...prev, [key]: false }));
+                          }} 
+                          style={btnSecondaryStyle}
+                        >
+                          Cancel
+                        </button>
+                      )}
                       <button 
                         type="button" 
                         onClick={() => clearQualification(key)} 
