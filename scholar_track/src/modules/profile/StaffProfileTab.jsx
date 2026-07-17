@@ -19,6 +19,7 @@ const StaffProfileTab = ({ thesis }) => {
   const [uploadingDocKey, setUploadingDocKey] = useState(null);
   const [editModes, setEditModes] = useState({});
   const [pendingEduFiles, setPendingEduFiles] = useState({});
+  const [headerHeight, setHeaderHeight] = useState(64);
 
   useEffect(() => {
     const updateHeaderHeight = () => {
