@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
-const { sendVerificationEmail } = require('../utils/emailService');
+const { queueVerificationEmail, queuePasswordResetEmail } = require('../utils/emailQueue');
 const Department = require('../models/Department');
 const { createNotification } = require('./notificationController');
 
@@ -200,22 +200,22 @@ const register = async (req, res) => {
       profile: profileData
     });
 
-    // Send verification email in background
-    let emailSent = false;
+    // Queue verification email for background delivery
+    let emailQueued = false;
     try {
       const portal = req.body.portal || (role === 'STUDENT' ? 'sync' : 'track');
-      await sendVerificationEmail(user.username, user.name, token, portal);
-      emailSent = true;
+      await queueVerificationEmail(user.username, user.name, token, portal);
+      emailQueued = true;
     } catch (err) {
-      console.error('Failed to send verification email during registration:', err);
+      console.error('Failed to queue verification email during registration:', err);
     }
 
     res.status(201).json({
       success: true,
       emailPending: true,
       email: user.username,
-      emailSent,
-      message: emailSent 
+      emailSent: emailQueued,
+      message: emailQueued 
         ? 'Registration successful. Please verify your email.' 
         : 'Registration successful, but we could not send the verification email. Please try resending it.'
     });
@@ -972,7 +972,7 @@ const resendVerificationEmail = async (req, res) => {
     await user.save();
     
     const targetPortal = portal || (user.role === 'STUDENT' ? 'sync' : 'track');
-    await sendVerificationEmail(user.username, user.name, token, targetPortal);
+    await queueVerificationEmail(user.username, user.name, token, targetPortal);
     
     res.json({ success: true, message: 'Verification email resent successfully.' });
   } catch (error) {
@@ -995,9 +995,8 @@ const forgotPassword = async (req, res) => {
       user.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
       await user.save();
 
-      const { sendPasswordResetEmail } = require('../utils/emailService');
       const targetPortal = portal || (user.role === 'STUDENT' ? 'sync' : 'track');
-      await sendPasswordResetEmail(user.username, user.name, token, targetPortal);
+      await queuePasswordResetEmail(user.username, user.name, token, targetPortal);
     }
 
     res.json({ 

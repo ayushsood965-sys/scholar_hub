@@ -26,6 +26,7 @@ import {
   GraduationCap,
   ClipboardList,
   UserCog,
+  Mail,
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { NotificationContext } from "../context/NotificationContext";
@@ -120,6 +121,7 @@ const roleNavConfig = {
     { key: "users", icon: ClipboardList, label: "User Verification" },
     { key: "searchEditStudent", icon: UserCog, label: "Search/Edit Student Details" },
     { key: "appInstallLogs", icon: ClipboardList, label: "App Install Logs" },
+    { key: "emailLogs", icon: Mail, label: "Email Logs" },
 
     { kind: "section", label: "👤 ACCOUNT" },
     { key: "profile", icon: UserCog, label: "My Credentials" },

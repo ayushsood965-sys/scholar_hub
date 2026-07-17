@@ -21,6 +21,7 @@ import LeaveRulesTab from "../modules/admin/LeaveRulesTab";
 import UniversityFacultiesTab from "../modules/admin/UniversityFacultiesTab";
 import SearchEditStudentTab from "../modules/admin/SearchEditStudentTab";
 import AppInstallLogsTab from "../modules/admin/AppInstallLogsTab";
+import EmailLogsTab from "../modules/admin/EmailLogsTab";
 
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -51,6 +52,7 @@ const SuperAdminDashboard = () => {
     hod: "HOD Master",
     profile: "My Credentials",
     appInstallLogs: "App Install Logs",
+    emailLogs: "Email Delivery Logs",
   };
 
   return (
@@ -78,6 +80,7 @@ const SuperAdminDashboard = () => {
       {activeTab === "policies" && <PolicyConfigTab />}
       {activeTab === "leaveRules" && <LeaveRulesTab />}
       {activeTab === "appInstallLogs" && <AppInstallLogsTab />}
+      {activeTab === "emailLogs" && <EmailLogsTab />}
     </DashboardShell>
   );
 };

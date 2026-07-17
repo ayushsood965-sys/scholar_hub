@@ -63,13 +63,13 @@ notificationSchema.pre('save', function() {
   this._isNewDoc = this.isNew;
 });
 
-// Post-save hook to dispatch email notification
+// Post-save hook to queue email notification for background delivery
 notificationSchema.post('save', async function(doc) {
   if (doc._isNewDoc) {
     try {
-      const { sendNotificationEmail } = require('../utils/emailService');
-      sendNotificationEmail(doc).catch(err => {
-        console.error('Error in sendNotificationEmail async call:', err);
+      const { queueNotificationEmail } = require('../utils/emailQueue');
+      queueNotificationEmail(doc).catch(err => {
+        console.error('Error in queueNotificationEmail async call:', err);
       });
     } catch (err) {
       console.error('Error in notification post-save hook:', err);

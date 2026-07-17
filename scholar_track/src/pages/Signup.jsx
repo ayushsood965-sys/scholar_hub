@@ -204,9 +204,13 @@ const Signup = () => {
     setDegreeTypeId(val);
     const selectedType = degreeTypeOptions.find(t => t.value === val);
     if (selectedType?.label?.toUpperCase().includes('PHD')) {
-      setError('PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.');
+      setFieldErrors(prev => ({ ...prev, degreeTypeId: 'PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.' }));
     } else {
-      if (error.includes('PhD candidates')) setError('');
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.degreeTypeId;
+        return next;
+      });
     }
   };
 
@@ -443,6 +447,15 @@ const Signup = () => {
                     <div
                       className="form-input searchable-dropdown-trigger"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setIsDropdownOpen(!isDropdownOpen);
+                        }
+                      }}
+                      role="combobox"
+                      aria-expanded={isDropdownOpen}
                     >
                       <span style={{ color: department ? 'inherit' : '#9CA3AF' }}>
                         {department || 'Select your department'}
@@ -593,6 +606,15 @@ const Signup = () => {
                       className="form-input searchable-dropdown-trigger"
                       onClick={() => departmentId && setDegreeTypeDropdownOpen(!degreeTypeDropdownOpen)}
                       style={{ opacity: !departmentId ? 0.5 : 1, cursor: !departmentId ? 'not-allowed' : 'pointer' }}
+                      tabIndex={departmentId ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (departmentId && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          setDegreeTypeDropdownOpen(!degreeTypeDropdownOpen);
+                        }
+                      }}
+                      role="combobox"
+                      aria-expanded={degreeTypeDropdownOpen}
                     >
                       <span style={{ color: degreeTypeId ? 'inherit' : '#9CA3AF' }}>
                         {degreeTypeId
@@ -676,6 +698,15 @@ const Signup = () => {
                       className="form-input searchable-dropdown-trigger"
                       onClick={() => degreeTypeId && setDegreeNameDropdownOpen(!degreeNameDropdownOpen)}
                       style={{ opacity: !degreeTypeId ? 0.5 : 1, cursor: !degreeTypeId ? 'not-allowed' : 'pointer' }}
+                      tabIndex={degreeTypeId ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (degreeTypeId && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          setDegreeNameDropdownOpen(!degreeNameDropdownOpen);
+                        }
+                      }}
+                      role="combobox"
+                      aria-expanded={degreeNameDropdownOpen}
                     >
                       <span style={{ color: degreeNameId ? 'inherit' : '#9CA3AF' }}>
                         {degreeNameId
@@ -866,6 +897,15 @@ const Signup = () => {
                     <div
                       className="form-input searchable-dropdown-trigger"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setIsDropdownOpen(!isDropdownOpen);
+                        }
+                      }}
+                      role="combobox"
+                      aria-expanded={isDropdownOpen}
                     >
                       <span style={{ color: department ? 'inherit' : '#9CA3AF' }}>
                         {department || 'Select your department'}

@@ -22,6 +22,7 @@ const seedRoutes = require('./routes/seedRoutes');
 const studentMappingRoutes = require('./routes/studentMappingRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const installLogRoutes = require('./routes/installLogRoutes');
+const emailLogRoutes = require('./routes/emailLogRoutes');
 const fs = require('fs');
 const { seedUserData } = require('./seedUsersHelper');
 const { connectRedis } = require('./config/redis');
@@ -46,6 +47,11 @@ app.set('trust proxy', true);
 connectDB().then(async () => {
   console.log('✅ Database connected.');
   await connectRedis();
+
+  // Start the background email worker
+  const { startEmailWorker } = require('./utils/emailWorker');
+  startEmailWorker();
+
   try {
     const adminExists = await User.findOne({ username: 'admin' });
     if (!adminExists) {
@@ -169,6 +175,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/student-mapping', studentMappingRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/install-logs', installLogRoutes);
+app.use('/api/email-logs', emailLogRoutes);
 
 // Health check endpoint for UptimeRobot
 app.get('/api/health', (req, res) => {
