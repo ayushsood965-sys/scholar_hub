@@ -3052,8 +3052,7 @@ exports.getStudentDashboardStats = async (req, res) => {
         let total = 0, attended = 0;
         recs.forEach(r => {
           if (r.status === 'ON_LEAVE' && r.isLeaveOverride) {
-            total++;
-            attended++;
+            // Exclude from calculations under UGC framework
           } else {
             const c = r.classes.find(cl => cl.timetableSlotId?.toString() === sub.timetableSlotId.toString());
             if (c) {
@@ -3450,7 +3449,7 @@ exports.getFacultyDashboardStats = async (req, res) => {
           let status = 'NOT_MARKED';
           if (rec) {
             if (rec.status === 'ON_LEAVE' && rec.isLeaveOverride) {
-              status = 'PRESENT';
+              status = 'ON_LEAVE'; // Under UGC, approved leave is excluded from both attended and expected
             } else if (rec.classItem && !rec.classItem.isCancelled) {
               status = rec.classItem.selected ? 'PRESENT' : 'ABSENT';
             }
@@ -3775,9 +3774,6 @@ exports.getHodDashboardStats = async (req, res) => {
         weeklyLogs[weekLabel].sum += 100;
         weeklyLogs[weekLabel].count++;
       } else if (rec.status === 'ABSENT') {
-        weeklyLogs[weekLabel].count++;
-      } else if (rec.status === 'ON_LEAVE' && rec.isLeaveOverride) {
-        weeklyLogs[weekLabel].sum += 100;
         weeklyLogs[weekLabel].count++;
       }
     });

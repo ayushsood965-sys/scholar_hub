@@ -282,7 +282,11 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
 
         if (isPhD) {
           if (status === 'PRESENT') presentCount++;
-          else if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) presentCount++;
+          else if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
+            // Under UGC framework, approved leave classes are deducted from total expected classes.
+            totalExpectedClasses--;
+            if (totalExpectedClasses < 0) totalExpectedClasses = 0;
+          }
           else if (status === 'ABSENT' || status === 'NOT_MARKED') absentCount++;
         } else {
           if (status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
@@ -293,7 +297,9 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
               const isSlotCancelled = classItem && classItem.isCancelled;
               return !isSlotCancelled;
             }).length;
-            presentCount += scheduledClassesToday;
+            // Under UGC framework, approved leave classes are deducted from total expected classes.
+            totalExpectedClasses -= scheduledClassesToday;
+            if (totalExpectedClasses < 0) totalExpectedClasses = 0;
           } else {
             classes.forEach(c => {
               if (!allowedSlotIds.includes(c.timetableSlotId?.toString())) {
@@ -387,7 +393,7 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
         }
 
         if (existingRecord.status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
-          subjectPresent++;
+          // Under UGC framework, approved leaves are excluded from both attended and held totals (deducted from held total)
         } else {
           if (classItem.selected) {
             subjectPresent++;
