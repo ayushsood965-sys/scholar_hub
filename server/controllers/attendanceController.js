@@ -2583,7 +2583,7 @@ exports.seedAllMasters = async (req, res) => {
     // 6. Seed default policies for newly created/active degree names (courses)
     let policiesAdded = 0;
     await AttendancePolicyMaster.deleteMany({});
-    const allDegreeNames = await DegreeNameMaster.find({ isActive: true });
+    const allDegreeNames = await DegreeNameMaster.find({ isActive: true }).populate('degreeTypeId');
     for (const dn of allDegreeNames) {
       const exists = await AttendancePolicyMaster.findOne({ departmentId: null, degreeNameId: dn._id });
       if (!exists) {
@@ -2602,6 +2602,77 @@ exports.seedAllMasters = async (req, res) => {
           isActive: true
         });
         policiesAdded++;
+      }
+    }
+
+    // 6b. Seed semesters 1 to 10
+    let semestersAdded = 0;
+    const semestersMap = {};
+    for (let i = 1; i <= 10; i++) {
+      const sem = await SemesterMaster.findOneAndUpdate(
+        { number: i },
+        { $setOnInsert: { name: `Semester ${i}`, number: i, isActive: true } },
+        { upsert: true, returnDocument: 'after' }
+      );
+      if (sem) {
+        semestersMap[i] = sem._id;
+        semestersAdded++;
+      }
+    }
+
+    // 6c. Seed Semester Degree Mappings
+    let mappingsAdded = 0;
+    for (const dn of allDegreeNames) {
+      const typeCode = dn.degreeTypeId?.code || ''; // e.g. UG, PG, PHD, CERT, DIP, ADVDIP
+      const code = dn.code || '';
+
+      let semCount = 0;
+
+      if (typeCode === 'PHD') {
+        semCount = 6; // PhD programs map to 6 semesters (3 years)
+      } else if (['CERT', 'DIP', 'ADVDIP'].includes(typeCode)) {
+        semCount = 2; // Certificates and Diplomas are 1 year (2 semesters)
+      } else if (typeCode === 'PG') {
+        if (code === 'MLIB') {
+          semCount = 2; // M.Lib.I.Sc. is 1 year (2 semesters)
+        } else {
+          semCount = 4; // standard PG (M.Sc., M.A., M.B.A., LL.M., M.Ed., M.Tech.) is 2 years (4 semesters)
+        }
+      } else if (typeCode === 'UG') {
+        if (code === 'BLIB') {
+          semCount = 2; // B.Lib.I.Sc. is 1 year (2 semesters)
+        } else if (code === 'BED') {
+          semCount = 4; // B.Ed. is 2 years (4 semesters)
+        } else if (['BTECH-CSE', 'BTECH-IT', 'BTECH-CE', 'BTECH-ECE', 'BTECH-EE', 'BFA', 'BHM'].includes(code)) {
+          semCount = 8; // B.Tech, BFA, BHM are 4 years (8 semesters)
+        } else if (code === 'FYICTTM') {
+          semCount = 10; // Five Year Integrated course is 5 years (10 semesters)
+        } else {
+          semCount = 6; // Standard UG (B.Com., BBA, BCA, B.Sc., B.A., LLB) is 3 years (6 semesters)
+        }
+      }
+
+      for (let s = 1; s <= semCount; s++) {
+        const semId = semestersMap[s];
+        if (semId) {
+          const mapping = await SemesterDegreeMapping.findOne({ degreeNameId: dn._id, semesterId: semId });
+          if (!mapping) {
+            await SemesterDegreeMapping.create({
+              degreeNameId: dn._id,
+              semesterId: semId,
+              isActive: true
+            });
+            mappingsAdded++;
+          }
+        }
+      }
+
+      // Cleanup extra mappings that exceed the correct semCount
+      const mappedSemesters = await SemesterDegreeMapping.find({ degreeNameId: dn._id }).populate('semesterId');
+      for (const m of mappedSemesters) {
+        if (!m.semesterId || m.semesterId.number > semCount) {
+          await SemesterDegreeMapping.deleteOne({ _id: m._id });
+        }
       }
     }
 
@@ -2741,6 +2812,8 @@ exports.seedAllMasters = async (req, res) => {
         departmentsSeeded: deptsAdded,
         degreeNamesSeeded: namesAdded,
         policiesSeeded: policiesAdded,
+        semestersSeeded: semestersAdded,
+        mappingsSeeded: mappingsAdded,
         leaveTypesSeeded: leaveTypesAdded
       }
     });

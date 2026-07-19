@@ -311,9 +311,15 @@ const getFacultyAssignedInquiries = async (req, res) => {
 
 const getRepositoryDepartments = async (req, res) => {
   try {
-    const departments = await Department.find({}).populate('facultyId', 'name username role profile department avatarUrl');
+    const departments = await Department.find({});
     
     const enriched = await Promise.all(departments.map(async (dept) => {
+      const hodUser = await User.findOne({
+        role: 'HOD',
+        department: dept.name,
+        isActive: true
+      }, 'name username role profile department avatarUrl');
+
       const facultyCount = await User.countDocuments({
         role: { $in: ['FACULTY', 'HOD'] },
         isActive: true,
@@ -330,7 +336,7 @@ const getRepositoryDepartments = async (req, res) => {
         _id: dept._id,
         name: dept.name,
         code: dept.code,
-        hod: dept.facultyId || null,
+        hod: hodUser || null,
         facultyCount,
         scholarCount
       };
@@ -462,6 +468,7 @@ const getRepositoryProfile = async (req, res) => {
 
     const userObj = user.toObject();
     if (userObj.profile) {
+      const profile = userObj.profile;
       const privacy = { ...(profile.privacySettings || {}) };
       if (user.role === 'STUDENT') {
         privacy.publications = true;
