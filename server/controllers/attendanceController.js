@@ -19,6 +19,7 @@ const DegreeNameMaster = require('../models/attendance/DegreeNameMaster');
 const SemesterMaster = require('../models/attendance/SemesterMaster');
 const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 const CategoryGenderMaster = require('../models/CategoryGenderMaster');
+const FacultyMaster = require('../models/FacultyMaster');
 
 const { calculateStudentStats, getTimetableLectures, getWorkingDays, isDateWithinTimetableLimit } = require('../utils/attendanceCalculator');
 const { createNotification } = require('./notificationController');
@@ -2267,7 +2268,61 @@ exports.seedAllMasters = async (req, res) => {
     if (!seedingPassword || seedingPassword !== process.env.UTILITY_PASSWORD) {
       return res.status(401).json({ message: 'Invalid or missing seeding password' });
     }
-    // 1. Seed Degree Types
+
+    // 1. Seed Academic Sessions (2017-2018 to 2026-2027, with 2026-2027 as current)
+    const sessionsToSeed = [];
+    let sessionsAdded = 0;
+    for (let year = 2017; year <= 2026; year++) {
+      sessionsToSeed.push({
+        sessionName: `${year}-${year + 1}`,
+        startDate: new Date(`${year}-07-01T00:00:00Z`),
+        endDate: new Date(`${year + 1}-06-30T23:59:59Z`),
+        isCurrent: year === 2026,
+        isActive: true
+      });
+    }
+
+    for (const s of sessionsToSeed) {
+      const existing = await AcademicSessionMaster.findOne({ sessionName: s.sessionName });
+      if (!existing) {
+        await AcademicSessionMaster.create(s);
+        sessionsAdded++;
+      } else {
+        existing.isCurrent = s.isCurrent;
+        existing.isActive = s.isActive;
+        await existing.save();
+      }
+    }
+
+    // 2. Seed Faculties (FacultyMaster)
+    const facultiesToSeed = [
+      { name: 'Faculty of Commerce & Management', code: 'FCM' },
+      { name: 'Faculty of Life Sciences', code: 'FLS' },
+      { name: 'Faculty of LAW', code: 'FLAW' },
+      { name: 'Faculty of Education', code: 'FEDU' },
+      { name: 'Faculty of Physical Sciences', code: 'FPS' },
+      { name: 'Faculty of Social Sciences', code: 'FSS' },
+      { name: 'Faculty of Performing & Visual Arts', code: 'FPVA' },
+      { name: 'Faculty of Languages', code: 'FLANG' },
+      { name: 'Faculty of Engineering and Technology (UIT)', code: 'FET' },
+      { name: 'Faculty of Envr, Sustainability and Dev. Studies', code: 'FESDS' }
+    ];
+
+    let facultiesAdded = 0;
+    const facultiesMap = {};
+    for (const f of facultiesToSeed) {
+      let doc = await FacultyMaster.findOne({ code: f.code });
+      if (!doc) {
+        doc = await FacultyMaster.create(f);
+        facultiesAdded++;
+      } else {
+        doc.name = f.name;
+        await doc.save();
+      }
+      facultiesMap[f.name] = doc._id;
+    }
+
+    // 3. Seed Degree Types
     const degreeTypesToSeed = [
       { name: 'Undergraduate', code: 'UG' },
       { name: 'Postgraduate', code: 'PG' },
@@ -2288,7 +2343,7 @@ exports.seedAllMasters = async (req, res) => {
       degreeTypesMap[dt.code] = doc._id;
     }
 
-    // 2. Seed Departments
+    // 4. Seed Departments
     const departmentsToSeed = [
       { name: 'Department of Commerce', code: 'COMMERCE', faculty: 'Faculty of Commerce & Management' },
       { name: 'HPU Business School', code: 'HPUBS', faculty: 'Faculty of Commerce & Management' },
@@ -2336,18 +2391,25 @@ exports.seedAllMasters = async (req, res) => {
     let deptsAdded = 0;
     const deptsMap = {};
     for (const d of departmentsToSeed) {
+      const facultyId = facultiesMap[d.faculty];
       let doc = await Department.findOne({ code: d.code });
       if (!doc) {
-        doc = await Department.create(d);
+        doc = await Department.create({
+          name: d.name,
+          code: d.code,
+          faculty: d.faculty,
+          facultyId: facultyId || null
+        });
         deptsAdded++;
       } else {
         doc.faculty = d.faculty;
+        doc.facultyId = facultyId || null;
         await doc.save();
       }
       deptsMap[d.code] = doc._id;
     }
 
-    // 3. Seed Degree Names
+    // 5. Seed Degree Names
     const degreeNamesToSeed = [
       { deptCode: 'COMMERCE', typeCode: 'UG', name: 'B.Com.', code: 'BCOM' },
       { deptCode: 'COMMERCE', typeCode: 'PG', name: 'M.Com.', code: 'MCOM' },
@@ -2518,7 +2580,7 @@ exports.seedAllMasters = async (req, res) => {
       }
     }
 
-    // 4. Seed default policies for newly created/active degree names (courses)
+    // 6. Seed default policies for newly created/active degree names (courses)
     let policiesAdded = 0;
     await AttendancePolicyMaster.deleteMany({});
     const allDegreeNames = await DegreeNameMaster.find({ isActive: true });
@@ -2531,7 +2593,7 @@ exports.seedAllMasters = async (req, res) => {
           minRequiredPercentage: 75,
           warningThreshold: 80,
           maxCondonationPercentage: 10,
-          editLockHours: 72, // Seed 72 hours as requested
+          editLockHours: 72,
           allowHalfDay: true,
           allowMedicalLeave: true,
           allowDutyLeave: true,
@@ -2543,7 +2605,7 @@ exports.seedAllMasters = async (req, res) => {
       }
     }
 
-    // 5. Seed UGC/HPU Leave Types (Global)
+    // 7. Seed UGC/HPU Leave Types (Global)
     await LeaveTypeMaster.deleteMany({});
     const leaveTypesToSeed = [
       {
@@ -2673,6 +2735,8 @@ exports.seedAllMasters = async (req, res) => {
     res.status(201).json({
       message: `Master seeding complete successfully!`,
       details: {
+        sessionsSeeded: sessionsAdded,
+        facultiesSeeded: facultiesAdded,
         degreeTypesSeeded: dtAdded,
         departmentsSeeded: deptsAdded,
         degreeNamesSeeded: namesAdded,
@@ -2721,24 +2785,26 @@ exports.seedSemesterDegreeMappings = async (req, res) => {
       let semCount = 0;
 
       if (typeCode === 'PHD') {
-        semCount = 0;
+        semCount = 6; // PhD programs map to 6 semesters (3 years)
       } else if (['CERT', 'DIP', 'ADVDIP'].includes(typeCode)) {
-        semCount = 2;
+        semCount = 2; // Certificates and Diplomas are 1 year (2 semesters)
       } else if (typeCode === 'PG') {
         if (code === 'MLIB') {
           semCount = 2; // M.Lib.I.Sc. is 1 year (2 semesters)
         } else {
-          semCount = 4; // standard PG / M.Sc. is 2 years (4 semesters)
+          semCount = 4; // standard PG (M.Sc., M.A., M.B.A., LL.M., M.Ed., M.Tech.) is 2 years (4 semesters)
         }
       } else if (typeCode === 'UG') {
         if (code === 'BLIB') {
           semCount = 2; // B.Lib.I.Sc. is 1 year (2 semesters)
+        } else if (code === 'BED') {
+          semCount = 4; // B.Ed. is 2 years (4 semesters)
         } else if (['BTECH-CSE', 'BTECH-IT', 'BTECH-CE', 'BTECH-ECE', 'BTECH-EE', 'BFA', 'BHM'].includes(code)) {
           semCount = 8; // B.Tech, BFA, BHM are 4 years (8 semesters)
         } else if (code === 'FYICTTM') {
           semCount = 10; // Five Year Integrated course is 5 years (10 semesters)
         } else {
-          semCount = 6; // Standard UG (B.Com, BBA, BCA, B.Sc, B.A, B.Ed) is 3 years (6 semesters)
+          semCount = 6; // Standard UG (B.Com., BBA, BCA, B.Sc., B.A., LLB) is 3 years (6 semesters)
         }
       }
 
