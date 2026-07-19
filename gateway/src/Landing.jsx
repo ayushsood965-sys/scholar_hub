@@ -320,6 +320,7 @@ const Landing = () => {
           <button onClick={() => scrollToSection('home')} className="nav-link-btn">Home</button>
           <button onClick={() => scrollToSection('about')} className="nav-link-btn">About</button>
           <button onClick={() => scrollToSection('portals')} className="nav-link-btn">Portals</button>
+          <Link to="/discovery" className="nav-link-btn">Academic Research Discovery</Link>
           <Link to="/acknowledgements" className="nav-link-btn">Acknowledgements</Link>
         </div>
 

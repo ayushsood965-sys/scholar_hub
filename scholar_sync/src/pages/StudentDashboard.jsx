@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users, Lightbulb, Briefcase, Bookmark, Folder, Copyright, Eye, EyeOff, Shield } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -8130,17 +8130,42 @@ const ProfileTab = () => {
   const sectionRefs = {
     personal: React.useRef(null),
     education: React.useRef(null),
-    supervisor: React.useRef(null)
+    supervisor: React.useRef(null),
+    expertise: React.useRef(null),
+    experience: React.useRef(null),
+    awards: React.useRef(null),
+    memberships: React.useRef(null),
+    committees: React.useRef(null),
+    projects: React.useRef(null),
+    publications: React.useRef(null),
+    ipr: React.useRef(null),
+    settings: React.useRef(null)
   };
   const milestonePlaceholderRef = React.useRef(null);
   const mobileBarRef = React.useRef(null);
   const isAutoScrollingRef = React.useRef(false);
+
+  const isVerifiedCandidate = thesis && thesis.enrollmentVerified === true;
 
   const milestoneItems = [
     { key: 'personal', label: 'Personal Info', Icon: User },
     { key: 'education', label: 'Academic Qualifications', Icon: BookOpen },
     { key: 'supervisor', label: 'Supervisor Preference', Icon: UserCheck }
   ];
+
+  if (isVerifiedCandidate) {
+    milestoneItems.push(
+      { key: 'expertise', label: 'Expertise', Icon: Lightbulb },
+      { key: 'experience', label: 'Experience', Icon: Briefcase },
+      { key: 'awards', label: 'Awards', Icon: Award },
+      { key: 'memberships', label: 'Professional Bodies', Icon: Users },
+      { key: 'committees', label: 'Committees', Icon: Bookmark },
+      { key: 'projects', label: 'Projects', Icon: Folder },
+      { key: 'publications', label: 'Publications', Icon: BookOpen },
+      { key: 'ipr', label: 'Intellectual Property Rights', Icon: Copyright },
+      { key: 'settings', label: 'Privacy Settings', Icon: Settings }
+    );
+  }
 
   const profileLayoutCSS = `
     .profile-tab-wrapper { padding: 24px; }
@@ -8445,6 +8470,326 @@ const ProfileTab = () => {
   // Other Exam
   const [fellowships, setFellowships] = useState(user?.profile?.qualifications?.fellowships || []);
   const [otherQuals, setOtherQuals] = useState(user?.profile?.qualifications?.otherQuals || []);
+
+  // --- Start of New Ph.D. Profile Sections states & handlers ---
+  const [newExpertise, setNewExpertise] = useState('');
+  const [expForm, setExpForm] = useState({ designation: '', organization: '', startDate: '', endDate: '', isPresent: false, description: '' });
+  const [editingExpIndex, setEditingExpIndex] = useState(-1);
+  const [showExpForm, setShowExpForm] = useState(false);
+  const [awardForm, setAwardForm] = useState({ awardName: '', awardingBody: '', year: '', description: '' });
+  const [editingAwardIndex, setEditingAwardIndex] = useState(-1);
+  const [showAwardForm, setShowAwardForm] = useState(false);
+  const [memberForm, setMemberForm] = useState({ membershipName: '', organization: '', membershipType: 'Life Member', year: '' });
+  const [editingMemberIndex, setEditingMemberIndex] = useState(-1);
+  const [showMemberForm, setShowMemberForm] = useState(false);
+  const [committeeForm, setCommitteeForm] = useState({ committeeName: '', role: '', organization: '', duration: '' });
+  const [editingCommitteeIndex, setEditingCommitteeIndex] = useState(-1);
+  const [showCommitteeForm, setShowCommitteeForm] = useState(false);
+  const [projectForm, setProjectForm] = useState({ projectTitle: '', fundingAgency: '', amount: '', duration: '', role: 'Principal Investigator', status: 'Ongoing' });
+  const [editingProjectIndex, setEditingProjectIndex] = useState(-1);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    dob: true,
+    gender: true,
+    category: true,
+    nationality: true,
+    fatherName: true,
+    motherName: true,
+    phoneNumber: true,
+    address: true,
+    class10: true,
+    class10Doc: true,
+    class12: true,
+    class12Doc: true,
+    graduation: true,
+    graduationDoc: true,
+    postGraduation: true,
+    postGraduationDoc: true,
+    mphil: true,
+    mphilDoc: true,
+    netJrf: true,
+    netJrfDoc: true,
+    specialization: true,
+    areaOfInterest: true,
+    thesisTitle: true,
+    thesisSummary: true,
+    expertise: true,
+    experience: true,
+    awards: true,
+    publications: true,
+    projects: true,
+    ipr: true,
+    thesesSupervised: true,
+    officeRoom: true,
+    yearsOfService: true,
+    additionalResponsibilities: true
+  });
+
+  const [undertakingGeneral, setUndertakingGeneral] = useState(false);
+  const [undertakingAcademic, setUndertakingAcademic] = useState(false);
+  const [undertakingExpertise, setUndertakingExpertise] = useState(false);
+  const [undertakingExperience, setUndertakingExperience] = useState(false);
+  const [undertakingAwards, setUndertakingAwards] = useState(false);
+  const [undertakingProjects, setUndertakingProjects] = useState(false);
+  const [undertakingPublications, setUndertakingPublications] = useState(false);
+  const [undertakingIpr, setUndertakingIpr] = useState(false);
+  const [isEditingPrivacy, setIsEditingPrivacy] = useState(false);
+  const [undertakingPrivacy, setUndertakingPrivacy] = useState(false);
+
+  const [verifiedPubs, setVerifiedPubs] = useState([]);
+  const [verifiedIprs, setVerifiedIprs] = useState([]);
+  const [loadingPubsAndIprs, setLoadingPubsAndIprs] = useState(false);
+
+  useEffect(() => {
+    if (user?.profile?.privacySettings) {
+      setPrivacySettings(prev => ({
+        ...prev,
+        ...user.profile.privacySettings
+      }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (isVerifiedCandidate && thesis?._id) {
+      const fetchVerifiedData = async () => {
+        setLoadingPubsAndIprs(true);
+        try {
+          const token = localStorage.getItem('token');
+          const res = await axios.get(`${API_URL}/publications/thesis/${thesis._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const ips = res.data.filter(p => 
+            (p.type === 'IPR' || p.type === 'PATENT') && p.status === 'VERIFIED'
+          );
+          const pubs = res.data.filter(p => 
+            (p.type === 'JOURNAL' || p.type === 'CONFERENCE') && p.status === 'VERIFIED'
+          );
+          setVerifiedIprs(ips);
+          setVerifiedPubs(pubs);
+        } catch (err) {
+          console.error("Error fetching candidate verified publications and IPRs:", err);
+        } finally {
+          setLoadingPubsAndIprs(false);
+        }
+      };
+      fetchVerifiedData();
+    }
+  }, [user, thesis, isVerifiedCandidate]);
+
+  const triggerProfileUpdate = async (updatedFields, successMessage) => {
+    setLoading(true);
+    try {
+      const res = await updateProfile(updatedFields);
+      if (res.success) {
+        toast.success(successMessage || 'Profile details updated successfully');
+        await fetchMe();
+      } else {
+        toast.error('Failed to update profile: ' + res.message);
+      }
+    } catch (err) {
+      toast.error('An error occurred while updating profile.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const expertiseList = user?.profile?.expertise || [];
+  const experienceList = user?.profile?.experience || [];
+  const awardsList = user?.profile?.awards || [];
+  const membershipsList = user?.profile?.professionalBodies || [];
+  const committeesList = user?.profile?.committees || [];
+  const projectsList = user?.profile?.projects || [];
+  const publicationsList = user?.profile?.publications || [];
+  const iprList = user?.profile?.ipr || [];
+
+  const handleAddExpertise = async (e) => {
+    e.preventDefault();
+    if (!newExpertise.trim()) return;
+    const updated = [...expertiseList, newExpertise.trim()];
+    await triggerProfileUpdate({ expertise: updated }, 'Area of expertise added');
+    setNewExpertise('');
+  };
+
+  const handleDeleteExpertise = async (tag) => {
+    const updated = expertiseList.filter(t => t !== tag);
+    await triggerProfileUpdate({ expertise: updated }, 'Area of expertise removed');
+  };
+
+  const clearAllExpertise = async () => {
+    await triggerProfileUpdate({ expertise: [] }, 'All expertise tags cleared');
+  };
+
+  const saveExperience = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingExpIndex === -1) {
+      updated = [...experienceList, expForm];
+    } else {
+      updated = [...experienceList];
+      updated[editingExpIndex] = expForm;
+    }
+    await triggerProfileUpdate({ experience: updated }, 'Experience details saved');
+    setShowExpForm(false);
+    setEditingExpIndex(-1);
+    setExpForm({ designation: '', organization: '', startDate: '', endDate: '', isPresent: false, description: '' });
+  };
+
+  const deleteExperience = async (index) => {
+    const updated = experienceList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ experience: updated }, 'Experience entry deleted');
+  };
+
+  const clearAllExperience = async () => {
+    await triggerProfileUpdate({ experience: [] }, 'All work experience details cleared');
+  };
+
+  const saveAward = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingAwardIndex === -1) {
+      updated = [...awardsList, awardForm];
+    } else {
+      updated = [...awardsList];
+      updated[editingAwardIndex] = awardForm;
+    }
+    await triggerProfileUpdate({ awards: updated }, 'Award entry saved');
+    setShowAwardForm(false);
+    setEditingAwardIndex(-1);
+    setAwardForm({ awardName: '', awardingBody: '', year: '', description: '' });
+  };
+
+  const deleteAward = async (index) => {
+    const updated = awardsList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ awards: updated }, 'Award entry deleted');
+  };
+
+  const clearAllAwards = async () => {
+    await triggerProfileUpdate({ awards: [] }, 'All honours & awards cleared');
+  };
+
+  const saveMember = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingMemberIndex === -1) {
+      updated = [...membershipsList, memberForm];
+    } else {
+      updated = [...membershipsList];
+      updated[editingMemberIndex] = memberForm;
+    }
+    await triggerProfileUpdate({ professionalBodies: updated }, 'Membership record saved');
+    setShowMemberForm(false);
+    setEditingMemberIndex(-1);
+    setMemberForm({ membershipName: '', organization: '', membershipType: 'Life Member', year: '' });
+  };
+
+  const deleteMember = async (index) => {
+    const updated = membershipsList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ professionalBodies: updated }, 'Membership record deleted');
+  };
+
+  const clearAllMemberships = async () => {
+    await triggerProfileUpdate({ professionalBodies: [] }, 'All professional body memberships cleared');
+  };
+
+  const saveCommittee = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingCommitteeIndex === -1) {
+      updated = [...committeesList, committeeForm];
+    } else {
+      updated = [...committeesList];
+      updated[editingCommitteeIndex] = committeeForm;
+    }
+    await triggerProfileUpdate({ committees: updated }, 'Committee details saved');
+    setShowCommitteeForm(false);
+    setEditingCommitteeIndex(-1);
+    setCommitteeForm({ committeeName: '', role: '', organization: '', duration: '' });
+  };
+
+  const deleteCommittee = async (index) => {
+    const updated = committeesList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ committees: updated }, 'Committee details deleted');
+  };
+
+  const clearAllCommittees = async () => {
+    await triggerProfileUpdate({ committees: [] }, 'All committee seat records cleared');
+  };
+
+  const saveProject = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingProjectIndex === -1) {
+      updated = [...projectsList, projectForm];
+    } else {
+      updated = [...projectsList];
+      updated[editingProjectIndex] = projectForm;
+    }
+    await triggerProfileUpdate({ projects: updated }, 'Project details saved');
+    setShowProjectForm(false);
+    setEditingProjectIndex(-1);
+    setProjectForm({ projectTitle: '', fundingAgency: '', amount: '', duration: '', role: 'Principal Investigator', status: 'Ongoing' });
+  };
+
+  const deleteProject = async (index) => {
+    const updated = projectsList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ projects: updated }, 'Project entry deleted');
+  };
+
+  const clearAllProjects = async () => {
+    await triggerProfileUpdate({ projects: [] }, 'All research projects cleared');
+  };
+
+  const savePrivacy = async (e) => {
+    if (e) e.preventDefault();
+    await triggerProfileUpdate({ privacySettings }, 'Privacy configuration updated');
+    setUndertakingPrivacy(false);
+    setIsEditingPrivacy(false);
+  };
+
+  const handleCancelPrivacy = () => {
+    if (user?.profile?.privacySettings) {
+      setPrivacySettings({
+        dob: true,
+        gender: true,
+        category: true,
+        nationality: true,
+        fatherName: true,
+        motherName: true,
+        phoneNumber: true,
+        address: true,
+        class10: true,
+        class10Doc: true,
+        class12: true,
+        class12Doc: true,
+        graduation: true,
+        graduationDoc: true,
+        postGraduation: true,
+        postGraduationDoc: true,
+        mphil: true,
+        mphilDoc: true,
+        netJrf: true,
+        netJrfDoc: true,
+        specialization: true,
+        areaOfInterest: true,
+        thesisTitle: true,
+        thesisSummary: true,
+        expertise: true,
+        experience: true,
+        awards: true,
+        publications: true,
+        projects: true,
+        ipr: true,
+        thesesSupervised: true,
+        officeRoom: true,
+        yearsOfService: true,
+        additionalResponsibilities: true,
+        ...user.profile.privacySettings
+      });
+    }
+    setUndertakingPrivacy(false);
+    setIsEditingPrivacy(false);
+  };
+  // --- End of New Ph.D. Profile Sections states & handlers ---
 
   // Guide Selection
   const [preferredGuideId, setPreferredGuideId] = useState(user?.profile?.preferredGuideId || '');
@@ -9044,7 +9389,8 @@ const ProfileTab = () => {
           ...o,
           certificateUrl: user?.profile?.qualifications?.otherQuals?.[i]?.certificateUrl || o.certificateUrl || ''
         }))
-      }
+      },
+      privacySettings: privacySettings
     };
 
     const res = await updateProfile(payload);
@@ -10562,15 +10908,16 @@ const ProfileTab = () => {
                 )}
               </>
             )}
+
           </div>
           {/* Bottom action for personal section */}
           {!thesis && editModes.general && (
             <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !undertakingGeneral}
                 className="btn-primary"
-                style={{ background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
+                style={{ background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', opacity: undertakingGeneral ? 1 : 0.5, cursor: undertakingGeneral ? 'pointer' : 'not-allowed' }}
               >
                 {loading ? 'Saving Changes...' : (user?.profile?.dob ? '💾 Save General Info' : '💾 Save Personal Info & Proceed to Academic Qualifications')}
               </button>
@@ -11565,8 +11912,10 @@ const ProfileTab = () => {
                 </>
               )}
             </div>
+
+
             {user?.profile?.dob && !thesis && !user?.profileCompleted && (
-              <div style={{ marginTop: '32px', padding: '16px', borderTop: '2px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <div style={{ marginTop: '32px', padding: '16px', borderTop: '2px solid #E5E7EB', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -11576,6 +11925,7 @@ const ProfileTab = () => {
                       setAcademicUnlocked(true);
                     }
                   }}
+                  disabled={loading || (academicUnlocked && !undertakingAcademic)}
                   style={{
                     background: '#059669',
                     color: 'white',
@@ -11584,12 +11934,13 @@ const ProfileTab = () => {
                     fontSize: '0.95rem',
                     fontWeight: 700,
                     borderRadius: '8px',
-                    cursor: 'pointer',
+                    cursor: (academicUnlocked && !undertakingAcademic) ? 'not-allowed' : 'pointer',
                     boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.2)',
                     transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '8px',
+                    opacity: (academicUnlocked && !undertakingAcademic) ? 0.5 : 1
                   }}
                 >
                   {!academicUnlocked ? (
@@ -11742,6 +12093,928 @@ const ProfileTab = () => {
         </div>
 
       </form>
+
+      {isVerifiedCandidate && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '24px' }}>
+          {/* 4. AREA OF EXPERTISE */}
+          <div ref={sectionRefs.expertise} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Lightbulb size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Area of Expertise</h3>
+              </div>
+              {expertiseList.length > 0 && (
+                <button type="button" onClick={clearAllExpertise} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Trash2 size={14} /> Clear All
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleAddExpertise} style={{ display: 'flex', gap: '12px' }}>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="e.g. DNA Profiling, Cyber Forensics, Cryptography" 
+                value={newExpertise}
+                onChange={e => setNewExpertise(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '10px 16px' }}>
+                <Plus size={14} /> Add Tag
+              </button>
+            </form>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+              {expertiseList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No expertise tags logged yet.</span>
+              ) : (
+                expertiseList.map((tag, i) => (
+                  <div 
+                    key={i} 
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      background: 'rgba(19,58,38,0.08)',
+                      color: '#133A26',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      border: '1px solid rgba(19,58,38,0.15)'
+                    }}
+                  >
+                    {tag}
+                    <button 
+                      type="button" 
+                      onClick={() => handleDeleteExpertise(tag)} 
+                      style={{ background: 'none', border: 'none', color: '#133A26', cursor: 'pointer', display: 'flex', padding: 0 }}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 5. WORK EXPERIENCE */}
+          <div ref={sectionRefs.experience} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Briefcase size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Work Experience</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {experienceList.length > 0 && (
+                  <button type="button" onClick={clearAllExperience} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showExpForm && (
+                  <button type="button" onClick={() => { setShowExpForm(true); setEditingExpIndex(-1); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showExpForm && (
+              <form onSubmit={saveExperience} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingExpIndex === -1 ? 'Add Experience' : 'Edit Experience'}</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Designation / Role</label>
+                    <input type="text" className="form-input" value={expForm.designation} onChange={e => setExpForm({ ...expForm, designation: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Organization / University</label>
+                    <input type="text" className="form-input" value={expForm.organization} onChange={e => setExpForm({ ...expForm, organization: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Start Date</label>
+                    <input type="date" className="form-input" value={expForm.startDate ? expForm.startDate.split('T')[0] : ''} onChange={e => setExpForm({ ...expForm, startDate: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">End Date</label>
+                    <input type="date" className="form-input" value={expForm.endDate ? expForm.endDate.split('T')[0] : ''} onChange={e => setExpForm({ ...expForm, endDate: e.target.value })} disabled={expForm.isPresent} required={!expForm.isPresent} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '0.8rem' }}>
+                      <input type="checkbox" checked={expForm.isPresent} onChange={e => setExpForm({ ...expForm, isPresent: e.target.checked, endDate: e.target.checked ? '' : expForm.endDate })} /> Currently working here
+                    </label>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description / Core Roles</label>
+                  <textarea className="form-input" style={{ height: '60px', resize: 'vertical' }} value={expForm.description} onChange={e => setExpForm({ ...expForm, description: e.target.value })} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowExpForm(false)} style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Save Entry</button>
+                </div>
+              </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {experienceList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No employment history logged yet.</span>
+              ) : (
+                experienceList.map((exp, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{exp.designation}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>{exp.organization}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                        {exp.startDate ? new Date(exp.startDate).toLocaleDateString() : ''} – {exp.isPresent ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'N/A'}
+                      </span>
+                      {exp.description && <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '8px 0 0 0', lineHeight: 1.4 }}>{exp.description}</p>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setEditingExpIndex(i);
+                          setExpForm(exp);
+                          setShowExpForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => deleteExperience(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 6. HONOURS & AWARDS */}
+          <div ref={sectionRefs.awards} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Award size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Honours & Awards</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {awardsList.length > 0 && (
+                  <button type="button" onClick={clearAllAwards} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showAwardForm && (
+                  <button type="button" onClick={() => { setShowAwardForm(true); setEditingAwardIndex(-1); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showAwardForm && (
+              <form onSubmit={saveAward} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingAwardIndex === -1 ? 'Add Award' : 'Edit Award'}</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Award Name</label>
+                    <input type="text" className="form-input" value={awardForm.awardName} onChange={e => setAwardForm({ ...awardForm, awardName: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Awarding Body / Institution</label>
+                    <input type="text" className="form-input" value={awardForm.awardingBody} onChange={e => setAwardForm({ ...awardForm, awardingBody: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Year of Award</label>
+                    <input type="text" className="form-input" value={awardForm.year} onChange={e => setAwardForm({ ...awardForm, year: e.target.value })} placeholder="e.g. 2021" required />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description / Brief Notes</label>
+                  <textarea className="form-input" style={{ height: '60px', resize: 'vertical' }} value={awardForm.description} onChange={e => setAwardForm({ ...awardForm, description: e.target.value })} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowAwardForm(false)} style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Save Entry</button>
+                </div>
+              </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {awardsList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No honours or awards logged yet.</span>
+              ) : (
+                awardsList.map((aw, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{aw.awardName}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>{aw.awardingBody}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Year: {aw.year}</span>
+                      {aw.description && <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '8px 0 0 0', lineHeight: 1.4 }}>{aw.description}</p>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setEditingAwardIndex(i);
+                          setAwardForm(aw);
+                          setShowAwardForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => deleteAward(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 7. PROFESSIONAL BODIES */}
+          <div ref={sectionRefs.memberships} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Professional Bodies</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {membershipsList.length > 0 && (
+                  <button type="button" onClick={clearAllMemberships} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showMemberForm && (
+                  <button type="button" onClick={() => { setShowMemberForm(true); setEditingMemberIndex(-1); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showMemberForm && (
+              <form onSubmit={saveMember} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingMemberIndex === -1 ? 'Add Membership' : 'Edit Membership'}</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Membership Title</label>
+                    <input type="text" className="form-input" value={memberForm.membershipName} onChange={e => setMemberForm({ ...memberForm, membershipName: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Organization Name</label>
+                    <input type="text" className="form-input" value={memberForm.organization} onChange={e => setMemberForm({ ...memberForm, organization: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Membership Type</label>
+                    <select className="form-input" value={memberForm.membershipType} onChange={e => setMemberForm({ ...memberForm, membershipType: e.target.value })} required>
+                      <option value="Life Member">Life Member</option>
+                      <option value="Annual Member">Annual Member</option>
+                      <option value="Fellow">Fellow</option>
+                      <option value="Executive Board Member">Executive Board Member</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Year of Joining</label>
+                    <input type="text" className="form-input" value={memberForm.year} onChange={e => setMemberForm({ ...memberForm, year: e.target.value })} placeholder="e.g. 2019" required />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowMemberForm(false)} style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Save Entry</button>
+                </div>
+              </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {membershipsList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No professional memberships logged yet.</span>
+              ) : (
+                membershipsList.map((mb, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{mb.membershipName}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>{mb.organization}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
+                        <span>Joined: {mb.year}</span>
+                        <span style={{ background: '#E2E8F0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>{mb.membershipType}</span>
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setEditingMemberIndex(i);
+                          setMemberForm(mb);
+                          setShowMemberForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => deleteMember(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 8. MEMBERSHIP IN COMMITTEE */}
+          <div ref={sectionRefs.committees} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Bookmark size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Membership in Committee</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {committeesList.length > 0 && (
+                  <button type="button" onClick={clearAllCommittees} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showCommitteeForm && (
+                  <button type="button" onClick={() => { setShowCommitteeForm(true); setEditingCommitteeIndex(-1); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showCommitteeForm && (
+              <form onSubmit={saveCommittee} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingCommitteeIndex === -1 ? 'Add Committee Seat' : 'Edit Committee Seat'}</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Committee Name</label>
+                    <input type="text" className="form-input" value={committeeForm.committeeName} onChange={e => setCommitteeForm({ ...committeeForm, committeeName: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Role in Committee</label>
+                    <input type="text" className="form-input" value={committeeForm.role} onChange={e => setCommitteeForm({ ...committeeForm, role: e.target.value })} placeholder="e.g. Chairman, Board Member" required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Organization Name</label>
+                    <input type="text" className="form-input" value={committeeForm.organization} onChange={e => setCommitteeForm({ ...committeeForm, organization: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Duration / Dates</label>
+                    <input type="text" className="form-input" value={committeeForm.duration} onChange={e => setCommitteeForm({ ...committeeForm, duration: e.target.value })} placeholder="e.g. 2021 – Present" required />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowCommitteeForm(false)} style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Save Entry</button>
+                </div>
+              </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {committeesList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No committee seats logged yet.</span>
+              ) : (
+                committeesList.map((ct, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{ct.committeeName}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>Role: {ct.role} ({ct.organization})</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {ct.duration}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setEditingCommitteeIndex(i);
+                          setCommitteeForm(ct);
+                          setShowCommitteeForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => deleteCommittee(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 9. RESEARCH PROJECTS */}
+          <div ref={sectionRefs.projects} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Folder size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Research Projects</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {projectsList.length > 0 && (
+                  <button type="button" onClick={clearAllProjects} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )}
+                {!showProjectForm && (
+                  <button type="button" onClick={() => { setShowProjectForm(true); setEditingProjectIndex(-1); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Entry
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showProjectForm && (
+              <form onSubmit={saveProject} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingProjectIndex === -1 ? 'Add Project' : 'Edit Project'}</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Project Title</label>
+                    <input type="text" className="form-input" value={projectForm.projectTitle} onChange={e => setProjectForm({ ...projectForm, projectTitle: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Funding Agency</label>
+                    <input type="text" className="form-input" value={projectForm.fundingAgency} onChange={e => setProjectForm({ ...projectForm, fundingAgency: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Grant Amount (INR)</label>
+                    <input type="text" className="form-input" value={projectForm.amount} onChange={e => setProjectForm({ ...projectForm, amount: e.target.value })} placeholder="e.g. 5,00,000" required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Duration / Year</label>
+                    <input type="text" className="form-input" value={projectForm.duration} onChange={e => setProjectForm({ ...projectForm, duration: e.target.value })} placeholder="e.g. 2022 – 2024" required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Role</label>
+                    <select className="form-input" value={projectForm.role} onChange={e => setProjectForm({ ...projectForm, role: e.target.value })} required>
+                      <option value="Principal Investigator">Principal Investigator</option>
+                      <option value="Co-Principal Investigator">Co-Principal Investigator</option>
+                      <option value="Co-Investigator">Co-Investigator</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Status</label>
+                    <select className="form-input" value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} required>
+                      <option value="Ongoing">Ongoing</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowProjectForm(false)} style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Save Entry</button>
+                </div>
+              </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {projectsList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No research projects logged yet.</span>
+              ) : (
+                projectsList.map((pr, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{pr.projectTitle}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>Agency: {pr.fundingAgency} | Grant: ₹{pr.amount}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
+                        <span>Duration: {pr.duration}</span>
+                        <span style={{ background: '#E2E8F0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>{pr.role}</span>
+                        <span style={{ background: pr.status === 'Completed' ? '#D1FAE5' : '#FEF3C7', color: pr.status === 'Completed' ? '#065F46' : '#D97706', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>{pr.status}</span>
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setEditingProjectIndex(i);
+                          setProjectForm(pr);
+                          setShowProjectForm(true);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => deleteProject(i)} 
+                        style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 10. PUBLICATIONS */}
+          <div ref={sectionRefs.publications} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpen size={20} style={{ color: '#133A26' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Research Publications</h3>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {loadingPubsAndIprs ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified publication entries...</span>
+              ) : verifiedPubs.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publication found.</span>
+              ) : (
+                verifiedPubs.map((p, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{p.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>{p.journalName} ({p.type})</span>
+                      {p.type === 'JOURNAL' ? (
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                          Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Issue: {p.issue || 'N/A'} | Pages: {p.pages || 'N/A'}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                          Organized by: {p.volume || 'N/A'} | Location: {p.issn || 'N/A'}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block', marginTop: '2px' }}>
+                        Date of Publication: {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}
+                      </span>
+                      {p.paperLink && (
+                        <a 
+                          href={p.paperLink.startsWith('http') ? p.paperLink : `https://${p.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#133A26', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          Registry Link / DOI
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 11. INTELLECTUAL PROPERTY RIGHTS */}
+          <div ref={sectionRefs.ipr} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Copyright size={20} style={{ color: '#133A26' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Intellectual Property Rights (IPR)</h3>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {loadingPubsAndIprs ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified IPR entries...</span>
+              ) : verifiedIprs.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No IPR found.</span>
+              ) : (
+                verifiedIprs.map((ip, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{ip.title}</strong>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ip.iprType || (ip.type === 'PATENT' ? 'Patent' : 'IPR')} | Status: {ip.itemStatus} ({ip.journalName})</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Inventors: {ip.volume} | Date: {ip.publicationDate ? new Date(ip.publicationDate).toLocaleDateString() : 'N/A'}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Reg/App Number: {ip.issn} | App/Grant ID: {ip.issue} | Region: {ip.pages}</span>
+                      {ip.doiUrl && <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>IPR Ref: {ip.doiUrl}</span>}
+                      {ip.paperLink && (
+                        <a 
+                          href={ip.paperLink.startsWith('http') ? ip.paperLink : `https://${ip.paperLink}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ fontSize: '0.75rem', color: '#133A26', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          Registry Link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 12. PRIVACY & SETTINGS */}
+          <div ref={sectionRefs.settings} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+              <Settings size={20} style={{ color: '#133A26' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Profile Privacy Controls</h3>
+            </div>
+
+            <div style={{ background: 'rgba(26, 90, 59, 0.05)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '20px' }}>
+              <strong style={{ fontSize: '0.95rem', color: '#133A26', display: 'block', marginBottom: '8px' }}>
+                🛡️ Consolidated Privacy Settings
+              </strong>
+              <p style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                Configure public profile visibility preferences for all sections. Only the checked items will be displayed in the public profile section, and unchecked items will be strictly hidden.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Subsection 1: Personal Info */}
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                  1. Personal & General Information
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
+                  {[
+                    { key: 'dob', label: 'Date of Birth' },
+                    { key: 'gender', label: 'Gender' },
+                    { key: 'category', label: 'Social Category' },
+                    { key: 'nationality', label: 'Nationality' },
+                    { key: 'fatherName', label: "Father's Name" },
+                    { key: 'motherName', label: "Mother's Name" },
+                    { key: 'phoneNumber', label: 'Phone Number' },
+                    { key: 'address', label: 'Residential Address' },
+                    { key: 'specialization', label: 'Area of Specialization' },
+                    { key: 'areaOfInterest', label: 'Area of Research Interest' },
+                    ...((degreeType === 'Ph.D.' || degreeType === 'PhD') ? [
+                      { key: 'thesisTitle', label: 'Thesis Title' },
+                      { key: 'thesisSummary', label: 'Thesis Summary' },
+                      { key: 'thesisKeywords', label: 'Thesis Keywords' },
+                      { key: 'admissionDate', label: 'Admission Date' },
+                      { key: 'enrollmentNumber', label: 'Enrollment Number' },
+                      { key: 'academicSession', label: 'Academic Session' }
+                    ] : [])
+                  ].map(item => (
+                    <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg-secondary)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
+                      <input 
+                        type="checkbox" 
+                        disabled={!isEditingPrivacy}
+                        checked={privacySettings[item.key] !== false} 
+                        onChange={() => setPrivacySettings(prev => ({ ...prev, [item.key]: prev[item.key] === false ? true : false }))}
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subsection 2: Academic Qualifications */}
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                  2. Academic Qualifications
+                </h4>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', color: 'var(--color-text-primary)' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                      <th style={{ padding: '8px' }}>Qualification Level</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Score/Details Visible</th>
+                      <th style={{ padding: '8px', textAlign: 'center' }}>Certificate Visible</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { key: 'class10', label: 'Class 10th (Matriculation)' },
+                      { key: 'class12', label: 'Class 12th (Senior Secondary)' },
+                      { key: 'graduation', label: 'Undergraduate Degree' },
+                      { key: 'postGraduation', label: 'Postgraduate Degree' },
+                      ...(mphilDone === 'YES' || user?.profile?.qualifications?.mphil?.done === true ? [{ key: 'mphil', label: 'M.Phil. Degree' }] : []),
+                      ...(netJrfQualified === 'YES' || user?.profile?.qualifications?.netJrf?.qualified === true ? [{ key: 'netJrf', label: 'UGC-NET / JRF Fellowship' }] : [])
+                    ].map(item => (
+                      <tr key={item.key} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>{item.label}</td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            disabled={!isEditingPrivacy}
+                            checked={privacySettings[item.key] !== false} 
+                            onChange={() => setPrivacySettings(prev => ({ ...prev, [item.key]: prev[item.key] === false ? true : false }))} 
+                          />
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            disabled={!isEditingPrivacy}
+                            checked={privacySettings[`${item.key}Doc`] !== false} 
+                            onChange={() => setPrivacySettings(prev => ({ ...prev, [`${item.key}Doc`]: prev[`${item.key}Doc`] === false ? true : false }))} 
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                    {(otherQuals || []).map((oq, idx) => (
+                      <tr key={`other_${idx}`} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>{oq.degree || `Other Qualification #${idx + 1}`}</td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            disabled={!isEditingPrivacy}
+                            checked={privacySettings.otherQuals?.[idx]?.details !== false} 
+                            onChange={() => {
+                              setPrivacySettings(prev => {
+                                const oqList = [...(prev.otherQuals || [])];
+                                while (oqList.length <= idx) oqList.push({ details: true, doc: true });
+                                oqList[idx] = { ...oqList[idx], details: !oqList[idx].details };
+                                return { ...prev, otherQuals: oqList };
+                              });
+                            }} 
+                          />
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            disabled={!isEditingPrivacy}
+                            checked={privacySettings.otherQuals?.[idx]?.doc !== false} 
+                            onChange={() => {
+                              setPrivacySettings(prev => {
+                                const oqList = [...(prev.otherQuals || [])];
+                                while (oqList.length <= idx) oqList.push({ details: true, doc: true });
+                                oqList[idx] = { ...oqList[idx], doc: !oqList[idx].doc };
+                                return { ...prev, otherQuals: oqList };
+                              });
+                            }} 
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                    {(fellowships || []).map((f, idx) => (
+                      <tr key={`fellow_${idx}`} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>{f.name || `Fellowship #${idx + 1}`}</td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            disabled={!isEditingPrivacy}
+                            checked={privacySettings.fellowships?.[idx]?.details !== false} 
+                            onChange={() => {
+                              setPrivacySettings(prev => {
+                                const fList = [...(prev.fellowships || [])];
+                                while (fList.length <= idx) fList.push({ details: true, doc: true });
+                                fList[idx] = { ...fList[idx], details: !fList[idx].details };
+                                return { ...prev, fellowships: fList };
+                              });
+                            }} 
+                          />
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            disabled={!isEditingPrivacy}
+                            checked={privacySettings.fellowships?.[idx]?.doc !== false} 
+                            onChange={() => {
+                              setPrivacySettings(prev => {
+                                const fList = [...(prev.fellowships || [])];
+                                while (fList.length <= idx) fList.push({ details: true, doc: true });
+                                fList[idx] = { ...fList[idx], doc: !fList[idx].doc };
+                                return { ...prev, fellowships: fList };
+                              });
+                            }} 
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Subsection 3: Experience */}
+              {(degreeType === 'Ph.D.' || degreeType === 'PhD' || user?.profile?.experience?.length > 0) && (
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                    3. Professional Experience
+                  </h4>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg-secondary)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
+                    <input 
+                      type="checkbox" 
+                      disabled={!isEditingPrivacy}
+                      checked={privacySettings.experience !== false} 
+                      onChange={() => setPrivacySettings(prev => ({ ...prev, experience: prev.experience === false ? true : false }))}
+                    />
+                    <span>Show Professional Experience details & certificates</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Subsection 4: Expertise */}
+              {(degreeType === 'Ph.D.' || degreeType === 'PhD' || user?.profile?.expertise?.length > 0) && (
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                    4. Area of Expertise
+                  </h4>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-bg-secondary)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
+                    <input 
+                      type="checkbox" 
+                      disabled={!isEditingPrivacy}
+                      checked={privacySettings.expertise !== false} 
+                      onChange={() => setPrivacySettings(prev => ({ ...prev, expertise: prev.expertise === false ? true : false }))}
+                    />
+                    <span>Show Areas of Expertise keywords</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Subsection 5: Other Profile Sections */}
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                  5. Portfolio Timeline & Memberships
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
+                  {[
+                    ...((degreeType === 'Ph.D.' || degreeType === 'PhD') ? [
+                      { key: 'publications', label: 'Publications', mandatory: true },
+                      { key: 'projects', label: 'Research Projects' },
+                      { key: 'ipr', label: 'IPR / Patents', mandatory: true }
+                    ] : []),
+                    { key: 'awards', label: 'Awards & Achievements' },
+                    { key: 'professionalBodies', label: 'Professional Memberships' },
+                    { key: 'committees', label: 'Committee Memberships' }
+                  ].map(item => (
+                    <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: `1px solid ${item.mandatory ? '#16a34a' : 'var(--color-border)'}`, borderRadius: '6px', background: item.mandatory ? 'rgba(22,163,74,0.06)' : 'var(--color-bg-secondary)', cursor: item.mandatory ? 'not-allowed' : (isEditingPrivacy ? 'pointer' : 'not-allowed'), color: 'var(--color-text-primary)' }}>
+                      <input 
+                        type="checkbox" 
+                        disabled={item.mandatory || !isEditingPrivacy}
+                        checked={true} 
+                        readOnly={item.mandatory}
+                        onChange={() => !item.mandatory && setPrivacySettings(prev => ({ ...prev, [item.key]: prev[item.key] === false ? true : false }))}
+                      />
+                      <span>Show {item.label}{item.mandatory ? <span style={{ fontSize: '0.72rem', color: '#16a34a', marginLeft: '4px', fontWeight: 700 }}>(Mandatory)</span> : null}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '2px solid var(--color-border)' }}>
+              {/* Undertaking - always visible, highlighted in edit mode */}
+              <div style={{ 
+                padding: '14px 16px', 
+                borderRadius: '10px', 
+                border: isEditingPrivacy ? '2px solid #f59e0b' : '1px solid var(--color-border)',
+                background: isEditingPrivacy ? 'rgba(245, 158, 11, 0.07)' : 'rgba(0,0,0,0.02)',
+                marginBottom: '16px',
+                transition: 'all 0.2s ease'
+              }}>
+                {isEditingPrivacy && (
+                  <p style={{ fontSize: '0.78rem', color: '#b45309', fontWeight: 700, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ⚠️ You must check the box below to enable the Save button:
+                  </p>
+                )}
+                <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: isEditingPrivacy ? 'pointer' : 'default', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  <input 
+                    type="checkbox" 
+                    disabled={!isEditingPrivacy}
+                    checked={isEditingPrivacy ? undertakingPrivacy : true} 
+                    onChange={(e) => setUndertakingPrivacy(e.target.checked)} 
+                    style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: '#f59e0b', flexShrink: 0 }}
+                  />
+                  <span>I have carefully reviewed all my profile field-level privacy and visibility settings above. I understand that only the checked details and documents will be publicly visible on my repository profile. I confirm these are my intended privacy preferences.</span>
+                </label>
+              </div>
+
+              {isEditingPrivacy ? (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
+                  {!undertakingPrivacy && (
+                    <span style={{ fontSize: '0.78rem', color: '#b45309', fontStyle: 'italic' }}>
+                      ↑ Check the undertaking above to save
+                    </span>
+                  )}
+                  <button 
+                    type="button" 
+                    onClick={handleCancelPrivacy} 
+                    style={{ background: '#6B7280', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={savePrivacy}
+                    disabled={loading || !undertakingPrivacy} 
+                    style={{ background: (loading || !undertakingPrivacy) ? '#9CA3AF' : '#10B981', color: 'white', border: 'none', padding: '8px 20px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !undertakingPrivacy) ? 'not-allowed' : 'pointer' }}
+                  >
+                    {loading ? 'Saving...' : '💾 Save Privacy Settings'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPrivacy(true)}
+                    style={{ background: '#1F2937', color: 'white', border: 'none', padding: '8px 20px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    ✏️ Edit Privacy Settings
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {thesis && renderHistoryTable(getRegistrationHistory(thesis))}
         </div>
       </div>
@@ -12535,9 +13808,6 @@ const StudentDashboard = () => {
         );
 
       case 'profile':
-        if (thesis && thesis.status !== 'REGISTRATION_PENDING' && thesis.status !== 'REJECTED') {
-          return <StaffProfileTab thesis={thesis} />;
-        }
         return <ProfileTab />;
       default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: 'var(--color-text-muted)', marginTop: 8 }}>Content coming soon.</p></div>;
     }

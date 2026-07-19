@@ -309,6 +309,294 @@ const getFacultyAssignedInquiries = async (req, res) => {
   }
 };
 
+const getRepositoryDepartments = async (req, res) => {
+  try {
+    const departments = await Department.find({}).populate('facultyId', 'name username role profile department avatarUrl');
+    
+    const enriched = await Promise.all(departments.map(async (dept) => {
+      const facultyCount = await User.countDocuments({
+        role: { $in: ['FACULTY', 'HOD'] },
+        isActive: true,
+        department: dept.name
+      });
+
+      const scholarCount = await User.countDocuments({
+        role: 'STUDENT',
+        isActive: true,
+        department: dept.name
+      });
+
+      return {
+        _id: dept._id,
+        name: dept.name,
+        code: dept.code,
+        hod: dept.facultyId || null,
+        facultyCount,
+        scholarCount
+      };
+    }));
+
+    res.status(200).json(enriched);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getRepositoryDepartmentFaculties = async (req, res) => {
+  try {
+    const { code } = req.params;
+    const dept = await Department.findOne({ code: code.toUpperCase() });
+    if (!dept) {
+      return res.status(404).json({ message: 'Department not found' });
+    }
+
+    const faculties = await User.find({
+      role: { $in: ['FACULTY', 'HOD'] },
+      isActive: true,
+      department: dept.name
+    }, 'name username role profile department avatarUrl');
+
+    const filteredFaculties = faculties.map(u => {
+      const isPrivate = u.profile?.privacySettings?.profileVisibility === 'private';
+      if (isPrivate) {
+        return {
+          _id: u._id,
+          name: u.name,
+          username: u.username,
+          role: u.role,
+          department: u.department,
+          avatarUrl: u.avatarUrl,
+          profile: {
+            designation: u.profile?.designation,
+            specialization: u.profile?.specialization,
+            isPrivate: true
+          }
+        };
+      }
+      return u;
+    });
+
+    res.status(200).json(filteredFaculties);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getRepositoryDepartmentScholars = async (req, res) => {
+  try {
+    const { code } = req.params;
+    const dept = await Department.findOne({ code: code.toUpperCase() });
+    if (!dept) {
+      return res.status(404).json({ message: 'Department not found' });
+    }
+
+    const scholars = await User.find({
+      role: 'STUDENT',
+      isActive: true,
+      department: dept.name
+    }, 'name username role profile department avatarUrl');
+
+    const filteredScholars = scholars.map(u => {
+      const isPrivate = u.profile?.privacySettings?.profileVisibility === 'private';
+      if (isPrivate) {
+        return {
+          _id: u._id,
+          name: u.name,
+          username: u.username,
+          role: u.role,
+          department: u.department,
+          avatarUrl: u.avatarUrl,
+          profile: {
+            degreeType: u.profile?.degreeType,
+            degreeName: u.profile?.degreeName,
+            subject: u.profile?.subject,
+            isPhD: u.profile?.isPhD,
+            isPrivate: true
+          }
+        };
+      }
+      return u;
+    });
+
+    res.status(200).json(filteredScholars);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getRepositoryProfile = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username, isActive: true });
+    if (!user) {
+      return res.status(404).json({ message: 'User profile not found' });
+    }
+
+    const privacySettings = user.profile?.privacySettings || {
+      profileVisibility: 'public',
+      documentVisibility: 'private'
+    };
+
+    const isProfilePrivate = privacySettings.profileVisibility === 'private';
+    const isDocsPrivate = privacySettings.documentVisibility === 'private';
+
+    if (isProfilePrivate) {
+      return res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        department: user.department,
+        avatarUrl: user.avatarUrl,
+        privacyMessage: "This profile details have been set to private by the user.",
+        profile: {
+          isPhD: user.profile?.isPhD,
+          degreeType: user.profile?.degreeType,
+          degreeName: user.profile?.degreeName,
+          designation: user.profile?.designation,
+          specialization: user.profile?.specialization,
+          isPrivate: true
+        }
+      });
+    }
+
+    const userObj = user.toObject();
+    if (userObj.profile) {
+      const privacy = { ...(profile.privacySettings || {}) };
+      if (user.role === 'STUDENT') {
+        privacy.publications = true;
+        privacy.ipr = true;
+      }
+
+      // Unconditionally remove preferredGuideId as it should not be shown on the public profile anyway
+      delete profile.preferredGuideId;
+
+      // 1. Personal Information
+      if (privacy.dob === false && profile.dob) profile.dob = "Uploaded, but privacy is set to private.";
+      if (privacy.gender === false && profile.gender) profile.gender = "Uploaded, but privacy is set to private.";
+      if (privacy.category === false && profile.category) profile.category = "Uploaded, but privacy is set to private.";
+      if (privacy.nationality === false && profile.nationality) profile.nationality = "Uploaded, but privacy is set to private.";
+      if (privacy.fatherName === false && profile.fatherName) profile.fatherName = "Uploaded, but privacy is set to private.";
+      if (privacy.motherName === false && profile.motherName) profile.motherName = "Uploaded, but privacy is set to private.";
+      if (privacy.phoneNumber === false && (profile.phoneNumber || userObj.phoneNumber)) {
+        profile.phoneNumber = "Uploaded, but privacy is set to private.";
+        userObj.phoneNumber = "Uploaded, but privacy is set to private.";
+      }
+      if (privacy.address === false && profile.address) profile.address = "Uploaded, but privacy is set to private.";
+      if (privacy.admissionDate === false && profile.admissionDate) profile.admissionDate = "Uploaded, but privacy is set to private.";
+      if (privacy.enrollmentNumber === false && profile.enrollmentNumber) profile.enrollmentNumber = "Uploaded, but privacy is set to private.";
+      if (privacy.erpAdmissionNo === false && profile.erpAdmissionNo) profile.erpAdmissionNo = "Uploaded, but privacy is set to private.";
+      if (privacy.phdMode === false && profile.phdMode) profile.phdMode = "Uploaded, but privacy is set to private.";
+      if (privacy.thesisKeywords === false && profile.thesisKeywords) profile.thesisKeywords = "Uploaded, but privacy is set to private.";
+      if (privacy.academicSession === false && profile.academicSession) profile.academicSession = "Uploaded, but privacy is set to private.";
+
+      // 2. Academic Qualifications
+      if (profile.qualifications) {
+        const qualsKeys = ['class10', 'class12', 'graduation', 'postGraduation', 'mphil', 'netJrf', 'ugcNet'];
+        for (const qKey of qualsKeys) {
+          if (profile.qualifications[qKey]) {
+            if (privacy[qKey] === false) {
+              profile.qualifications[qKey] = {
+                isPrivate: true,
+                certificatePrivate: privacy[`${qKey}Doc`] === false,
+                certificateUrl: privacy[`${qKey}Doc`] === false ? null : profile.qualifications[qKey].certificateUrl
+              };
+            } else if (privacy[`${qKey}Doc`] === false) {
+              profile.qualifications[qKey].certificateUrl = null;
+              profile.qualifications[qKey].certificatePrivate = true;
+            }
+          }
+        }
+        if (Array.isArray(profile.qualifications.otherQuals)) {
+          const otherPrivacy = privacy.otherQuals || [];
+          profile.qualifications.otherQuals = profile.qualifications.otherQuals.map((qual, index) => {
+            const priv = otherPrivacy[index] || { details: true, doc: true };
+            if (priv.details === false) {
+              return {
+                isPrivate: true,
+                degree: "Uploaded, but privacy is set to private.",
+                certificatePrivate: priv.doc === false,
+                certificateUrl: priv.doc === false ? null : qual.certificateUrl
+              };
+            }
+            const updated = { ...qual };
+            if (priv.doc === false) {
+              updated.certificateUrl = null;
+              updated.certificatePrivate = true;
+            }
+            return updated;
+          });
+        }
+        if (Array.isArray(profile.qualifications.fellowships)) {
+          const fellowPrivacy = privacy.fellowships || [];
+          profile.qualifications.fellowships = profile.qualifications.fellowships.map((fell, index) => {
+            const priv = fellowPrivacy[index] || { details: true, doc: true };
+            if (priv.details === false) {
+              return {
+                isPrivate: true,
+                name: "Uploaded, but privacy is set to private.",
+                certificatePrivate: priv.doc === false,
+                certificateUrl: priv.doc === false ? null : fell.certificateUrl
+              };
+            }
+            const updated = { ...fell };
+            if (priv.doc === false) {
+              updated.certificateUrl = null;
+              updated.certificatePrivate = true;
+            }
+            return updated;
+          });
+        }
+      }
+
+      // 3. Research, Professional & Service fields
+      if (privacy.specialization === false && profile.specialization) profile.specialization = "Uploaded, but privacy is set to private.";
+      if (privacy.areaOfInterest === false && profile.areaOfInterest) profile.areaOfInterest = "Uploaded, but privacy is set to private.";
+      if (privacy.thesisTitle === false && profile.thesisTitle) profile.thesisTitle = "Uploaded, but privacy is set to private.";
+      if (privacy.thesisSummary === false && profile.thesisSummary) profile.thesisSummary = "Uploaded, but privacy is set to private.";
+      if (privacy.officeRoom === false && profile.officeRoom) profile.officeRoom = "Uploaded, but privacy is set to private.";
+      if (privacy.yearsOfService === false && profile.yearsOfService !== undefined) {
+        profile.yearsOfServicePrivate = true;
+      }
+      if (privacy.additionalResponsibilities === false && profile.additionalResponsibilities) profile.additionalResponsibilities = "Uploaded, but privacy is set to private.";
+
+      if (privacy.experience === false && Array.isArray(profile.experience) && profile.experience.length > 0) {
+        profile.experience = { isPrivate: true, count: profile.experience.length };
+      }
+      if (privacy.expertise === false && Array.isArray(profile.expertise) && profile.expertise.length > 0) {
+        profile.expertise = { isPrivate: true, count: profile.expertise.length };
+      }
+      if (privacy.awards === false && Array.isArray(profile.awards) && profile.awards.length > 0) {
+        profile.awards = { isPrivate: true, count: profile.awards.length };
+      }
+      if (privacy.publications === false && Array.isArray(profile.publications) && profile.publications.length > 0) {
+        profile.publications = { isPrivate: true, count: profile.publications.length };
+      }
+      if (privacy.projects === false && Array.isArray(profile.projects) && profile.projects.length > 0) {
+        profile.projects = { isPrivate: true, count: profile.projects.length };
+      }
+      if (privacy.ipr === false && Array.isArray(profile.ipr) && profile.ipr.length > 0) {
+        profile.ipr = { isPrivate: true, count: profile.ipr.length };
+      }
+      if (privacy.thesesSupervised === false && Array.isArray(profile.thesesSupervised) && profile.thesesSupervised.length > 0) {
+        profile.thesesSupervised = { isPrivate: true, count: profile.thesesSupervised.length };
+      }
+      if (privacy.professionalBodies === false && Array.isArray(profile.professionalBodies) && profile.professionalBodies.length > 0) {
+        profile.professionalBodies = { isPrivate: true, count: profile.professionalBodies.length };
+      }
+      if (privacy.committees === false && Array.isArray(profile.committees) && profile.committees.length > 0) {
+        profile.committees = { isPrivate: true, count: profile.committees.length };
+      }
+
+      userObj.profile = profile;
+    }
+
+    res.status(200).json(userObj);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getLabs,
   getPublications,
@@ -325,5 +613,9 @@ module.exports = {
   getPartnershipById,
   getScholarFunding,
   getFacultyScholarsFunding,
-  getFacultyAssignedInquiries
+  getFacultyAssignedInquiries,
+  getRepositoryDepartments,
+  getRepositoryDepartmentFaculties,
+  getRepositoryDepartmentScholars,
+  getRepositoryProfile
 };

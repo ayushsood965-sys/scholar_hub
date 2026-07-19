@@ -17,7 +17,11 @@ const {
   getPartnershipById,
   getScholarFunding,
   getFacultyScholarsFunding,
-  getFacultyAssignedInquiries
+  getFacultyAssignedInquiries,
+  getRepositoryDepartments,
+  getRepositoryDepartmentFaculties,
+  getRepositoryDepartmentScholars,
+  getRepositoryProfile
 } = require('../controllers/publicController');
 
 // Public routes
@@ -34,6 +38,12 @@ router.get('/collab-calls', getCollaborationCalls);
 router.post('/collaborate/inquiry', submitInquiry);
 router.get('/partnerships', getPartnerships);
 router.get('/partnerships/:id', getPartnershipById);
+
+// Public Department & Scholar Repository routes
+router.get('/repository/departments', getRepositoryDepartments);
+router.get('/repository/departments/:code/faculties', getRepositoryDepartmentFaculties);
+router.get('/repository/departments/:code/scholars', getRepositoryDepartmentScholars);
+router.get('/repository/profile/:username', getRepositoryProfile);
 
 // Authenticated user-specific dashboard routes
 router.get('/dashboard/scholar/funding', protect, getScholarFunding);

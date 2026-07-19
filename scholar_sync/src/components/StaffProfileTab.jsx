@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
 import { 
-  User, Lightbulb, Briefcase, GraduationCap, Award, FileText, 
+  User, Lightbulb, Briefcase, GraduationCap, Award, FileText, Shield,
   Users, Bookmark, Folder, BookOpen, Settings, Plus, Edit, 
   Trash2, Upload, ExternalLink, ShieldCheck, ShieldAlert, 
   RefreshCw, Camera, Eye, Trash, Check, X, EyeOff, Copyright, Lock
@@ -433,7 +433,7 @@ const StaffProfileTab = ({ thesis }) => {
   const projectsList = profile.projects || [];
   const publicationsList = profile.publications || [];
   const iprList = profile.ipr || [];
-  const privacySettings = profile.privacySettings || { profileVisibility: 'public', documentVisibility: 'public' };
+  const privacySettings = profile.privacySettings || { profileVisibility: 'public', documentVisibility: 'private' };
 
   // Milestone list items definitions
   const milestoneItems = [
@@ -516,10 +516,32 @@ const StaffProfileTab = ({ thesis }) => {
   const [editingIprIndex, setEditingIprIndex] = useState(-1);
   const [showIprForm, setShowIprForm] = useState(false);
 
-  const [privacyForm, setPrivacyForm] = useState({
-    profileVisibility: 'public',
-    documentVisibility: 'public'
+  const [privacyFieldSettings, setPrivacyFieldSettings] = useState({
+    dob: true,
+    gender: true,
+    category: true,
+    nationality: true,
+    fatherName: true,
+    motherName: true,
+    phoneNumber: true,
+    address: true,
+    designation: true,
+    specialization: true,
+    officeRoom: true,
+    yearsOfService: true,
+    additionalResponsibilities: true,
+    expertise: true,
+    experience: true,
+    awards: true,
+    publications: true,
+    projects: true,
+    ipr: true,
+    thesesSupervised: true
   });
+
+  const [undertakingPersonal, setUndertakingPersonal] = useState(false);
+  const [isEditingPrivacy, setIsEditingPrivacy] = useState(false);
+  const [undertakingPrivacy, setUndertakingPrivacy] = useState(false);
 
   const [eduDrafts, setEduDrafts] = useState({});
   const [otherQualsDraft, setOtherQualsDraft] = useState([]);
@@ -543,10 +565,10 @@ const StaffProfileTab = ({ thesis }) => {
         phoneNumber: profile.phoneNumber || '',
         email: profile.email || ''
       });
-      setPrivacyForm({
-        profileVisibility: privacySettings.profileVisibility || 'public',
-        documentVisibility: privacySettings.documentVisibility || 'public'
-      });
+      setPrivacyFieldSettings(prev => ({
+        ...prev,
+        ...privacySettings
+      }));
       setEduDrafts(profile.qualifications || {});
       setOtherQualsDraft(profile.qualifications?.otherQuals || []);
     }
@@ -1090,10 +1112,56 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ ipr: [] }, 'All Intellectual Property Rights cleared');
   };
 
-  // Save Privacy Settings
   const savePrivacy = async (e) => {
-    e.preventDefault();
-    await triggerProfileUpdate({ privacySettings: privacyForm }, 'Privacy configuration updated');
+    if (e) e.preventDefault();
+    await triggerProfileUpdate({ privacySettings: privacyFieldSettings }, 'Privacy configuration updated');
+    setUndertakingPrivacy(false);
+    setIsEditingPrivacy(false);
+  };
+
+  const handleCancelPrivacy = () => {
+    if (user?.profile?.privacySettings) {
+      setPrivacyFieldSettings({
+        dob: true,
+        gender: true,
+        category: true,
+        nationality: true,
+        fatherName: true,
+        motherName: true,
+        phoneNumber: true,
+        address: true,
+        class10: true,
+        class10Doc: true,
+        class12: true,
+        class12Doc: true,
+        graduation: true,
+        graduationDoc: true,
+        postGraduation: true,
+        postGraduationDoc: true,
+        mphil: true,
+        mphilDoc: true,
+        netJrf: true,
+        netJrfDoc: true,
+        specialization: true,
+        areaOfInterest: true,
+        thesisTitle: true,
+        thesisSummary: true,
+        expertise: true,
+        experience: true,
+        awards: true,
+        publications: true,
+        projects: true,
+        ipr: true,
+        thesesSupervised: true,
+        officeRoom: true,
+        yearsOfService: true,
+        additionalResponsibilities: true,
+        designation: true,
+        ...user.profile.privacySettings
+      });
+    }
+    setUndertakingPrivacy(false);
+    setIsEditingPrivacy(false);
   };
 
   // Education Details & Document Upload
@@ -1791,14 +1859,14 @@ const StaffProfileTab = ({ thesis }) => {
                         onChange={e => setPersonalForm({ ...personalForm, address: e.target.value })} 
                       />
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
                       <button type="button" onClick={clearPersonalInfo} style={btnDangerStyle}>
                         Clear Info
                       </button>
                       <button type="button" onClick={() => setIsEditingPersonal(false)} style={btnSecondaryStyle}>
                         Cancel
                       </button>
-                      <button type="submit" disabled={loading} style={btnPrimaryStyle}>
+                      <button type="submit" disabled={loading || !undertakingPersonal} style={{ ...btnPrimaryStyle, opacity: undertakingPersonal ? 1 : 0.5, cursor: undertakingPersonal ? 'pointer' : 'not-allowed' }}>
                         {loading ? 'Saving...' : 'Save Info'}
                       </button>
                     </div>
@@ -1878,6 +1946,7 @@ const StaffProfileTab = ({ thesis }) => {
               </div>
             </div>
           )}
+
         </section>
 
         {/* 2. AREA OF EXPERTISE */}
@@ -3406,85 +3475,264 @@ const StaffProfileTab = ({ thesis }) => {
         </section>
 
         {/* 12. PRIVACY & SETTINGS */}
-        <section ref={sectionRefs.settings} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section ref={sectionRefs.settings} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
             <Settings size={20} style={{ color: '#1A5A3B' }} />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Privacy & Settings</h3>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Profile Privacy Controls</h3>
           </div>
 
-          <form onSubmit={savePrivacy} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-              
-              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '8px' }}>
-                  Profile Visibility
-                </strong>
-                <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: '14px', lineHeight: 1.35 }}>
-                  Decide whether your academic credentials and publications are discoverable on the public portal.
-                </p>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
-                    <input 
-                      type="radio" 
-                      name="profileVisibility" 
-                      value="public" 
-                      checked={privacyForm.profileVisibility === 'public'}
-                      onChange={() => setPrivacyForm({ ...privacyForm, profileVisibility: 'public' })}
-                    />
-                    <Eye size={14} style={{ color: '#10b981' }} /> Public
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
-                    <input 
-                      type="radio" 
-                      name="profileVisibility" 
-                      value="private"
-                      checked={privacyForm.profileVisibility === 'private'}
-                      onChange={() => setPrivacyForm({ ...privacyForm, profileVisibility: 'private' })}
-                    />
-                    <EyeOff size={14} style={{ color: '#d97706' }} /> Private
-                  </label>
-                </div>
-              </div>
+          <div style={{ background: 'rgba(26, 90, 59, 0.05)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '20px' }}>
+            <strong style={{ fontSize: '0.95rem', color: '#1A5A3B', display: 'block', marginBottom: '8px' }}>
+              🛡️ Consolidated Privacy Settings
+            </strong>
+            <p style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              Configure public profile visibility preferences for all sections. Only the checked items will be displayed in the public profile section, and unchecked items will be strictly hidden.
+            </p>
+          </div>
 
-              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                <strong style={{ fontSize: '0.88rem', color: 'var(--color-text-primary)', display: 'block', marginBottom: '8px' }}>
-                  Document Visibility
-                </strong>
-                <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: '14px', lineHeight: 1.35 }}>
-                  Decide whether uploaded certificates and research briefs are viewable by public query guests.
-                </p>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Subsection 1: Personal Info */}
+            <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#1A5A3B', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                1. Personal & General Information
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
+                {[
+                  { key: 'dob', label: 'Date of Birth' },
+                  { key: 'gender', label: 'Gender' },
+                  { key: 'category', label: 'Social Category' },
+                  { key: 'nationality', label: 'Nationality' },
+                  { key: 'fatherName', label: "Father's Name" },
+                  { key: 'motherName', label: "Mother's Name" },
+                  { key: 'phoneNumber', label: 'Phone Number' },
+                  { key: 'address', label: 'Residential Address' },
+                  { key: 'specialization', label: 'Specialization' },
+                  { key: 'designation', label: 'Designation' },
+                  { key: 'officeRoom', label: 'Office Room' },
+                  { key: 'yearsOfService', label: 'Years of Service' },
+                  { key: 'additionalResponsibilities', label: 'Additional Responsibilities' }
+                ].map(item => (
+                  <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'rgba(0,0,0,0.02)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
                     <input 
-                      type="radio" 
-                      name="documentVisibility" 
-                      value="public"
-                      checked={privacyForm.documentVisibility === 'public'}
-                      onChange={() => setPrivacyForm({ ...privacyForm, documentVisibility: 'public' })}
+                      type="checkbox" 
+                      disabled={!isEditingPrivacy}
+                      checked={privacyFieldSettings[item.key] !== false} 
+                      onChange={() => setPrivacyFieldSettings(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
                     />
-                    <Eye size={14} style={{ color: '#10b981' }} /> Public
+                    <span>{item.label}</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
-                    <input 
-                      type="radio" 
-                      name="documentVisibility" 
-                      value="private"
-                      checked={privacyForm.documentVisibility === 'private'}
-                      onChange={() => setPrivacyForm({ ...privacyForm, documentVisibility: 'private' })}
-                    />
-                    <EyeOff size={14} style={{ color: '#d97706' }} /> Private
-                  </label>
-                </div>
+                ))}
               </div>
-
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" disabled={loading} style={btnPrimaryStyle}>
-                <Check size={14} /> Update Privacy Settings
-              </button>
+            {/* Subsection 2: Academic Qualifications */}
+            <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#1A5A3B', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                2. Academic Qualifications
+              </h4>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', color: 'var(--color-text-primary)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                    <th style={{ padding: '8px' }}>Qualification Level</th>
+                    <th style={{ padding: '8px', textAlign: 'center' }}>Score/Details Visible</th>
+                    <th style={{ padding: '8px', textAlign: 'center' }}>Certificate Visible</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { key: 'class10', label: 'Class 10th (Matriculation)' },
+                    { key: 'class12', label: 'Class 12th (Senior Secondary)' },
+                    { key: 'graduation', label: 'Undergraduate Degree' },
+                    { key: 'postGraduation', label: 'Postgraduate Degree' },
+                    ...(user?.profile?.qualifications?.mphil?.done === true ? [{ key: 'mphil', label: 'M.Phil. Degree' }] : []),
+                    ...(user?.profile?.qualifications?.netJrf?.qualified === true ? [{ key: 'netJrf', label: 'UGC-NET / JRF Fellowship' }] : [])
+                  ].map(item => (
+                    <tr key={item.key} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                      <td style={{ padding: '8px', fontWeight: 600 }}>{item.label}</td>
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox" 
+                          disabled={!isEditingPrivacy}
+                          checked={privacyFieldSettings[item.key] !== false} 
+                          onChange={() => setPrivacyFieldSettings(prev => ({ ...prev, [item.key]: !prev[item.key] }))} 
+                        />
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox" 
+                          disabled={!isEditingPrivacy}
+                          checked={privacyFieldSettings[`${item.key}Doc`] !== false} 
+                          onChange={() => setPrivacyFieldSettings(prev => ({ ...prev, [`${item.key}Doc`]: !prev[`${item.key}Doc`] }))} 
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                  {(otherQualsDraft || []).map((oq, idx) => (
+                    <tr key={`other_${idx}`} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                      <td style={{ padding: '8px', fontWeight: 600 }}>{oq.degree || `Other Qualification #${idx + 1}`}</td>
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox" 
+                          disabled={!isEditingPrivacy}
+                          checked={privacyFieldSettings.otherQuals?.[idx]?.details !== false} 
+                          onChange={() => {
+                            setPrivacyFieldSettings(prev => {
+                              const oqList = [...(prev.otherQuals || [])];
+                              while (oqList.length <= idx) oqList.push({ details: true, doc: true });
+                              oqList[idx] = { ...oqList[idx], details: !oqList[idx].details };
+                              return { ...prev, otherQuals: oqList };
+                            });
+                          }} 
+                        />
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox" 
+                          disabled={!isEditingPrivacy}
+                          checked={privacyFieldSettings.otherQuals?.[idx]?.doc !== false} 
+                          onChange={() => {
+                            setPrivacyFieldSettings(prev => {
+                              const oqList = [...(prev.otherQuals || [])];
+                              while (oqList.length <= idx) oqList.push({ details: true, doc: true });
+                              oqList[idx] = { ...oqList[idx], doc: !oqList[idx].doc };
+                              return { ...prev, otherQuals: oqList };
+                            });
+                          }} 
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </form>
+
+            {/* Subsection 3: Experience */}
+            {(user?.profile?.experience?.length > 0) && (
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#1A5A3B', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                  3. Professional Experience
+                </h4>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'rgba(0,0,0,0.02)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
+                  <input 
+                    type="checkbox" 
+                    disabled={!isEditingPrivacy}
+                    checked={privacyFieldSettings.experience !== false} 
+                    onChange={() => setPrivacyFieldSettings(prev => ({ ...prev, experience: !prev.experience }))}
+                  />
+                  <span>Show Professional Experience details & certificates</span>
+                </label>
+              </div>
+            )}
+
+            {/* Subsection 4: Expertise */}
+            {(user?.profile?.expertise?.length > 0) && (
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#1A5A3B', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                  4. Area of Expertise
+                </h4>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'rgba(0,0,0,0.02)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
+                  <input 
+                    type="checkbox" 
+                    disabled={!isEditingPrivacy}
+                    checked={privacyFieldSettings.expertise !== false} 
+                    onChange={() => setPrivacyFieldSettings(prev => ({ ...prev, expertise: !prev.expertise }))}
+                  />
+                  <span>Show Areas of Expertise keywords</span>
+                </label>
+              </div>
+            )}
+
+            {/* Subsection 5: Publications, Projects, Guidance & Awards */}
+            <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#1A5A3B', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
+                5. Portfolio Timeline & Memberships
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
+                {[
+                  { key: 'publications', label: 'Publications' },
+                  { key: 'projects', label: 'Research Projects' },
+                  { key: 'awards', label: 'Awards & Achievements' },
+                  { key: 'ipr', label: 'IPR / Patents' },
+                  { key: 'thesesSupervised', label: 'Guided Ph.D. Theses' },
+                  { key: 'professionalBodies', label: 'Professional Memberships' },
+                  { key: 'committees', label: 'Committee Memberships' }
+                ].map(item => (
+                  <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'rgba(0,0,0,0.02)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
+                    <input 
+                      type="checkbox" 
+                      disabled={!isEditingPrivacy}
+                      checked={privacyFieldSettings[item.key] !== false} 
+                      onChange={() => setPrivacyFieldSettings(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                    />
+                    <span>Show {item.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '2px solid var(--color-border)' }}>
+            {/* Undertaking - always visible, highlighted in edit mode */}
+            <div style={{ 
+              padding: '14px 16px', 
+              borderRadius: '10px', 
+              border: isEditingPrivacy ? '2px solid #f59e0b' : '1px solid var(--color-border)',
+              background: isEditingPrivacy ? 'rgba(245, 158, 11, 0.07)' : 'rgba(0,0,0,0.02)',
+              marginBottom: '16px',
+              transition: 'all 0.2s ease'
+            }}>
+              {isEditingPrivacy && (
+                <p style={{ fontSize: '0.78rem', color: '#b45309', fontWeight: 700, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  ⚠️ You must check the box below to enable the Save button:
+                </p>
+              )}
+              <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: isEditingPrivacy ? 'pointer' : 'default', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                <input 
+                  type="checkbox" 
+                  disabled={!isEditingPrivacy}
+                  checked={isEditingPrivacy ? undertakingPrivacy : true} 
+                  onChange={(e) => setUndertakingPrivacy(e.target.checked)} 
+                  style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: '#f59e0b', flexShrink: 0 }}
+                />
+                <span>I have carefully reviewed all my profile field-level privacy and visibility settings above. I understand that only the checked details and documents will be publicly visible on my repository profile. I confirm these are my intended privacy preferences.</span>
+              </label>
+            </div>
+
+            {isEditingPrivacy ? (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
+                {!undertakingPrivacy && (
+                  <span style={{ fontSize: '0.78rem', color: '#b45309', fontStyle: 'italic' }}>
+                    ↑ Check the undertaking above to save
+                  </span>
+                )}
+                <button 
+                  type="button" 
+                  onClick={handleCancelPrivacy} 
+                  style={{ background: '#6B7280', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={savePrivacy}
+                  disabled={loading || !undertakingPrivacy} 
+                  style={{ background: (loading || !undertakingPrivacy) ? '#9CA3AF' : '#10B981', color: 'white', border: 'none', padding: '8px 20px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: (loading || !undertakingPrivacy) ? 'not-allowed' : 'pointer' }}
+                >
+                  {loading ? 'Saving...' : '💾 Save Privacy Settings'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingPrivacy(true)}
+                  style={{ background: '#1F2937', color: 'white', border: 'none', padding: '8px 20px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  ✏️ Edit Privacy Settings
+                </button>
+              </div>
+            )}
+          </div>
         </section>
 
       </div>

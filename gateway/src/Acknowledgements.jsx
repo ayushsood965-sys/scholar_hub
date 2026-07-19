@@ -94,6 +94,7 @@ const Acknowledgements = () => {
           <button onClick={() => navigate('/')} className="nav-link-btn">Home</button>
           <button onClick={() => handleNavClick('about')} className="nav-link-btn">About</button>
           <button onClick={() => handleNavClick('portals')} className="nav-link-btn">Portals</button>
+          <Link to="/discovery" className="nav-link-btn">Academic Research Discovery</Link>
           <Link to="/acknowledgements" className="nav-link-btn" style={{ color: 'var(--color-primary)', borderBottom: '2px solid var(--color-primary)' }}>Acknowledgements</Link>
         </div>
 
