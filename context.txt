@@ -1,0 +1,74 @@
+# ScholarHub — Project Context
+
+## What It Is
+**ScholarHub** is a unified digital ecosystem for **HPU (Himachal Pradesh University)** covering Ph.D. lifecycle tracking and attendance/leave management. It is a monorepo with 3 React frontends + 1 shared Express/MongoDB backend, all sharing one database and one auth system.
+
+Production domains (per `sitemap`):
+- `scholarhubhpu.in` → Gateway
+- `sync.scholarhubhpu.in` → ScholarSync
+- `track.scholarhubhpu.in` → ScholarTrack
+
+## Monorepo Layout
+
+| Module | Path | Stack | Port | Purpose |
+|---|---|---|---|---|
+| Gateway | `gateway/` | Vite + React 18 | 3000 | Landing/portal selector, routes users to sub-portals |
+| ScholarSync | `scholar_sync/` | Vite 5 + React 18 | 5173 | Ph.D. candidate lifecycle tracker |
+| ScholarTrack | `scholar_track/` | Vite 6 + React 19 | 5174 | Attendance & leave management |
+| Server | `server/` | Node + Express 5 + Mongoose 9 | 5000 | Shared REST API for all portals |
+
+Root `package.json` has `dev:gateway`, `dev:sync`, `dev:track`, `dev:server` scripts (no `dev` concurrent runner despite README mention).
+
+## Backend (`server/`)
+
+### Infrastructure
+- **Entry**: [server.js](file:///c:/Codee/scholar_hub/server/server.js) — Express 5, helmet, CORS (env-driven allowlist), cookie-parser, custom NoSQL sanitizer (Express 5 compatible), rate limiters (login 100/15min, global 1000/15min), Redis cache middleware (300s), static `/uploads`.
+- **Startup**: connects MongoDB → connects Redis → starts background **email worker** → auto-seeds `admin` SUPER_ADMIN if missing.
+- **Utility routes**: `/clear-all`, `/seed`, `/seed-users` (HTML UI + JSON API), protected by `UTILITY_PASSWORD` and JWT+SUPER_ADMIN for API variants.
+- **Email**: `utils/emailWorker.js` — MongoDB-backed durable queue (`EmailQueue` model), sequential processing, ~3.3 emails/sec (300ms delay, under Stalwart 5/sec limit), exponential backoff (30s→2h), atomic claim, crash recovery, 2s polling.
+
+### Auth & Roles
+- JWT (Authorization header or cookie), `protect` + `authorize(...roles)` middleware.
+- Roles: `STUDENT`, `FACULTY`, `HOD`, `ADMIN`, `SUPER_ADMIN`; subRole: `SUPERVISOR` | `HOD`. HOD is treated as superset of FACULTY.
+- Frontends store token+user in `localStorage`; each portal passes a `portal` flag (`sync`/`track`) at login/register for correct email links.
+- Email verification + password reset flows with tokens.
+
+### Models (25)
+Core: **User** (rich embedded `profile` incl. auto-generated 9-digit `shNo` in pre-save hook), **Thesis** (lifecycle state machine: `REGISTRATION_PENDING → COURSEWORK → SYNOPSIS_PENDING → ACTIVE_RESEARCH → PRE_SUBMISSION → THESIS_SUBMITTED → PENDING_SUPERVISOR/HOD → SUBMITTED → AWARDED`, coursework details/approvals, pre-submission seminar), Milestone, Publication, RACReview, DRCMeeting, ChangeRequest, Department, Notification, AdditionalDocument, Meeting.
+Attendance domain: Attendance, LeaveRequest, `models/attendance/` subfolder.
+Public/config domain: ResearchLab, CollaborationCall/Inquiry, FundingAward/Opportunity, Event, Partnership, DoctoralProject, FacultyMaster, CategoryGenderMaster, AppInstallLog, EmailQueue.
+
+### Controllers / Routes
+17 route files mounted under `/api/*`: auth, thesis, milestones, departments, faculties, lifecycle, notifications, publications, meetings, additional-documents, public, config, attendance, student-mapping, seed, install-logs, email-logs.
+
+> [!WARNING]
+> Some controllers are extremely large: `attendanceController.js` (~194 KB), `thesisController.js` (~91 KB), `authController.js` (~44 KB), `lifecycleController.js` (~37 KB). Same pattern on frontend: `StudentDashboard.jsx` (~683 KB), `UnifiedScholarModal.jsx` (~336 KB), `AdminDashboard.jsx` (~340 KB), `FacultyDashboard.jsx` (~312 KB).
+
+## Frontend — ScholarSync (`scholar_sync/`)
+Ph.D. lifecycle portal. Contexts: Auth, Notification, Theme, Thesis, Toast.
+- Routes: `/` landing, role dashboards (`/student-dashboard`, `/faculty-dashboard`, `/admin-dashboard` for ADMIN+HOD, `/super-dashboard`), full auth flow, plus public pages: `/workflow`, `/labs`, `/labs/:id`, `/collaborate`, `/publications`, `/funding`, `/events`, `/about`, `/search`, and utility pages `/clear-all`, `/seed`, `/seed-users`.
+- Feature areas: DRC synopsis approvals, RAC reviews, publications/chapters, thesis uploads, supervisor allocation, DRC meeting scheduling, Viva-Voce records, degree awards, department transfers, research labs, funding, events, collaboration board, PWA install prompt.
+
+## Frontend — ScholarTrack (`scholar_track/`)
+Attendance & leave portal (React 19, framer-motion, recharts). Role-based module folders under `src/modules/`:
+- **student**: attendance marking/logs, corrections, leave, overview, profile
+- **faculty**: mark attendance, records, corrections (+logs), leave approvals (+logs), student-subject mapping, defaulter drill-down, overview
+- **hod**: approvals, timetable (+clone), verify attendance, defaulters, my students, audit
+- **admin**: masters (degree types/names, semesters, sessions, departments, faculty/HOD, category-gender), leave rules, policy config, holiday calendar, user verification, search/edit student, email logs, app install logs
+
+## Frontend — Gateway (`gateway/`)
+Minimal: landing page + NotFound. Portal selector with HPU branding.
+
+## Deployment
+- **Coolify** on a VPS (`http://169.58.12.127:8000`) with 4 apps; auto-deploy via GitHub webhooks or `.github/workflows/deploy-coolify.yml` (needs `COOLIFY_BASE_URL` + `COOLIFY_TOKEN` secrets). See [COOLIFY.md](file:///c:/Codee/scholar_hub/COOLIFY.md).
+- Each module has its own `Dockerfile` + `nginx.conf` (frontends) and `vercel.json`.
+
+## Environment
+- `server/.env`: `PORT`, `MONGO_URI`, `JWT_SECRET`, `ADMIN_PASSWORD`, `UTILITY_PASSWORD`, `CORS_ORIGIN`, `REDIS_URL` (+ SMTP settings used by emailService).
+- Each frontend has `.env` / `.env.local` with API URL + portal URLs (consumed via `src/config.js`).
+
+## Notable Characteristics
+- Single shared MongoDB across both portals — user records are transferable.
+- `User` pre-save hook auto-generates unique 9-digit SH numbers for students; README mentions a `backfillSHNos()` startup migration.
+- Design language: premium glassmorphism, dark mode, HSL forest-greens, Outfit typography (per README).
+- Tests exist under `server/tests/` (unit/integration/e2e via `node --test`, mongodb-memory-server) plus seed/lifecycle scripts (`seed.js`, `complete_lifecycle.js`, `clear_database.js`).

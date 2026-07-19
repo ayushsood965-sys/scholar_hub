@@ -32,6 +32,7 @@ import {
   ChevronRight,
   Sparkle
 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { API_URL, SCHOLAR_SYNC_URL, SCHOLAR_TRACK_URL } from './config';
 
 // Custom hook to trigger scroll animations (Reveal on scroll)
@@ -78,6 +79,7 @@ const AppleIcon = () => (
 );
 
 const Landing = () => {
+  const location = useLocation();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [activeSyncRole, setActiveSyncRole] = useState('student');
   const [activeTrackRole, setActiveTrackRole] = useState('student');
@@ -286,6 +288,15 @@ const Landing = () => {
     }
   };
 
+  useEffect(() => {
+    if (location.state?.scrollTo) {
+      setTimeout(() => {
+        scrollToSection(location.state.scrollTo);
+      }, 100);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   return (
     <div className="landing-page">
       {/* Background blobs */}
@@ -309,6 +320,7 @@ const Landing = () => {
           <button onClick={() => scrollToSection('home')} className="nav-link-btn">Home</button>
           <button onClick={() => scrollToSection('about')} className="nav-link-btn">About</button>
           <button onClick={() => scrollToSection('portals')} className="nav-link-btn">Portals</button>
+          <Link to="/acknowledgements" className="nav-link-btn">Acknowledgements</Link>
         </div>
 
         <div className="nav-actions">
@@ -937,7 +949,7 @@ const Landing = () => {
             <span>© {new Date().getFullYear()} Himachal Pradesh University. All rights reserved.</span>
           </div>
           <div className="developer-tag">
-            Developed by - <span style={{ fontWeight: 700 }}>Ayush Sood</span>
+            Developed by - <Link to="/acknowledgements" style={{ fontWeight: 700, textDecoration: 'underline', color: 'var(--color-primary)' }}>Ayush Sood</Link>
           </div>
         </div>
       </footer>

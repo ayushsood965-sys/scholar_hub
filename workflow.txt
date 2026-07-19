@@ -1,0 +1,367 @@
+================================================================================
+SCHOLARHUB HPU – COMPLETE WORKFLOW GUIDE FOR STUDENTS
+(Understandable to a layman / first-time user)
+================================================================================
+
+This document explains, step-by-step, what a student does on the ScholarHub HPU
+system, how the HOD verifies the student, and what happens at each stage.
+
+ScholarHub has two main portals:
+  • ScholarSync  – for Ph.D. scholars (research thesis, supervisor, milestones)
+  • ScholarTrack – for attendance, leave, and correction requests for all students
+
+================================================================================
+PART 1 – OPENING THE PORTAL AND SIGNING UP
+================================================================================
+
+1. GO TO THE WEBSITE
+   - Open your web browser (Chrome / Edge / Firefox, etc.).
+   - Type the portal address given by your department:
+       ScholarSync:  https://sync.scholarhubhpu.in
+       ScholarTrack: https://track.scholarhubhpu.in
+   - Press Enter. The login page will open.
+
+2. CHOOSE “SIGN UP”
+   - On the login page, click the button or link that says “Sign Up” or
+     “Register New Account”.
+
+3. SELECT YOUR ROLE
+   - If you are a research scholar (Ph.D. student), choose “Student”.
+   - Faculty, HOD, and Admin accounts are normally created by the Super Admin,
+     but in some cases a faculty member can also sign up on the portal.
+
+4. FILL THE SIGN-UP FORM
+   You will see a form. Fill it carefully:
+
+   a. Full Name
+      - Type your complete name as it appears in your university records.
+
+   b. Email Address (Username)
+      - This is your university email, e.g., scholar@hpu.ac.in.
+      - This email will be used as your username every time you log in.
+
+   c. Password
+      - Create a strong password.
+      - It must be at least 8 characters long.
+      - It must contain at least:
+          • one uppercase letter (A-Z)
+          • one lowercase letter (a-z)
+          • one digit (0-9)
+          • one special symbol (!@#$%^&* etc.)
+      - Keep it safe. Do not share it with anyone.
+
+   d. Confirm Password
+      - Re-type the same password to make sure there is no typing mistake.
+
+   e. Department
+      - Select your department from the dropdown list.
+
+   f. Phone Number
+      - Enter your 10-digit Indian mobile number.
+      - The system automatically accepts numbers starting with 6, 7, 8, or 9.
+
+   g. Degree / Academic Details (for students)
+      - Academic Session: e.g., 2024-2025
+      - Degree Type: e.g., Ph.D., M.Phil., M.A., M.Sc., etc.
+      - Degree Name: e.g., Ph.D. in English, M.Sc. Physics, etc.
+      - Semester / Year: if asked
+      - Gender and Category: select from the dropdowns
+
+5. SUBMIT THE FORM
+   - Click the “Register” or “Sign Up” button.
+   - The system will check:
+       • Is the email already registered?
+       • Is the phone number already registered?
+       • Is the password strong enough?
+   - If everything is correct, your account is created.
+
+================================================================================
+PART 2 – EMAIL VERIFICATION
+================================================================================
+
+6. CHECK YOUR EMAIL INBOX
+   - After successful registration, the system sends a verification email to the
+     email address you entered.
+   - Open your email inbox (and also check the Spam / Junk folder).
+
+7. CLICK THE VERIFICATION LINK
+   - The email has a button “Verify Email Address”.
+   - Click that button. It will open a new page in the browser.
+   - If the button does not work, copy the long link below the button and paste
+     it in the browser address bar.
+
+8. VERIFICATION SUCCESSFUL
+   - The page will show a success message: “Email verified successfully!”
+   - Your email is now verified. You can log in.
+   - Important: The verification link is valid only for 24 hours.
+
+9. DID NOT RECEIVE THE EMAIL?
+   - Go back to the login page and click “Resend Verification Email”.
+   - Enter your email address and click “Resend”.
+   - A new email will be sent.
+
+================================================================================
+PART 3 – LOGGING IN
+================================================================================
+
+10. RETURN TO THE LOGIN PAGE
+    - Go to https://sync.scholarhubhpu.in or https://track.scholarhubhpu.in again.
+
+11. ENTER YOUR CREDENTIALS
+    - Username: your email address
+    - Password: the password you created during signup
+
+12. SELECT THE CORRECT PORTAL (if asked)
+    - If you are a Ph.D. scholar, you must first log in to ScholarSync.
+    - If you are a regular student (non-Ph.D.), you must use ScholarTrack.
+    - The system will not allow:
+        • Non-Ph.D. students to enter ScholarSync
+        • Ph.D. students whose profile is not yet verified by HOD to enter
+          ScholarTrack
+
+13. CLICK “LOGIN”
+    - If your email is verified and your account is active, the system will
+      open your Dashboard.
+    - If your email is not verified, you will see an error message and you must
+      verify your email first.
+    - If your account is disabled, you must contact your HOD.
+
+================================================================================
+PART 4 – STUDENT DASHBOARD AND PROFILE
+================================================================================
+
+14. WELCOME TO YOUR DASHBOARD
+    - After login, you see the Dashboard.
+    - The Dashboard shows useful information, for example:
+        • Your name, roll number, department
+        • Your verification status
+        • Notifications (alerts/messages from HOD, faculty, or system)
+        • Quick links to Profile, Thesis, Attendance, Leaves, etc.
+
+15. COMPLETE YOUR PROFILE
+    - Click on “Profile” or “Complete Profile” in the menu.
+    - Fill all the required details:
+        • Personal Details: date of birth, gender, category, nationality,
+          father’s name, mother’s name, address
+        • Contact Details: email, phone number
+        • Academic Details: enrollment number, admission date, Ph.D. mode
+          (full-time / part-time), academic session, degree, subject
+        • Thesis Details: thesis title, thesis summary, keywords, preferred
+          supervisor/guide
+        • Qualifications: 10th, 12th, graduation, post-graduation, M.Phil, NET/JRF,
+          fellowships, other certificates
+        • For faculty: designation, specialization, office room, experience,
+          publications, awards, etc.
+
+16. UPLOAD YOUR PHOTO (AVATAR)
+    - Click on your profile picture area.
+    - Choose a recent passport-size photo from your computer or phone.
+    - The system will save it as your profile picture.
+
+17. UPLOAD DOCUMENTS / CERTIFICATES
+    - In the profile section, you may see options to upload documents.
+    - Click “Upload Certificate” next to the relevant qualification.
+    - Select a PDF or image file (class 10, class 12, graduation, etc.).
+    - Make sure the file is clear and readable.
+
+18. REVIEW EVERYTHING
+    - Before you submit, read every field carefully.
+    - Wrong or incomplete information can cause your profile to be rejected by
+      the HOD.
+
+19. SUBMIT PROFILE FOR VERIFICATION
+    - At the bottom of the profile page, click the button “Submit Profile” or
+      “Complete Profile”.
+    - The system will mark your profile as “Completed” and send it to the HOD
+      for verification.
+    - You will see a message: “Profile submitted successfully. Waiting for HOD
+      verification.”
+
+================================================================================
+PART 5 – WHAT HAPPENS AT THE HOD END
+================================================================================
+
+20. HOD RECEIVES THE VERIFICATION REQUEST
+    - The HOD (Head of Department) logs in to their HOD account.
+    - In the HOD Dashboard, there is a section called “Department Users” or
+      “Pending Verifications”.
+    - The HOD sees your name in the list of students who have submitted their
+      profiles.
+
+21. HOD OPENS YOUR PROFILE
+    - The HOD clicks on your name.
+    - The system shows your complete profile and all uploaded documents.
+
+22. HOD REVIEWS THE DETAILS
+    - The HOD checks:
+        • Is your name correct?
+        • Is the enrollment number correct?
+        • Is the department correct?
+        • Are all required documents uploaded?
+        • Are certificates valid and readable?
+        • Is the thesis title and summary filled?
+
+23. HOD TAKES ACTION
+    There are two possible actions:
+
+    A. APPROVE / VERIFY
+       - If everything is correct, the HOD clicks “Verify” or “Approve”.
+       - Your account is now marked as “Verified”.
+       - You will receive a notification and email: “Your account has been
+         verified by the HOD.”
+       - If you are a Ph.D. scholar, you can now also log in to ScholarTrack.
+       - You can now start working on your thesis, milestones, and other
+         research activities.
+
+    B. REJECT / SEND BACK
+       - If some information is wrong or documents are missing, the HOD clicks
+         “Reject”.
+       - The HOD must write a remark explaining the reason, for example:
+           “Enrollment number is incorrect.”
+           “Class 12 certificate is missing.”
+           “Thesis title is too vague.”
+       - Your profile is marked as “Not Completed” and “Not Verified”.
+       - You will receive a notification: “Your profile verification has been
+         rejected by HOD. Remarks: …”
+       - You must log in again, edit your profile, fix the mistakes, and re-
+         submit it.
+
+24. HOD CAN ALSO EDIT YOUR PROFILE
+    - If you entered a small mistake, the HOD can directly edit your profile
+      and save it.
+    - For example, the HOD can correct the spelling of your name, update your
+      department, or fix the thesis title.
+
+================================================================================
+PART 6 – AFTER HOD VERIFICATION (Ph.D. SCHOLAR WORKFLOW)
+================================================================================
+
+For Ph.D. students, after the HOD verifies your profile, you can start your
+research journey. The main steps are:
+
+25. CREATE YOUR THESIS RECORD
+    - In ScholarSync, go to “Thesis” or “My Thesis”.
+    - Click “Create Thesis”.
+    - Enter the thesis title, abstract/summary, keywords, specialization, and
+      department.
+    - Submit it.
+
+26. HOD / ADMIN VERIFIES YOUR ENROLMENT
+    - The HOD or Department Admin checks your thesis record.
+    - If everything is correct, they click “Verify Enrollment”.
+
+27. SUPERVISOR IS ASSIGNED
+    - The HOD or Department Admin assigns a faculty member as your supervisor.
+    - You will see the supervisor’s name in your thesis page.
+
+28. COURSEWORK (if applicable)
+    - If you have coursework requirements, you must submit the details.
+    - Upload proof of completed coursework.
+    - Your supervisor and HOD will approve it.
+
+29. RAC REVIEWS (Research Advisory Committee)
+    - The system schedules RAC meetings.
+    - You or your supervisor may upload RAC reports.
+    - The RAC result is recorded.
+
+30. MILESTONES
+    - Under “Milestones”, you can submit important documents such as:
+        • Synopsis / Provisional Synopsis
+        • Pre-submission seminar
+        • Final thesis submission
+    - Upload the required document and plagiarism report.
+    - The supervisor/HOD reviews and approves each milestone.
+
+31. PUBLICATIONS
+    - If you have published any research papers, you can submit them under
+      “Publications”.
+    - Upload the publication document.
+    - The HOD or faculty verifies it.
+
+32. DRC MEETINGS (Doctoral Research Committee)
+    - DRC meetings are scheduled for reviewing your progress.
+    - Results are recorded in the system.
+
+33. FINAL SUBMISSION AND APPROVAL
+    - When your thesis is complete, submit the final document.
+    - The HOD, supervisor, and external evaluators review it.
+    - Viva / seminar is scheduled.
+    - After successful evaluation, the degree is awarded.
+
+================================================================================
+PART 7 – ATTENDANCE AND LEAVE WORKFLOW (ScholarTrack)
+================================================================================
+
+For all students, including Ph.D. students after verification, ScholarTrack
+handles attendance and leaves:
+
+34. VIEW YOUR ATTENDANCE
+    - Log in to ScholarTrack.
+    - Go to “Attendance” or “My Attendance”.
+    - You can see your attendance record for each subject.
+
+35. APPLY FOR LEAVE
+    - Click “Apply Leave”.
+    - Select the date(s), leave type (medical, duty, etc.), and reason.
+    - Submit the request.
+    - Your faculty / HOD will approve or reject it.
+
+36. ATTENDANCE CORRECTION
+    - If your attendance is marked wrong (e.g., you were present but marked
+      absent), you can apply for a correction.
+    - Go to “Corrections” and submit a request.
+    - The faculty / HOD will review and take action.
+
+37. LOW ATTENDANCE WARNING
+    - If your attendance is below the required percentage, the system shows a
+      warning.
+    - You may be listed as a defaulter.
+    - Contact your faculty or HOD for guidance.
+
+================================================================================
+PART 8 – PASSWORD AND ACCOUNT HELP
+================================================================================
+
+38. FORGOT PASSWORD
+    - On the login page, click “Forgot Password”.
+    - Enter your email address.
+    - The system will send a password-reset email.
+    - Click the link in the email (valid for 1 hour).
+    - Enter a new password and confirm it.
+    - You can now log in with the new password.
+
+39. CHANGE PASSWORD / LOGOUT
+    - Inside your profile or settings, you can change your password.
+    - Always log out when you finish using the system, especially on a shared
+      computer.
+
+40. ACCOUNT DISABLED?
+    - If the HOD disables your account, you cannot log in.
+    - Contact your HOD or Department Admin to know the reason and request
+      reactivation.
+
+================================================================================
+PART 9 – QUICK SUMMARY OF ROLES
+================================================================================
+
+• STUDENT
+  - Signs up, verifies email, logs in, completes profile, submits for HOD
+    verification, submits thesis/milestones/publications, applies for leave
+    and attendance corrections.
+
+• HOD (Head of Department)
+  - Verifies or rejects student profiles, manages department users, assigns
+    supervisors, approves/rejects milestones, thesis submissions, publications,
+    leaves, corrections, and attendance.
+
+• FACULTY / SUPERVISOR
+  - Guides the scholar, reviews milestones, approves coursework, schedules
+    seminars, marks attendance, approves/rejects leave and correction requests.
+
+• ADMIN / SUPER ADMIN
+  - Manages the whole system, creates HOD/faculty accounts, manages departments,
+    resets data if needed, configures settings, and has access to all records.
+
+================================================================================
+END OF WORKFLOW GUIDE
+================================================================================
