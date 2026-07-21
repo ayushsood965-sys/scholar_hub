@@ -3038,7 +3038,7 @@ exports.getStudentDashboardStats = async (req, res) => {
           sessionId: session._id,
           degreeTypeId: student.profile?.degreeTypeId,
           degreeNameId: student.profile?.degreeNameId,
-          semesterId: student.profile?.semesterId,
+          semesterId: semesterId,
           isActive: true
         }).populate('facultyId', 'name').lean();
       }
