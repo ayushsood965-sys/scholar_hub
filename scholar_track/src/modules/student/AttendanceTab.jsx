@@ -145,10 +145,7 @@ const AttendanceTab = () => {
   if (filtersLoading) {
     return (
       <div className="glass-panel p-xl">
-        <SkeletonLoader count={1} height={80} />
-        <div style={{ marginTop: '24px' }}>
-          <SkeletonLoader count={1} height={300} />
-        </div>
+        <SkeletonLoader count={1} height={400} />
       </div>
     );
   }

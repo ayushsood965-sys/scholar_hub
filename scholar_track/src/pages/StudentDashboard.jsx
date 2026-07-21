@@ -73,12 +73,13 @@ const StudentDashboard = () => {
 
   if (loadingThesis) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '16px', background: 'var(--color-bg)' }}>
-        <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(26, 90, 59, 0.1)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Syncing academic record...</p>
-        <style>{`
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
+      <div className="login-preloader-overlay">
+        <div className="login-preloader-container">
+          <div className="login-preloader-ring-wrapper">
+            <div className="login-preloader-ring" />
+          </div>
+          <div className="login-preloader-text">Syncing academic record...</div>
+        </div>
       </div>
     );
   }
