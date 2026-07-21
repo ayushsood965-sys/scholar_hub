@@ -956,7 +956,7 @@ const Landing = () => {
             <span>© {new Date().getFullYear()} Himachal Pradesh University. All rights reserved.</span>
           </div>
           <div className="developer-tag">
-            Developed by - <Link to="/acknowledgements" style={{ fontWeight: 700, textDecoration: 'underline', color: '#ffffff' }}>Ayush Sood</Link>
+            Designed and Developed by - <Link to="/acknowledgements" style={{ fontWeight: 700, textDecoration: 'underline', color: '#ffffff' }}>Ayush Sood</Link>
           </div>
         </div>
       </footer>

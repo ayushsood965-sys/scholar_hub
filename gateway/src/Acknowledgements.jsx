@@ -281,7 +281,7 @@ const Acknowledgements = () => {
             <span>© {new Date().getFullYear()} Himachal Pradesh University. All rights reserved.</span>
           </div>
           <div className="developer-tag">
-            Developed by - <span style={{ fontWeight: 700, color: '#ffffff' }}>Ayush Sood</span>
+            Designed and Developed by - <span style={{ fontWeight: 700, color: '#ffffff' }}>Ayush Sood</span>
           </div>
         </div>
       </footer>
