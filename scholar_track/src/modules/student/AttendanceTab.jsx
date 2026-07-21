@@ -8,9 +8,11 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 const AttendanceTab = () => {
   const { user } = useContext(AuthContext);
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [filtersLoading, setFiltersLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
   const [semesters, setSemesters] = useState([]);
+  const [semesterDegreeMappings, setSemesterDegreeMappings] = useState([]);
   
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [selectedSemesterId, setSelectedSemesterId] = useState('');
@@ -42,41 +44,66 @@ const AttendanceTab = () => {
     if (!user || fetchInitiated.current) return;
     fetchInitiated.current = true;
 
-    const fetchFiltersAndData = async () => {
+    const fetchFilters = async () => {
       try {
-        // 1. Fetch sessions and semesters
+        // 1. Fetch sessions, semesters and mappings
         const filterRes = await api.get('/student-mapping/filters');
         const sessList = filterRes.data.sessions || [];
         const semList = filterRes.data.semesters || [];
+        const mappingsList = filterRes.data.semesterDegreeMappings || [];
         
         setSessions(sessList);
         setSemesters(semList);
+        setSemesterDegreeMappings(mappingsList);
 
-        // 2. Resolve defaults (registered session and Semester 1)
+        // 2. Resolve defaults (registered session and Semester 1 for student's degree)
         const registeredSession = sessList.find(s => s.sessionName === user?.profile?.academicSession) || sessList.find(s => s.isCurrent) || sessList[0];
-        const semester1 = semList.find(s => s.number === 1) || semList[0];
+        
+        const degreeSemesters = semList.filter(sem => 
+          mappingsList.some(mapping => {
+            const mapDegreeId = mapping.degreeNameId?._id ? mapping.degreeNameId._id.toString() : mapping.degreeNameId?.toString();
+            const mapSemId = mapping.semesterId?._id ? mapping.semesterId._id.toString() : mapping.semesterId?.toString();
+            return mapDegreeId === user?.profile?.degreeNameId && mapSemId === sem._id.toString();
+          })
+        );
 
-        const defaultSessId = registeredSession ? registeredSession._id : '';
-        const defaultSemId = semester1 ? semester1._id : '';
+        const semester1 = degreeSemesters.find(s => s.number === 1) || degreeSemesters[0] || semList.find(s => s.number === 1) || semList[0];
 
-        setSelectedSessionId(defaultSessId);
-        setSelectedSemesterId(defaultSemId);
-
-        // 3. Load initial data
-        await fetchData(defaultSessId, defaultSemId);
+        setSelectedSessionId(registeredSession ? registeredSession._id : '');
+        setSelectedSemesterId(semester1 ? semester1._id : '');
       } catch (err) {
         toast.error('Failed to load filter configurations');
-        // Fallback to load default dashboard stats
-        await fetchData();
+      } finally {
+        setFiltersLoading(false);
       }
     };
 
-    fetchFiltersAndData();
+    fetchFilters();
   }, [api, toast, user]);
 
   const handleSearch = () => {
+    if (!selectedSessionId || !selectedSemesterId) {
+      toast.error('Please select Academic Session and Semester');
+      return;
+    }
     fetchData(selectedSessionId, selectedSemesterId);
   };
+
+  // Filter semesters to only show those relevant to the student's degreeNameId
+  const filteredSemesters = semesters.filter(sem => {
+    if (!semesterDegreeMappings || semesterDegreeMappings.length === 0 || !user?.profile?.degreeNameId) {
+      return true;
+    }
+    return semesterDegreeMappings.some(mapping => {
+      const mapDegreeId = mapping.degreeNameId?._id 
+        ? mapping.degreeNameId._id.toString() 
+        : mapping.degreeNameId?.toString();
+      const mapSemId = mapping.semesterId?._id 
+        ? mapping.semesterId._id.toString() 
+        : mapping.semesterId?.toString();
+      return mapDegreeId === user?.profile?.degreeNameId && mapSemId === sem._id.toString();
+    });
+  });
 
   const subjectColumns = [
     { header: 'Subject Code', accessor: 'subjectCode' },
@@ -114,6 +141,17 @@ const AttendanceTab = () => {
     },
     { header: 'Remarks', accessor: (row) => row.remarks || '—' }
   ];
+
+  if (filtersLoading) {
+    return (
+      <div className="glass-panel p-xl">
+        <SkeletonLoader count={1} height={80} />
+        <div style={{ marginTop: '24px' }}>
+          <SkeletonLoader count={1} height={300} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-panel p-xl" style={{ width: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
@@ -186,7 +224,7 @@ const AttendanceTab = () => {
             onChange={(e) => setSelectedSemesterId(e.target.value)}
             style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', background: 'var(--color-surface, #fff)', border: '1px solid var(--color-border, #CBD5E1)', color: 'var(--text-primary)' }}
           >
-            {semesters.map(s => (
+            {filteredSemesters.map(s => (
               <option key={s._id} value={s._id}>{s.name}</option>
             ))}
           </select>
@@ -206,6 +244,25 @@ const AttendanceTab = () => {
 
       {loading ? (
         <SkeletonLoader count={1} height={250} />
+      ) : !data ? (
+        <div style={{
+          padding: '60px 20px',
+          textAlign: 'center',
+          color: 'var(--text-secondary)',
+          background: 'rgba(255,255,255,0.01)',
+          borderRadius: '12px',
+          border: '1px dashed var(--color-border, rgba(0,0,0,0.05))',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.05rem', fontWeight: '600' }}>No Attendance Loaded</h3>
+          <p style={{ margin: 0, fontSize: '0.82rem', maxWidth: '380px', lineHeight: 1.4 }}>
+            Select an Academic Session and Semester above, then click <strong>Search</strong> to retrieve your subject-wise attendance logs.
+          </p>
+        </div>
       ) : data?.isPhD ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
