@@ -16,6 +16,8 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import InstallPrompt from "./components/InstallPrompt";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
+import Policies from "./pages/Policies";
 
 
 const App = () => {
@@ -68,6 +70,8 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth-bridge" element={<AuthBridge />} />
         <Route path="/logout-bridge" element={<LogoutBridge />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/policies" element={<Policies />} />
 
         {/* Protected Dashboard Routes */}
         <Route

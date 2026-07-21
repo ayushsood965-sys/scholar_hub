@@ -28,8 +28,14 @@ const Footer = () => {
       <div className="footer-content" style={isMobile ? { flexDirection: 'column', gap: '20px', alignItems: 'center', textAlign: 'center' } : {}}>
         <div className="footer-brand" style={isMobile ? { marginBottom: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' } : {}}>
           <div className="landing-logo">
-            <BarChart3 size={24} style={{ color: 'var(--color-primary)' }} />
-            <span className="logo-text">ScholarTrack</span>
+            <BarChart3 size={24} style={{ color: '#34d399' }} />
+            <span className="logo-text" style={{ 
+              background: 'linear-gradient(135deg, #ffffff 0%, #34d399 100%)', 
+              WebkitBackgroundClip: 'text', 
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              color: 'transparent'
+            }}>ScholarTrack</span>
           </div>
           <p className="footer-text" style={isMobile ? { marginTop: '8px', maxWidth: '300px' } : {}}>
             Enterprise-Grade Attendance & Leave Management for HPU Research Scholars.
@@ -47,21 +53,15 @@ const Footer = () => {
         } : {}}>
           <div className="footer-col">
             <h4>University Links</h4>
-            <Link to="/about" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>About System</Link>
-            <Link to="/policies" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Policy Guidelines</Link>
+            <Link to="/about" className="footer-link-item" style={{ fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>About System</Link>
+            <Link to="/policies" className="footer-link-item" style={{ fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Policy Guidelines</Link>
           </div>
           <div className="footer-col">
             <h4>Portals</h4>
-            <Link to="/login" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Scholar Login</Link>
-            <Link to="/signup" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Register ID</Link>
+            <Link to="/login" className="footer-link-item" style={{ fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Scholar Login</Link>
+            <Link to="/signup" className="footer-link-item" style={{ fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Register ID</Link>
           </div>
-          <div className="footer-col">
-            <h4>Resources</h4>
-            <Link to="/workflow" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <GitBranch size={13} style={{ flexShrink: 0 }} />
-              System Workflow
-            </Link>
-          </div>
+
         </div>
 
         {isMobile && (
@@ -157,17 +157,17 @@ const Footer = () => {
         alignItems: 'center', 
         marginTop: '40px', 
         paddingTop: '20px', 
-        borderTop: '1px solid rgba(19, 58, 38, 0.08)', 
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)', 
         fontSize: '0.82rem', 
-        color: 'var(--color-text-muted)',
+        color: 'rgba(255, 255, 255, 0.7)',
         flexWrap: 'wrap',
         gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span>© {new Date().getFullYear()} ScholarTrack Attendance & Leave Management Portal. All rights reserved.</span>
         </div>
-        <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-          Designed and Developed by - <span style={{ color: '#133A26', fontWeight: 700 }}>Ayush Sood</span>
+        <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+          Designed and Developed by - <span style={{ color: '#ffffff', fontWeight: 700 }}>Ayush Sood</span>
         </div>
       </div>
     </footer>

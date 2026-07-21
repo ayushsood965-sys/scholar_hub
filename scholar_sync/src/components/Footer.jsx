@@ -167,7 +167,7 @@ const Footer = () => {
           <span>© {new Date().getFullYear()} ScholarSync Doctoral Lifecycle & Research Portal. All rights reserved.</span>
         </div>
         <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-          Designed and Developed by - <span style={{ color: '#133A26', fontWeight: 700 }}>Ayush Sood</span>
+          Designed and Developed by - <span style={{ color: '#34d399', fontWeight: 700 }}>Ayush Sood</span>
         </div>
       </div>
     </footer>

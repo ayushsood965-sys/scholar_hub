@@ -252,7 +252,13 @@ const Acknowledgements = () => {
               <div className="landing-logo-wrapper" style={{ width: '36px', height: '36px' }}>
                 <img src="/hpu_logo.png" alt="HPU Logo" className="landing-logo-img" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
               </div>
-              <span className="logo-text">HPU ScholarHub</span>
+              <span className="logo-text" style={{ 
+                background: 'linear-gradient(135deg, #ffffff 0%, #34d399 100%)', 
+                WebkitBackgroundClip: 'text', 
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                color: 'transparent'
+              }}>HPU ScholarHub</span>
             </div>
             <p className="footer-text">
               Centralized digital service gateway for PG attendance and PhD thesis tracking at Himachal Pradesh University (HPU), Summer Hill, Shimla.
@@ -275,7 +281,7 @@ const Acknowledgements = () => {
             <span>© {new Date().getFullYear()} Himachal Pradesh University. All rights reserved.</span>
           </div>
           <div className="developer-tag">
-            Developed by - <span style={{ fontWeight: 700 }}>Ayush Sood</span>
+            Developed by - <span style={{ fontWeight: 700, color: '#ffffff' }}>Ayush Sood</span>
           </div>
         </div>
       </footer>

@@ -1938,7 +1938,7 @@ img {
 .footer-text {
   font-size: 0.88rem;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .footer-links {
@@ -1961,7 +1961,7 @@ img {
 }
 
 .footer-link-item {
-  color: rgba(255, 255, 255, 0.55) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
   font-size: 0.85rem;
   transition: all 0.2s;
 }
