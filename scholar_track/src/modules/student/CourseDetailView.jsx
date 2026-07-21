@@ -6,7 +6,7 @@ import ProgressRing from '../../components/ui/ProgressRing';
 const CourseDetailView = ({ course, calendarMonths = [], onClose }) => {
   if (!course) return null;
 
-  const { subjectCode, subjectName, facultyName, percentage, attended, total, timetableSlotId, dayOfWeek, safeAbsences, classesToRecover } = course;
+  const { subjectCode, subjectName, facultyName, percentage, attended, total, timetableSlotId, timetableSlotIds = [], dayOfWeek, safeAbsences, classesToRecover } = course;
 
   // Filter calendar logs specifically for this course
   const filteredMonths = calendarMonths.map(month => ({
@@ -14,7 +14,13 @@ const CourseDetailView = ({ course, calendarMonths = [], onClose }) => {
     days: month.days.map(day => {
       let status = day.status;
       if (day.status === 'PRESENT' || day.status === 'ABSENT' || day.status === 'NOT_APPLICABLE') {
-        const classItem = (day.classes || []).find(c => c.timetableSlotId?.toString() === timetableSlotId?.toString());
+        const classItem = (day.classes || []).find(c => {
+          const cId = c.timetableSlotId?.toString();
+          if (timetableSlotIds && timetableSlotIds.length > 0) {
+            return timetableSlotIds.includes(cId);
+          }
+          return cId === timetableSlotId?.toString();
+        });
         if (classItem) {
           if (classItem.isCancelled) {
             status = 'CANCELLED';
@@ -113,8 +119,20 @@ const CourseDetailView = ({ course, calendarMonths = [], onClose }) => {
                   Faculty member: <strong>{facultyName}</strong>
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-secondary, #4b5563)' }}>
+                  <CheckCircle size={14} style={{ color: 'var(--color-primary)' }} />
+                  Classes Conducted: <strong>{course.totalConducted || total}</strong>
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-secondary, #4b5563)' }}>
                   <CheckCircle size={14} style={{ color: 'var(--status-present)' }} />
-                  Classes attended: <strong>{attended}</strong> / {total} held
+                  Classes Attended: <strong>{attended}</strong>
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-secondary, #4b5563)' }}>
+                  <FileText size={14} style={{ color: 'var(--status-leave)' }} />
+                  Approved Leaves: <strong>{course.leaves || 0}</strong>
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-secondary, #4b5563)' }}>
+                  <X size={14} style={{ color: 'var(--status-absent)' }} />
+                  Absent: <strong>{course.absent || 0}</strong>
                 </span>
                 {total > 0 && (
                   classesToRecover > 0 ? (

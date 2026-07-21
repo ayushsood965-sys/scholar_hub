@@ -81,7 +81,9 @@ const CourseCard = ({ course, onClick }) => {
         </h4>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
           {total > 0 ? (
-            <>Attended: <strong>{attended}</strong> / {total} classes held</>
+            <>
+              Conducted: <strong>{course.totalConducted || total}</strong> | Attended: <strong>{attended}</strong> | Leaves: <strong>{course.leaves || 0}</strong> | Absent: <strong>{course.absent || 0}</strong>
+            </>
           ) : (
             "No classes conducted"
           )}

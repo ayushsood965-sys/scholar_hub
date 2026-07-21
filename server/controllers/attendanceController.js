@@ -2986,8 +2986,14 @@ exports.getStudentDashboardStats = async (req, res) => {
     const student = req.user;
     const isValidDtId = student.profile?.degreeTypeId && /^[0-9a-fA-F]{24}$/.test(student.profile.degreeTypeId.toString());
 
-    const [session, holidays, dt, leaveRequests] = await Promise.all([
-      AcademicSessionMaster.findOne({ isCurrent: true }).lean(),
+    let session;
+    if (req.query.sessionId && /^[0-9a-fA-F]{24}$/.test(req.query.sessionId.toString())) {
+      session = await AcademicSessionMaster.findById(req.query.sessionId).lean();
+    } else {
+      session = await AcademicSessionMaster.findOne({ isCurrent: true }).lean();
+    }
+
+    const [holidays, dt, leaveRequests] = await Promise.all([
       HolidayCalendar.find({ isActive: true }).lean(),
       isValidDtId ? DegreeTypeMaster.findById(student.profile.degreeTypeId).lean() : Promise.resolve(null),
       LeaveRequest.find({ studentId: student._id })
@@ -3001,6 +3007,11 @@ exports.getStudentDashboardStats = async (req, res) => {
 
     const isPhD = student.profile?.isPhD || (dt && dt.code === 'PHD');
 
+    let semesterId = student.profile?.semesterId;
+    if (req.query.semesterId && /^[0-9a-fA-F]{24}$/.test(req.query.semesterId.toString())) {
+      semesterId = req.query.semesterId;
+    }
+
     const [records, studentMapping] = await Promise.all([
       AttendanceRecord.find({
         studentId: student._id,
@@ -3009,7 +3020,7 @@ exports.getStudentDashboardStats = async (req, res) => {
       isPhD ? Promise.resolve(null) : StudentSemesterMapping.findOne({
         studentId: student._id,
         sessionId: session._id,
-        semesterId: student.profile?.semesterId
+        semesterId: semesterId
       }).lean()
     ]);
 

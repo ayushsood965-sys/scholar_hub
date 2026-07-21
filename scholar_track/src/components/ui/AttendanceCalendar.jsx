@@ -31,7 +31,9 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
     'Friday': 5,
     'Saturday': 6
   };
-  const scheduledDayNum = dayOfWeek ? dayOfWeekNumberMap[dayOfWeek] : null;
+  const scheduledDayNums = dayOfWeek 
+    ? dayOfWeek.split(', ').map(d => dayOfWeekNumberMap[d.trim()]).filter(num => num !== undefined)
+    : [];
 
   // Calculate start padding (empty cells to align first day under correct weekday column)
   const firstDayDate = new Date(year, resolvedMonth, 1);
@@ -60,7 +62,7 @@ const AttendanceCalendar = ({ calendarMonths = [], variant = 'default', dayOfWee
     const dayOfWeekNum = currentDate.getDay();
     const isWeekend = dayOfWeekNum === 0 || dayOfWeekNum === 6;
     const isPast = currentDate < today;
-    const isScheduledClassDay = scheduledDayNum !== null && dayOfWeekNum === scheduledDayNum;
+    const isScheduledClassDay = scheduledDayNums.includes(dayOfWeekNum);
 
     // Check if we have an attendance status for this date from backend
     const mappedDay = backendDaysMap[dNum];

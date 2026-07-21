@@ -373,42 +373,69 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
   const subjectWiseAttendance = [];
   if (!isPhD) {
     const studentSlots = rawTimetables || [];
-    studentSlots.forEach(slot => {
-      const slotIdStr = slot._id.toString();
-      let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slotIdStr]
-        ? preResolvedLectureDatesCache[slotIdStr]
-        : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays).slice(0, slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90).map(d => ({ value: d, dStr: d.toDateString() }));
+    const subjectMap = {};
 
+    studentSlots.forEach(slot => {
+      const code = slot.subjectCode;
+      if (!subjectMap[code]) {
+        subjectMap[code] = {
+          subjectCode: slot.subjectCode,
+          subjectName: slot.subjectName,
+          facultyId: slot.facultyId,
+          slots: []
+        };
+      }
+      subjectMap[code].slots.push(slot);
+    });
+
+    Object.values(subjectMap).forEach(subGroup => {
       let subjectPresent = 0;
       let subjectAbsent = 0;
-      
-      dates.forEach(dt => {
-        const dStr = dt.dStr;
-        const existingRecord = recordMap[dStr];
+      let subjectLeave = 0;
+      const slotIds = subGroup.slots.map(s => s._id.toString());
+      let totalClassesInSemester = 0;
+      const daysSet = new Set();
 
-        const classItem = existingRecord && existingRecord.classMap && existingRecord.classMap[slotIdStr];
-        const isConducted = classItem && !classItem.isCancelled;
-        if (!isConducted) {
-          return;
+      subGroup.slots.forEach(slot => {
+        const slotIdStr = slot._id.toString();
+        let dates = preResolvedLectureDatesCache && preResolvedLectureDatesCache[slotIdStr]
+          ? preResolvedLectureDatesCache[slotIdStr]
+          : getTimetableLectures(session.startDate, session.endDate, slot.dayOfWeek, holidays).slice(0, slot.totalClassesInSemester !== undefined ? slot.totalClassesInSemester : 90).map(d => ({ value: d, dStr: d.toDateString() }));
+
+        totalClassesInSemester += (slot.totalClassesInSemester || 90);
+        if (slot.dayOfWeek) {
+          daysSet.add(slot.dayOfWeek);
         }
 
-        if (existingRecord.status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
-          // Under UGC framework, approved leaves are excluded from both attended and held totals (deducted from held total)
-        } else {
-          if (classItem.selected) {
-            subjectPresent++;
-          } else {
-            subjectAbsent++;
+        dates.forEach(dt => {
+          const dStr = dt.dStr;
+          const existingRecord = recordMap[dStr];
+
+          const classItem = existingRecord && existingRecord.classMap && existingRecord.classMap[slotIdStr];
+          const isConducted = classItem && !classItem.isCancelled;
+          if (!isConducted) {
+            return;
           }
-        }
+
+          if (existingRecord.status === 'ON_LEAVE' && existingRecord.isLeaveOverride) {
+            subjectLeave++;
+          } else {
+            if (classItem.selected) {
+              subjectPresent++;
+            } else {
+              subjectAbsent++;
+            }
+          }
+        });
       });
-      
+
       const totalForSubject = subjectPresent + subjectAbsent;
+      const totalConducted = subjectPresent + subjectAbsent + subjectLeave;
       const percentageForSubject = totalForSubject > 0 ? parseFloat(((subjectPresent / totalForSubject) * 100).toFixed(2)) : 100;
-      
+
       let subjectSafeAbsences = 0;
       let subjectRecoverClasses = 0;
-      
+
       if (totalForSubject > 0) {
         if (percentageForSubject >= minRequired) {
           if (minRequired > 0) {
@@ -424,17 +451,21 @@ const calculateStudentStats = async (student, session, records, rawHolidays, raw
           }
         }
       }
-      
+
       subjectWiseAttendance.push({
-        timetableSlotId: slot._id,
-        subjectCode: slot.subjectCode,
-        subjectName: slot.subjectName,
-        facultyId: slot.facultyId,
+        timetableSlotId: subGroup.slots[0]._id,
+        timetableSlotIds: slotIds,
+        subjectCode: subGroup.subjectCode,
+        subjectName: subGroup.subjectName,
+        facultyId: subGroup.facultyId,
         total: totalForSubject,
         attended: subjectPresent,
+        totalConducted: totalConducted,
+        leaves: subjectLeave,
+        absent: subjectAbsent,
         percentage: percentageForSubject,
-        totalClassesInSemester: slot.totalClassesInSemester || 90,
-        dayOfWeek: slot.dayOfWeek,
+        totalClassesInSemester: totalClassesInSemester,
+        dayOfWeek: Array.from(daysSet).join(', '),
         safeAbsences: subjectSafeAbsences,
         classesToRecover: subjectRecoverClasses
       });
