@@ -758,7 +758,7 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
   if (status === 'SYNOPSIS_PENDING') {
     if (synopsisStatus === 'SUBMITTED') {
       if (subRole === 'HOD') {
-        return { text: 'Pending Supervisor Approval', color: '#7C3AED', bg: '#EDE9FE' };
+        return { text: 'Waiting Supervisor Approval', color: '#7C3AED', bg: '#EDE9FE' };
       }
       return { text: 'Synopsis Submitted', color: '#2563EB', bg: '#DBEAFE' };
     }
@@ -2245,7 +2245,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       );
     }
 
-    const hasUploaded = !!synopsisMilestone.documentUrl && !(subRole === 'HOD' && synopsisMilestone.status === 'SUBMITTED');
+    const hasUploaded = !!synopsisMilestone.documentUrl && !(
+      subRole === 'HOD' && 
+      synopsisMilestone.status !== 'PENDING_HOD' && 
+      synopsisMilestone.status !== 'APPROVED'
+    );
     const hasStudentUploaded = !!synopsisMilestone.documentUrl;
     const isSubmitted = synopsisMilestone.status === 'SUBMITTED';
     const isPendingHOD = synopsisMilestone.status === 'PENDING_HOD';
@@ -2257,11 +2261,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       let color = '#4B5563';
       let text = 'Pending Upload';
 
-      if (isSubmitted) {
+      if (isSubmitted || (subRole === 'HOD' && hasStudentUploaded && !isPendingHOD && !isApproved && !isRevision)) {
         if (subRole === 'HOD') {
-          bg = '#F3F4F6';
-          color = '#4B5563';
-          text = 'Pending Upload';
+          bg = '#EDE9FE';
+          color = '#7C3AED';
+          text = 'Waiting Supervisor Approval';
         } else {
           bg = '#DBEAFE';
           color = '#1D4ED8';

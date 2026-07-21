@@ -571,7 +571,7 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
   if (status === 'SYNOPSIS_PENDING') {
     if (synopsisStatus === 'SUBMITTED') {
       if (subRole === 'HOD') {
-        return { text: 'Pending Supervisor Approval', color: '#7C3AED', bg: '#EDE9FE' };
+        return { text: 'Waiting Supervisor Approval', color: '#7C3AED', bg: '#EDE9FE' };
       }
       return { text: 'Synopsis Submitted (Under Review)', color: '#2563EB', bg: '#DBEAFE' };
     }
