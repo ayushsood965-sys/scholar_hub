@@ -758,7 +758,7 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
   if (status === 'SYNOPSIS_PENDING') {
     if (synopsisStatus === 'SUBMITTED') {
       if (subRole === 'HOD') {
-        return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
+        return { text: 'Pending Supervisor Approval', color: '#7C3AED', bg: '#EDE9FE' };
       }
       return { text: 'Synopsis Submitted', color: '#2563EB', bg: '#DBEAFE' };
     }
@@ -2246,6 +2246,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     }
 
     const hasUploaded = !!synopsisMilestone.documentUrl && !(subRole === 'HOD' && synopsisMilestone.status === 'SUBMITTED');
+    const hasStudentUploaded = !!synopsisMilestone.documentUrl;
     const isSubmitted = synopsisMilestone.status === 'SUBMITTED';
     const isPendingHOD = synopsisMilestone.status === 'PENDING_HOD';
     const isRevision = synopsisMilestone.status === 'REVISION_REQUIRED';
@@ -2301,7 +2302,35 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #E2E8F0', paddingBottom: 10 }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1E293B' }}>📝 Thesis Synopsis Submission</h3>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>📝 Thesis Synopsis Submission</span>
+            {subRole === 'HOD' && thesis.status === 'SYNOPSIS_PENDING' && !thesis.synopsisProvisionallyCleared && hasStudentUploaded && (
+              <button 
+                onClick={() => { setShowProvisionalClearModal(true); setProvisionalConfirmText(''); }}
+                title="Provisionally Clear Synopsis (Fast-Track)"
+                style={{ 
+                  background: '#FEF3C7', 
+                  border: '1px solid #FDE68A', 
+                  cursor: 'pointer', 
+                  fontSize: '0.9rem', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  color: '#D97706',
+                  fontWeight: 700,
+                  gap: '4px',
+                  transition: 'all 0.2s' 
+                }}
+                onMouseOver={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444'; }}
+                onMouseOut={e => { e.currentTarget.style.background = '#FEF3C7'; e.currentTarget.style.color = '#D97706'; }}
+              >
+                <span>⚡</span>
+                <span style={{ fontSize: '0.72rem' }}>Provisionally Clear</span>
+              </button>
+            )}
+          </h3>
           {statusBadge()}
         </div>
 
@@ -2353,7 +2382,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
           </div>
         ) : (
           <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.85rem', padding: '20px' }}>
-            ⏳ The candidate has not uploaded the synopsis document yet.
+            {subRole === 'HOD' && synopsisMilestone.status === 'SUBMITTED' ? (
+              <span>⏳ Synopsis uploaded by candidate. Awaiting supervisor approval before HOD review.</span>
+            ) : (
+              <span>⏳ The candidate has not uploaded the synopsis document yet.</span>
+            )}
           </div>
         )}
 
@@ -2517,7 +2550,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
         )}
 
         {renderHistoryTable(getMilestoneHistory(synopsisMilestone, thesis))}
-        {subRole === 'HOD' && thesis.status === 'SYNOPSIS_PENDING' && !thesis.synopsisProvisionallyCleared && (
+        {subRole === 'HOD' && thesis.status === 'SYNOPSIS_PENDING' && !thesis.synopsisProvisionallyCleared && !hasStudentUploaded && (
           <div className="usm-card" style={{ background: 'rgba(234, 88, 12, 0.05)', border: '1px solid rgba(234, 88, 12, 0.2)', padding: 20, borderRadius: 12 }}>
             <h4 style={{ margin: '0 0 8px 0', color: '#C2410C', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>⚠️</span> Provisional Synopsis Fast-Track Clearance

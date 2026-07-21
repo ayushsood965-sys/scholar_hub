@@ -905,6 +905,10 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
 
   const currentStatus = thesis?.status || 'REGISTRATION_PENDING';
 
+  const synopsisMilestone = milestones?.find(m => m.type === 'SYNOPSIS');
+  const synopsisCleared = synopsisMilestone?.status === 'APPROVED';
+  const isProvisionallyCleared = thesis?.synopsisProvisionallyCleared === true && !synopsisCleared;
+
   useEffect(() => {
     if (thesis?._id && currentStatus === 'SYNOPSIS_PENDING') {
       axios.get(`${API}/lifecycle/drc/thesis/${thesis._id}`, getAuthHeader())
@@ -1218,6 +1222,7 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
           const isCompleted = idx < activeStepIndex;
           const isActive = idx === activeStepIndex;
           const isPending = idx > activeStepIndex;
+          const isPhaseProvisional = phase.key === 'SYNOPSIS_PENDING' && isProvisionallyCleared;
 
           return (
             <div key={phase.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '95px', textAlign: 'center', zIndex: 3 }}>
@@ -1229,16 +1234,18 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: isCompleted ? '#10B981' : isActive ? '#3B82F6' : '#FFFFFF',
-                border: isCompleted ? 'none' : isActive ? '4px solid #DBEAFE' : '2px solid #CBD5E1',
-                color: isCompleted || isActive ? '#FFFFFF' : '#64748B',
+                background: isPhaseProvisional ? '#EF4444' : (isCompleted ? '#10B981' : isActive ? '#3B82F6' : '#FFFFFF'),
+                border: isPhaseProvisional ? 'none' : (isCompleted ? 'none' : isActive ? '4px solid #DBEAFE' : '2px solid #CBD5E1'),
+                color: isPhaseProvisional || isCompleted || isActive ? '#FFFFFF' : '#64748B',
                 fontWeight: 'bold',
                 fontSize: '0.85rem',
                 boxShadow: isActive ? '0 0 0 4px rgba(59, 130, 246, 0.15)' : 'none',
                 transition: 'all 0.3s ease',
                 marginBottom: '10px'
               }}>
-                {isCompleted ? (
+                {isPhaseProvisional ? (
+                  '!'
+                ) : isCompleted ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 ) : (
                   idx + 1
@@ -1246,15 +1253,20 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
               </div>
 
               {/* Title & Desc */}
-              <div style={{ fontSize: '0.78rem', fontWeight: isActive ? 800 : 600, color: isActive ? '#1E3A8A' : isCompleted ? '#10B981' : '#475569', marginBottom: '3px' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: isActive ? 800 : 600, color: isPhaseProvisional ? '#EF4444' : (isActive ? '#1E3A8A' : isCompleted ? '#10B981' : '#475569'), marginBottom: '3px' }}>
                 {phase.label}
               </div>
-              <div style={{ fontSize: '0.68rem', color: isActive ? '#3B82F6' : '#94A3B8', fontWeight: isActive ? 600 : 400 }}>
+              <div style={{ fontSize: '0.68rem', color: isPhaseProvisional ? '#EF4444' : (isActive ? '#3B82F6' : '#94A3B8'), fontWeight: isActive ? 600 : 400 }}>
                 {phase.desc}
               </div>
               {isActive && (
                 <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '2px 6px', background: '#DBEAFE', color: '#1E40AF', borderRadius: '4px', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Current Phase
+                </span>
+              )}
+              {isPhaseProvisional && (
+                <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '2px 6px', background: '#FEE2E2', color: '#EF4444', borderRadius: '4px', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Provisional
                 </span>
               )}
             </div>
@@ -1268,6 +1280,7 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
           const isCompleted = idx < activeStepIndex;
           const isActive = idx === activeStepIndex;
           const isPending = idx > activeStepIndex;
+          const isPhaseProvisional = phase.key === 'SYNOPSIS_PENDING' && isProvisionallyCleared;
 
           let cardBg = '#FFFFFF';
           let borderStyle = '1px solid #E2E8F0';
@@ -1277,7 +1290,14 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
           let descColor = '#94A3B8';
           let shadow = 'none';
 
-          if (isCompleted) {
+          if (isPhaseProvisional) {
+            cardBg = '#FEF2F2';
+            borderStyle = '1px solid #FCA5A5';
+            indicatorBg = '#EF4444';
+            indicatorColor = '#FFFFFF';
+            titleColor = '#991B1B';
+            descColor = '#B91C1C';
+          } else if (isCompleted) {
             cardBg = '#F0FDF4';
             borderStyle = '1px solid #BBF7D0';
             indicatorBg = '#10B981';
@@ -1325,7 +1345,9 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
                 fontSize: '0.8rem',
                 flexShrink: 0
               }}>
-                {isCompleted ? (
+                {isPhaseProvisional ? (
+                  '!'
+                ) : isCompleted ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 ) : (
                   idx + 1
@@ -1341,6 +1363,11 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
                       Current
                     </span>
                   )}
+                  {isPhaseProvisional && (
+                    <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '2px 6px', background: '#FEE2E2', color: '#EF4444', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Provisional
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: descColor, marginTop: '2px' }}>
                   {phase.desc}
@@ -1350,6 +1377,32 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
           );
         })}
       </div>
+
+      {/* Provisional Synopsis Clearance Warning Banner */}
+      {isProvisionallyCleared && (
+        <div style={{
+          background: 'linear-gradient(135deg, #FEF2F2 0%, #FFF5F5 100%)',
+          borderLeft: '5px solid #EF4444',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.05)',
+          display: 'flex',
+          gap: '16px',
+          alignItems: 'center',
+          marginTop: '16px',
+          textAlign: 'left'
+        }}>
+          <div style={{ width: '38px', height: '38px', background: '#FEE2E2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444', flexShrink: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>
+            ⚠️
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, color: '#991B1B', fontSize: '0.88rem' }}>Provisional Synopsis Clearance Notice</div>
+            <div style={{ fontSize: '0.8rem', color: '#B91C1C', marginTop: '4px', lineHeight: 1.45 }}>
+              Your synopsis phase has been provisionally cleared by the HOD to transition you to Active Research. However, you are <strong>still required to upload and clear your synopsis</strong> before you can proceed to the Pre-Submission or Final Thesis Submission phases.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dynamic Detailed Sub-Progression Checklist */}
       {renderDetailedSubProgression()}
@@ -3335,19 +3388,39 @@ const ActiveResearch = ({ thesis, milestones, onSubmit, setActiveTab }) => {
       </div>
 
       {/* Synopsis milestone if present */}
-      {milestones.filter(m => m.type === 'SYNOPSIS').map(m => (
-        <div key={m._id} className="card" style={{ marginBottom: 12 }}>
+      {milestones.filter(m => m.type === 'SYNOPSIS').map(m => {
+        const isProvisional = thesis.synopsisProvisionallyCleared && m.status !== 'APPROVED';
+        return (
+          <div key={m._id} className="card" style={{ 
+            marginBottom: 12,
+            background: isProvisional ? '#FEF2F2' : 'var(--color-surface)',
+            borderLeft: isProvisional ? '4px solid #EF4444' : 'none',
+            border: isProvisional ? '1px solid #FCA5A5' : '1px solid var(--color-border)'
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 700, color: '#111827' }}>{m.title}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Type: {m.type}</div>
+              <div>
+                <div style={{ fontWeight: 700, color: isProvisional ? '#991B1B' : '#111827' }}>{m.title}</div>
+                <div style={{ fontSize: '0.8rem', color: isProvisional ? '#7F1D1D' : 'var(--color-text-muted)', marginTop: 4 }}>Type: {m.type}</div>
+              </div>
+              <span style={{ 
+                padding: '4px 10px', 
+                borderRadius: 12, 
+                fontSize: '0.8rem', 
+                fontWeight: 600, 
+                background: isProvisional ? '#FEE2E2' : '#D1FAE5', 
+                color: isProvisional ? '#EF4444' : '#059669' 
+              }}>
+                {isProvisional ? 'PROVISIONALLY CLEARED' : m.status}
+              </span>
             </div>
-            <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600, background: '#D1FAE5', color: '#059669' }}>
-              {m.status}
-            </span>
+            {isProvisional && (
+              <div style={{ marginTop: 10, fontSize: '0.78rem', color: '#B91C1C', borderTop: '1px dashed #FCA5A5', paddingTop: 8, lineHeight: 1.4, textAlign: 'left' }}>
+                ⚠️ Your synopsis has been provisionally cleared to start research. However, you <strong>must upload and clear your synopsis</strong> in the "Synopsis" tab before pre-submission or final thesis submission.
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
@@ -13028,6 +13101,10 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
   const [racSessions, setRacSessions] = useState([]);
   const [expandedPhase, setExpandedPhase] = useState(null);
 
+  const synopsisMilestone = milestones?.find(m => m.type === 'SYNOPSIS');
+  const synopsisCleared = synopsisMilestone?.status === 'APPROVED';
+  const isProvisionallyCleared = thesis?.synopsisProvisionallyCleared === true && !synopsisCleared;
+
   useEffect(() => {
     if (thesis?._id) {
       axios.get(`${API}/lifecycle/drc/thesis/${thesis._id}`, getAuthHeader())
@@ -13131,7 +13208,14 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
       {/* Accordion / Cards List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {PHASES.map((phase, idx) => {
-          const { border, bg, text, badge } = getStatusColor(idx);
+          let { border, bg, text, badge } = getStatusColor(idx);
+          const isPhaseProvisional = phase.key === 'SYNOPSIS_PENDING' && isProvisionallyCleared;
+          if (isPhaseProvisional) {
+            border = '#EF4444';
+            bg = 'rgba(239, 68, 68, 0.15)';
+            text = '#EF4444';
+            badge = 'PROVISIONALLY CLEARED';
+          }
           const isExpanded = expandedPhase === idx;
           const isLocked = badge === 'LOCKED';
 
@@ -13176,7 +13260,7 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                     fontSize: '0.85rem',
                     flexShrink: 0
                   }}>
-                    {idx + 1}
+                    {isPhaseProvisional ? '!' : idx + 1}
                   </div>
                   <div>
                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)' }}>
@@ -13399,6 +13483,28 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
 
                     {phase.key === 'SYNOPSIS_PENDING' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {isProvisionallyCleared && (
+                          <div style={{
+                            background: '#FEF2F2',
+                            borderLeft: '4px solid #EF4444',
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            fontSize: '0.82rem',
+                            color: '#991B1B',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                            textAlign: 'left'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                              <span>⚠️</span> 
+                              <span>Synopsis Phase Provisionally Cleared</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.78rem', lineHeight: 1.45, color: '#7F1D1D' }}>
+                              Your synopsis phase has been provisionally cleared by the HOD to transition you to Active Research. However, you are <strong>still required to upload and clear your synopsis</strong> before you can proceed to the Pre-Submission or Final Thesis Submission phases.
+                            </p>
+                          </div>
+                        )}
                         <div style={{ background: 'var(--color-bg, #F8FAFC)', padding: 16, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
                           <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Approved Research Topic</div>
                           <strong style={{ color: 'var(--color-text-primary, #0F172A)', display: 'block', fontSize: '0.9rem', marginBottom: 12 }}>{thesis.title}</strong>
