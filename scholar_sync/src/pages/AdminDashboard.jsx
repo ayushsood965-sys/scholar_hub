@@ -2097,7 +2097,26 @@ const ManageScholars = ({ theses, onSelectThesis, onAction, subRole }) => {
 
   const { paginatedData, currentPage, pageSize, totalPages, setCurrentPage, setPageSize, searchTerm, setSearchTerm } = useGridControl(
     sortedAndFiltered,
-    ['scholarId.name', 'department', 'title', 'supervisorId.name']
+    [
+      'scholarId.name',
+      'scholarId.email',
+      'scholarId.username',
+      'scholarId.profile.email',
+      'scholarId.profile.shNo',
+      'scholarId.profile.phoneNumber',
+      'scholarId.profile.gender',
+      'scholarId.profile.category',
+      'scholarId.profile.dob',
+      'scholarId.profile.fatherName',
+      'scholarId.profile.motherName',
+      'scholarId.profile.address',
+      'scholarId.profile.enrollmentNumber',
+      'scholarId.profile.erpAdmissionNo',
+      'enrollmentNumber',
+      'department',
+      'title',
+      'supervisorId.name'
+    ]
   );
 
   useEffect(() => {
