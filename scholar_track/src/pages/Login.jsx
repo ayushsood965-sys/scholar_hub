@@ -91,10 +91,20 @@ const Login = () => {
       {loading && (
         <div className="login-preloader-overlay">
           <div className="login-preloader-container">
+            <div className="login-preloader-glow" />
             <div className="login-preloader-ring-wrapper">
               <div className="login-preloader-ring" />
+              <img src="/hpu_logo.png" alt="ScholarTrack Logo" className="login-preloader-logo" style={{ objectFit: 'contain' }} />
             </div>
-            <div className="login-preloader-text">Authenticating credentials...</div>
+            <div className="login-preloader-text-container">
+              <h2 className="login-preloader-title">ScholarTrack</h2>
+              <div className="login-preloader-status">
+                <span className="status-dot" />
+                <span className="status-dot" />
+                <span className="status-dot" />
+                <span className="login-preloader-text">Authenticating credentials</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
