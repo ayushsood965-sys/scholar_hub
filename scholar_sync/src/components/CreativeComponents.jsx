@@ -14,6 +14,8 @@ export const useLenisScroll = (LenisClass) => {
       smoothTouch: false
     });
 
+    lenis.scrollTo(0, { immediate: true });
+
     function raf(time) {
       lenis.raf(time);
       requestAnimationFrame(raf);
@@ -331,16 +333,13 @@ export const OrbitalSkills = () => {
   const techStack = [
     { name: 'React', icon: '⚛️', category: 'Frontend' },
     { name: 'Next.js', icon: '▲', category: 'Frontend' },
-    { name: 'TypeScript', icon: 'TS', category: 'Frontend' },
     { name: 'JavaScript', icon: 'JS', category: 'Languages' },
     { name: 'Node.js', icon: '🟢', category: 'Backend' },
     { name: 'Express', icon: '🚂', category: 'Backend' },
     { name: 'Laravel', icon: '🔴', category: 'Backend' },
     { name: 'MongoDB', icon: '🍃', category: 'Database' },
     { name: 'MySQL', icon: '🐬', category: 'Database' },
-    { name: 'AI / MCP', icon: '🤖', category: 'AI & Tools' },
-    { name: 'GSAP', icon: '⚡', category: 'Animations' },
-    { name: 'Motion', icon: '🌊', category: 'Animations' }
+    { name: 'AI / MCP', icon: '🤖', category: 'AI & Tools' }
   ];
 
   return (

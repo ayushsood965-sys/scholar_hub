@@ -13141,35 +13141,65 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
   };
 
   const getStatusColor = (idx) => {
-    if (idx < activeStepIdx) return { border: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', text: '#10B981', badge: 'COMPLETED' };
-    if (idx === activeStepIdx) return { border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', text: '#3B82F6', badge: 'IN PROGRESS' };
-    return { border: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)', text: '#6B7280', badge: 'LOCKED' };
+    if (idx < activeStepIdx) return { border: '#059669', bg: 'rgba(16, 185, 129, 0.08)', text: '#047857', badge: 'COMPLETED' };
+    if (idx === activeStepIdx) return { border: '#2563EB', bg: 'rgba(37, 99, 235, 0.08)', text: '#1D4ED8', badge: 'IN PROGRESS' };
+    return { border: 'var(--color-border, #CBD5E1)', bg: 'rgba(148, 163, 184, 0.08)', text: '#64748B', badge: 'LOCKED' };
   };
 
   const renderReadOnlySection = (title, items) => {
     if (!items || items.length === 0) return null;
     return (
       <div style={{ marginBottom: 20 }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary, #374151)', marginBottom: 8, borderBottom: '1px solid var(--color-border, #E5E7EB)', paddingBottom: 4 }}>{title}</h4>
-        <div style={{ background: 'var(--color-bg, #F9FAFB)', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border, #E5E7EB)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+        <h4 style={{ 
+          fontSize: '0.82rem', 
+          fontWeight: 700, 
+          color: 'var(--color-text-primary, #334155)', 
+          marginBottom: 10, 
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6
+        }}>
+          <span style={{ color: 'var(--color-primary, #1A5A3B)' }}>📘</span> {title}
+        </h4>
+        <div style={{ 
+          background: 'var(--color-surface, #FFFFFF)', 
+          borderRadius: 12, 
+          overflow: 'hidden', 
+          border: '1px solid var(--color-border, #E2E8F0)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
             <thead>
-              <tr style={{ background: 'var(--color-sidebar, #F3F4F6)', color: 'var(--color-text-secondary, #4B5563)', textAlign: 'left' }}>
-                <th style={{ padding: '8px 12px' }}>Subject Name</th>
-                <th style={{ padding: '8px 12px' }}>Subject Code</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Marks Obtained</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Max Marks</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Exam Month & Year</th>
+              <tr style={{ 
+                background: 'var(--color-bg, #F8FAFC)', 
+                color: 'var(--color-text-secondary, #475569)', 
+                textAlign: 'left',
+                borderBottom: '1px solid var(--color-border, #E2E8F0)'
+              }}>
+                <th style={{ padding: '10px 14px', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Subject Name</th>
+                <th style={{ padding: '10px 14px', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Subject Code</th>
+                <th style={{ padding: '10px 14px', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em', textAlign: 'center' }}>Marks Obtained</th>
+                <th style={{ padding: '10px 14px', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em', textAlign: 'center' }}>Max Marks</th>
+                <th style={{ padding: '10px 14px', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em', textAlign: 'center' }}>Exam Month & Year</th>
               </tr>
             </thead>
             <tbody>
               {items.map((row, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid var(--color-border, #E5E7EB)' }}>
-                  <td style={{ padding: '8px 12px', color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectName}</td>
-                  <td style={{ padding: '8px 12px', color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectCode || '-'}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.marksObtained}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{row.maxMarks}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--color-text-primary, #1F2937)' }}>{formatMonthYear(row.examinationMonthYear)}</td>
+                <tr key={idx} style={{ 
+                  borderBottom: idx < items.length - 1 ? '1px solid var(--color-border, #F1F5F9)' : 'none',
+                  transition: 'background 0.15s'
+                }} className="coursework-table-row">
+                  <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--color-text-primary, #1F2937)' }}>{row.subjectName}</td>
+                  <td style={{ padding: '10px 14px', color: 'var(--color-text-secondary, #64748B)' }}>
+                    <span style={{ background: 'var(--color-bg, #F1F5F9)', padding: '2px 8px', borderRadius: 4, fontFamily: 'monospace', fontSize: '0.78rem' }}>
+                      {row.subjectCode || 'N/A'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: 'var(--color-text-primary, #1F2937)' }}>{row.marksObtained}</td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--color-text-secondary, #64748B)' }}>{row.maxMarks}</td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--color-text-secondary, #64748B)' }}>{formatMonthYear(row.examinationMonthYear)}</td>
                 </tr>
               ))}
             </tbody>
@@ -13183,21 +13213,26 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <style>{`
         .milestone-record-header:hover {
-          background: rgba(59, 130, 246, 0.04) !important;
+          background: rgba(37, 99, 235, 0.02) !important;
+        }
+        .coursework-table-row:hover {
+          background: rgba(0, 0, 0, 0.015) !important;
         }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
+
       {/* Subpage Header card */}
       <div className="card" style={{ 
         padding: 24, 
         borderRadius: 16, 
-        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)', 
-        border: '1px solid rgba(59, 130, 246, 0.15)' 
+        background: 'linear-gradient(135deg, rgba(26, 90, 59, 0.04) 0%, rgba(59, 130, 246, 0.03) 100%)', 
+        border: '1px solid var(--color-border, #E2E8F0)',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)'
       }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)' }}>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)', display: 'flex', alignItems: 'center', gap: 8 }}>
           📜 Ph.D. Milestone Progression Records
         </h3>
         <p style={{ color: 'var(--color-text-secondary, #475569)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
@@ -13211,9 +13246,9 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
           let { border, bg, text, badge } = getStatusColor(idx);
           const isPhaseProvisional = phase.key === 'SYNOPSIS_PENDING' && isProvisionallyCleared;
           if (isPhaseProvisional) {
-            border = '#EF4444';
-            bg = 'rgba(239, 68, 68, 0.15)';
-            text = '#EF4444';
+            border = '#E11D48';
+            bg = 'rgba(225, 29, 72, 0.08)';
+            text = '#BE123C';
             badge = 'PROVISIONALLY CLEARED';
           }
           const isExpanded = expandedPhase === idx;
@@ -13224,11 +13259,11 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
               key={phase.key}
               style={{
                 background: 'var(--color-surface, #FFFFFF)',
-                border: `1px solid ${isExpanded ? '#3B82F6' : 'var(--color-border, #E2E8F0)'}`,
-                borderLeft: `6px solid ${border}`,
-                borderRadius: '16px',
-                boxShadow: isExpanded ? '0 10px 25px -5px rgba(0,0,0,0.06)' : '0 2px 8px rgba(0,0,0,0.02)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                border: `1px solid ${isExpanded ? border : 'var(--color-border, #E2E8F0)'}`,
+                borderLeft: `4px solid ${border}`,
+                borderRadius: '14px',
+                boxShadow: isExpanded ? '0 8px 24px -4px rgba(0,0,0,0.05)' : '0 2px 6px rgba(0,0,0,0.02)',
+                transition: 'all 0.25s ease-in-out',
                 overflow: 'hidden'
               }}
             >
@@ -13236,20 +13271,20 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
               <div 
                 onClick={() => !isLocked && toggleExpand(idx)}
                 style={{
-                  padding: '20px 24px',
+                  padding: '18px 22px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   cursor: isLocked ? 'not-allowed' : 'pointer',
-                  background: isExpanded ? 'rgba(59, 130, 246, 0.02)' : 'transparent',
+                  background: isExpanded ? 'rgba(37, 99, 235, 0.015)' : 'transparent',
                   userSelect: 'none'
                 }}
                 className="milestone-record-header"
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '80%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '80%' }}>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '30px',
+                    height: '30px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -13257,16 +13292,16 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                     background: border,
                     color: '#FFFFFF',
                     fontWeight: 700,
-                    fontSize: '0.85rem',
+                    fontSize: '0.82rem',
                     flexShrink: 0
                   }}>
                     {isPhaseProvisional ? '!' : idx + 1}
                   </div>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-text-primary, #0F172A)' }}>
                       {phase.label}
                     </h4>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)' }}>
+                    <p style={{ margin: '3px 0 0', fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)' }}>
                       {phase.desc}
                     </p>
                   </div>
@@ -13275,7 +13310,7 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{
                     padding: '4px 10px',
-                    borderRadius: '12px',
+                    borderRadius: '10px',
                     fontSize: '0.7rem',
                     fontWeight: 700,
                     letterSpacing: '0.03em',
@@ -13301,36 +13336,36 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
               {/* Collapsible Panel Content */}
               {isExpanded && !isLocked && (
                 <div style={{
-                  padding: '20px 24px 24px 72px',
+                  padding: '20px 22px 22px 66px',
                   borderTop: '1px solid var(--color-border, #F1F5F9)',
-                  background: 'var(--color-bg, rgba(248, 250, 252, 0.3))',
+                  background: 'var(--color-bg, rgba(248, 250, 252, 0.5))',
                   animation: 'fadeIn 0.25s ease-out'
                 }}>
                   <div>
                     {phase.key === 'REGISTRATION_PENDING' && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px', fontSize: '0.85rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 24px', fontSize: '0.84rem' }}>
                         <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Enrollment Number</div>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>Enrollment Number</div>
                           <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.enrollmentNumber || 'N/A'}</strong>
                         </div>
                         <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Registration Date</div>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>Registration Date</div>
                           <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.startDate ? new Date(thesis.startDate).toLocaleDateString() : new Date(thesis.createdAt).toLocaleDateString()}</strong>
                         </div>
                         <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Department</div>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>Department</div>
                           <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.department}</strong>
                         </div>
                         <div>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Assigned Guide</div>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>Assigned Guide</div>
                           <strong style={{ color: 'var(--color-text-primary, #0F172A)' }}>{thesis.supervisorId?.name || 'Pending Supervisor Assignment'}</strong>
                         </div>
                         <div style={{ gridColumn: 'span 2' }}>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Tentative Research Topic</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)', lineHeight: 1.4 }}>{thesis.title || 'N/A'}</strong>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>Tentative Research Topic</div>
+                          <strong style={{ color: 'var(--color-text-primary, #0F172A)', lineHeight: 1.45 }}>{thesis.title || 'N/A'}</strong>
                         </div>
                         <div style={{ gridColumn: 'span 2' }}>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Research Abstract Outline</div>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 4 }}>Research Abstract Outline</div>
                           <p style={{ color: 'var(--color-text-primary, #334155)', margin: '4px 0 0', lineHeight: 1.5 }}>{thesis.abstract || 'N/A'}</p>
                         </div>
                       </div>
@@ -13344,19 +13379,19 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           if (cwStatus === 'APPROVED') {
                             return (
                               <div style={{ 
-                                background: '#ECFDF5', 
-                                border: '1px solid #A7F3D0', 
-                                borderRadius: '8px', 
-                                padding: '12px 16px',
+                                background: 'rgba(16, 185, 129, 0.06)', 
+                                border: '1px solid rgba(16, 185, 129, 0.2)', 
+                                borderRadius: '10px', 
+                                padding: '12px 18px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 8,
-                                fontSize: '0.82rem',
-                                color: '#065F46',
+                                gap: 10,
+                                fontSize: '0.84rem',
+                                color: '#047857',
                                 alignSelf: 'flex-start'
                               }}>
-                                <span>✓</span> 
-                                <span>Coursework results successfully verified and locked on HOD Clearance.</span>
+                                <span style={{ fontSize: '1rem' }}>✓</span> 
+                                <span style={{ fontWeight: 600 }}>Coursework results successfully verified and locked on HOD Clearance.</span>
                               </div>
                             );
                           }
@@ -13364,19 +13399,19 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           if (cwStatus === 'PENDING_FACULTY') {
                             return (
                               <div style={{ 
-                                background: '#EFF6FF', 
-                                border: '1px solid #BFDBFE', 
-                                borderRadius: '8px', 
-                                padding: '12px 16px',
+                                background: 'rgba(59, 130, 246, 0.06)', 
+                                border: '1px solid rgba(59, 130, 246, 0.2)', 
+                                borderRadius: '10px', 
+                                padding: '12px 18px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 8,
-                                fontSize: '0.82rem',
-                                color: '#1E3A8A',
+                                gap: 10,
+                                fontSize: '0.84rem',
+                                color: '#1D4ED8',
                                 alignSelf: 'flex-start'
                               }}>
-                                <span>⏳</span> 
-                                <span>Coursework details submitted. Awaiting Supervisor verification and approval.</span>
+                                <span style={{ fontSize: '1rem' }}>⏳</span> 
+                                <span style={{ fontWeight: 600 }}>Coursework details submitted. Awaiting Supervisor verification and approval.</span>
                               </div>
                             );
                           }
@@ -13384,19 +13419,19 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           if (cwStatus === 'PENDING_HOD') {
                             return (
                               <div style={{ 
-                                background: '#FFFBEB', 
-                                border: '1px solid #FDE68A', 
-                                borderRadius: '8px', 
-                                padding: '12px 16px',
+                                background: 'rgba(245, 158, 11, 0.06)', 
+                                border: '1px solid rgba(245, 158, 11, 0.2)', 
+                                borderRadius: '10px', 
+                                padding: '12px 18px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 8,
-                                fontSize: '0.82rem',
-                                color: '#78350F',
+                                gap: 10,
+                                fontSize: '0.84rem',
+                                color: '#B45309',
                                 alignSelf: 'flex-start'
                               }}>
-                                <span>⏳</span> 
-                                <span>Coursework verified by Supervisor. Pending final clearance from HOD.</span>
+                                <span style={{ fontSize: '1rem' }}>⏳</span> 
+                                <span style={{ fontWeight: 600 }}>Coursework verified by Supervisor. Pending final clearance from HOD.</span>
                               </div>
                             );
                           }
@@ -13404,23 +13439,23 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           if (cwStatus === 'REJECTED') {
                             return (
                               <div style={{ 
-                                background: '#FEE2E2', 
-                                border: '1px solid #FCA5A5', 
-                                borderRadius: '8px', 
-                                padding: '12px 16px',
+                                background: 'rgba(239, 68, 68, 0.06)', 
+                                border: '1px solid rgba(239, 68, 68, 0.2)', 
+                                borderRadius: '10px', 
+                                padding: '12px 18px',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: 6,
-                                fontSize: '0.82rem',
-                                color: '#991B1B',
+                                fontSize: '0.84rem',
+                                color: '#B91C1C',
                                 alignSelf: 'flex-start'
                               }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 700 }}>
                                   <span>❌</span> 
-                                  <strong>Coursework details rejected / correction required.</strong>
+                                  <span>Coursework details rejected / correction required.</span>
                                 </div>
                                 {thesis.courseworkRemarks && (
-                                  <div style={{ fontSize: '0.78rem', color: '#7F1D1D', borderTop: '1px dashed #FCA5A5', paddingTop: 4, marginTop: 4 }}>
+                                  <div style={{ fontSize: '0.8rem', color: '#991B1B', borderTop: '1px dashed rgba(239, 68, 68, 0.25)', paddingTop: 6, marginTop: 4 }}>
                                     <strong>Remarks:</strong> {thesis.courseworkRemarks}
                                   </div>
                                 )}
@@ -13431,18 +13466,18 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           // NOT_SUBMITTED or fallback
                           return (
                             <div style={{ 
-                              background: 'var(--color-bg)', 
-                              border: '1px solid var(--color-border)', 
-                              borderRadius: '8px', 
-                              padding: '12px 16px',
+                              background: 'var(--color-bg, #F8FAFC)', 
+                              border: '1px solid var(--color-border, #E2E8F0)', 
+                              borderRadius: '10px', 
+                              padding: '12px 18px',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 8,
-                              fontSize: '0.82rem',
-                              color: 'var(--color-text-secondary)',
+                              gap: 10,
+                              fontSize: '0.84rem',
+                              color: 'var(--color-text-secondary, #64748B)',
                               alignSelf: 'flex-start'
                             }}>
-                              <span>✏️</span> 
+                              <span style={{ fontSize: '1rem' }}>✏️</span> 
                               <span>Coursework details not yet submitted. Please enter your coursework grades in the active task workspace.</span>
                             </div>
                           );
@@ -13460,15 +13495,36 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                               renderReadOnlySection('Others', thesis.courseworkDetails.others)}
 
                             {thesis.courseworkUploadProof && (
-                              <div style={{ marginTop: 8, padding: '10px 14px', background: 'var(--color-bg, #F9FAFB)', borderRadius: 8, border: '1px solid var(--color-border, #E5E7EB)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)' }}>Upload Proof:</span>
+                              <div style={{ 
+                                marginTop: 8, 
+                                padding: '12px 16px', 
+                                background: 'var(--color-surface, #FFFFFF)', 
+                                borderRadius: 10, 
+                                border: '1px solid var(--color-border, #E2E8F0)', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                              }}>
+                                <span style={{ fontSize: '0.83rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)' }}>📁 Uploaded Marksheet / Certificate Proof:</span>
                                 <a 
                                   href={`${API_BASE_URL}${thesis.courseworkUploadProof}`} 
                                   target="_blank" 
                                   rel="noreferrer" 
-                                  style={{ fontSize: '0.82rem', fontWeight: 800, color: '#2563EB', textDecoration: 'underline' }}
+                                  style={{ 
+                                    fontSize: '0.82rem', 
+                                    fontWeight: 700, 
+                                    color: '#2563EB', 
+                                    textDecoration: 'none',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    background: 'rgba(37, 99, 235, 0.08)',
+                                    padding: '6px 12px',
+                                    borderRadius: '6px'
+                                  }}
                                 >
-                                  View Uploaded Proof
+                                  📄 View Document ↗
                                 </a>
                               </div>
                             )}
@@ -13485,71 +13541,115 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {isProvisionallyCleared && (
                           <div style={{
-                            background: '#FEF2F2',
-                            borderLeft: '4px solid #EF4444',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            fontSize: '0.82rem',
-                            color: '#991B1B',
+                            background: 'rgba(239, 68, 68, 0.06)',
+                            borderLeft: '4px solid #E11D48',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            borderLeftWidth: '4px',
+                            padding: '14px 18px',
+                            borderRadius: '10px',
+                            fontSize: '0.84rem',
+                            color: '#B91C1C',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 4,
-                            textAlign: 'left'
+                            gap: 6
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
                               <span>⚠️</span> 
                               <span>Synopsis Phase Provisionally Cleared</span>
                             </div>
-                            <p style={{ margin: 0, fontSize: '0.78rem', lineHeight: 1.45, color: '#7F1D1D' }}>
+                            <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#991B1B' }}>
                               Your synopsis phase has been provisionally cleared by the HOD to transition you to Active Research. However, you are <strong>still required to upload and clear your synopsis</strong> before you can proceed to the Pre-Submission or Final Thesis Submission phases.
                             </p>
                           </div>
                         )}
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', padding: 16, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Approved Research Topic</div>
-                          <strong style={{ color: 'var(--color-text-primary, #0F172A)', display: 'block', fontSize: '0.9rem', marginBottom: 12 }}>{thesis.title}</strong>
+                        <div style={{ 
+                          background: 'var(--color-surface, #FFFFFF)', 
+                          padding: 18, 
+                          borderRadius: 12, 
+                          border: '1px solid var(--color-border, #E2E8F0)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                        }}>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Approved Research Topic</div>
+                          <strong style={{ color: 'var(--color-text-primary, #0F172A)', display: 'block', fontSize: '0.92rem', marginBottom: 14, lineHeight: 1.45 }}>{thesis.title}</strong>
                           
-                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: 4 }}>Synopsis Document Proposal</div>
+                          <div style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Synopsis Document Proposal</div>
                           {thesis.synopsisUrl || milestones.find(m => m.type === 'SYNOPSIS')?.documentUrl ? (
                             <a 
                               href={`${API_BASE_URL}${thesis.synopsisUrl || milestones.find(m => m.type === 'SYNOPSIS')?.documentUrl}`} 
                               target="_blank" 
                               rel="noreferrer" 
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0284C7', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'underline', marginTop: 4 }}
+                              style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: 8, 
+                                color: '#0284C7', 
+                                fontWeight: 700, 
+                                fontSize: '0.84rem', 
+                                textDecoration: 'none', 
+                                background: 'rgba(2, 132, 199, 0.08)',
+                                padding: '6px 14px',
+                                borderRadius: '6px'
+                              }}
                             >
-                              📄 View Submitted Proposal Synopsis PDF
+                              📄 View Submitted Proposal Synopsis PDF ↗
                             </a>
                           ) : (
-                            <span style={{ fontSize: '0.8rem', color: '#EF4444' }}>No synopsis document uploaded.</span>
+                            <span style={{ fontSize: '0.82rem', color: '#E11D48', fontWeight: 600 }}>No synopsis document uploaded.</span>
                           )}
                         </div>
 
                         {/* DRC evaluation details */}
-                        <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ 
+                          background: 'rgba(245, 158, 11, 0.05)', 
+                          border: '1px solid rgba(245, 158, 11, 0.2)', 
+                          borderRadius: 12, 
+                          padding: 18 
+                        }}>
+                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: '#B45309', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span>📆</span> Departmental Research Committee (DRC) Evaluation
                           </h5>
                           {drcMeetings.length === 0 ? (
-                            <div style={{ fontSize: '0.8rem', color: '#fbbf24' }}>
-                              No DRC evaluation sessions scheduled.
+                            <div style={{ fontSize: '0.83rem', color: '#B45309', fontStyle: 'italic' }}>
+                              No DRC evaluation sessions scheduled yet.
                             </div>
                           ) : (
                             drcMeetings.map((drc, idx) => (
-                              <div key={idx} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px dashed rgba(245, 158, 11, 0.3)' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 12 : 0, marginBottom: idx < drcMeetings.length - 1 ? 12 : 0 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Session Allotment Result</span>
-                                  <span style={{ background: drc.status === 'APPROVED' ? '#D1FAE5' : '#FEE2E2', color: drc.status === 'APPROVED' ? '#065F46' : '#991B1B', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
+                              <div key={idx} style={{ 
+                                borderBottom: idx < drcMeetings.length - 1 ? '1px dashed rgba(245, 158, 11, 0.25)' : 'none', 
+                                paddingBottom: idx < drcMeetings.length - 1 ? 14 : 0, 
+                                marginBottom: idx < drcMeetings.length - 1 ? 14 : 0 
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-primary, #1E293B)' }}>Session Allotment Result</span>
+                                  <span style={{ 
+                                    background: drc.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)', 
+                                    color: drc.status === 'APPROVED' ? '#047857' : '#B91C1C', 
+                                    padding: '3px 10px', 
+                                    borderRadius: 12, 
+                                    fontSize: '0.72rem', 
+                                    fontWeight: 700 
+                                  }}>
                                     {drc.status}
                                   </span>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.8rem', color: '#fbbf24' }}>
-                                  <div>Date: <strong>{new Date(drc.scheduledDate).toLocaleDateString()}</strong></div>
-                                  <div>Time: <strong>{drc.scheduledTime}</strong></div>
-                                  <div style={{ gridColumn: 'span 2' }}>Venue: <strong>{drc.venue}</strong></div>
-                                  {drc.committeeMembers && <div style={{ gridColumn: 'span 2' }}>Committee: <strong>{drc.committeeMembers}</strong></div>}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.83rem', color: 'var(--color-text-primary, #334155)' }}>
+                                  <div><span style={{ color: 'var(--color-text-secondary, #64748B)' }}>Date:</span> <strong>{new Date(drc.scheduledDate).toLocaleDateString()}</strong></div>
+                                  <div><span style={{ color: 'var(--color-text-secondary, #64748B)' }}>Time:</span> <strong>{drc.scheduledTime}</strong></div>
+                                  <div style={{ gridColumn: 'span 2' }}><span style={{ color: 'var(--color-text-secondary, #64748B)' }}>Venue:</span> <strong>{drc.venue}</strong></div>
+                                  {drc.committeeMembers && <div style={{ gridColumn: 'span 2' }}><span style={{ color: 'var(--color-text-secondary, #64748B)' }}>Committee:</span> <strong>{drc.committeeMembers}</strong></div>}
                                   {drc.remarks && (
-                                    <div style={{ gridColumn: 'span 2', background: 'var(--color-surface, #FFFFFF)', padding: 8, borderRadius: 6, borderLeft: '3px solid #D97706', marginTop: 4 }}>
-                                      Committee Remarks: <em>"{drc.remarks}"</em>
+                                    <div style={{ 
+                                      gridColumn: 'span 2', 
+                                      background: 'var(--color-surface, #FFFFFF)', 
+                                      padding: 10, 
+                                      borderRadius: 8, 
+                                      borderLeft: '4px solid #D97706', 
+                                      border: '1px solid var(--color-border, #E2E8F0)',
+                                      marginTop: 6,
+                                      color: 'var(--color-text-primary, #1E293B)' 
+                                    }}>
+                                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#D97706', display: 'block', marginBottom: 2 }}>Committee Remarks:</span>
+                                      <em style={{ fontStyle: 'normal' }}>"{drc.remarks}"</em>
                                     </div>
                                   )}
                                 </div>
@@ -13563,28 +13663,28 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                     {phase.key === 'ACTIVE_RESEARCH' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {/* RAC Sessions */}
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span>📊</span> Research Advisory Committee (RAC) Progress Reviews
                           </h5>
                           {racSessions.length === 0 ? (
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>
+                            <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>
                               No RAC progress reviews recorded yet. Reviews occur at 6-month intervals.
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                               {racSessions.map((rac, idx) => (
-                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 6 }}>
+                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8 }}>
                                   <div>
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-primary, #334155)' }}>RAC Session #{idx + 1}</span>
-                                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary, #94A3B8)', marginTop: 2 }}>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-primary, #334155)' }}>RAC Session #{idx + 1}</span>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 2 }}>
                                       Date: {new Date(rac.scheduledDate).toLocaleDateString()} | Committee: {rac.committeeMembers || 'Guide & Panel'}
                                     </div>
                                   </div>
                                   <span style={{
-                                    background: rac.status === 'SATISFACTORY' ? '#D1FAE5' : '#FEE2E2',
-                                    color: rac.status === 'SATISFACTORY' ? '#065F46' : '#991B1B',
-                                    padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700
+                                    background: rac.status === 'SATISFACTORY' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: rac.status === 'SATISFACTORY' ? '#047857' : '#B91C1C',
+                                    padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700
                                   }}>
                                     {rac.status}
                                   </span>
@@ -13595,33 +13695,33 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                         </div>
 
                         {/* 6-Month Progress Reports */}
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span>📅</span> 6-Month Progress Reports History
                           </h5>
                           {milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT').length === 0 ? (
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>
+                            <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>
                               No progress report milestones generated yet.
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                               {milestones.filter(m => m.type === '6_MONTH_REPORT' || m.type === 'PROGRESS_REPORT').map((rep) => (
-                                <div key={rep._id} style={{ padding: 12, background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 6 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                    <strong style={{ fontSize: '0.8rem', color: 'var(--color-text-primary, #1E293B)' }}>{rep.title}</strong>
+                                <div key={rep._id} style={{ padding: 14, background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <strong style={{ fontSize: '0.83rem', color: 'var(--color-text-primary, #1E293B)' }}>{rep.title}</strong>
                                     <span style={{
-                                      background: rep.status === 'APPROVED' ? '#D1FAE5' : rep.status === 'SUBMITTED' ? '#DBEAFE' : '#FEF3C7',
-                                      color: rep.status === 'APPROVED' ? '#065F46' : rep.status === 'SUBMITTED' ? '#1D4ED8' : '#D97706',
-                                      padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700
+                                      background: rep.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.12)' : rep.status === 'SUBMITTED' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                      color: rep.status === 'APPROVED' ? '#047857' : rep.status === 'SUBMITTED' ? '#1D4ED8' : '#B45309',
+                                      padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700
                                     }}>
                                       {rep.status}
                                     </span>
                                   </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--color-text-secondary, #64748B)' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)' }}>
                                     <span>Due Date: {new Date(rep.dueDate).toLocaleDateString()}</span>
                                     {rep.documentUrl && (
-                                      <a href={`${API_BASE_URL}${rep.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#0284C7', fontWeight: 600 }}>
-                                        View Uploaded Report
+                                      <a href={`${API_BASE_URL}${rep.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#0284C7', fontWeight: 700, textDecoration: 'none' }}>
+                                        📄 View Report ↗
                                       </a>
                                     )}
                                   </div>
@@ -13635,32 +13735,32 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
 
                     {phase.key === 'PRE_SUBMISSION' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
+                        <div style={{ background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
                             Pre-Submission Package Documents
                           </h5>
                           {milestones.find(m => m.type === 'PRE_SUBMISSION') ? (
                             (() => {
                               const preM = milestones.find(m => m.type === 'PRE_SUBMISSION');
                               return (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem' }}>
                                     <span style={{ color: 'var(--color-text-secondary, #64748B)' }}>Submission Status:</span>
-                                    <strong style={{ color: '#3B82F6' }}>{preM.status}</strong>
+                                    <strong style={{ color: '#2563EB', background: 'rgba(37, 99, 235, 0.08)', padding: '2px 8px', borderRadius: 6 }}>{preM.status}</strong>
                                   </div>
                                   {preM.documentUrl && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.83rem' }}>
                                       <span>📄</span>
-                                      <a href={`${API_BASE_URL}${preM.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700 }}>
-                                        View Rough Thesis Draft Complete
+                                      <a href={`${API_BASE_URL}${preM.documentUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'none' }}>
+                                        View Rough Thesis Draft Complete ↗
                                       </a>
                                     </div>
                                   )}
                                   {preM.plagiarismReportUrl && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.83rem' }}>
                                       <span>📊</span>
-                                      <a href={`${API_BASE_URL}${preM.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 700 }}>
-                                        View Plagiarism Clearance Certificate
+                                      <a href={`${API_BASE_URL}${preM.plagiarismReportUrl}`} target="_blank" rel="noreferrer" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>
+                                        View Plagiarism Clearance Certificate ↗
                                       </a>
                                     </div>
                                   )}
@@ -13668,7 +13768,7 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                               );
                             })()
                           ) : (
-                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>Pre-submission package not uploaded.</span>
+                            <span style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>Pre-submission package not uploaded.</span>
                           )}
                         </div>
                       </div>
@@ -13676,12 +13776,12 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
 
                     {phase.key === 'SUBMITTED' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
+                        <div style={{ background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
                             Thesis Board Evaluation Dispatch Tracking
                           </h5>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.8rem', color: 'var(--color-text-primary, #334155)' }}>
-                            <div>Dispatch Status: <strong>{thesis.dispatchDate ? 'DISPATCHED TO EXAMINERS' : 'AWAITING DISPATCH'}</strong></div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px', fontSize: '0.83rem', color: 'var(--color-text-primary, #334155)' }}>
+                            <div>Dispatch Status: <strong style={{ color: thesis.dispatchDate ? '#059669' : '#64748B' }}>{thesis.dispatchDate ? 'DISPATCHED TO EXAMINERS' : 'AWAITING DISPATCH'}</strong></div>
                             {thesis.dispatchDate && (
                               <>
                                 <div>Dispatch Date: <strong>{new Date(thesis.dispatchDate).toLocaleDateString()}</strong></div>
@@ -13692,11 +13792,11 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           </div>
                         </div>
 
-                        <div style={{ background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8, padding: 16 }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
+                        <div style={{ background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                          <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)' }}>
                             Viva-Voce Oral Defense Examination
                           </h5>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.8rem', color: 'var(--color-text-primary, #334155)' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px', fontSize: '0.83rem', color: 'var(--color-text-primary, #334155)' }}>
                             <div>Defense Status: <strong>{thesis.vivaStatus || 'AWAITING EVALUATION BOARD REPORT'}</strong></div>
                             {thesis.vivaDate && (
                               <>
@@ -13705,7 +13805,7 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                               </>
                             )}
                             {thesis.vivaRemarks && (
-                              <div style={{ gridColumn: 'span 2', background: 'var(--color-surface, #FFFFFF)', padding: 10, borderLeft: '4px solid #10B981', borderRadius: 6 }}>
+                              <div style={{ gridColumn: 'span 2', background: 'var(--color-bg, #F8FAFC)', padding: 12, borderLeft: '4px solid #059669', borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
                                 Panel Remarks: <strong>"{thesis.vivaRemarks}"</strong>
                               </div>
                             )}
@@ -13715,16 +13815,21 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                     )}
 
                     {phase.key === 'AWARDED' && (
-                      <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 8, padding: 16 }}>
-                        <h5 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 800, color: '#10B981', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ 
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.04) 100%)', 
+                        border: '1px solid rgba(16, 185, 129, 0.25)', 
+                        borderRadius: 12, 
+                        padding: 20 
+                      }}>
+                        <h5 style={{ margin: '0 0 10px 0', fontSize: '0.92rem', fontWeight: 800, color: '#047857', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span>🏆</span> Ph.D. Degree Conferred Successfully!
                         </h5>
-                        <div style={{ fontSize: '0.8rem', color: '#10B981', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ fontSize: '0.84rem', color: 'var(--color-text-primary, #1F2937)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                           <div>Academic Senate Approval Date: <strong>{thesis.awardedAt ? new Date(thesis.awardedAt).toLocaleDateString() : 'N/A'}</strong></div>
                           {thesis.notificationNumber && <div>Award Notification Number: <strong>{thesis.notificationNumber}</strong></div>}
-                          <div>Clearance Status: <strong>Library, Department, and Admin Clearances COMPLETED</strong></div>
+                          <div>Clearance Status: <strong style={{ color: '#047857' }}>Library, Department, and Admin Clearances COMPLETED</strong></div>
                           
-                          <div style={{ marginTop: 12, borderTop: '1px solid rgba(16, 185, 129, 0.3)', paddingTop: 8 }}>
+                          <div style={{ marginTop: 10, borderTop: '1px solid rgba(16, 185, 129, 0.2)', paddingTop: 10, color: '#047857', fontWeight: 600 }}>
                             🎉 <strong>HPU Academic Council congratulates Dr. {user?.name}!</strong> Your doctorate degree is formally awarded.
                           </div>
                         </div>

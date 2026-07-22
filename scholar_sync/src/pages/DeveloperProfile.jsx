@@ -66,13 +66,20 @@ const DeveloperProfile = () => {
   // Initialize Lenis Smooth Scroll
   useLenisScroll(Lenis);
 
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
+
   // Terminal state
   const [termInput, setTermInput] = useState('');
   const [termHistory, setTermHistory] = useState([
     { type: 'output', content: '⚡ Ayush Sood Cyber Terminal v3.0 (Full-Stack & AI Systems Environment)' },
     { type: 'output', content: 'Type "help" or click suggestion chips below to query interactive developer data.' }
   ]);
-  const termEndRef = useRef(null);
+  const termBodyRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -160,16 +167,6 @@ const DeveloperProfile = () => {
       tech: ['Vite', 'React', 'RESTful API', 'Glassmorphism UI', 'Nginx'],
       impact: '25+ HPU Departments Unified',
       icon: <Globe size={20} />
-    },
-    {
-      id: 'weather-url-apps',
-      name: 'Weather Forecasting & URL Shortener Apps',
-      type: 'PERSONAL UTILITIES',
-      category: 'UTILITY',
-      desc: 'Developed standalone utility applications including a Weather Forecasting application, URL Shortener, and custom web API integrations.',
-      tech: ['JavaScript', 'HTML5/CSS3', 'REST APIs', 'Node.js'],
-      impact: 'Personal Tools Suite',
-      icon: <CloudSun size={20} />
     }
   ];
 
@@ -253,25 +250,7 @@ Computer Programmer @ Himachal Pradesh University (2018 - Present)
 2. HPU Student Helpdesk Ticketing System (WordPress & Laravel/MySQL for 3 Lakh+ students)
 3. ERP Knowledge Base & Video Tutorial Series
 4. AI Agent & MCP Tool Automation Pipelines
-5. ERP Project Management Tool & Standalone Weather/URL Shortener Apps`
-        });
-        break;
-      case 'education':
-        newHist.push({
-          type: 'output',
-          content: `🎓 Education Background:
-• Graduation: Bachelors in Computer Science (Honours) — Himachal Pradesh University
-• Post Graduation: Masters in Computer Applications (MCA) — IGNOU
-• Post Graduation Diploma: Post Graduate Diploma in Computer Applications (PGDCA) — IGNOU`
-        });
-        break;
-      case 'certs':
-        newHist.push({
-          type: 'output',
-          content: `📜 Professional Certifications (Coursera):
-1. Interactivity with JavaScript — University of Michigan
-2. Web Design Capstone — University of Michigan
-3. Create Website in a Weekend — State University of New York`
+5. ERP Project Management Tool`
         });
         break;
       case 'contact':
@@ -280,7 +259,7 @@ Computer Programmer @ Himachal Pradesh University (2018 - Present)
           content: `📞 Contact Information:
 Phone: +91 7018010410
 Email: ayushsood965@gmail.com / ayush_94@live.com
-Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
+Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171005`
         });
         break;
       case 'clear':
@@ -299,9 +278,15 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
     setTermInput('');
   };
 
+  const isMountedRef = useRef(false);
+
   useEffect(() => {
-    if (termEndRef.current) {
-      termEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
+    if (termBodyRef.current) {
+      termBodyRef.current.scrollTop = termBodyRef.current.scrollHeight;
     }
   }, [termHistory]);
 
@@ -339,12 +324,11 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
         </Link>
 
         <div className="dev-nav-links">
-          <a href="#orbit" className="dev-nav-link">Interactive Constellation</a>
-          <a href="#capabilities" className="dev-nav-link">Stack & AI Mastery</a>
-          <a href="#projects" className="dev-nav-link">Featured Systems</a>
-          <a href="#experience" className="dev-nav-link">HPU Career</a>
-          <a href="#education" className="dev-nav-link">Education & Certs</a>
-          <a href="#terminal" className="dev-nav-link">Dev Terminal</a>
+          <a href="#orbit" className="dev-nav-link">Constellation</a>
+          <a href="#capabilities" className="dev-nav-link">Stack & AI</a>
+          <a href="#projects" className="dev-nav-link">Systems</a>
+          <a href="#experience" className="dev-nav-link">Career</a>
+          <a href="#terminal" className="dev-nav-link">Terminal</a>
         </div>
 
         <div className="dev-nav-actions">
@@ -396,38 +380,25 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
             transition={{ duration: 0.7, delay: 0.1 }}
             className="dev-hero-content"
           >
-            <div className="dev-experience-tag">
-              <Sparkles size={14} /> Award-Winning Creative Engineering & AI Automation Pioneer
-            </div>
             <h1 className="dev-hero-title">
               Ayush Sood
             </h1>
-            <h3 className="dev-hero-subtitle">
-              <Building size={22} style={{ color: '#38bdf8' }} />
-              Computer Programmer • System Analyst & Full-Stack Architect
-            </h3>
             <p className="dev-hero-description">
               Dedicated Software Architect and Computer Programmer with over 7 years of high-impact engineering experience at Himachal Pradesh University (HPU). Master of modern creative frontend design systems (React, Vite, Lenis Smooth Scroll, Framer Motion, Glassmorphism), scalable backend infrastructures (Node.js, Express, Laravel, MongoDB, MySQL), and cutting-edge AI integrations including <strong>Prompt Engineering, AI Automation Workflows, and MCP Server Architectures</strong>.
             </p>
 
-            {/* Stats Ribbon with Animated Counters */}
+            {/* Stats Ribbon */}
             <div className="dev-stats-grid">
               <div className="dev-stat-card">
-                <div className="dev-stat-number">
-                  <AnimatedCounter target={7} suffix="+" />
-                </div>
+                <div className="dev-stat-number">7+</div>
                 <div className="dev-stat-label">Years Experience</div>
               </div>
               <div className="dev-stat-card">
-                <div className="dev-stat-number">
-                  <AnimatedCounter target={3} suffix=" Lakh+" />
-                </div>
+                <div className="dev-stat-number">3 Lakh+</div>
                 <div className="dev-stat-label">Students Served</div>
               </div>
               <div className="dev-stat-card">
-                <div className="dev-stat-number">
-                  <AnimatedCounter target={100} suffix="%" />
-                </div>
+                <div className="dev-stat-number">100%</div>
                 <div className="dev-stat-label">Full-Stack Mastery</div>
               </div>
               <div className="dev-stat-card">
@@ -443,9 +414,6 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
               </MagneticButton>
               <MagneticButton onClick={() => { document.getElementById('orbit')?.scrollIntoView({ behavior: 'smooth' }); }} className="dev-btn-secondary">
                 <Cpu size={18} /> Interactive Tech Constellation
-              </MagneticButton>
-              <MagneticButton onClick={() => setShowContactModal(true)} className="dev-btn-secondary">
-                <Mail size={18} /> Direct Contact
               </MagneticButton>
             </div>
           </motion.div>
@@ -641,102 +609,6 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
         </div>
       </section>
 
-      {/* EDUCATION & CERTIFICATIONS SECTION */}
-      <section id="education" className="dev-section">
-        <div className="dev-section-header">
-          <div className="dev-section-subtitle">
-            <GraduationCap size={14} /> Academic Qualifications & Badges
-          </div>
-          <h2 className="dev-section-title">Education & Certifications</h2>
-        </div>
-
-        <div className="dev-skills-grid">
-          {/* Education Card */}
-          <TiltCard className="dev-skill-card">
-            <div className="dev-skill-cat-title">
-              <GraduationCap size={24} style={{ color: '#38bdf8' }} />
-              Education Qualifications
-            </div>
-            <div className="dev-skill-items" style={{ gap: '20px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ paddingBottom: '14px', borderBottom: '1px dashed var(--color-border)' }}>
-                <span className="dev-timeline-badge" style={{ marginBottom: '4px' }}>GRADUATION</span>
-                <h4 style={{ fontSize: '1.12rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                  Bachelors in Computer Science Honours
-                </h4>
-                <p style={{ fontSize: '0.92rem', color: '#38bdf8', fontWeight: 600 }}>
-                  Himachal Pradesh University (HPU)
-                </p>
-              </div>
-
-              <div style={{ paddingBottom: '14px', borderBottom: '1px dashed var(--color-border)' }}>
-                <span className="dev-timeline-badge" style={{ marginBottom: '4px' }}>POST GRADUATION</span>
-                <h4 style={{ fontSize: '1.12rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                  Masters in Computer Applications (MCA)
-                </h4>
-                <p style={{ fontSize: '0.92rem', color: '#8b5cf6', fontWeight: 600 }}>
-                  Indira Gandhi National Open University (IGNOU)
-                </p>
-              </div>
-
-              <div>
-                <span className="dev-timeline-badge" style={{ marginBottom: '4px' }}>POST GRADUATION DIPLOMA</span>
-                <h4 style={{ fontSize: '1.12rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                  Post Graduate Diploma in Computer Applications (PGDCA)
-                </h4>
-                <p style={{ fontSize: '0.92rem', color: '#8b5cf6', fontWeight: 600 }}>
-                  Indira Gandhi National Open University (IGNOU)
-                </p>
-              </div>
-            </div>
-          </TiltCard>
-
-          {/* Certifications Card */}
-          <TiltCard className="dev-skill-card">
-            <div className="dev-skill-cat-title">
-              <Award size={24} style={{ color: '#ec4899' }} />
-              Coursera Certifications (3)
-            </div>
-            <div className="dev-skill-items" style={{ gap: '20px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ paddingBottom: '14px', borderBottom: '1px dashed var(--color-border)' }}>
-                <span className="dev-timeline-badge" style={{ background: 'rgba(236, 72, 153, 0.14)', color: '#ec4899', marginBottom: '4px' }}>
-                  CERTIFICATION 1
-                </span>
-                <h4 style={{ fontSize: '1.08rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                  Interactivity with JavaScript
-                </h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                  University of Michigan (Coursera)
-                </p>
-              </div>
-
-              <div style={{ paddingBottom: '14px', borderBottom: '1px dashed var(--color-border)' }}>
-                <span className="dev-timeline-badge" style={{ background: 'rgba(236, 72, 153, 0.14)', color: '#ec4899', marginBottom: '4px' }}>
-                  CERTIFICATION 2
-                </span>
-                <h4 style={{ fontSize: '1.08rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                  Web Design Capstone
-                </h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                  University of Michigan (Coursera)
-                </p>
-              </div>
-
-              <div>
-                <span className="dev-timeline-badge" style={{ background: 'rgba(236, 72, 153, 0.14)', color: '#ec4899', marginBottom: '4px' }}>
-                  CERTIFICATION 3
-                </span>
-                <h4 style={{ fontSize: '1.08rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                  Create Website in a Weekend
-                </h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                  State University of New York (Coursera)
-                </p>
-              </div>
-            </div>
-          </TiltCard>
-        </div>
-      </section>
-
       {/* INTERACTIVE DEVELOPER TERMINAL */}
       <section id="terminal" className="dev-section">
         <div className="dev-section-header">
@@ -757,7 +629,7 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
             <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>bash v3.0</div>
           </div>
 
-          <div className="dev-terminal-body">
+          <div className="dev-terminal-body" ref={termBodyRef}>
             {termHistory.map((item, index) => (
               <div key={index} className="dev-term-line">
                 {item.type === 'prompt' ? (
@@ -767,7 +639,7 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
                 )}
               </div>
             ))}
-            <div ref={termEndRef} />
+
 
             <form onSubmit={(e) => { e.preventDefault(); if (termInput) handleTermCommand(termInput); }} className="dev-term-input-form">
               <span className="dev-term-prompt">ayush@hpu:~$</span>
@@ -776,15 +648,14 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
                 className="dev-term-input"
                 value={termInput}
                 onChange={(e) => setTermInput(e.target.value)}
-                placeholder="type a command e.g. help, bio, frontend, backend, ai, projects, education..."
-                autoFocus
+                placeholder="type a command e.g. help, bio, frontend, backend, ai, projects..."
               />
               <CornerDownLeft size={14} style={{ color: '#8b949e' }} />
             </form>
 
             <div className="dev-term-suggestions">
               <span style={{ fontSize: '0.75rem', color: '#8b949e', alignSelf: 'center' }}>Quick query:</span>
-              {['bio', 'frontend', 'backend', 'ai', 'experience', 'projects', 'education', 'certs', 'clear'].map((cmd) => (
+              {['bio', 'frontend', 'backend', 'ai', 'experience', 'projects', 'clear'].map((cmd) => (
                 <button key={cmd} onClick={() => handleTermCommand(cmd)} className="dev-term-chip">
                   {cmd}
                 </button>
@@ -802,16 +673,13 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
             Ayush Sood — Computer Programmer & Full-Stack Architect
           </h3>
           <p style={{ color: 'var(--color-text-secondary)', maxWidth: '650px', lineHeight: 1.6, fontSize: '0.95rem' }}>
-            Himachal Pradesh University, Summer Hill, Shimla 171011.
+            Himachal Pradesh University, Summer Hill, Shimla 171005.
           </p>
 
           <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '14px' }}>
             <MagneticButton onClick={handleCopyEmail} className="dev-btn-primary" style={{ padding: '12px 26px', fontSize: '0.92rem' }}>
               {copiedEmail ? <Check size={18} style={{ color: '#fff' }} /> : <Copy size={18} />}
               {copiedEmail ? 'Email Copied!' : 'Copy Email (ayushsood965@gmail.com)'}
-            </MagneticButton>
-            <MagneticButton onClick={() => setShowContactModal(true)} className="dev-btn-secondary" style={{ padding: '12px 26px', fontSize: '0.92rem' }}>
-              <Mail size={18} /> Direct Contact Modal
             </MagneticButton>
           </div>
 
@@ -820,91 +688,6 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011`
           </div>
         </div>
       </footer>
-
-      {/* CONTACT MODAL */}
-      {showContactModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px'
-        }}>
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="dev-glass-card"
-            style={{ maxWidth: '520px', width: '100%', padding: '34px' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.45rem', fontWeight: 900 }}>Contact Ayush Sood</h3>
-              <button onClick={() => setShowContactModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.6rem', cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
-            </div>
-
-            {sentStatus ? (
-              <div style={{ textAlign: 'center', padding: '30px 0' }}>
-                <CheckCircle2 size={48} style={{ color: '#10b981', margin: '0 auto 12px' }} />
-                <h4 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Message Sent!</h4>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '6px' }}>
-                  Thank you for reaching out. Ayush will respond shortly.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', lineHeight: 1.5, background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '14px', borderRadius: '12px' }}>
-                  <div><strong>Phone:</strong> +91 7018010410</div>
-                  <div><strong>Email:</strong> ayushsood965@gmail.com / ayush_94@live.com</div>
-                  <div><strong>Address:</strong> 2nd floor, Dinesh Niwas, Dhainda, Shimla 171011</div>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Your Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={contactMsg.name}
-                    onChange={(e) => setContactMsg({ ...contactMsg, name: e.target.value })}
-                    style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}
-                    placeholder="Prof. / Dr. / Student Name"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    value={contactMsg.email}
-                    onChange={(e) => setContactMsg({ ...contactMsg, email: e.target.value })}
-                    style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}
-                    placeholder="name@hpu.ac.in"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Message / Proposal</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={contactMsg.message}
-                    onChange={(e) => setContactMsg({ ...contactMsg, message: e.target.value })}
-                    style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)' }}
-                    placeholder="Details about your software, ERP, or AI automation inquiry..."
-                  ></textarea>
-                </div>
-
-                <MagneticButton type="submit" className="dev-btn-primary" style={{ justifyContent: 'center', marginTop: '10px' }}>
-                  <Send size={16} /> Send Direct Message
-                </MagneticButton>
-              </form>
-            )}
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 };
