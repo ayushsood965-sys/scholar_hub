@@ -2,12 +2,21 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Search, Beaker, Users, FileText, Banknote } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import Lenis from 'lenis';
 import { useToast } from './context/ToastContext';
 import { AuthContext } from './context/AuthContext';
 import { API_URL, API_BASE_URL } from './config';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import {
+  useLenisScroll,
+  ParticleCanvas,
+  MouseSpotlight,
+  TiltCard,
+  MagneticButton
+} from './components/CreativeComponents';
 
 const Landing = () => {
   const [projects, setProjects] = useState([]);
@@ -17,6 +26,9 @@ const Landing = () => {
   const toastShown = useRef(null);
   const { user, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Initialize Lenis Smooth Scroll
+  useLenisScroll(Lenis);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -85,7 +97,11 @@ const Landing = () => {
   }
 
   return (
-    <div className="landing-page">
+    <div className="landing-page" style={{ position: 'relative' }}>
+      {/* 60 FPS Particle Canvas & Cursor Spotlight */}
+      <ParticleCanvas />
+      <MouseSpotlight />
+
       <div className="liquid-bg-wrapper">
         <div className="liquid-blob blob-1"></div>
         <div className="liquid-blob blob-2"></div>
@@ -95,17 +111,24 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section className="hero-section">
-        <div className="hero-content">
+        <motion.div 
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="hero-content"
+        >
           <h1 className="hero-title">Unify Your Research Journey<br/>with ScholarSync.</h1>
           <p className="hero-subtitle">
             A centralized platform for researchers, faculty, and departments<br/>
             to connect, collaborate, and thrive.
           </p>
           <div className="hero-buttons">
-            <a href="#featured-projects" className="btn-dark" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Explore Projects</a>
-            <Link to="/signup" className="btn-dark" style={{ textDecoration: 'none', background: '#A5D6A7', color: '#133A26', display: 'inline-flex', alignItems: 'center' }}>Create Profile</Link>
+            <MagneticButton onClick={() => { document.getElementById('featured-projects')?.scrollIntoView({ behavior: 'smooth' }); }} className="btn-dark" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Explore Projects</MagneticButton>
+            <Link to="/signup" style={{ textDecoration: 'none' }}>
+              <MagneticButton className="btn-dark" style={{ background: '#A5D6A7', color: '#133A26', display: 'inline-flex', alignItems: 'center' }}>Create Profile</MagneticButton>
+            </Link>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Main Content White Wrapper */}
@@ -113,30 +136,30 @@ const Landing = () => {
         {/* Overlapping Feature Cards */}
         <section className="features-section">
           <div className="features-grid">
-            <div className="feature-card">
+            <TiltCard className="feature-card">
               <div className="feature-icon-wrapper"><Beaker size={32} color="#133A26" /></div>
               <h3 className="feature-title">Discover Research Labs</h3>
               <p className="feature-text">Common platform for researchers, faculty, and department labs.</p>
               <Link to="/labs" className="btn-feature" style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>Browse Labs</Link>
-            </div>
-            <div className="feature-card">
+            </TiltCard>
+            <TiltCard className="feature-card">
               <div className="feature-icon-wrapper"><Users size={32} color="#133A26" /></div>
               <h3 className="feature-title">Find Collaborators</h3>
               <p className="feature-text">Centralized platform for researchers, faculty, and sponsors.</p>
               <Link to="/collaborate" className="btn-feature" style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>Connect Now</Link>
-            </div>
-            <div className="feature-card">
+            </TiltCard>
+            <TiltCard className="feature-card">
               <div className="feature-icon-wrapper"><FileText size={32} color="#133A26" /></div>
               <h3 className="feature-title">Access Publications</h3>
               <p className="feature-text">Search in journals, papers, graphs, and access publications.</p>
               <Link to="/publications" className="btn-feature" style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>Search Archive</Link>
-            </div>
-            <div className="feature-card">
+            </TiltCard>
+            <TiltCard className="feature-card">
               <div className="feature-icon-wrapper"><Banknote size={32} color="#133A26" /></div>
               <h3 className="feature-title">Manage Grants & Funding</h3>
               <p className="feature-text">Centralized platform to researchers, faculty, manage grants, and funding.</p>
               <Link to="/funding" className="btn-feature" style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>View Opportunities</Link>
-            </div>
+            </TiltCard>
           </div>
         </section>
 
@@ -156,7 +179,7 @@ const Landing = () => {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
               {projects.slice(0, 4).map((proj, idx) => (
-                <div className="project-card" key={proj._id || idx}>
+                <TiltCard className="project-card" key={proj._id || idx}>
                   <img 
                     src={proj.imageUrl || getDeptImage(proj.department)} 
                     alt={proj.title} 
@@ -185,7 +208,7 @@ const Landing = () => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </TiltCard>
               ))}
             </div>
           )}

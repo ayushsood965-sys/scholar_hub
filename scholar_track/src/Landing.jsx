@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from './context/ToastContext';
 import { AuthContext } from './context/AuthContext';
 import { motion } from 'framer-motion';
+import Lenis from 'lenis';
 import {
   BarChart3, Shield, Clock, CalendarRange, ArrowRight, ArrowUpRight,
   CheckCircle2, Users, UserCheck, BookOpen, ClipboardCheck, FileText,
@@ -12,6 +13,13 @@ import {
 import { API_URL } from './config';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import {
+  useLenisScroll,
+  ParticleCanvas,
+  MouseSpotlight,
+  TiltCard,
+  MagneticButton
+} from './components/CreativeComponents';
 
 // ─── Role-based feature data ───
 const roleFeatures = {
@@ -79,6 +87,9 @@ const Landing = () => {
   const { user, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // Initialize Lenis Smooth Scroll
+  useLenisScroll(Lenis);
+
   useEffect(() => {
     if (!authLoading && user) {
       const dashMap = {
@@ -131,7 +142,11 @@ const Landing = () => {
   }
 
   return (
-    <div className="st-landing">
+    <div className="st-landing" style={{ position: 'relative' }}>
+      {/* 60 FPS Particle Canvas & Cursor Spotlight */}
+      <ParticleCanvas />
+      <MouseSpotlight />
+
       <div className="liquid-bg-wrapper">
         <div className="liquid-blob blob-1" />
         <div className="liquid-blob blob-2" />
@@ -168,11 +183,15 @@ const Landing = () => {
           </p>
 
           <div className="st-hero-buttons">
-            <Link to="/signup" className="btn btn-primary btn-lg" style={{ textDecoration: 'none' }}>
-              Get Started <ArrowRight size={16} />
+            <Link to="/signup" style={{ textDecoration: 'none' }}>
+              <MagneticButton className="btn btn-primary btn-lg">
+                Get Started <ArrowRight size={16} />
+              </MagneticButton>
             </Link>
-            <a href="#features" className="btn btn-outline btn-lg" style={{ textDecoration: 'none' }}>
-              Explore Features
+            <a href="#features" style={{ textDecoration: 'none' }}>
+              <MagneticButton className="btn btn-outline btn-lg">
+                Explore Features
+              </MagneticButton>
             </a>
           </div>
         </motion.div>
@@ -184,7 +203,7 @@ const Landing = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.15 }}
         >
-          <div className="st-roster-widget glass-panel">
+          <TiltCard className="st-roster-widget glass-panel">
             <div className="st-roster-header">
               <div className="st-roster-icon-box">
                 <BarChart3 size={22} />
@@ -221,7 +240,7 @@ const Landing = () => {
               <span className="st-roster-footer-badge">Session 2026–27</span>
               <span className="st-roster-footer-text">Threshold: 75%</span>
             </div>
-          </div>
+          </TiltCard>
         </motion.div>
       </section>
 
@@ -245,18 +264,19 @@ const Landing = () => {
           {lifecycleSteps.map((step, i) => (
             <motion.div
               key={step.num}
-              className="st-lifecycle-card glass-panel"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
             >
-              <div className="st-lifecycle-num">{step.num}</div>
-              <div className="st-lifecycle-icon-box">
-                <step.icon size={22} />
-              </div>
-              <h4 className="st-lifecycle-card-title">{step.title}</h4>
-              <p className="st-lifecycle-card-desc">{step.desc}</p>
+              <TiltCard className="st-lifecycle-card glass-panel">
+                <div className="st-lifecycle-num">{step.num}</div>
+                <div className="st-lifecycle-icon-box">
+                  <step.icon size={22} />
+                </div>
+                <h4 className="st-lifecycle-card-title">{step.title}</h4>
+                <p className="st-lifecycle-card-desc">{step.desc}</p>
+              </TiltCard>
             </motion.div>
           ))}
         </div>
@@ -300,19 +320,16 @@ const Landing = () => {
           transition={{ duration: 0.35 }}
         >
           {roleFeatures[activeRole].map((feat, i) => (
-            <motion.div
+            <TiltCard
               key={feat.text}
               className="st-feature-card clay-card"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06, duration: 0.35 }}
             >
               <div className="st-feature-icon">
                 <feat.icon size={22} />
               </div>
               <h4 className="st-feature-title">{feat.text}</h4>
               <p className="st-feature-desc">{feat.desc}</p>
-            </motion.div>
+            </TiltCard>
           ))}
         </motion.div>
       </section>
@@ -335,20 +352,16 @@ const Landing = () => {
 
         <div className="st-policy-grid">
           {policyCards.map((card, i) => (
-            <motion.div
+            <TiltCard
               key={card.title}
               className="st-policy-card glass-panel"
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-30px' }}
-              transition={{ delay: i * 0.07, duration: 0.4 }}
             >
               <div className="st-policy-icon" style={{ color: card.color, background: `${card.color}15` }}>
                 <card.icon size={20} />
               </div>
               <h4 className="st-policy-title">{card.title}</h4>
               <p className="st-policy-desc">{card.desc}</p>
-            </motion.div>
+            </TiltCard>
           ))}
         </div>
       </section>
@@ -383,8 +396,10 @@ const Landing = () => {
                 </div>
               ))}
             </div>
-            <Link to="/signup" className="btn btn-primary" style={{ textDecoration: 'none', marginTop: '24px' }}>
-              Create Your Profile <ArrowRight size={16} />
+            <Link to="/signup" style={{ textDecoration: 'none', display: 'inline-block', marginTop: '24px' }}>
+              <MagneticButton className="btn btn-primary">
+                Create Your Profile <ArrowRight size={16} />
+              </MagneticButton>
             </Link>
           </motion.div>
 
@@ -396,7 +411,7 @@ const Landing = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <div className="st-mock-dashboard glass-panel">
+            <TiltCard className="st-mock-dashboard glass-panel">
               <div className="st-mock-header">
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Attendance Overview</div>
@@ -454,7 +469,7 @@ const Landing = () => {
                 <span className="st-vocab absent">Absent</span>
                 <span className="st-vocab leave">Leave</span>
               </div>
-            </div>
+            </TiltCard>
           </motion.div>
         </div>
       </section>
@@ -479,13 +494,9 @@ const Landing = () => {
             { num: stats.departments, label: 'HPU Departments' },
             { num: stats.scholars, label: 'Unified Profiles' },
           ].map((s, i) => (
-            <motion.div
+            <TiltCard
               key={s.label}
               className="st-stat-card clay-card"
-              initial={{ opacity: 0, scale: 0.92 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 + i * 0.1 }}
             >
               {loading ? (
                 <div className="st-stat-skeleton" />
@@ -493,33 +504,33 @@ const Landing = () => {
                 <div className="st-stat-num">{s.num}</div>
               )}
               <div className="st-stat-label">{s.label}</div>
-            </motion.div>
+            </TiltCard>
           ))}
         </div>
       </section>
 
       {/* ═══════════════ CTA BANNER ═══════════════ */}
       <section className="st-section st-cta-section">
-        <motion.div
+        <TiltCard
           className="st-cta-card glass-panel"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
         >
           <h2 className="st-cta-title">Ready to take control of your attendance?</h2>
           <p className="st-cta-desc">
             Create your ScholarTrack profile today and start monitoring your academic compliance in real-time.
           </p>
           <div className="st-cta-buttons">
-            <Link to="/signup" className="btn btn-primary btn-lg" style={{ textDecoration: 'none' }}>
-              Create Profile <ArrowRight size={16} />
+            <Link to="/signup" style={{ textDecoration: 'none' }}>
+              <MagneticButton className="btn btn-primary btn-lg">
+                Create Profile <ArrowRight size={16} />
+              </MagneticButton>
             </Link>
-            <Link to="/login" className="btn btn-outline btn-lg" style={{ textDecoration: 'none' }}>
-              Log In <ArrowUpRight size={16} />
+            <Link to="/login" style={{ textDecoration: 'none' }}>
+              <MagneticButton className="btn btn-outline btn-lg">
+                Log In <ArrowUpRight size={16} />
+              </MagneticButton>
             </Link>
           </div>
-        </motion.div>
+        </TiltCard>
       </section>
 
       <Footer />

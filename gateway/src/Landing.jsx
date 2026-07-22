@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Lenis from 'lenis';
 import { 
   GraduationCap, 
   CalendarRange, 
@@ -34,6 +36,13 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { API_URL, SCHOLAR_SYNC_URL, SCHOLAR_TRACK_URL } from './config';
+import {
+  useLenisScroll,
+  ParticleCanvas,
+  MouseSpotlight,
+  TiltCard,
+  MagneticButton
+} from './components/CreativeComponents';
 
 // Custom hook to trigger scroll animations (Reveal on scroll)
 const useScrollReveal = () => {
@@ -84,6 +93,9 @@ const Landing = () => {
   const [activeSyncRole, setActiveSyncRole] = useState('student');
   const [activeTrackRole, setActiveTrackRole] = useState('student');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Initialize Lenis Smooth Scroll
+  useLenisScroll(Lenis);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -210,42 +222,6 @@ const Landing = () => {
     ]
   };
 
-  // Refreshed Announcements for today (July 8, 2026)
-  const announcements = [
-    { 
-      id: 1, 
-      type: 'Notice', 
-      title: 'Admissions open for Ph.D. session 2026-27. Last date to submit applications is July 15, 2026.', 
-      date: 'June 15, 2026', 
-      tag: 'Academic',
-      badgeClass: 'badge-academic'
-    },
-    { 
-      id: 2, 
-      type: 'Event', 
-      title: 'Annual HPU Research Colloquium scheduled for July 28 at Summer Hill Campus Auditorium.', 
-      date: 'July 05, 2026', 
-      tag: 'Research',
-      badgeClass: 'badge-research'
-    },
-    { 
-      id: 3, 
-      type: 'Alert', 
-      title: 'ScholarTrack Attendance audit warning: PG candidates with less than 75% attendance must submit leaves by July 22, 2026.', 
-      date: 'July 06, 2026', 
-      tag: 'Attendance',
-      badgeClass: 'badge-attendance'
-    },
-    { 
-      id: 4, 
-      type: 'Update', 
-      title: 'HPU library access tokens migrated to unified student profiles database.', 
-      date: 'July 07, 2026', 
-      tag: 'Library',
-      badgeClass: 'badge-library'
-    }
-  ];
-
   // Quick Directory Links - Official HPU Shimla Portals
   const quickLinks = [
     { 
@@ -298,7 +274,11 @@ const Landing = () => {
   }, [location]);
 
   return (
-    <div className="landing-page">
+    <div className="landing-page" style={{ position: 'relative' }}>
+      {/* 60 FPS Particle Canvas & Cursor Spotlight */}
+      <ParticleCanvas />
+      <MouseSpotlight />
+
       {/* Background blobs */}
       <div className="liquid-bg-wrapper">
         <div className="liquid-blob blob-1"></div>
@@ -307,7 +287,7 @@ const Landing = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="landing-nav">
+      <nav className="landing-nav" style={{ position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
         <a href="/" className="landing-logo" style={{ textDecoration: 'none' }}>
           <div className="landing-logo-wrapper">
             <img src="/hpu_logo.png" alt="HPU Logo" className="landing-logo-img" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
@@ -325,7 +305,7 @@ const Landing = () => {
         </div>
 
         <div className="nav-actions">
-          <button 
+          <MagneticButton 
             onClick={toggleTheme} 
             className="icon-btn" 
             title="Toggle theme mode"
@@ -343,20 +323,25 @@ const Landing = () => {
             }}
           >
             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
+          </MagneticButton>
           
-          <button 
+          <MagneticButton 
             onClick={() => scrollToSection('portals')} 
             className="btn-primary login-nav-btn"
           >
             Login Portal <ArrowUpRight size={16} />
-          </button>
+          </MagneticButton>
         </div>
       </nav>
 
       {/* Hero Section */}
       <section id="home" className="hero-section">
-        <div className="hero-content">
+        <motion.div 
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="hero-content"
+        >
           <div className="hero-badge">
             <Sparkles size={14} /> Himachal Pradesh University Portal Gateway
           </div>
@@ -369,17 +354,22 @@ const Landing = () => {
             ScholarHub is HPU's unified digital gateway for tracking Ph.D. research progress and monitoring student attendance. Operating on a single login, one shared record, and two purpose-built application portals.
           </p>
           <div className="hero-buttons">
-            <button onClick={() => scrollToSection('portals')} className="btn-primary">
+            <MagneticButton onClick={() => scrollToSection('portals')} className="btn-primary">
               Explore Portals <ArrowRight size={16} />
-            </button>
-            <button onClick={() => scrollToSection('about')} className="btn-outline">
+            </MagneticButton>
+            <MagneticButton onClick={() => scrollToSection('about')} className="btn-outline">
               Learn More
-            </button>
+            </MagneticButton>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="hero-image-container">
-          <div className="glass-panel animated-svg-box" style={{ background: 'var(--glass-bg)', padding: '30px' }}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          className="hero-image-container"
+        >
+          <TiltCard className="glass-panel animated-svg-box" style={{ background: 'var(--glass-bg)', padding: '30px' }}>
             {/* Interactive spoke SVG */}
             <svg viewBox="0 0 400 400" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
               <defs>
@@ -465,8 +455,8 @@ const Landing = () => {
               <circle cx="200" cy="200" r="44" fill="#ffffff" filter="drop-shadow(0px 12px 24px rgba(19, 58, 38, 0.15))" stroke="rgba(19, 58, 38, 0.1)" strokeWidth="2" />
               <image href="/hpu_logo.png" x="172" y="172" width="56" height="56" />
             </svg>
-          </div>
-        </div>
+          </TiltCard>
+        </motion.div>
       </section>
 
       {/* "What is ScholarHub" - Shared Identity Section */}
@@ -483,7 +473,7 @@ const Landing = () => {
         </div>
 
         <div className="identity-grid">
-          <div className="clay-card identity-card">
+          <TiltCard className="clay-card identity-card">
             <div className="identity-icon-wrapper sh-no-icon">
               <Users size={28} />
             </div>
@@ -491,9 +481,9 @@ const Landing = () => {
             <p>
               Upon registration, every candidate receives a unique 9-digit <strong>ScholarHub Number (SH No.)</strong>. This serves as a common key across both apps, linking attendance registries with research portfolios.
             </p>
-          </div>
+          </TiltCard>
 
-          <div className="clay-card identity-card">
+          <TiltCard className="clay-card identity-card">
             <div className="identity-icon-wrapper portals-icon">
               <Layers size={28} />
             </div>
@@ -501,9 +491,9 @@ const Landing = () => {
             <p>
               <strong>ScholarSync</strong> maps the candidate lifecycle and coordinates supervisor approvals, while <strong>ScholarTrack</strong> audits class check-ins against HPU's strict compliance policies.
             </p>
-          </div>
+          </TiltCard>
 
-          <div className="clay-card identity-card">
+          <TiltCard className="clay-card identity-card">
             <div className="identity-icon-wrapper database-icon">
               <Database size={28} />
             </div>
@@ -511,7 +501,7 @@ const Landing = () => {
             <p>
               Data is synced in real-time to a secure MongoDB cluster, ensuring HODs, supervisors, and administrative offices see identical, tamper-proof student profiles and registers.
             </p>
-          </div>
+          </TiltCard>
         </div>
       </section>
 
@@ -527,7 +517,7 @@ const Landing = () => {
 
         <div className="projects-grid">
           {/* ScholarSync Launcher Card */}
-          <div 
+          <TiltCard 
             className="clay-card project-launch-card sync-launcher"
             onClick={() => SCHOLAR_SYNC_URL && (window.location.href = SCHOLAR_SYNC_URL)}
             style={!SCHOLAR_SYNC_URL ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
@@ -559,10 +549,10 @@ const Landing = () => {
                 ⚠️ VITE_SCHOLAR_SYNC_URL not configured in .env
               </div>
             )}
-          </div>
+          </TiltCard>
 
           {/* ScholarTrack Launcher Card */}
-          <div 
+          <TiltCard 
             className="clay-card project-launch-card track-launcher"
             onClick={() => SCHOLAR_TRACK_URL && (window.location.href = SCHOLAR_TRACK_URL)}
             style={!SCHOLAR_TRACK_URL ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
@@ -594,7 +584,7 @@ const Landing = () => {
                 ⚠️ VITE_SCHOLAR_TRACK_URL not configured in .env
               </div>
             )}
-          </div>
+          </TiltCard>
         </div>
       </section>
 
@@ -655,7 +645,7 @@ const Landing = () => {
 
           {/* Timeline representation */}
           <div className="deepdive-visual">
-            <div className="glass-panel timeline-widget">
+            <TiltCard className="glass-panel timeline-widget">
               <h4 className="widget-title">PhD Progress Milestones</h4>
               <p className="widget-subtitle">Standard HPU doctoral thesis sequence</p>
               
@@ -670,7 +660,7 @@ const Landing = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </TiltCard>
           </div>
         </div>
       </section>
@@ -684,7 +674,7 @@ const Landing = () => {
         <div className="deepdive-grid alt-layout">
           {/* Attendance Mock Widget */}
           <div className="deepdive-visual">
-            <div className="glass-panel mock-dashboard-card">
+            <TiltCard className="glass-panel mock-dashboard-card">
               <div className="mock-card-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Activity size={18} color="#0284c7" />
@@ -750,7 +740,7 @@ const Landing = () => {
                 </div>
                 <span className="leave-status-tag">Approved by Guide</span>
               </div>
-            </div>
+            </TiltCard>
           </div>
 
           <div className="deepdive-text">
@@ -809,36 +799,34 @@ const Landing = () => {
 
         {/* Dynamic statistics counter grid */}
         <div className="stats-counters-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', maxWidth: '1000px', margin: '0 auto' }}>
-          <div className="clay-card stat-counter-card">
+          <TiltCard className="clay-card stat-counter-card">
             {statsLoading ? (
               <div className="stat-skeleton"></div>
             ) : (
               <span className="stat-number">{stats.scholars}</span>
             )}
             <span className="stat-label">Registered Scholars</span>
-          </div>
+          </TiltCard>
 
-          <div className="clay-card stat-counter-card">
+          <TiltCard className="clay-card stat-counter-card">
             {statsLoading ? (
               <div className="stat-skeleton"></div>
             ) : (
               <span className="stat-number">{stats.departments}</span>
             )}
             <span className="stat-label">HPU Departments</span>
-          </div>
+          </TiltCard>
 
-          <div className="clay-card stat-counter-card">
+          <TiltCard className="clay-card stat-counter-card">
             {statsLoading ? (
               <div className="stat-skeleton"></div>
             ) : (
               <span className="stat-number">{stats.scholars}</span>
             )}
             <span className="stat-label">Unified Student Profiles</span>
-          </div>
+          </TiltCard>
         </div>
       </section>
-
-
 
       {/* Footer */}
       <footer className="footer">
