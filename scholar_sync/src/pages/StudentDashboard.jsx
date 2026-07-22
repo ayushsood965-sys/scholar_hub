@@ -8244,7 +8244,7 @@ const ProfileTab = () => {
       { key: 'memberships', label: 'Professional Bodies', Icon: Users },
       { key: 'committees', label: 'Committees', Icon: Bookmark },
       { key: 'projects', label: 'Projects', Icon: Folder },
-      { key: 'publications', label: 'Publications', Icon: BookOpen },
+      { key: 'publications', label: 'Publications/Conferences', Icon: BookOpen },
       { key: 'ipr', label: 'Intellectual Property Rights', Icon: Copyright },
       { key: 'settings', label: 'Privacy Settings', Icon: Settings }
     );
@@ -13010,7 +13010,7 @@ const ProfileTab = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                   {[
                     ...((degreeType === 'Ph.D.' || degreeType === 'PhD') ? [
-                      { key: 'publications', label: 'Publications', mandatory: true },
+                      { key: 'publications', label: 'Publications/Conferences', mandatory: true },
                       { key: 'projects', label: 'Research Projects' },
                       { key: 'ipr', label: 'IPR / Patents', mandatory: true }
                     ] : []),
