@@ -100,6 +100,22 @@ const sanitizeObject = (obj) => {
     });
   }
 };
+const cacheManager = require('./utils/cacheManager');
+
+// Global Automatic Mutation Cache Invalidation Middleware
+// Ensures ANY successful mutation (POST, PUT, DELETE, PATCH) across ALL roles and features
+// automatically clears all cache namespaces so stale content is NEVER served.
+app.use((req, res, next) => {
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    res.on('finish', () => {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        cacheManager.clear();
+      }
+    });
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   if (req.body) sanitizeObject(req.body);
   if (req.query) sanitizeObject(req.query);
