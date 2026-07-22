@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Landing from './Landing';
 import ProtectedRoute from './components/ProtectedRoute';
 import UtilityAction from './components/UtilityAction';
@@ -37,6 +37,14 @@ const PreloaderFallback = () => (
     <div className="premium-preloader-text" style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Loading portal section...</div>
   </div>
 );
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
 function App() {
   useEffect(() => {
@@ -102,6 +110,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <ScrollToTop />
         <InstallPrompt />
         <Suspense fallback={<PreloaderFallback />}>
           <Routes>
