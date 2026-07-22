@@ -4,7 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { AuthContext } from '../../context/AuthContext';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { CheckCircle, XCircle, Trash2, Search, Users, UserCheck, ShieldAlert } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, Search, Users, UserCheck, ShieldAlert, GraduationCap, Briefcase } from 'lucide-react';
 
 const UserVerificationTab = () => {
   const [users, setUsers] = useState([]);
@@ -12,6 +12,7 @@ const UserVerificationTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [verificationFilter, setVerificationFilter] = useState('ALL');
+  const [hodSubTab, setHodSubTab] = useState('FACULTY'); // 'FACULTY' | 'STUDENT'
   const { user } = useContext(AuthContext);
   const api = useApi();
   const toast = useToast();
@@ -72,7 +73,16 @@ const UserVerificationTab = () => {
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+    let matchesRole = true;
+    if (user?.role === 'HOD') {
+      if (hodSubTab === 'FACULTY') {
+        matchesRole = u.role === 'FACULTY' || u.role === 'HOD';
+      } else if (hodSubTab === 'STUDENT') {
+        matchesRole = u.role === 'STUDENT';
+      }
+    } else {
+      matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+    }
     
     const matchesVerification = 
       verificationFilter === 'ALL' ||
@@ -81,6 +91,9 @@ const UserVerificationTab = () => {
 
     return matchesSearch && matchesRole && matchesVerification;
   });
+
+  const facultyCount = users.filter(u => u.role === 'FACULTY' || u.role === 'HOD').length;
+  const studentCount = users.filter(u => u.role === 'STUDENT').length;
 
   const columns = [
     {
@@ -109,8 +122,8 @@ const UserVerificationTab = () => {
     {
       header: 'Role',
       accessor: (row) => (
-        <span className={`badge ${row.role === 'HOD' ? 'badge-primary' : 'badge-secondary'}`}>
-          {row.role === 'HOD' ? 'HOD' : row.subRole || 'FACULTY'}
+        <span className={`badge ${row.role === 'HOD' ? 'badge-primary' : row.role === 'STUDENT' ? 'badge-neutral' : 'badge-secondary'}`}>
+          {row.role === 'HOD' ? 'HOD' : row.role === 'STUDENT' ? 'STUDENT' : row.subRole || 'FACULTY'}
         </span>
       )
     },
@@ -137,48 +150,61 @@ const UserVerificationTab = () => {
     {
       header: 'Actions',
       accessor: (row) => (
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Unverified users: Show Approve button if email verified, disabled Verify ID button if email unverified */}
           {!row.isVerified && (
             <button 
               className="btn btn-sm btn-primary" 
               style={{ 
-                padding: '6px 12px', 
+                padding: '6px 14px', 
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: '4px',
                 cursor: row.isEmailVerified ? 'pointer' : 'not-allowed',
                 opacity: row.isEmailVerified ? 1 : 0.6,
-                background: row.isEmailVerified ? 'var(--primary-color)' : '#9CA3AF',
-                borderColor: row.isEmailVerified ? 'var(--primary-color)' : '#9CA3AF'
+                background: row.isEmailVerified ? '#10B981' : '#9CA3AF',
+                borderColor: row.isEmailVerified ? '#10B981' : '#9CA3AF',
+                color: '#FFFFFF',
+                fontWeight: 700
               }}
               onClick={() => {
                 if (row.isEmailVerified === false) return;
                 handleVerify(row._id);
               }}
               disabled={row.isEmailVerified === false}
-              title={row.isEmailVerified ? "Verify ID" : "Email must be verified first"}
+              title={row.isEmailVerified ? "Approve User Account" : "Email must be verified first"}
             >
-              <UserCheck size={14} /> Verify
+              <UserCheck size={14} /> {row.isEmailVerified ? 'Approve' : 'Verify ID'}
             </button>
           )}
-          <button 
-            className={`btn btn-sm ${row.isActive ? 'btn-outline-danger' : 'btn-outline-success'}`}
-            style={{ 
-              padding: '6px 12px',
-              color: row.isActive ? '#EF4444' : '#10B981',
-              borderColor: row.isActive ? '#EF4444' : '#10B981'
-            }}
-            onClick={() => handleToggleActive(row._id)}
-          >
-            {row.isActive ? 'Disable' : 'Enable'}
-          </button>
-          <button 
-            className="btn btn-sm btn-outline" 
-            style={{ color: '#EF4444', borderColor: '#EF4444', padding: '6px' }}
-            onClick={() => handleDelete(row._id)}
-          >
-            <Trash2 size={16} />
-          </button>
+
+          {/* Verified users: Show Disable ID / Enable ID button only */}
+          {row.isVerified && (
+            <button 
+              className={`btn btn-sm ${row.isActive ? 'btn-outline-danger' : 'btn-outline-success'}`}
+              style={{ 
+                padding: '6px 12px',
+                color: row.isActive ? '#EF4444' : '#10B981',
+                borderColor: row.isActive ? '#EF4444' : '#10B981',
+                fontWeight: 700
+              }}
+              onClick={() => handleToggleActive(row._id)}
+            >
+              {row.isActive ? 'Disable ID' : 'Enable ID'}
+            </button>
+          )}
+
+          {/* Delete button: Only available at Super Admin level */}
+          {user?.role === 'SUPER_ADMIN' && (
+            <button 
+              className="btn btn-sm btn-outline" 
+              style={{ color: '#EF4444', borderColor: '#EF4444', padding: '6px' }}
+              onClick={() => handleDelete(row._id)}
+              title="Delete Account"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       )
     }
@@ -191,18 +217,66 @@ const UserVerificationTab = () => {
       <div className="flex justify-between items-center mb-lg">
         <div>
           <h2 style={{ color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={24} /> Faculty & HOD Verification
+            <Users size={24} /> {user?.role === 'HOD' ? 'Department User Management' : 'Faculty & HOD Verification'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Verify registered faculty and department head accounts to unlock their access levels.
+            {user?.role === 'HOD' 
+              ? `Manage and approve registered faculty members and student IDs for the ${user.department || ''} department.`
+              : 'Verify registered faculty and department head accounts across the institution.'}
           </p>
         </div>
       </div>
 
+      {/* Sub-tabs for HOD Level: Faculty Members vs Department Students */}
+      {user?.role === 'HOD' && (
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', borderBottom: '2px solid var(--color-border, #E2E8F0)', paddingBottom: '10px' }}>
+          <button
+            onClick={() => setHodSubTab('FACULTY')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: hodSubTab === 'FACULTY' ? '#10B981' : 'transparent',
+              color: hodSubTab === 'FACULTY' ? '#FFFFFF' : 'var(--text-secondary)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Briefcase size={18} />
+            1. Faculty Members ({facultyCount})
+          </button>
+          <button
+            onClick={() => setHodSubTab('STUDENT')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: hodSubTab === 'STUDENT' ? '#10B981' : 'transparent',
+              color: hodSubTab === 'STUDENT' ? '#FFFFFF' : 'var(--text-secondary)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <GraduationCap size={18} />
+            2. Department Students ({studentCount})
+          </button>
+        </div>
+      )}
+
       {/* Filters bar */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: '2fr 1fr 1fr', 
+        gridTemplateColumns: user?.role === 'HOD' ? '3fr 1fr' : '2fr 1fr 1fr', 
         gap: '16px', 
         marginBottom: '24px',
         background: 'rgba(255,255,255,0.02)',
@@ -221,27 +295,20 @@ const UserVerificationTab = () => {
           />
         </div>
 
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <select className="form-input" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ height: '100%' }}>
-            <option value="ALL">All Roles</option>
-            {user?.role === 'SUPER_ADMIN' ? (
-              <>
-                <option value="HOD">HODs Only</option>
-                <option value="FACULTY">Faculties Only</option>
-              </>
-            ) : (
-              <>
-                <option value="FACULTY">Faculties Only</option>
-                <option value="STUDENT">Students Only</option>
-              </>
-            )}
-          </select>
-        </div>
+        {user?.role === 'SUPER_ADMIN' && (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <select className="form-input" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ height: '100%' }}>
+              <option value="ALL">All Roles</option>
+              <option value="HOD">HODs Only</option>
+              <option value="FACULTY">Faculties Only</option>
+            </select>
+          </div>
+        )}
 
         <div className="form-group" style={{ marginBottom: 0 }}>
           <select className="form-input" value={verificationFilter} onChange={e => setVerificationFilter(e.target.value)} style={{ height: '100%' }}>
             <option value="ALL">All Verification</option>
-            <option value="UNVERIFIED">Pending Verification</option>
+            <option value="UNVERIFIED">Pending Approval</option>
             <option value="VERIFIED">Verified Only</option>
           </select>
         </div>
