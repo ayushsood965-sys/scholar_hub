@@ -13007,7 +13007,7 @@ const ProfileTab = () => {
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
                   5. Portfolio Timeline & Memberships
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                   {[
                     ...((degreeType === 'Ph.D.' || degreeType === 'PhD') ? [
                       { key: 'publications', label: 'Publications/Conferences', mandatory: true },
@@ -13018,15 +13018,23 @@ const ProfileTab = () => {
                     { key: 'professionalBodies', label: 'Professional Memberships' },
                     { key: 'committees', label: 'Committee Memberships' }
                   ].map(item => (
-                    <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: `1px solid ${item.mandatory ? '#16a34a' : 'var(--color-border)'}`, borderRadius: '6px', background: item.mandatory ? 'rgba(22,163,74,0.06)' : 'var(--color-bg-secondary)', cursor: item.mandatory ? 'not-allowed' : (isEditingPrivacy ? 'pointer' : 'not-allowed'), color: 'var(--color-text-primary)' }}>
+                    <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: `1px solid ${item.mandatory ? '#16a34a' : 'var(--color-border)'}`, borderRadius: '8px', background: item.mandatory ? 'rgba(22,163,74,0.06)' : 'var(--color-bg-secondary)', cursor: item.mandatory ? 'not-allowed' : (isEditingPrivacy ? 'pointer' : 'not-allowed'), color: 'var(--color-text-primary)' }}>
                       <input 
                         type="checkbox" 
                         disabled={item.mandatory || !isEditingPrivacy}
                         checked={true} 
                         readOnly={item.mandatory}
+                        style={{ flexShrink: 0 }}
                         onChange={() => !item.mandatory && setPrivacySettings(prev => ({ ...prev, [item.key]: prev[item.key] === false ? true : false }))}
                       />
-                      <span>Show {item.label}{item.mandatory ? <span style={{ fontSize: '0.72rem', color: '#16a34a', marginLeft: '4px', fontWeight: 700 }}>(Mandatory)</span> : null}</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', width: '100%', fontSize: '0.82rem', lineHeight: 1.3 }}>
+                        <span style={{ fontWeight: 600 }}>Show {item.label}</span>
+                        {item.mandatory && (
+                          <span style={{ fontSize: '0.68rem', color: '#16a34a', background: 'rgba(22,163,74,0.14)', padding: '2px 7px', borderRadius: '4px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            Mandatory
+                          </span>
+                        )}
+                      </div>
                     </label>
                   ))}
                 </div>

@@ -3647,7 +3647,7 @@ const StaffProfileTab = ({ thesis }) => {
               <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#1A5A3B', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
                 5. Portfolio Timeline & Memberships
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                 {[
                   { key: 'publications', label: 'Publications/Conferences' },
                   { key: 'projects', label: 'Research Projects' },
@@ -3657,14 +3657,15 @@ const StaffProfileTab = ({ thesis }) => {
                   { key: 'professionalBodies', label: 'Professional Memberships' },
                   { key: 'committees', label: 'Committee Memberships' }
                 ].map(item => (
-                  <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'rgba(0,0,0,0.02)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
+                  <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'rgba(0,0,0,0.02)', cursor: isEditingPrivacy ? 'pointer' : 'not-allowed', color: 'var(--color-text-primary)' }}>
                     <input 
                       type="checkbox" 
                       disabled={!isEditingPrivacy}
                       checked={privacyFieldSettings[item.key] !== false} 
+                      style={{ flexShrink: 0 }}
                       onChange={() => setPrivacyFieldSettings(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
                     />
-                    <span>Show {item.label}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.3 }}>Show {item.label}</span>
                   </label>
                 ))}
               </div>
