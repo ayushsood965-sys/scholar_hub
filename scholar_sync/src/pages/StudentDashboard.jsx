@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users, Lightbulb, Briefcase, Bookmark, Folder, Copyright, Eye, EyeOff, Shield } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users, Lightbulb, Briefcase, Bookmark, Folder, Copyright, Eye, EyeOff, Shield, Globe } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -1521,8 +1521,18 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
         })}
       </div>
       <div className="sidebar-bottom">
+        <button
+          className="nav-item"
+          onClick={() => {
+            sessionStorage.setItem('allow_landing', 'true');
+            window.location.href = '/?view=home';
+          }}
+          style={{ background: 'rgba(16, 185, 129, 0.08)', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', color: '#10B981', fontWeight: 700, padding: '10px 14px', borderRadius: '8px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Globe className="nav-icon" style={{ color: '#10B981' }} /> Visit Home Page
+        </button>
         <button className="nav-item" onClick={() => { window.location.href = "/logout-bridge?toast=Logged%20out%20successfully"; }}
-          style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', color: '#F87171' }}>
+          style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', color: '#F87171', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px' }}>
           <LogOut className="nav-icon" /> Logout
         </button>
       </div>

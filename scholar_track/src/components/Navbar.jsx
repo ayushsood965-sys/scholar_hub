@@ -41,8 +41,8 @@ const Navbar = () => {
       <div className="nav-actions">
         <ThemeToggle />
         {user ? (
-          <button className="btn btn-primary" onClick={() => navigate(dashMap[user.role] ?? '/student-dashboard')}>
-            Dashboard
+          <button className="btn btn-primary" onClick={() => navigate(dashMap[user.role] ?? '/student-dashboard')} style={{ background: '#10B981', border: 'none', color: '#fff', fontWeight: 700 }}>
+            Go to Dashboard →
           </button>
         ) : (
           <>

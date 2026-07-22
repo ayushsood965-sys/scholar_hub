@@ -27,6 +27,7 @@ import {
   ClipboardList,
   UserCog,
   Mail,
+  Globe,
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { NotificationContext } from "../context/NotificationContext";
@@ -256,6 +257,17 @@ const DashboardShell = ({
               <div className="sidebar-user-role">{role?.replace("_", " ")}</div>
             </div>
           </div>
+          <button
+            className="nav-item"
+            onClick={() => {
+              sessionStorage.setItem("allow_landing", "true");
+              window.location.href = "/?view=home";
+            }}
+            style={{ color: "#10B981", marginBottom: "4px" }}
+          >
+            <Globe className="nav-icon" style={{ color: "#10B981" }} />
+            Visit Home Page
+          </button>
           <button
             className="nav-item"
             onClick={handleLogout}

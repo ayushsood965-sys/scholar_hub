@@ -93,7 +93,10 @@ const Navbar = () => {
         </div>
         
         {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button className="btn-primary" onClick={goToDashboard} style={{ background: '#10B981', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              Go to Dashboard →
+            </button>
             {/* Notifications */}
             <div style={{ position: 'relative' }}>
               <button className="icon-btn" onClick={() => setShowNotifications(!showNotifications)}>

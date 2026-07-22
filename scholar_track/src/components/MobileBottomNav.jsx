@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu, Home, User, LogOut } from "lucide-react";
+import { Menu, Home, User, LogOut, Globe } from "lucide-react";
 import "./MobileBottomNav.css";
 
 const MobileBottomNav = ({
@@ -30,6 +30,31 @@ const MobileBottomNav = ({
             <h3>Navigation Menu</h3>
           </div>
           <div className="mobile-menu-list">
+            <button
+              onClick={() => {
+                sessionStorage.setItem("allow_landing", "true");
+                window.location.href = "/?view=home";
+              }}
+              className="mobile-menu-item visit-home-btn"
+              style={{
+                background: "rgba(16, 185, 129, 0.14)",
+                color: "#10B981",
+                fontWeight: 700,
+                marginBottom: "10px",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "12px 16px",
+                borderRadius: "10px",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <Globe className="mobile-menu-item-icon" size={20} style={{ color: "#10B981" }} />
+              <span className="mobile-menu-item-label">Visit Home Page</span>
+            </button>
+
             {navItems.map((item, idx) => {
               if (item.kind === "section") {
                 return (

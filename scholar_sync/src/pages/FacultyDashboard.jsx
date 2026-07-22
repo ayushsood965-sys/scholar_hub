@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileText, Users, Calendar, User, LogOut, Bell, CheckCircle2, XCircle, Layers, Award, Upload, ShieldCheck, Edit, AlertTriangle, Plus, Settings, Search, BookOpen, Coins, Mail } from 'lucide-react';
+import { Home, FileText, Users, Calendar, User, LogOut, Bell, CheckCircle2, XCircle, Layers, Award, Upload, ShieldCheck, Edit, AlertTriangle, Plus, Settings, Search, BookOpen, Coins, Mail, Globe } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL, API_URL } from '../config';
 
@@ -358,8 +358,18 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
         })}
       </div>
       <div className="sidebar-bottom">
+        <button
+          className="nav-item"
+          onClick={() => {
+            sessionStorage.setItem('allow_landing', 'true');
+            window.location.href = '/?view=home';
+          }}
+          style={{ background: 'rgba(16, 185, 129, 0.08)', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', color: '#10B981', fontWeight: 700, padding: '10px 14px', borderRadius: '8px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Globe className="nav-icon" style={{ color: '#10B981' }} /> Visit Home Page
+        </button>
         <button className="nav-item" onClick={() => { window.location.href = "/logout-bridge?toast=Logged%20out%20successfully"; }}
-          style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', color: '#F87171' }}>
+          style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left', color: '#F87171', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px' }}>
           <LogOut className="nav-icon" /> Logout
         </button>
       </div>

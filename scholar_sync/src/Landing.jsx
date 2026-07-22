@@ -32,14 +32,26 @@ const Landing = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (user.role === 'SUPER_ADMIN') {
-        navigate('/super-dashboard', { replace: true });
-      } else if (user.role === 'ADMIN' || user.role === 'HOD') {
-        navigate('/admin-dashboard', { replace: true });
-      } else if (user.role === 'FACULTY') {
-        navigate('/faculty-dashboard', { replace: true });
-      } else {
-        navigate('/student-dashboard', { replace: true });
+      const isMobileOrPWA =
+        window.innerWidth <= 768 ||
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const isExplicitHome =
+        urlParams.get('view') === 'home' ||
+        sessionStorage.getItem('allow_landing') === 'true';
+
+      if (isMobileOrPWA && !isExplicitHome) {
+        if (user.role === 'SUPER_ADMIN') {
+          navigate('/super-dashboard', { replace: true });
+        } else if (user.role === 'ADMIN' || user.role === 'HOD') {
+          navigate('/admin-dashboard', { replace: true });
+        } else if (user.role === 'FACULTY') {
+          navigate('/faculty-dashboard', { replace: true });
+        } else {
+          navigate('/student-dashboard', { replace: true });
+        }
       }
     }
   }, [user, authLoading, navigate]);
@@ -108,6 +120,50 @@ const Landing = () => {
         <div className="liquid-blob blob-3"></div>
       </div>
       <Navbar />
+
+      {user && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(56, 189, 248, 0.15))',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 22px',
+          margin: '20px auto 10px',
+          maxWidth: '850px',
+          width: '92%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.2rem' }}>👋</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+              Logged in as <strong>{user.name}</strong> ({user.role?.replace('_', ' ')})
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('allow_landing');
+              if (user.role === 'SUPER_ADMIN') {
+                navigate('/super-dashboard');
+              } else if (user.role === 'ADMIN' || user.role === 'HOD') {
+                navigate('/admin-dashboard');
+              } else if (user.role === 'FACULTY') {
+                navigate('/faculty-dashboard');
+              } else {
+                navigate('/student-dashboard');
+              }
+            }}
+            className="btn btn-primary"
+            style={{ padding: '9px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '24px', background: '#10B981', color: '#fff', border: 'none', cursor: 'pointer' }}
+          >
+            Go to Dashboard →
+          </button>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="hero-section">
