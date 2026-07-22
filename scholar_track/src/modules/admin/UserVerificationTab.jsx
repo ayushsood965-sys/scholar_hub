@@ -11,7 +11,9 @@ const UserVerificationTab = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
-  const [verificationFilter, setVerificationFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('DEFAULT');
+  const [pageSize, setPageSize] = useState('10');
+  const [currentPage, setCurrentPage] = useState(1);
   const [hodSubTab, setHodSubTab] = useState('FACULTY'); // 'FACULTY' | 'STUDENT'
   const { user } = useContext(AuthContext);
   const api = useApi();
@@ -71,6 +73,7 @@ const UserVerificationTab = () => {
     const matchesSearch = 
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()));
     
     let matchesRole = true;
@@ -83,14 +86,25 @@ const UserVerificationTab = () => {
     } else {
       matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
     }
-    
-    const matchesVerification = 
-      verificationFilter === 'ALL' ||
-      (verificationFilter === 'VERIFIED' && u.isVerified) ||
-      (verificationFilter === 'UNVERIFIED' && !u.isVerified);
 
-    return matchesSearch && matchesRole && matchesVerification;
+    return matchesSearch && matchesRole;
   });
+
+  // Sort logic
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (sortBy === 'NAME_ASC') return a.name.localeCompare(b.name);
+    if (sortBy === 'NAME_DESC') return b.name.localeCompare(a.name);
+    if (sortBy === 'UNVERIFIED_FIRST') return (a.isVerified === b.isVerified) ? 0 : a.isVerified ? 1 : -1;
+    return 0;
+  });
+
+  // Pagination logic
+  const numericPageSize = pageSize === 'ALL' ? sortedUsers.length : parseInt(pageSize, 10);
+  const totalPages = Math.ceil(sortedUsers.length / (numericPageSize || 1)) || 1;
+  const paginatedUsers = sortedUsers.slice(
+    (currentPage - 1) * numericPageSize,
+    currentPage * numericPageSize
+  );
 
   const facultyCount = users.filter(u => u.role === 'FACULTY' || u.role === 'HOD').length;
   const studentCount = users.filter(u => u.role === 'STUDENT').length;
@@ -231,7 +245,7 @@ const UserVerificationTab = () => {
       {user?.role === 'HOD' && (
         <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', borderBottom: '2px solid var(--color-border, #E2E8F0)', paddingBottom: '10px' }}>
           <button
-            onClick={() => setHodSubTab('FACULTY')}
+            onClick={() => { setHodSubTab('FACULTY'); setCurrentPage(1); }}
             style={{
               padding: '10px 20px',
               borderRadius: '8px',
@@ -251,7 +265,7 @@ const UserVerificationTab = () => {
             1. Faculty Members ({facultyCount})
           </button>
           <button
-            onClick={() => setHodSubTab('STUDENT')}
+            onClick={() => { setHodSubTab('STUDENT'); setCurrentPage(1); }}
             style={{
               padding: '10px 20px',
               borderRadius: '8px',
@@ -273,48 +287,160 @@ const UserVerificationTab = () => {
         </div>
       )}
 
-      {/* Filters bar */}
+      {/* Screenshot-Style Control Bar */}
       <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: user?.role === 'HOD' ? '3fr 1fr' : '2fr 1fr 1fr', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
         gap: '16px', 
         marginBottom: '24px',
-        background: 'rgba(255,255,255,0.02)',
-        padding: '16px',
-        borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.05)'
+        background: '#EAF5ED',
+        padding: '12px 18px',
+        borderRadius: '16px',
+        border: '1px solid rgba(16, 185, 129, 0.2)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
       }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'var(--bg-input)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-          <Search size={18} color="var(--text-secondary)" />
+        {/* Search Bar */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px', 
+          background: '#FFFFFF', 
+          padding: '8px 16px', 
+          borderRadius: '24px', 
+          border: '1px solid #CBD5E1', 
+          flex: '1 1 300px',
+          minWidth: '240px',
+          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
+        }}>
+          <Search size={18} color="#10B981" />
           <input 
             type="text" 
-            placeholder="Search by name, email, or department..." 
+            placeholder="Search by name, email, or role..." 
             value={searchTerm} 
-            onChange={e => setSearchTerm(e.target.value)}
-            style={{ border: 'none', background: 'none', outline: 'none', width: '100%', color: 'var(--text-primary)' }}
+            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            style={{ 
+              border: 'none', 
+              background: 'none', 
+              outline: 'none', 
+              width: '100%', 
+              fontSize: '0.88rem',
+              color: '#1E293B',
+              fontWeight: 500
+            }}
           />
         </div>
 
-        {user?.role === 'SUPER_ADMIN' && (
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <select className="form-input" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ height: '100%' }}>
+        {/* Control Selectors */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          {/* Role Filter Element */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Role:</span>
+            <select 
+              value={roleFilter} 
+              onChange={e => { setRoleFilter(e.target.value); setCurrentPage(1); }}
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '6px 14px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#1E293B',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
               <option value="ALL">All Roles</option>
-              <option value="HOD">HODs Only</option>
-              <option value="FACULTY">Faculties Only</option>
+              <option value="FACULTY">Faculty</option>
+              <option value="STUDENT">Student</option>
+              {user?.role === 'SUPER_ADMIN' && <option value="HOD">HOD</option>}
             </select>
           </div>
-        )}
 
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <select className="form-input" value={verificationFilter} onChange={e => setVerificationFilter(e.target.value)} style={{ height: '100%' }}>
-            <option value="ALL">All Verification</option>
-            <option value="UNVERIFIED">Pending Approval</option>
-            <option value="VERIFIED">Verified Only</option>
-          </select>
+          {/* Sort Element */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Sort:</span>
+            <select 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value)}
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '6px 14px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#1E293B',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              <option value="DEFAULT">Default Order</option>
+              <option value="NAME_ASC">Name (A to Z)</option>
+              <option value="NAME_DESC">Name (Z to A)</option>
+              <option value="UNVERIFIED_FIRST">Pending Verification First</option>
+            </select>
+          </div>
+
+          {/* Show Rows Element */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Show:</span>
+            <select 
+              value={pageSize} 
+              onChange={e => { setPageSize(e.target.value); setCurrentPage(1); }}
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '6px 14px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#1E293B',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              <option value="10">10 rows</option>
+              <option value="20">20 rows</option>
+              <option value="30">30 rows</option>
+              <option value="50">50 rows</option>
+              <option value="ALL">All rows</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <DataTable columns={columns} data={filteredUsers} />
+      <DataTable columns={columns} data={paginatedUsers} />
+
+      {/* Pagination Controls */}
+      {pageSize !== 'ALL' && totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '12px 16px', background: 'rgba(0,0,0,0.02)', borderRadius: '10px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            Showing {((currentPage - 1) * numericPageSize) + 1} to {Math.min(currentPage * numericPageSize, sortedUsers.length)} of {sortedUsers.length} users
+          </span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="btn btn-sm btn-outline"
+              style={{ cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1 }}
+            >
+              ◀ Prev
+            </button>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Page {currentPage} of {totalPages}</span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              className="btn btn-sm btn-outline"
+              style={{ cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1 }}
+            >
+              Next ▶
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
