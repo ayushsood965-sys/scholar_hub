@@ -8,14 +8,11 @@ export default defineConfig({
     port: 5173,
   },
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('react')) {
-              return 'vendor-react';
-            }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
@@ -25,10 +22,9 @@ export default defineConfig({
             if (id.includes('html2canvas') || id.includes('jspdf')) {
               return 'vendor-pdf';
             }
-            if (id.includes('axios') || id.includes('recharts')) {
-              return 'vendor-utils';
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
             }
-            return 'vendor-core';
           }
         }
       }

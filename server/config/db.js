@@ -5,9 +5,11 @@ const connectDB = async () => {
     if (!process.env.MONGO_URI) {
       throw new Error('MONGO_URI is not defined in environment variables.');
     }
-    // Attempt connecting to the configured URI, with a fast 2-second timeout
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 2000
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 100,
+      minPoolSize: 10,
+      maxIdleTimeMS: 30000
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     await backfillSHNos();

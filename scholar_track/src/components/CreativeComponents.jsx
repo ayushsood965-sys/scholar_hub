@@ -123,7 +123,21 @@ export const ParticleCanvas = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="dev-particle-canvas" />;
+  return (
+    <canvas 
+      ref={canvasRef} 
+      className="dev-particle-canvas" 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} 
+    />
+  );
 };
 
 /* ==========================================================================
@@ -144,6 +158,13 @@ export const MouseSpotlight = () => {
     <div
       className="dev-mouse-spotlight"
       style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        zIndex: 0,
         background: `radial-gradient(600px circle at ${pos.x}px ${pos.y}px, rgba(56, 189, 248, 0.08), transparent 80%)`
       }}
     />
