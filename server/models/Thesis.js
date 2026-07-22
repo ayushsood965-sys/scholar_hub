@@ -174,4 +174,8 @@ const thesisSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+thesisSchema.index({ department: 1, status: 1 });
+thesisSchema.index({ supervisorId: 1, status: 1 });
+thesisSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Thesis', thesisSchema);

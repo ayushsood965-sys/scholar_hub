@@ -43,5 +43,7 @@ const attendanceSchema = new mongoose.Schema({
 
 // Ensure unique attendance per student per day for a specific type
 attendanceSchema.index({ studentId: 1, date: 1, type: 1 }, { unique: true });
+attendanceSchema.index({ studentId: 1, date: -1 });
+attendanceSchema.index({ department: 1, date: -1, status: 1 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

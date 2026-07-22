@@ -121,11 +121,13 @@ const getEvents = async (req, res) => {
 // GET /api/public/stats
 const getStats = async (req, res) => {
   try {
-    const scholarsCount = await User.countDocuments({ role: 'STUDENT', profileCompleted: true });
-    const guidesCount = await User.countDocuments({ role: 'FACULTY', profileCompleted: true });
-    const publicationsCount = await Publication.countDocuments({ status: 'VERIFIED' });
-    const awardedCount = await Thesis.countDocuments({ status: 'AWARDED' });
-    const departmentCount = await Department.countDocuments({});
+    const [scholarsCount, guidesCount, publicationsCount, awardedCount, departmentCount] = await Promise.all([
+      User.countDocuments({ role: 'STUDENT', profileCompleted: true }),
+      User.countDocuments({ role: 'FACULTY', profileCompleted: true }),
+      Publication.countDocuments({ status: 'VERIFIED' }),
+      Thesis.countDocuments({ status: 'AWARDED' }),
+      Department.countDocuments({})
+    ]);
 
     res.status(200).json({
       scholars: scholarsCount,

@@ -55,8 +55,8 @@ const notificationSchema = new mongoose.Schema(
 );
 
 // Query helpers for active recipient or active group scope
-notificationSchema.index({ recipient: 1 });
-notificationSchema.index({ roleScope: 1, department: 1 });
+notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ roleScope: 1, department: 1, createdAt: -1 });
 
 // Pre-save hook to track if document is new
 notificationSchema.pre('save', function() {

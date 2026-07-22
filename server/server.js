@@ -58,7 +58,7 @@ connectDB().then(async () => {
       await User.create({
         name: 'Super Administrator',
         username: 'admin',
-        password: process.env.ADMIN_PASSWORD || 'password',
+        password: process.env.ADMIN_PASSWORD || (() => { throw new Error('ADMIN_PASSWORD environment variable must be set in production'); })(),
         role: 'SUPER_ADMIN',
         isActive: true,
         isVerified: true,
@@ -186,7 +186,7 @@ app.get('/api/health', (req, res) => {
 // SYSTEM UTILITY ROUTES (/clear-all & /seed)
 // -------------------------------------------------------------
 
-const UTILITY_PASSWORD = process.env.UTILITY_PASSWORD || 'Ayush1994*';
+const UTILITY_PASSWORD = process.env.UTILITY_PASSWORD || (() => { throw new Error('UTILITY_PASSWORD environment variable must be configured in environment'); })();
 
 // HTML Template Helper for stunning Glassmorphic UI
 const { renderAdminPage } = require('./utils/adminPageTemplate');

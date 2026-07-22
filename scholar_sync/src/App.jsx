@@ -1,34 +1,42 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './Landing';
-import StudentDashboard from './pages/StudentDashboard';
-import FacultyDashboard from './pages/FacultyDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-import GenericPage from './pages/GenericPage';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import VerifyEmailPending from './pages/VerifyEmailPending';
-import VerifyEmailCallback from './pages/VerifyEmailCallback';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import WorkflowPage from './pages/WorkflowPage';
-import LogoutBridge from './pages/LogoutBridge';
 import ProtectedRoute from './components/ProtectedRoute';
 import UtilityAction from './components/UtilityAction';
 import ErrorBoundary from './components/ErrorBoundary';
 import InstallPrompt from './components/InstallPrompt';
 import NotFound from './pages/NotFound';
 
+// Lazy loaded page components for code splitting & initial bundle optimization
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const FacultyDashboard = lazy(() => import('./pages/FacultyDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+const GenericPage = lazy(() => import('./pages/GenericPage'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const VerifyEmailPending = lazy(() => import('./pages/VerifyEmailPending'));
+const VerifyEmailCallback = lazy(() => import('./pages/VerifyEmailCallback'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const WorkflowPage = lazy(() => import('./pages/WorkflowPage'));
+const LogoutBridge = lazy(() => import('./pages/LogoutBridge'));
 
-// Premium landing pages
-import ResearchLabsPage from './pages/ResearchLabsPage';
-import LabDetailPage from './pages/LabDetailPage';
-import PublicationsPage from './pages/PublicationsPage';
-import FundingPage from './pages/FundingPage';
-import EventsPage from './pages/EventsPage';
-import CollaboratePage from './pages/CollaboratePage';
-import DeveloperProfile from './pages/DeveloperProfile';
+// Premium landing pages lazy-loaded
+const ResearchLabsPage = lazy(() => import('./pages/ResearchLabsPage'));
+const LabDetailPage = lazy(() => import('./pages/LabDetailPage'));
+const PublicationsPage = lazy(() => import('./pages/PublicationsPage'));
+const FundingPage = lazy(() => import('./pages/FundingPage'));
+const EventsPage = lazy(() => import('./pages/EventsPage'));
+const CollaboratePage = lazy(() => import('./pages/CollaboratePage'));
+const DeveloperProfile = lazy(() => import('./pages/DeveloperProfile'));
+
+const PreloaderFallback = () => (
+  <div className="premium-preloader-container" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="premium-preloader-spinner"></div>
+    <div className="premium-preloader-text" style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Loading portal section...</div>
+  </div>
+);
 
 function App() {
   useEffect(() => {
@@ -95,41 +103,43 @@ function App() {
     <ErrorBoundary>
       <Router>
         <InstallPrompt />
-        <Routes>
-        <Route path="/" element={<Landing />} />
-        
-        {/* Protected Dashboard Routes */}
-        <Route path="/student-dashboard" element={<ProtectedRoute allowedRoles={['STUDENT']}><StudentDashboard /></ProtectedRoute>} />
-        <Route path="/faculty-dashboard" element={<ProtectedRoute allowedRoles={['FACULTY']}><FacultyDashboard /></ProtectedRoute>} />
-        <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'HOD']}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/super-dashboard" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><SuperAdminDashboard /></ProtectedRoute>} />
-        
-        {/* Auth & Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
-        <Route path="/verify-email" element={<VerifyEmailCallback />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/logout-bridge" element={<LogoutBridge />} />
-        <Route path="/workflow" element={<WorkflowPage />} />
-        <Route path="/labs" element={<ResearchLabsPage />} />
-        <Route path="/labs/:id" element={<LabDetailPage />} />
-        <Route path="/collaborate" element={<CollaboratePage />} />
-        <Route path="/publications" element={<PublicationsPage />} />
-        <Route path="/funding" element={<FundingPage />} />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/ayush-sood" element={<DeveloperProfile />} />
-        <Route path="/about" element={<GenericPage title="About" description="Learn more about the ScholarSync platform." />} />
-        <Route path="/search" element={<GenericPage title="Search Results" description="Global search directory results." />} />
+        <Suspense fallback={<PreloaderFallback />}>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            
+            {/* Protected Dashboard Routes */}
+            <Route path="/student-dashboard" element={<ProtectedRoute allowedRoles={['STUDENT']}><StudentDashboard /></ProtectedRoute>} />
+            <Route path="/faculty-dashboard" element={<ProtectedRoute allowedRoles={['FACULTY']}><FacultyDashboard /></ProtectedRoute>} />
+            <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'HOD']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/super-dashboard" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><SuperAdminDashboard /></ProtectedRoute>} />
+            
+            {/* Auth & Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+            <Route path="/verify-email" element={<VerifyEmailCallback />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/logout-bridge" element={<LogoutBridge />} />
+            <Route path="/workflow" element={<WorkflowPage />} />
+            <Route path="/labs" element={<ResearchLabsPage />} />
+            <Route path="/labs/:id" element={<LabDetailPage />} />
+            <Route path="/collaborate" element={<CollaboratePage />} />
+            <Route path="/publications" element={<PublicationsPage />} />
+            <Route path="/funding" element={<FundingPage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path="/ayush-sood" element={<DeveloperProfile />} />
+            <Route path="/about" element={<GenericPage title="About" description="Learn more about the ScholarSync platform." />} />
+            <Route path="/search" element={<GenericPage title="Search Results" description="Global search directory results." />} />
 
-        {/* System Administration & Utility Hooks */}
-        <Route path="/clear-all" element={<UtilityAction type="clear" />} />
-        <Route path="/seed" element={<UtilityAction type="seed" />} />
-        <Route path="/seed-users" element={<UtilityAction type="seed-users" />} />
-        {/* Fallback Catch-All Route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+            {/* System Administration & Utility Hooks */}
+            <Route path="/clear-all" element={<UtilityAction type="clear" />} />
+            <Route path="/seed" element={<UtilityAction type="seed" />} />
+            <Route path="/seed-users" element={<UtilityAction type="seed-users" />} />
+            {/* Fallback Catch-All Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </Router>
     </ErrorBoundary>
   );
