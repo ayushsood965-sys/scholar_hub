@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { queueVerificationEmail, queuePasswordResetEmail } = require('../utils/emailQueue');
 const Department = require('../models/Department');
 const { createNotification } = require('./notificationController');
+const cacheManager = require('../utils/cacheManager');
 
 const generateToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
@@ -322,6 +323,9 @@ const toggleUserActive = async (req, res) => {
     targetUser.isActive = !targetUser.isActive;
     await targetUser.save();
 
+    // Instant Cache Invalidation: User directory cache is invalidated immediately on state mutation
+    cacheManager.invalidatePattern('users:');
+
     res.json({ message: `User account is now ${targetUser.isActive ? 'active' : 'disabled'}.`, user: targetUser });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -334,8 +338,16 @@ const getDeptUsers = async (req, res) => {
     if (req.user.role !== 'HOD' && req.user.role !== 'ADMIN') {
       return res.status(403).json({ message: 'Action restricted to HOD.' });
     }
+    const cacheKey = `users:dept:${req.user.department || 'ALL'}:${req.user.role}`;
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.json(cached);
+
     const query = req.user.role === 'ADMIN' ? {} : { department: req.user.department };
-    const users = await User.find(query).select('name username role department isActive isVerified isEmailVerified profileCompleted');
+    const users = await User.find(query)
+      .select('name username role department isActive isVerified isEmailVerified profileCompleted')
+      .lean();
+    
+    cacheManager.set(cacheKey, users, 120);
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -348,7 +360,15 @@ const getAllUsers = async (req, res) => {
     if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ message: 'Action restricted to Super Admin.' });
     }
-    const users = await User.find().select('name username role subRole department isActive isVerified isEmailVerified profileCompleted profile');
+    const cacheKey = 'users:all';
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.json(cached);
+
+    const users = await User.find()
+      .select('name username role subRole department isActive isVerified isEmailVerified profileCompleted profile')
+      .lean();
+
+    cacheManager.set(cacheKey, users, 120);
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -784,6 +804,7 @@ const verifyUser = async (req, res) => {
       link: 'profile'
     });
 
+    cacheManager.invalidatePattern('users:');
     res.json({ message: `User account has been verified.`, user: targetUser });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -845,6 +866,7 @@ const rejectUser = async (req, res) => {
       link: 'profile'
     });
 
+    cacheManager.invalidatePattern('users:');
     res.json({ message: `User registration has been rejected and sent back to student.`, user: targetUser });
   } catch (error) {
     res.status(500).json({ message: error.message });

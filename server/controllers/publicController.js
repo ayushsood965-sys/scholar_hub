@@ -10,16 +10,22 @@ const DoctoralProject = require('../models/DoctoralProject');
 const CollaborationCall = require('../models/CollaborationCall');
 const FundingAward = require('../models/FundingAward');
 const Partnership = require('../models/Partnership');
+const cacheManager = require('../utils/cacheManager');
 
 // GET /api/public/labs
 const getLabs = async (req, res) => {
   try {
+    const cacheKey = 'public:labs';
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.status(200).json(cached);
+
     const labs = await ResearchLab.find({})
       .populate('leadId', 'name profile username')
-      .sort('name');
+      .sort('name')
+      .lean();
 
     const enrichedLabs = await Promise.all(labs.map(async (lab) => {
-      const theses = await Thesis.find({ supervisorId: lab.leadId });
+      const theses = await Thesis.find({ supervisorId: lab.leadId }).select('scholarId').lean();
       const scholarIdsFromTheses = theses.map(t => t.scholarId);
 
       const members = await User.find({
@@ -28,7 +34,7 @@ const getLabs = async (req, res) => {
           { _id: { $in: scholarIdsFromTheses } },
           { _id: lab.leadId }
         ]
-      }, 'name role avatarUrl profile department');
+      }, 'name role avatarUrl profile department').lean();
 
       const scholarIds = members.filter(m => m.role === 'STUDENT').map(m => m._id);
       const activeProjectsCount = lab.projects ? lab.projects.length : 0;
@@ -39,7 +45,7 @@ const getLabs = async (req, res) => {
       });
 
       return {
-        ...lab.toObject(),
+        ...lab,
         members,
         memberCount: members.length,
         activeProjectsCount,
@@ -47,6 +53,7 @@ const getLabs = async (req, res) => {
       };
     }));
 
+    cacheManager.set(cacheKey, enrichedLabs, 180);
     res.status(200).json(enrichedLabs);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -56,6 +63,10 @@ const getLabs = async (req, res) => {
 // GET /api/public/publications
 const getPublications = async (req, res) => {
   try {
+    const cacheKey = 'public:publications';
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.status(200).json(cached);
+
     const publications = await Publication.find({ status: 'VERIFIED' })
       .populate('scholarId', 'name department')
       .populate({
@@ -66,7 +77,10 @@ const getPublications = async (req, res) => {
           select: 'name'
         }
       })
-      .sort('-publicationDate');
+      .sort('-publicationDate')
+      .lean();
+
+    cacheManager.set(cacheKey, publications, 180);
     res.status(200).json(publications);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -76,7 +90,12 @@ const getPublications = async (req, res) => {
 // GET /api/public/funding
 const getFunding = async (req, res) => {
   try {
-    const opportunities = await FundingOpportunity.find({}).sort('-createdAt');
+    const cacheKey = 'public:funding';
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.status(200).json(cached);
+
+    const opportunities = await FundingOpportunity.find({}).sort('-createdAt').lean();
+    cacheManager.set(cacheKey, opportunities, 180);
     res.status(200).json(opportunities);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -86,14 +105,18 @@ const getFunding = async (req, res) => {
 // GET /api/public/events
 const getEvents = async (req, res) => {
   try {
-    const customEvents = await Event.find({}).sort('-date');
+    const cacheKey = 'public:events';
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.status(200).json(cached);
+
+    const customEvents = await Event.find({}).sort('-date').lean();
     
     // Fetch upcoming scheduled defenses
     const thesesWithVivas = await Thesis.find({
       status: { $in: ['PRE_SUBMISSION', 'SUBMITTED'] },
       vivaDate: { $ne: null },
       vivaStatus: 'SCHEDULED'
-    }).populate('scholarId', 'name department');
+    }).populate('scholarId', 'name department').lean();
 
     const defenseEvents = thesesWithVivas.map(thesis => {
       const speakerName = thesis.scholarId ? thesis.scholarId.name : 'Ph.D. Scholar';
@@ -112,6 +135,7 @@ const getEvents = async (req, res) => {
     // Merge and sort by date descending
     const mergedEvents = [...customEvents, ...defenseEvents].sort((a, b) => new Date(b.date) - new Date(a.date));
     
+    cacheManager.set(cacheKey, mergedEvents, 180);
     res.status(200).json(mergedEvents);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -121,6 +145,10 @@ const getEvents = async (req, res) => {
 // GET /api/public/stats
 const getStats = async (req, res) => {
   try {
+    const cacheKey = 'public:stats';
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.status(200).json(cached);
+
     const [scholarsCount, guidesCount, publicationsCount, awardedCount, departmentCount] = await Promise.all([
       User.countDocuments({ role: 'STUDENT', profileCompleted: true }),
       User.countDocuments({ role: 'FACULTY', profileCompleted: true }),
@@ -129,13 +157,16 @@ const getStats = async (req, res) => {
       Department.countDocuments({})
     ]);
 
-    res.status(200).json({
+    const result = {
       scholars: scholarsCount,
       guides: guidesCount,
       publications: publicationsCount,
       awardedDegrees: awardedCount,
       departments: departmentCount
-    });
+    };
+
+    cacheManager.set(cacheKey, result, 180);
+    res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

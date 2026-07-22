@@ -1,9 +1,15 @@
 const Department = require('../models/Department');
+const cacheManager = require('../utils/cacheManager');
 
 // Get all departments
 exports.getAllDepartments = async (req, res) => {
   try {
-    let depts = await Department.find().populate('facultyId').sort({ name: 1 });
+    const cacheKey = 'dept:all';
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.json(cached);
+
+    let depts = await Department.find().populate('facultyId').sort({ name: 1 }).lean();
+    cacheManager.set(cacheKey, depts, 180);
     res.json(depts);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving departments', error: error.message });
@@ -36,7 +42,9 @@ exports.createDepartment = async (req, res) => {
       facultyId: facultyId || null
     });
 
-    const populatedDept = await Department.findById(dept._id).populate('facultyId');
+    const populatedDept = await Department.findById(dept._id).populate('facultyId').lean();
+    cacheManager.invalidatePattern('dept:');
+    cacheManager.invalidatePattern('public:');
     res.status(201).json({ success: true, department: populatedDept });
   } catch (error) {
     res.status(500).json({ message: 'Error creating department', error: error.message });
@@ -72,7 +80,9 @@ exports.updateDepartment = async (req, res) => {
     }
 
     await dept.save();
-    const populatedDept = await Department.findById(dept._id).populate('facultyId');
+    const populatedDept = await Department.findById(dept._id).populate('facultyId').lean();
+    cacheManager.invalidatePattern('dept:');
+    cacheManager.invalidatePattern('public:');
     res.json({ success: true, department: populatedDept });
   } catch (error) {
     res.status(500).json({ message: 'Error updating department', error: error.message });
@@ -89,6 +99,8 @@ exports.deleteDepartment = async (req, res) => {
     }
 
     await Department.findByIdAndDelete(id);
+    cacheManager.invalidatePattern('dept:');
+    cacheManager.invalidatePattern('public:');
     res.json({ success: true, message: 'Department deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting department', error: error.message });
