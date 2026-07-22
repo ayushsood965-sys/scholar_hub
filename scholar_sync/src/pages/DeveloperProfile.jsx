@@ -199,7 +199,7 @@ const DeveloperProfile = () => {
       case 'bio':
         newHist.push({
           type: 'output',
-          content: `👨‍💻 Ayush Sood — Senior Full-Stack Architect & AI Automation Specialist
+          content: `👨‍💻 Ayush Sood — Programmer & AI Automation Specialist
 Dedicated Programmer with 7+ years of experience at Himachal Pradesh University (HPU), Shimla.
 Expert in React, Node.js, Laravel, ERP Module Refinement, AI Workflows (MCP Servers), and Helpdesk Systems.`
         });
@@ -356,7 +356,7 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171005`
               <ScrambleText text="Ayush Sood" />
             </h2>
             <p style={{ fontSize: '0.92rem', color: 'var(--color-text-muted)', fontWeight: 600, marginBottom: '8px' }}>
-              Senior Full-Stack Architect
+              Programmer
             </p>
 
             <div className="dev-floating-tech-pills">
