@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import axios from 'axios';
@@ -13,16 +13,22 @@ import {
   ExternalLink,
   Award,
   Layers,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
 
 const PublicationsPage = () => {
   const [publications, setPublications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeSearch, setActiveSearch] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedDept, setSelectedDept] = useState('All');
   
+  // Continuous batch loading state (15 at a time)
+  const [visibleCount, setVisibleCount] = useState(15);
+  const loadMoreRef = useRef(null);
+
   // Citation Modal state
   const [activeCitePub, setActiveCitePub] = useState(null);
   const [activeCiteFormat, setActiveCiteFormat] = useState('APA');
@@ -42,6 +48,17 @@ const PublicationsPage = () => {
     };
     fetchPublications();
   }, []);
+
+  // Reset visible batch to 15 whenever filters or active search query change
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [activeSearch, selectedType, selectedDept]);
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    setActiveSearch(searchQuery.trim());
+    setVisibleCount(15);
+  };
 
   const handleCopyDOI = (doi, index) => {
     navigator.clipboard.writeText(doi);
@@ -84,15 +101,45 @@ const PublicationsPage = () => {
     setTimeout(() => setCopiedCite(false), 2000);
   };
 
+  // Filter across the ENTIRE dataset
   const filteredPubs = publications.filter(pub => {
     const matchesType = selectedType === 'All' || (pub.type || 'JOURNAL') === selectedType;
     const matchesDept = selectedDept === 'All' || pub.scholarId?.department === selectedDept;
-    const matchesSearch = searchQuery === '' || 
-      pub.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (pub.scholarId?.name && pub.scholarId.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      pub.journalName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const query = (activeSearch || searchQuery).toLowerCase();
+    const matchesSearch = query === '' || 
+      pub.title.toLowerCase().includes(query) || 
+      (pub.scholarId?.name && pub.scholarId.name.toLowerCase().includes(query)) ||
+      (pub.thesisId?.supervisorId?.name && pub.thesisId.supervisorId.name.toLowerCase().includes(query)) ||
+      (pub.journalName && pub.journalName.toLowerCase().includes(query)) ||
+      (pub.keywords && pub.keywords.toLowerCase().includes(query));
+      
     return matchesType && matchesDept && matchesSearch;
   });
+
+  // Display only the current visible batch (15 at first, then 30, 45...)
+  const visiblePubs = filteredPubs.slice(0, visibleCount);
+
+  // IntersectionObserver for continuous batch loading when scrolled to bottom
+  useEffect(() => {
+    if (visibleCount >= filteredPubs.length) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount(prev => Math.min(prev + 15, filteredPubs.length));
+        }
+      },
+      { threshold: 0.1, rootMargin: '120px' }
+    );
+
+    const currentEl = loadMoreRef.current;
+    if (currentEl) observer.observe(currentEl);
+
+    return () => {
+      if (currentEl) observer.unobserve(currentEl);
+    };
+  }, [visibleCount, filteredPubs.length]);
 
   const availableDepts = ['All', ...new Set(publications.map(pub => pub.scholarId?.department).filter(Boolean))];
   const publicationTypes = ['All', 'JOURNAL', 'CONFERENCE', 'PATENT', 'BOOK_CHAPTER'];
@@ -135,19 +182,31 @@ const PublicationsPage = () => {
             </div>
           </div>
 
-          {/* Search and Filters */}
+          {/* Search and Filters across ENTIRE dataset */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', borderTop: '1px solid rgba(19,58,38,0.1)', paddingTop: '32px', marginBottom: '32px' }}>
-            <div style={{ position: 'relative', maxWidth: '500px', margin: '0 auto', width: '100%' }}>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Search publications by title, author, or journal..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '44px', borderRadius: '24px', background: 'var(--color-surface)', border: '1px solid #D1D5DB' }}
-              />
-              <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '15px' }} />
-            </div>
+            <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', maxWidth: '650px', margin: '0 auto', width: '100%' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Search entire publications directory by title, author, journal, or topic..."
+                  value={searchQuery}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setActiveSearch(e.target.value);
+                  }}
+                  style={{ paddingLeft: '44px', borderRadius: '24px', background: 'var(--color-surface)', border: '1px solid #D1D5DB', width: '100%' }}
+                />
+                <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '15px' }} />
+              </div>
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                style={{ padding: '10px 24px', borderRadius: '24px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Search size={16} /> Search All
+              </button>
+            </form>
 
             {/* Type Filters */}
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -196,6 +255,18 @@ const PublicationsPage = () => {
             </div>
           </div>
 
+          {/* Results Summary Counter */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '0 8px' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+              Showing {visiblePubs.length} of {filteredPubs.length} Publications
+            </span>
+            {filteredPubs.length > 0 && (
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                Batch size: 15 papers / load
+              </span>
+            )}
+          </div>
+
           {/* Dynamic Content */}
           {loading ? (
             <div className="premium-preloader-container" style={{ padding: '60px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -204,11 +275,11 @@ const PublicationsPage = () => {
             </div>
           ) : filteredPubs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
-              No publications matched your search criteria.
+              No publications matched your search criteria. Try adjusting your query or filters.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {filteredPubs.map((pub, idx) => (
+              {visiblePubs.map((pub, idx) => (
                 <div key={pub._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255, 255, 255, 0.85)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
                     <span style={{ fontSize: '0.75rem', background: '#EAF4EE', color: '#133A26', padding: '4px 10px', borderRadius: '12px', fontWeight: 600 }}>
@@ -269,6 +340,25 @@ const PublicationsPage = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Continuous Batch Loading Sentinel & Button */}
+              {visibleCount < filteredPubs.length && (
+                <div 
+                  ref={loadMoreRef} 
+                  style={{ textAlign: 'center', padding: '30px 0', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}
+                >
+                  <button 
+                    onClick={() => setVisibleCount(prev => Math.min(prev + 15, filteredPubs.length))}
+                    className="btn-outline"
+                    style={{ padding: '12px 28px', borderRadius: '24px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <ChevronDown size={18} /> Load Next 15 Publications ({filteredPubs.length - visibleCount} Remaining)
+                  </button>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    Scrolling down auto-loads the next batch of 15
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
