@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import useApi from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import { AuthContext } from '../../context/AuthContext';
 import DataTable from '../../components/ui/DataTable';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { CheckCircle, XCircle, Trash2, Search, Users, UserCheck, ShieldAlert } from 'lucide-react';
@@ -9,20 +10,21 @@ const UserVerificationTab = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL'); // ALL | HOD | FACULTY
-  const [verificationFilter, setVerificationFilter] = useState('ALL'); // ALL | VERIFIED | UNVERIFIED
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [verificationFilter, setVerificationFilter] = useState('ALL');
+  const { user } = useContext(AuthContext);
   const api = useApi();
   const toast = useToast();
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/auth/all-users');
-      // Filter out students and super admins
-      const staffUsers = res.data.filter(u => ['HOD', 'FACULTY'].includes(u.role));
-      setUsers(staffUsers);
+      const endpoint = user?.role === 'SUPER_ADMIN' ? '/auth/all-users' : '/auth/dept-users';
+      const res = await api.get(endpoint);
+      const filteredUsers = res.data.filter(u => u._id !== user?._id && u.role !== 'SUPER_ADMIN');
+      setUsers(filteredUsers);
     } catch (err) {
-      toast.error('Failed to load university staff directory');
+      toast.error('Failed to load user directory');
     } finally {
       setLoading(false);
     }
@@ -222,8 +224,17 @@ const UserVerificationTab = () => {
         <div className="form-group" style={{ marginBottom: 0 }}>
           <select className="form-input" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ height: '100%' }}>
             <option value="ALL">All Roles</option>
-            <option value="HOD">HODs Only</option>
-            <option value="FACULTY">Faculties Only</option>
+            {user?.role === 'SUPER_ADMIN' ? (
+              <>
+                <option value="HOD">HODs Only</option>
+                <option value="FACULTY">Faculties Only</option>
+              </>
+            ) : (
+              <>
+                <option value="FACULTY">Faculties Only</option>
+                <option value="STUDENT">Students Only</option>
+              </>
+            )}
           </select>
         </div>
 

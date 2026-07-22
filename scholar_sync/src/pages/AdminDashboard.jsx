@@ -2840,7 +2840,7 @@ const ManageUsers = () => {
                           >
                             {u.isActive ? 'Disable ID' : 'Enable ID'}
                           </button>
-                          {!u.isVerified && (u.role === 'STUDENT' || u.role === 'FACULTY') && (
+                          {!u.isVerified && (u.role === 'STUDENT' || u.role === 'FACULTY' || u.role === 'HOD') && (
                             <button 
                               onClick={async () => {
                                 if (u.isEmailVerified === false) return;

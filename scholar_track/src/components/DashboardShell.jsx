@@ -75,6 +75,7 @@ const roleNavConfig = {
     { key: "cloneTimetable", icon: CalendarRange, label: "Clone Timetable" },
 
     { kind: "section", label: "⚖️ APPROVALS & VERIFICATIONS" },
+    { key: "users", icon: ClipboardList, label: "Manage Department Users" },
     { key: "approvals", icon: Gavel, label: "Leave & Correction Queue" },
     { key: "verifyAttendance", icon: ClipboardCheck, label: "Verify Attendance" },
     { key: "students", icon: Users, label: "Verify Student Registration" },

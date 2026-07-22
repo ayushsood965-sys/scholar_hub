@@ -757,6 +757,21 @@ const verifyUser = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized. Can only verify users in your own department.' });
     }
 
+    // If targetUser is being verified as HOD, ensure no active verified HOD exists for that department
+    if (targetUser.role === 'HOD' || targetUser.subRole === 'HOD') {
+      const existingHod = await User.findOne({
+        $or: [{ role: 'HOD' }, { subRole: 'HOD' }],
+        department: targetUser.department,
+        isVerified: true,
+        _id: { $ne: targetUser._id }
+      });
+      if (existingHod) {
+        return res.status(400).json({ 
+          message: `An active verified HOD (${existingHod.name}) already exists for the ${targetUser.department} department. Please disable or revoke the existing HOD first.` 
+        });
+      }
+    }
+
     targetUser.isVerified = true;
     await targetUser.save();
 
