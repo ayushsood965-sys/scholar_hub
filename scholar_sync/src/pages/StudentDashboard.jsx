@@ -13022,7 +13022,7 @@ const ProfileTab = () => {
                       <input 
                         type="checkbox" 
                         disabled={item.mandatory || !isEditingPrivacy}
-                        checked={true} 
+                        checked={item.mandatory ? true : (privacySettings[item.key] !== false)} 
                         readOnly={item.mandatory}
                         style={{ flexShrink: 0 }}
                         onChange={() => !item.mandatory && setPrivacySettings(prev => ({ ...prev, [item.key]: prev[item.key] === false ? true : false }))}

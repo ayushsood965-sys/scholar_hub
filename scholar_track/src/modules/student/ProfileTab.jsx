@@ -3897,10 +3897,10 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                           <input 
                             type="checkbox" 
                             disabled={item.mandatory || !isEditingPrivacy}
-                            checked={true} 
+                            checked={item.mandatory ? true : (privacySettings[item.key] !== false)} 
                             readOnly={item.mandatory}
                             style={{ flexShrink: 0 }}
-                            onChange={() => !item.mandatory && setPrivacySettings(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                            onChange={() => !item.mandatory && setPrivacySettings(prev => ({ ...prev, [item.key]: prev[item.key] === false ? true : false }))}
                           />
                           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', width: '100%', fontSize: '0.82rem', lineHeight: 1.3 }}>
                             <span style={{ fontWeight: 600 }}>Show {item.label}</span>
