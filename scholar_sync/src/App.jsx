@@ -28,6 +28,7 @@ import PublicationsPage from './pages/PublicationsPage';
 import FundingPage from './pages/FundingPage';
 import EventsPage from './pages/EventsPage';
 import CollaboratePage from './pages/CollaboratePage';
+import DeveloperProfile from './pages/DeveloperProfile';
 
 function App() {
   useEffect(() => {
@@ -118,6 +119,7 @@ function App() {
         <Route path="/publications" element={<PublicationsPage />} />
         <Route path="/funding" element={<FundingPage />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/ayush-sood" element={<DeveloperProfile />} />
         <Route path="/about" element={<GenericPage title="About" description="Learn more about the ScholarSync platform." />} />
         <Route path="/search" element={<GenericPage title="Search Results" description="Global search directory results." />} />
 

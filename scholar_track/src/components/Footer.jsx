@@ -167,7 +167,7 @@ const Footer = () => {
           <span>© {new Date().getFullYear()} ScholarTrack Attendance & Leave Management Portal. All rights reserved.</span>
         </div>
         <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-          Designed and Developed by - <span style={{ color: '#ffffff', fontWeight: 700 }}>Ayush Sood</span>
+          Designed and Developed by - <Link to="/ayush-sood" style={{ color: '#ffffff', fontWeight: 700, textDecoration: 'underline' }}>Ayush Sood</Link>
         </div>
       </div>
     </footer>

@@ -237,9 +237,25 @@ const Acknowledgements = () => {
             <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.7', fontSize: '0.95rem', marginBottom: '15px' }}>
               ScholarHub was designed, custom-coded, and is maintained by Ayush Sood. Driven by a commitment to simplify academic processes, modernise research systems, and build robust, high-performance digital tools for Himachal Pradesh University. 
             </p>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '18px' }}>
               <span>💻</span> Stack: Vite, React, Vanilla CSS, Node.js, Express, MongoDB.
             </p>
+            <Link 
+              to="/ayush-sood" 
+              className="btn-primary" 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                padding: '10px 20px', 
+                borderRadius: '12px', 
+                textDecoration: 'none', 
+                fontSize: '0.9rem',
+                fontWeight: '700' 
+              }}
+            >
+              <Sparkles size={16} /> Explore Dedicated Developer Profile (Ayush Sood) <ArrowUpRight size={16} />
+            </Link>
           </div>
         </div>
       </main>

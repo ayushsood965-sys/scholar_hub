@@ -18,6 +18,7 @@ import InstallPrompt from "./components/InstallPrompt";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Policies from "./pages/Policies";
+import DeveloperProfile from "./pages/DeveloperProfile";
 
 
 const App = () => {
@@ -72,6 +73,7 @@ const App = () => {
         <Route path="/logout-bridge" element={<LogoutBridge />} />
         <Route path="/about" element={<About />} />
         <Route path="/policies" element={<Policies />} />
+        <Route path="/ayush-sood" element={<DeveloperProfile />} />
 
         {/* Protected Dashboard Routes */}
         <Route
