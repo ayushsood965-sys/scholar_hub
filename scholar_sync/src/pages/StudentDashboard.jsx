@@ -13009,7 +13009,7 @@ const ProfileTab = () => {
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                   {[
-                    ...((degreeType === 'Ph.D.' || degreeType === 'PhD') ? [
+                    ...((isPhD || degreeType === 'Ph.D.' || degreeType === 'PhD' || user?.profile?.isPhD) ? [
                       { key: 'publications', label: 'Publications/Conferences', mandatory: true },
                       { key: 'projects', label: 'Research Projects' },
                       { key: 'ipr', label: 'IPR / Patents', mandatory: true }
