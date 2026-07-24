@@ -66,12 +66,13 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Column 3: PWA Mobile Apps Download - Hidden inside installed PWA */}
-        {!isStandalone && (
+        {/* PWA Mobile Apps Download - Shown ONLY on mobile browser view, hidden on desktop and inside installed PWA */}
+        {isMobile && !isStandalone && (
           <div style={{
-            flex: '1 1 260px',
-            maxWidth: '360px',
-            padding: '24px',
+            width: 'calc(100% - 32px)',
+            maxWidth: '380px',
+            margin: '20px auto 10px auto',
+            padding: '22px 16px',
             background: 'rgba(241, 245, 249, 0.45)',
             backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
