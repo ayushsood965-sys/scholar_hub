@@ -7,6 +7,12 @@
     <link rel="preconnect" href="https://server.scholarhubhpu.in" crossorigin />
     <link rel="dns-prefetch" href="https://server.scholarhubhpu.in" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.deferredPWAEvent = e;
+      });
+    </script>
     <title>ScholarSync</title>
   </head>
   <body>

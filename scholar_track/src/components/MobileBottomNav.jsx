@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu, Home, User, LogOut, Globe } from "lucide-react";
+import { Menu, Home, User, LogOut, Globe, Download } from "lucide-react";
 import "./MobileBottomNav.css";
 
 const MobileBottomNav = ({
@@ -40,7 +40,7 @@ const MobileBottomNav = ({
                 background: "rgba(16, 185, 129, 0.14)",
                 color: "#10B981",
                 fontWeight: 700,
-                marginBottom: "10px",
+                marginBottom: "8px",
                 border: "1px solid rgba(16, 185, 129, 0.3)",
                 display: "flex",
                 alignItems: "center",
@@ -53,6 +53,31 @@ const MobileBottomNav = ({
             >
               <Globe className="mobile-menu-item-icon" size={20} style={{ color: "#10B981" }} />
               <span className="mobile-menu-item-label">Visit Home Page</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                window.dispatchEvent(new CustomEvent('trigger-pwa-install-modal'));
+              }}
+              className="mobile-menu-item install-app-btn"
+              style={{
+                background: "rgba(99, 102, 241, 0.14)",
+                color: "#6366f1",
+                fontWeight: 700,
+                marginBottom: "10px",
+                border: "1px solid rgba(99, 102, 241, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "12px 16px",
+                borderRadius: "10px",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <Download className="mobile-menu-item-icon" size={20} style={{ color: "#6366f1" }} />
+              <span className="mobile-menu-item-label">📲 Install Mobile App</span>
             </button>
 
             {navItems.map((item, idx) => {

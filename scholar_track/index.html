@@ -7,6 +7,12 @@
     <meta name="description" content="ScholarTrack — Enterprise-grade attendance management system for academic institutions. Track attendance, manage leaves, and monitor scholar compliance." />
     <meta name="keywords" content="attendance management, scholar tracking, academic compliance, leave management" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.deferredPWAEvent = e;
+      });
+    </script>
     <title>ScholarTrack — Enterprise Attendance Management</title>
     <link rel="preconnect" href="https://server.scholarhubhpu.in" crossorigin />
     <link rel="dns-prefetch" href="https://server.scholarhubhpu.in" />

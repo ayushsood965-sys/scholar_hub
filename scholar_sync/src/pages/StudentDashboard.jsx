@@ -8484,7 +8484,8 @@ const ProfileTab = () => {
   const [thesisSummary, setThesisSummary] = useState(user?.profile?.thesisSummary || '');
   const [thesisKeywords, setThesisKeywords] = useState(user?.profile?.thesisKeywords || '');
   const [academicSession, setAcademicSession] = useState(user?.profile?.academicSession || '');
-  const [degreeType, setDegreeType] = useState(user?.profile?.degreeType || 'Ph.D.');
+  const [degreeType, setDegreeType] = useState(user?.profile?.degreeType || '');
+  const isPhD = user?.profile?.isPhD === true;
   // Class 10
   const [class10Roll, setClass10Roll] = useState(user?.profile?.qualifications?.class10?.rollNo || '');
   const [class10Board, setClass10Board] = useState(user?.profile?.qualifications?.class10?.board || '');
@@ -8904,7 +8905,7 @@ const ProfileTab = () => {
         setThesisSummary(user.profile.thesisSummary || '');
         setThesisKeywords(user.profile.thesisKeywords || '');
         setAcademicSession(user.profile.academicSession || '');
-        setDegreeType(user.profile.degreeType || 'Ph.D.');
+        setDegreeType(user.profile.degreeType || '');
       }
       setPreferredGuideId(user.profile.preferredGuideId || '');
 
@@ -9246,7 +9247,7 @@ const ProfileTab = () => {
       setThesisSummary(user?.profile?.thesisSummary || '');
       setThesisKeywords(user?.profile?.thesisKeywords || '');
       setAcademicSession(user?.profile?.academicSession || '');
-      setDegreeType(user?.profile?.degreeType || 'Ph.D.');
+      setDegreeType(user?.profile?.degreeType || '');
     } else if (sectionKey === 'class10') {
       setClass10Roll(q?.class10?.rollNo || '');
       setClass10Board(q?.class10?.board || '');
@@ -9406,7 +9407,7 @@ const ProfileTab = () => {
       thesisSummary,
       thesisKeywords,
       academicSession,
-      degreeType: 'Ph.D.',
+      degreeType: degreeType || user?.profile?.degreeType || '',
       qualifications: {
         class10: {
           rollNo: class10Roll,
@@ -10218,7 +10219,7 @@ const ProfileTab = () => {
         thesisSummary,
         thesisKeywords,
         academicSession,
-        degreeType: 'Ph.D.',
+        degreeType: degreeType || user?.profile?.degreeType || '',
         qualifications: {
           class10: {
             rollNo: class10Roll,
@@ -12828,7 +12829,7 @@ const ProfileTab = () => {
                     { key: 'address', label: 'Residential Address' },
                     { key: 'specialization', label: 'Area of Specialization' },
                     { key: 'areaOfInterest', label: 'Area of Research Interest' },
-                    ...((degreeType === 'Ph.D.' || degreeType === 'PhD') ? [
+                    ...(isPhD ? [
                       { key: 'thesisTitle', label: 'Thesis Title' },
                       { key: 'thesisSummary', label: 'Thesis Summary' },
                       { key: 'thesisKeywords', label: 'Thesis Keywords' },
@@ -12967,7 +12968,7 @@ const ProfileTab = () => {
               </div>
 
               {/* Subsection 3: Experience */}
-              {(degreeType === 'Ph.D.' || degreeType === 'PhD' || user?.profile?.experience?.length > 0) && (
+              {(isPhD || user?.profile?.experience?.length > 0) && (
                 <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
                     3. Professional Experience
@@ -12985,7 +12986,7 @@ const ProfileTab = () => {
               )}
 
               {/* Subsection 4: Expertise */}
-              {(degreeType === 'Ph.D.' || degreeType === 'PhD' || user?.profile?.expertise?.length > 0) && (
+              {(isPhD || user?.profile?.expertise?.length > 0) && (
                 <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', background: 'var(--color-bg)' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, color: '#133A26', borderBottom: '1px dashed var(--color-border)', paddingBottom: '8px' }}>
                     4. Area of Expertise
@@ -13009,7 +13010,7 @@ const ProfileTab = () => {
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                   {[
-                    ...((isPhD || degreeType === 'Ph.D.' || degreeType === 'PhD' || user?.profile?.isPhD) ? [
+                    ...(isPhD ? [
                       { key: 'publications', label: 'Publications/Conferences', mandatory: true },
                       { key: 'projects', label: 'Research Projects' },
                       { key: 'ipr', label: 'IPR / Patents', mandatory: true }

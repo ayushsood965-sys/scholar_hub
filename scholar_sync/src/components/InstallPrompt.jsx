@@ -29,11 +29,15 @@ const InstallPrompt = () => {
       ('ontouchstart' in window) || 
       navigator.maxTouchPoints > 0;
 
-    // 3. localStorage dismissed check
-    const isDismissed = localStorage.getItem('pwa_prompt_dismissed') === 'true';
+    // 3. localStorage daily dismissed check (shows at most once per day)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lastDismissedDate = localStorage.getItem('pwa_prompt_dismissed_date');
+    const isDismissedToday = lastDismissedDate === todayStr;
 
-    // 4. iOS detection
-    const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+    // 4. Check for early captured beforeinstallprompt event
+    if (window.deferredPWAEvent) {
+      setDeferredPrompt(window.deferredPWAEvent);
+    }
 
     // If already installed, or not on mobile, don't show prompt
     if (isStandalone || !isMobileDevice) {
@@ -48,7 +52,7 @@ const InstallPrompt = () => {
       url.searchParams.delete('install');
       url.searchParams.delete('src');
       window.history.replaceState({}, document.title, url.pathname + url.search);
-    } else if (isIosDevice && !isDismissed) {
+    } else if (!isDismissedToday) {
       setIsVisible(true);
     }
 
@@ -58,8 +62,8 @@ const InstallPrompt = () => {
       // Store the event for triggering later
       setDeferredPrompt(e);
       window.deferredPWAEvent = e;
-      // Show the install modal if not dismissed, or if forced
-      if (!isDismissed || forceInstall) {
+      // Show the install modal if not dismissed today, or if forced
+      if (!isDismissedToday || forceInstall) {
         setIsVisible(true);
       }
     };
@@ -75,8 +79,11 @@ const InstallPrompt = () => {
     const handleTriggerModal = () => {
       setIsVisible(true);
       const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const currentPrompt = deferredPrompt || window.deferredPWAEvent;
       if (isIosDevice) {
         setShowIosInstructions(true);
+      } else if (!currentPrompt) {
+        setShowAndroidInstructions(true);
       }
     };
     
@@ -84,10 +91,11 @@ const InstallPrompt = () => {
     return () => {
       window.removeEventListener('trigger-pwa-install-modal', handleTriggerModal);
     };
-  }, []);
+  }, [deferredPrompt]);
 
   const handleInstallClick = async () => {
     const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const activePrompt = deferredPrompt || window.deferredPWAEvent;
     
     // Log the click attempt to the backend
     const userAgent = navigator.userAgent;
@@ -122,7 +130,7 @@ const InstallPrompt = () => {
     axios.post(`${API_URL}/install-logs`, {
       portal: srcPortal,
       targetApp: 'SCHOLAR_SYNC',
-      installType: (deferredPrompt && !isIosDevice) ? 'Native' : 'Manual',
+      installType: (activePrompt && !isIosDevice) ? 'Native' : 'Manual',
       userAgent,
       operatingSystem,
       browserName,
@@ -138,27 +146,29 @@ const InstallPrompt = () => {
       return;
     }
 
-    if (!deferredPrompt) {
+    if (!activePrompt) {
       // If native prompt is not available, show manual instructions for Android/Chrome
       setShowAndroidInstructions(true);
       return;
     }
 
     // Trigger the install prompt
-    deferredPrompt.prompt();
+    activePrompt.prompt();
 
     // Wait for response
-    const { outcome } = await deferredPrompt.userChoice;
+    const { outcome } = await activePrompt.userChoice;
     console.log(`PWA install prompt user choice: ${outcome}`);
 
     // Reset prompt event
     setDeferredPrompt(null);
+    window.deferredPWAEvent = null;
     setIsVisible(false);
   };
 
   const handleDismiss = () => {
-    // Prevent showing prompt again on next refresh
-    localStorage.setItem('pwa_prompt_dismissed', 'true');
+    // Record today's date so prompt will not auto-show again until tomorrow
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.setItem('pwa_prompt_dismissed_date', todayStr);
     setIsVisible(false);
   };
 
