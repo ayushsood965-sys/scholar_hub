@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config';
 import axios from 'axios';
 
+export const isStandaloneApp = () => {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: minimal-ui)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.navigator.standalone === true ||
+    (document.referrer && document.referrer.includes('android-app://'))
+  );
+};
+
 const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -19,9 +30,7 @@ const InstallPrompt = () => {
     }
 
     // 1. Standalone check
-    const isStandalone = 
-      window.matchMedia('(display-mode: standalone)').matches || 
-      window.navigator.standalone === true;
+    const isStandalone = isStandaloneApp();
 
     // 2. Mobile/Tablet viewport or touch check
     const isMobileDevice = 
@@ -77,6 +86,7 @@ const InstallPrompt = () => {
 
   useEffect(() => {
     const handleTriggerModal = () => {
+      if (isStandaloneApp()) return;
       setIsVisible(true);
       const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
       const currentPrompt = deferredPrompt || window.deferredPWAEvent;
@@ -172,7 +182,7 @@ const InstallPrompt = () => {
     setIsVisible(false);
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || isStandaloneApp()) return null;
 
   const appName = "ScholarTrack";
   const appSubtitle = "Enterprise Attendance & Compliance Portal";

@@ -75,6 +75,17 @@ const useScrollReveal = () => {
   return [elementRef, revealed];
 };
 
+const isStandaloneApp = () => {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: minimal-ui)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.navigator.standalone === true ||
+    (document.referrer && document.referrer.includes('android-app://'))
+  );
+};
+
 const AndroidIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
     <path d="M17.523 15.3l1.816 3.146a.5.5 0 1 1-.866.5l-1.833-3.177a8.97 8.97 0 0 1-9.28 0L5.53 19.446a.5.5 0 1 1-.866-.5L6.48 15.3A9 9 0 0 1 3 7.59h18a9 9 0 0 1-3.477 7.71zM7 9.5c-.552 0-1 .448-1 1s.448 1 1 1 1-.448 1-1-.448-1-1-1zm10 0c-.552 0-1 .448-1 1s.448 1 1 1 1-.448 1-1-.448-1-1-1z" />
@@ -859,7 +870,7 @@ const Landing = () => {
             </div>
           </div>
           
-          {isMobile && (
+          {isMobile && !isStandaloneApp() && (
             <div style={{
               width: 'calc(100% - 32px)',
               margin: '20px 16px 10px',

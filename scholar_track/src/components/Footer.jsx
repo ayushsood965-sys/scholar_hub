@@ -15,8 +15,11 @@ const AppleIcon = () => (
   </svg>
 );
 
+import { isStandaloneApp } from './InstallPrompt';
+
 const Footer = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const isStandalone = isStandaloneApp();
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -62,88 +65,88 @@ const Footer = () => {
             <Link to="/signup" className="footer-link-item" style={{ fontSize: '0.9rem', textDecoration: 'none', display: 'block', marginBottom: '8px' }}>Register ID</Link>
           </div>
 
-        </div>
-
-        {isMobile && (
-          <div style={{
-            width: 'calc(100% - 32px)',
-            margin: '20px 16px 10px',
-            padding: '22px 16px',
-            background: 'rgba(241, 245, 249, 0.45)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            borderRadius: '20px',
-            border: '1px solid rgba(203, 213, 225, 0.5)',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.08)',
-            textAlign: 'center',
-            boxSizing: 'border-box'
-          }}>
-            <h4 style={{
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              margin: '0 0 16px 0',
-              color: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
+          {/* Column 3: PWA Mobile Apps Download - Hidden inside installed PWA */}
+          {!isStandalone && (
+            <div style={{
+              flex: '1 1 260px',
+              maxWidth: '360px',
+              padding: '24px',
+              background: 'rgba(241, 245, 249, 0.45)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(203, 213, 225, 0.5)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.08)',
+              textAlign: 'center',
+              boxSizing: 'border-box'
             }}>
-              <span>📲</span> Install Apps
-              <span style={{ display: 'inline-flex', gap: '6px', opacity: 0.9 }}>
-                <AndroidIcon />
-                <AppleIcon />
-              </span>
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
-              <a 
-                href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true&src=SCHOLAR_TRACK`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  background: 'rgba(15, 23, 42, 0.08)',
-                  border: '1px solid rgba(15, 23, 42, 0.15)',
-                  borderRadius: '12px',
-                  color: 'var(--color-text-primary)',
-                  fontSize: '0.85rem',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  width: '100%',
-                  maxWidth: '280px',
-                  justifyContent: 'center',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <span>🎓</span> <span><strong>Scholar Sync HPU</strong></span>
-              </a>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('trigger-pwa-install-modal')); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  background: 'rgba(15, 23, 42, 0.08)',
-                  border: '1px solid rgba(15, 23, 42, 0.15)',
-                  borderRadius: '12px',
-                  color: 'var(--color-text-primary)',
-                  fontSize: '0.85rem',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  width: '100%',
-                  maxWidth: '280px',
-                  justifyContent: 'center',
-                  boxSizing: 'border-box',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>📊</span> <span><strong>Scholar Track HPU</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
-              </a>
+              <h4 style={{
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                margin: '0 0 16px 0',
+                color: 'var(--color-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}>
+                <span>📲</span> Install Apps
+                <span style={{ display: 'inline-flex', gap: '6px', opacity: 0.9 }}>
+                  <AndroidIcon />
+                  <AppleIcon />
+                </span>
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
+                <a 
+                  href={`${SCHOLAR_SYNC_URL || 'http://localhost:5173'}?install=true&src=SCHOLAR_TRACK`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 16px',
+                    background: 'rgba(15, 23, 42, 0.08)',
+                    border: '1px solid rgba(15, 23, 42, 0.15)',
+                    borderRadius: '12px',
+                    color: 'var(--color-text-primary)',
+                    fontSize: '0.85rem',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    width: '100%',
+                    maxWidth: '280px',
+                    justifyContent: 'center',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <span>🎓</span> <span><strong>Scholar Sync HPU</strong></span>
+                </a>
+                <a 
+                  href="#" 
+                  onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('trigger-pwa-install-modal')); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 16px',
+                    background: 'rgba(15, 23, 42, 0.08)',
+                    border: '1px solid rgba(15, 23, 42, 0.15)',
+                    borderRadius: '12px',
+                    color: 'var(--color-text-primary)',
+                    fontSize: '0.85rem',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    width: '100%',
+                    maxWidth: '280px',
+                    justifyContent: 'center',
+                    boxSizing: 'border-box',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span>📊</span> <span><strong>Scholar Track HPU</strong> <small style={{ opacity: 0.7 }}>(This App)</small></span>
+                </a>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="footer-social" style={isMobile ? { marginTop: '15px', display: 'flex', gap: '16px', justifyContent: 'center' } : { display: 'flex', gap: '16px', alignItems: 'center' }}>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: 'pointer' }}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
