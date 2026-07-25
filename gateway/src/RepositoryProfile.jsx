@@ -135,26 +135,41 @@ const RepositoryProfile = () => {
 
   const pubsList = Array.isArray(profile.publications) ? profile.publications : [];
   let totalCitations = 0;
+  const citationsArray = [];
   const yearMap = {};
 
   pubsList.forEach(p => {
     const c = Number(p.citationCount || p.citations || 0);
     totalCitations += c;
-    const y = p.year || '2024';
+    citationsArray.push(c);
+    const y = p.year || new Date().getFullYear();
     if (!yearMap[y]) yearMap[y] = { year: String(y), publications: 0, citations: 0 };
     yearMap[y].publications += 1;
     yearMap[y].citations += c;
   });
 
+  // Mathematically compute real h-index from paper citations array
+  citationsArray.sort((a, b) => b - a);
+  let computedHIndex = 0;
+  for (let i = 0; i < citationsArray.length; i++) {
+    if (citationsArray[i] >= i + 1) {
+      computedHIndex = i + 1;
+    } else {
+      break;
+    }
+  }
+
+  // Mathematically compute real i10-index (papers with >= 10 citations)
+  const computedI10Index = citationsArray.filter(c => c >= 10).length;
+
+  const displayHIndex = profile.hIndex !== undefined && profile.hIndex !== '' ? profile.hIndex : (profile.metrics?.hIndex || computedHIndex);
+  const displayI10Index = profile.i10Index !== undefined && profile.i10Index !== '' ? profile.i10Index : (profile.metrics?.i10Index || computedI10Index);
+  const displayCitations = totalCitations || Number(profile.googleScholarCitations || profile.scopusCitations || 0);
+  const displayPublications = pubsList.length;
+
   const yearData = Object.keys(yearMap).length > 0
     ? Object.values(yearMap).sort((a, b) => Number(a.year) - Number(b.year))
-    : [
-        { year: '2021', publications: 2, citations: 15 },
-        { year: '2022', publications: 4, citations: 45 },
-        { year: '2023', publications: 6, citations: 110 },
-        { year: '2024', publications: 8, citations: 240 },
-        { year: '2025', publications: 5, citations: 320 }
-      ];
+    : [];
 
   // Determine back route
   let backRoute = '/discovery';
@@ -309,8 +324,8 @@ const RepositoryProfile = () => {
                   <h3 style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0 0 4px 0', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <BookOpen size={18} color="var(--color-primary)" /> Individual Citation & Research Analytics
                   </h3>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                    Source: Verified Publications & CrossRef Data Index
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    🌐 Live Synced via OpenAlex & CrossRef Academic APIs
                   </span>
                 </div>
 
@@ -318,39 +333,47 @@ const RepositoryProfile = () => {
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{ background: 'var(--color-bg)', padding: '6px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: '700' }}>h-Index</span>
-                    <strong style={{ fontSize: '1.1rem', color: '#f59e0b' }}>{profile.hIndex || profile.metrics?.hIndex || (pubsList.length > 0 ? Math.min(pubsList.length, 14) : 8)}</strong>
+                    <strong style={{ fontSize: '1.1rem', color: '#f59e0b' }}>{displayHIndex}</strong>
                   </div>
 
                   <div style={{ background: 'var(--color-bg)', padding: '6px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: '700' }}>i10-Index</span>
-                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>{profile.i10Index || profile.metrics?.i10Index || (pubsList.length > 0 ? Math.min(pubsList.length, 18) : 10)}</strong>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>{displayI10Index}</strong>
                   </div>
 
                   <div style={{ background: 'var(--color-bg)', padding: '6px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: '700' }}>Citations</span>
-                    <strong style={{ fontSize: '1.1rem', color: '#0284c7' }}>{(totalCitations || 420).toLocaleString()}</strong>
+                    <strong style={{ fontSize: '1.1rem', color: '#0284c7' }}>{displayCitations.toLocaleString()}</strong>
                   </div>
 
                   <div style={{ background: 'var(--color-bg)', padding: '6px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: '700' }}>Publications</span>
-                    <strong style={{ fontSize: '1.1rem', color: '#ef4444' }}>{pubsList.length || 25}</strong>
+                    <strong style={{ fontSize: '1.1rem', color: '#ef4444' }}>{displayPublications}</strong>
                   </div>
                 </div>
               </div>
 
               {/* Year-wise Recharts Bar/Line Chart */}
-              <div style={{ width: '100%', height: '240px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={yearData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                    <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} />
-                    <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} />
-                    <Tooltip contentStyle={{ background: 'var(--color-surface)', borderRadius: '10px', border: '1px solid var(--color-border)' }} />
-                    <Bar dataKey="publications" name="Publications" fill="#0284c7" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                    <Line type="monotone" dataKey="citations" name="Citations Trend" stroke="#34d399" strokeWidth={3} dot={{ r: 4 }} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
+              {yearData.length > 0 ? (
+                <div style={{ width: '100%', height: '240px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={yearData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                      <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} />
+                      <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} />
+                      <Tooltip contentStyle={{ background: 'var(--color-surface)', borderRadius: '10px', border: '1px solid var(--color-border)' }} />
+                      <Bar dataKey="publications" name="Publications" fill="#0284c7" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      <Line type="monotone" dataKey="citations" name="Citations Trend" stroke="#34d399" strokeWidth={3} dot={{ r: 4 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ padding: '24px', textAlign: 'center', background: 'rgba(0,0,0,0.01)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                    No publication timeline data logged yet. Upload publications to generate citation breakdown.
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Main Details and Side Stats */}

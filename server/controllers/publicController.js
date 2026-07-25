@@ -11,6 +11,7 @@ const CollaborationCall = require('../models/CollaborationCall');
 const FundingAward = require('../models/FundingAward');
 const Partnership = require('../models/Partnership');
 const cacheManager = require('../utils/cacheManager');
+const { syncUserProfileCitations } = require('../services/citationService');
 
 // GET /api/public/labs
 const getLabs = async (req, res) => {
@@ -466,9 +467,15 @@ const getRepositoryDepartmentScholars = async (req, res) => {
 const getRepositoryProfile = async (req, res) => {
   try {
     const { username } = req.params;
-    const user = await User.findOne({ username, isActive: true });
+    let user = await User.findOne({ username, isActive: true });
     if (!user) {
       return res.status(404).json({ message: 'User profile not found' });
+    }
+
+    try {
+      user = await syncUserProfileCitations(user);
+    } catch (syncErr) {
+      console.error('Error syncing citations via OpenAlex/CrossRef API:', syncErr.message);
     }
 
     const privacySettings = user.profile?.privacySettings || {
