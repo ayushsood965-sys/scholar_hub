@@ -5428,6 +5428,36 @@ const ResearchOutputsTab = ({ thesis }) => {
     issue: '',
     pages: ''
   });
+  const [lookupDoiInput, setLookupDoiInput] = useState('');
+  const [fetchingDoi, setFetchingDoi] = useState(false);
+  const [doiSuccessMsg, setDoiSuccessMsg] = useState('');
+
+  const handleFetchOutputDetails = async () => {
+    if (!lookupDoiInput.trim()) return;
+    setFetchingDoi(true);
+    setDoiSuccessMsg('');
+    try {
+      const res = await axios.get(`${API}/public/doi-lookup?doi=${encodeURIComponent(lookupDoiInput.trim())}`);
+      if (res.data && res.data.success) {
+        const d = res.data;
+        setForm(prev => ({
+          ...prev,
+          title: d.title || prev.title,
+          journalName: d.journalName || prev.journalName,
+          doiUrl: d.doi || lookupDoiInput.trim(),
+          paperLink: d.doi ? `https://doi.org/${d.doi}` : prev.paperLink,
+          publicationDate: d.year ? `${d.year}-01-01` : prev.publicationDate,
+          itemStatus: 'Published'
+        }));
+        setDoiSuccessMsg(`Fetched via ${d.source || 'OpenAlex API'} (${d.citationCount || 0} citations)`);
+        toast.success(`Metadata auto-filled via ${d.source || 'OpenAlex API'}!`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to fetch details via API.');
+    } finally {
+      setFetchingDoi(false);
+    }
+  };
 
   const fetchPubs = async () => {
     try {
@@ -5820,6 +5850,37 @@ const ResearchOutputsTab = ({ thesis }) => {
                 <option value="CONFERENCE">Conference Presentation</option>
                 <option value="IPR">Intellectual Property Rights (IPR)</option>
               </select>
+            </div>
+
+            {/* API Auto-Fetch Search Option */}
+            <div style={{ background: 'rgba(5, 150, 105, 0.06)', border: '1px solid rgba(5, 150, 105, 0.2)', borderRadius: 10, padding: 14 }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary, #059669)', marginBottom: 4 }}>
+                🔍 Auto-Fetch & Auto-Fill Details via API (DOI / Link / ID)
+              </label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder={form.type === 'IPR' ? "Enter Patent App / Registration Number" : "Enter DOI or Paper Link (e.g. 10.1016/j.solmat.2023.112345)"}
+                  value={lookupDoiInput} 
+                  onChange={e => setLookupDoiInput(e.target.value)} 
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  type="button" 
+                  onClick={handleFetchOutputDetails} 
+                  disabled={fetchingDoi || !lookupDoiInput.trim()} 
+                  className="btn-primary"
+                  style={{ background: 'var(--color-primary, #059669)', whiteSpace: 'nowrap' }}
+                >
+                  {fetchingDoi ? 'Searching API...' : 'Search & Auto-Fill'}
+                </button>
+              </div>
+              {doiSuccessMsg && (
+                <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 600, display: 'block', marginTop: 6 }}>
+                  ✓ {doiSuccessMsg}
+                </span>
+              )}
             </div>
 
             {/* JOURNAL FORM FIELDS */}

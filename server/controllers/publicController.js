@@ -11,7 +11,7 @@ const CollaborationCall = require('../models/CollaborationCall');
 const FundingAward = require('../models/FundingAward');
 const Partnership = require('../models/Partnership');
 const cacheManager = require('../utils/cacheManager');
-const { syncUserProfileCitations } = require('../services/citationService');
+const { syncUserProfileCitations, fetchDoiCitationData } = require('../services/citationService');
 
 // GET /api/public/labs
 const getLabs = async (req, res) => {
