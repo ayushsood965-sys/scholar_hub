@@ -499,6 +499,39 @@ const StaffProfileTab = ({ thesis }) => {
   const [pubForm, setPubForm] = useState({ title: '', journalName: '', authors: '', year: '', doi: '', citationCount: '' });
   const [editingPubIndex, setEditingPubIndex] = useState(-1);
   const [showPubForm, setShowPubForm] = useState(false);
+  const [lookupDoiInput, setLookupDoiInput] = useState('');
+  const [fetchingDoi, setFetchingDoi] = useState(false);
+  const [doiSuccessMsg, setDoiSuccessMsg] = useState('');
+
+  const [lookupIprInput, setLookupIprInput] = useState('');
+  const [fetchingIpr, setFetchingIpr] = useState(false);
+  const [iprSuccessMsg, setIprSuccessMsg] = useState('');
+
+  const handleFetchDoiDetails = async () => {
+    if (!lookupDoiInput.trim()) return;
+    setFetchingDoi(true);
+    setDoiSuccessMsg('');
+    try {
+      const res = await API.get(`/public/doi-lookup?doi=${encodeURIComponent(lookupDoiInput.trim())}`);
+      if (res.data && res.data.success) {
+        const d = res.data;
+        setPubForm(prev => ({
+          ...prev,
+          title: d.title || prev.title,
+          journalName: d.journalName || prev.journalName,
+          authors: d.authors || prev.authors,
+          year: d.year || prev.year,
+          doi: d.doi || lookupDoiInput.trim(),
+          citationCount: d.citationCount !== undefined ? d.citationCount : prev.citationCount
+        }));
+        setDoiSuccessMsg(`Fetched via ${d.source || 'OpenAlex API'} (${d.citationCount || 0} citations)`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to fetch DOI details via API.');
+    } finally {
+      setFetchingDoi(false);
+    }
+  };
 
   const [iprForm, setIprForm] = useState({
     iprType: '',
@@ -3335,6 +3368,36 @@ const StaffProfileTab = ({ thesis }) => {
           {showPubForm && (
             <form onSubmit={savePub} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingPubIndex === -1 ? 'Add Publication' : 'Edit Publication'}</h4>
+              
+              {/* API Auto-Fetch Search Option */}
+              <div style={{ background: 'rgba(26, 90, 59, 0.05)', border: '1px solid rgba(26, 90, 59, 0.2)', borderRadius: '10px', padding: '14px' }}>
+                <label className="form-label" style={{ fontWeight: 700, color: '#1A5A3B', display: 'block', marginBottom: '4px' }}>
+                  🔍 Auto-Fetch Paper Metadata & Citations via DOI
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Enter DOI or Paper URL (e.g. 10.1016/j.solmat.2023.112345)" 
+                    value={lookupDoiInput} 
+                    onChange={e => setLookupDoiInput(e.target.value)} 
+                    style={{ flex: 1 }}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={handleFetchDoiDetails} 
+                    disabled={fetchingDoi || !lookupDoiInput.trim()} 
+                    style={{ ...btnPrimaryStyle, whiteSpace: 'nowrap' }}
+                  >
+                    {fetchingDoi ? 'Searching API...' : 'Search & Auto-Fill'}
+                  </button>
+                </div>
+                {doiSuccessMsg && (
+                  <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 600, display: 'block', marginTop: '6px' }}>
+                    ✓ {doiSuccessMsg}
+                  </span>
+                )}
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label">Paper Title</label>

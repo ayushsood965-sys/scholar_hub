@@ -826,6 +826,22 @@ const getRepositoryAnalytics = async (req, res) => {
   }
 };
 
+const lookupDoi = async (req, res) => {
+  try {
+    const { doi } = req.query;
+    if (!doi) {
+      return res.status(400).json({ message: 'DOI or Paper URL parameter is required' });
+    }
+    const data = await fetchDoiCitationData(doi);
+    if (!data) {
+      return res.status(404).json({ message: 'No paper metadata found for this DOI via OpenAlex or CrossRef API' });
+    }
+    res.status(200).json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getLabs,
   getPublications,
@@ -849,6 +865,6 @@ module.exports = {
   getRepositoryProfile,
   getRepositoryStats,
   getRepositoryTopResearchers,
-  getRepositoryAnalytics
+  getRepositoryAnalytics,
+  lookupDoi
 };
-

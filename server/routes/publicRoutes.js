@@ -24,10 +24,12 @@ const {
   getRepositoryProfile,
   getRepositoryStats,
   getRepositoryTopResearchers,
-  getRepositoryAnalytics
+  getRepositoryAnalytics,
+  lookupDoi
 } = require('../controllers/publicController');
 
 // Public routes
+router.get('/doi-lookup', lookupDoi);
 router.get('/labs', getLabs);
 router.get('/labs/:id', getLabById);
 router.get('/publications', getPublications);
