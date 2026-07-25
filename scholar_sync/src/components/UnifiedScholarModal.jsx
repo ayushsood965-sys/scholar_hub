@@ -1395,15 +1395,13 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       await axios.put(`${API_BASE_URL}/api/auth/users/${scholarId}/profile`, editForm, getAuthHeader());
       
       if (approveAfterSave) {
-        if (!thesis.supervisorId) {
-          if (!selSupervisor) {
-            toast.warning('Please select a supervisor first.');
-            setLoading(false);
-            return;
-          }
-          await onAssign(selSupervisor);
+        let assignedSupervisorId = thesis.supervisorId || selSupervisor;
+        if (!assignedSupervisorId) {
+          toast.warning('Please select a supervisor first.');
+          setLoading(false);
+          return;
         }
-        await onVerify();
+        await onVerify(assignedSupervisorId);
         toast.success('Profile saved, supervisor assigned and registration approved successfully!');
         if (onRefresh) await onRefresh();
         setIsEditing(false);

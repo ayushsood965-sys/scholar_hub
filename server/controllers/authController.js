@@ -795,13 +795,18 @@ const verifyUser = async (req, res) => {
     targetUser.isVerified = true;
     await targetUser.save();
 
-    // Notify the student that their account has been verified
+    // Notify the user that their account has been verified
+    const isPhD = targetUser.role === 'STUDENT' && targetUser.profile?.isPhD === true;
+    const portalName = isPhD ? 'ScholarSync' : 'ScholarTrack';
+    const notificationSource = isPhD ? 'SCHOLAR_SYNC' : 'SCHOLAR_TRACK';
+
     await createNotification({
       recipient: targetUser._id,
       title: '✅ Account Verified',
-      message: 'Your account has been verified by the HOD. You can now access all features of the ScholarTrack portal.',
+      message: `Your account has been verified by the HOD. You can now access all features of the ${portalName} portal.`,
       type: 'ACCOUNT_VERIFIED',
-      link: 'profile'
+      link: 'profile',
+      source: notificationSource
     });
 
     cacheManager.invalidatePattern('users:');

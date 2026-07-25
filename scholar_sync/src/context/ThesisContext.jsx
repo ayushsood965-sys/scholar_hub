@@ -104,9 +104,9 @@ export const ThesisProvider = ({ children }) => {
     return data;
   };
 
-  // Admin actions
-  const verifyEnrollment = async (id) => {
-    const { data } = await axios.put(`${API}/thesis/${id}/verify`, {}, getAuthHeader());
+  // Admin/HOD actions
+  const verifyEnrollment = async (id, supervisorId) => {
+    const { data } = await axios.put(`${API}/thesis/${id}/verify`, { supervisorId }, getAuthHeader());
     setAllTheses(prev => prev.map(t => t._id === id ? data : t));
     return data;
   };

@@ -233,9 +233,10 @@ const getThesisById = async (req, res) => {
   }
 };
 
-// PUT /api/thesis/:id/verify — Admin verifies enrollment → COURSEWORK
+// PUT /api/thesis/:id/verify — HOD verifies scholar's Ph.D. enrollment (and optionally assigns supervisor)
 const verifyEnrollment = async (req, res) => {
   try {
+    const { supervisorId } = req.body || {};
     const thesis = await Thesis.findById(req.params.id);
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
@@ -249,6 +250,17 @@ const verifyEnrollment = async (req, res) => {
     if (studentUser) {
       studentUser.isVerified = true;
       await studentUser.save();
+    }
+
+    // Assign supervisor if provided in single-click action
+    let assignedSupervisor = null;
+    const targetSupervisorId = supervisorId || thesis.supervisorId;
+    if (targetSupervisorId) {
+      const supervisor = await User.findById(targetSupervisorId);
+      if (supervisor && supervisor.role === 'FACULTY') {
+        thesis.supervisorId = supervisor._id;
+        assignedSupervisor = supervisor;
+      }
     }
 
     thesis.enrollmentVerified = true;
@@ -276,20 +288,52 @@ const verifyEnrollment = async (req, res) => {
       action: 'REGISTRATION_APPROVED',
       actorName: req.user.name,
       actorRole: req.user.role || 'HOD',
-      remarks: 'Profile verified and registration approved.',
+      remarks: assignedSupervisor 
+        ? `Profile verified, supervisor (${assignedSupervisor.name}) allocated, and registration approved.`
+        : 'Profile verified and registration approved.',
       timestamp: new Date()
     });
 
-    thesis.auditLog.push({ action: 'ENROLLMENT_VERIFIED', note: `Verified by HOD on ${new Date().toDateString()}` });
+    thesis.auditLog.push({ 
+      action: 'ENROLLMENT_VERIFIED', 
+      note: assignedSupervisor
+        ? `Verified & Supervisor ${assignedSupervisor.name} assigned by HOD on ${new Date().toDateString()}`
+        : `Verified by HOD on ${new Date().toDateString()}` 
+    });
     await thesis.save();
 
-    await createNotification({
-      recipient: thesis.scholarId,
-      title: '🎉 Enrollment Verified!',
-      message: `Your Ph.D. enrollment has been successfully verified by HOD! You are now in the COURSEWORK phase.`,
-      type: 'SUCCESSFUL_ACTION',
-      link: 'overview'
-    });
+    // Single consolidated notification for Scholar
+    if (assignedSupervisor) {
+      await createNotification({
+        recipient: thesis.scholarId,
+        title: '🎉 Enrollment Verified & Supervisor Allocated!',
+        message: `Your Ph.D. enrollment has been successfully verified by HOD! Faculty member "${assignedSupervisor.name}" has been assigned as your Ph.D. Research Supervisor. You are now in the COURSEWORK phase.`,
+        type: 'SUCCESSFUL_ACTION',
+        link: 'overview',
+        source: 'SCHOLAR_SYNC'
+      });
+
+      // Notify Supervisor if newly assigned via this request
+      if (supervisorId) {
+        await createNotification({
+          recipient: assignedSupervisor._id,
+          title: '📚 Assigned as Ph.D. Supervisor',
+          message: `You have been officially assigned as the Ph.D. supervisor for scholar "${studentUser?.name || 'Scholar'}" (Topic: "${thesis.title}").`,
+          type: 'SUCCESSFUL_ACTION',
+          link: 'overview',
+          source: 'SCHOLAR_SYNC'
+        });
+      }
+    } else {
+      await createNotification({
+        recipient: thesis.scholarId,
+        title: '🎉 Enrollment Verified!',
+        message: `Your Ph.D. enrollment has been successfully verified by HOD! You are now in the COURSEWORK phase.`,
+        type: 'SUCCESSFUL_ACTION',
+        link: 'overview',
+        source: 'SCHOLAR_SYNC'
+      });
+    }
 
     res.json(thesis);
   } catch (err) {

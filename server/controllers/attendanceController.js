@@ -1484,7 +1484,7 @@ exports.actionLeave = async (req, res) => {
         title: '📋 Leave Forwarded',
         message: `Your ${leave.leaveType} leave application has been forwarded to the HOD for final approval.`,
         type: 'LEAVE_STATUS',
-        link: 'leave',
+        link: 'leaves',
         source: 'SCHOLAR_TRACK'
       });
 
@@ -1510,7 +1510,7 @@ exports.actionLeave = async (req, res) => {
         title: '✅ Leave Approved',
         message: `Your ${leave.leaveType} leave from ${new Date(leave.startDate).toLocaleDateString()} to ${new Date(leave.endDate).toLocaleDateString()} has been approved.`,
         type: 'LEAVE_STATUS',
-        link: 'leave',
+        link: 'leaves',
         source: 'SCHOLAR_TRACK'
       });
 
@@ -1572,7 +1572,7 @@ exports.actionLeave = async (req, res) => {
         title: '❌ Leave Rejected',
         message: `Your ${leave.leaveType} leave application has been rejected. Remarks: ${remarks}`,
         type: 'LEAVE_STATUS',
-        link: 'leave',
+        link: 'leaves',
         source: 'SCHOLAR_TRACK'
       });
 
