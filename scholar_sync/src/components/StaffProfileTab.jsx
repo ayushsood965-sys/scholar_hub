@@ -563,7 +563,16 @@ const StaffProfileTab = ({ thesis }) => {
         yearsOfService: profile.yearsOfService || '',
         additionalResponsibilities: profile.additionalResponsibilities || '',
         phoneNumber: profile.phoneNumber || '',
-        email: profile.email || ''
+        email: profile.email || '',
+        orcidId: profile.orcidId || '',
+        scopusId: profile.scopusId || '',
+        wosId: profile.wosId || '',
+        googleScholarUrl: profile.googleScholarUrl || '',
+        vidwanId: profile.vidwanId || '',
+        hIndex: profile.hIndex || profile.metrics?.hIndex || '',
+        i10Index: profile.i10Index || profile.metrics?.i10Index || '',
+        scopusCitations: profile.scopusCitations || profile.metrics?.scopusCitations || '',
+        googleScholarCitations: profile.googleScholarCitations || profile.metrics?.googleScholarCitations || ''
       });
       setPrivacyFieldSettings(prev => ({
         ...prev,
@@ -1849,6 +1858,112 @@ const StaffProfileTab = ({ thesis }) => {
                           </div>
                         </>
                       )}
+
+                      {/* Academic Research Identifiers & Impact Metrics */}
+                      <div className="form-group" style={{ gridColumn: '1 / -1', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--color-border)' }}>
+                        <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1A5A3B', margin: '0 0 12px 0' }}>
+                          Academic Identifiers & Citation Metrics (Research Profile Sync)
+                        </h4>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">ORCID iD</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 0000-0002-1825-0097"
+                          className="form-input" 
+                          value={personalForm.orcidId} 
+                          onChange={e => setPersonalForm({ ...personalForm, orcidId: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Scopus Author ID</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 57200012345"
+                          className="form-input" 
+                          value={personalForm.scopusId} 
+                          onChange={e => setPersonalForm({ ...personalForm, scopusId: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Web of Science ID</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. AA-1234-2020"
+                          className="form-input" 
+                          value={personalForm.wosId} 
+                          onChange={e => setPersonalForm({ ...personalForm, wosId: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Google Scholar Profile URL</label>
+                        <input 
+                          type="url" 
+                          placeholder="https://scholar.google.com/citations?user=..."
+                          className="form-input" 
+                          value={personalForm.googleScholarUrl} 
+                          onChange={e => setPersonalForm({ ...personalForm, googleScholarUrl: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Vidwan ID</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 154892"
+                          className="form-input" 
+                          value={personalForm.vidwanId} 
+                          onChange={e => setPersonalForm({ ...personalForm, vidwanId: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">h-Index</label>
+                        <input 
+                          type="number" 
+                          placeholder="e.g. 18"
+                          className="form-input" 
+                          value={personalForm.hIndex} 
+                          onChange={e => setPersonalForm({ ...personalForm, hIndex: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">i10-Index</label>
+                        <input 
+                          type="number" 
+                          placeholder="e.g. 24"
+                          className="form-input" 
+                          value={personalForm.i10Index} 
+                          onChange={e => setPersonalForm({ ...personalForm, i10Index: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Scopus Citations</label>
+                        <input 
+                          type="number" 
+                          placeholder="e.g. 1420"
+                          className="form-input" 
+                          value={personalForm.scopusCitations} 
+                          onChange={e => setPersonalForm({ ...personalForm, scopusCitations: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Google Scholar Citations</label>
+                        <input 
+                          type="number" 
+                          placeholder="e.g. 2890"
+                          className="form-input" 
+                          value={personalForm.googleScholarCitations} 
+                          onChange={e => setPersonalForm({ ...personalForm, googleScholarCitations: e.target.value })} 
+                        />
+                      </div>
                     </div>
                     <div className="form-group">
                       <label className="form-label">Residential Address</label>
@@ -1940,6 +2055,51 @@ const StaffProfileTab = ({ thesis }) => {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <span style={{ color: '#64748B', display: 'block' }}>Residential Address</span>
                       <strong style={{ color: 'var(--color-text-primary)' }}>{profile.address || 'N/A'}</strong>
+                    </div>
+
+                    {/* Academic Research Identifiers & Impact Metrics Display */}
+                    <div style={{ gridColumn: '1 / -1', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--color-border)' }}>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1A5A3B', margin: '0 0 12px 0' }}>
+                        Academic Identifiers & Citation Metrics (Research Profile Sync)
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>ORCID iD</span>
+                          <strong style={{ color: 'var(--color-text-primary)' }}>{profile.orcidId || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Scopus ID</span>
+                          <strong style={{ color: 'var(--color-text-primary)' }}>{profile.scopusId || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Web of Science ID</span>
+                          <strong style={{ color: 'var(--color-text-primary)' }}>{profile.wosId || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Vidwan ID</span>
+                          <strong style={{ color: 'var(--color-text-primary)' }}>{profile.vidwanId || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Google Scholar Profile</span>
+                          <strong style={{ color: 'var(--color-text-primary)', wordBreak: 'break-all' }}>{profile.googleScholarUrl || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>h-Index</span>
+                          <strong style={{ color: '#d97706' }}>{profile.hIndex || profile.metrics?.hIndex || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>i10-Index</span>
+                          <strong style={{ color: '#1A5A3B' }}>{profile.i10Index || profile.metrics?.i10Index || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Scopus Citations</span>
+                          <strong style={{ color: '#0284c7' }}>{profile.scopusCitations || profile.metrics?.scopusCitations || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Google Scholar Citations</span>
+                          <strong style={{ color: '#0284c7' }}>{profile.googleScholarCitations || profile.metrics?.googleScholarCitations || 'N/A'}</strong>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
