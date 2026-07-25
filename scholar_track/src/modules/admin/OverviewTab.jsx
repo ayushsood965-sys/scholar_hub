@@ -233,7 +233,7 @@ const OverviewTab = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', animation: 'pulse 1.5s infinite' }} />
             <div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>ScholarSync Gateway</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>ScholarSync Cross-Portal Bridge</div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Status: Active & Consolidated</div>
             </div>
           </div>

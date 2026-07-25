@@ -234,7 +234,7 @@ const Signup = () => {
       if (!gender) newErrors.gender = 'Please select a gender.';
       if (!category) newErrors.category = 'Please select a category.';
       if (!hasPhdForDept) {
-        newErrors.department = 'No PhD programme is mapped under the selected department. Please choose a department that offers PhD, or contact your department administrator.';
+        newErrors.department = 'No Ph.D. programme is mapped under the selected department. ScholarSync is exclusively for Ph.D. candidates. Non-Ph.D. students should register on the ScholarTrack portal (https://track.scholarhubhpu.in/signup).';
       } else if (!selectedDegreeNameId) {
         newErrors.selectedDegreeNameId = 'Please select a PhD programme.';
       }
@@ -525,7 +525,12 @@ const Signup = () => {
                         display: 'flex', alignItems: 'flex-start', gap: '8px'
                       }}>
                         <span style={{ flexShrink: 0, marginTop: '1px' }}>⚠</span>
-                        No PhD programme mapped under this department. Please select a department that offers PhD.
+                        <div>
+                          No Ph.D. programme mapped under this department. ScholarSync is exclusively for Ph.D. candidates. If you are a non-Ph.D. student, please register on the {' '}
+                          <a href="https://track.scholarhubhpu.in/signup" target="_blank" rel="noreferrer" style={{ color: '#10B981', fontWeight: 700, textDecoration: 'underline' }}>
+                            ScholarTrack Portal →
+                          </a>
+                        </div>
                       </div>
                     )
                   ) : (

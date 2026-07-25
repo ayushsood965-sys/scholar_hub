@@ -204,7 +204,7 @@ const Signup = () => {
     setDegreeTypeId(val);
     const selectedType = degreeTypeOptions.find(t => t.value === val);
     if (selectedType?.label?.toUpperCase().includes('PHD')) {
-      setFieldErrors(prev => ({ ...prev, degreeTypeId: 'PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.' }));
+      setFieldErrors(prev => ({ ...prev, degreeTypeId: 'Ph.D. candidates must register on the ScholarSync portal.' }));
     } else {
       setFieldErrors(prev => {
         const next = { ...prev };
@@ -226,7 +226,7 @@ const Signup = () => {
 
     // PhD block
     if (isPhdSelected) {
-      newErrors.degreeTypeId = 'PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.';
+      newErrors.degreeTypeId = 'Ph.D. candidates must register on the ScholarSync portal.';
     }
 
     // Check required fields
@@ -679,9 +679,14 @@ const Signup = () => {
                     </div>
                   )}
                   {isPhdSelected && (
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#EF4444', marginTop: '6px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 12px', borderRadius: 'var(--radius)', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
-                      <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
-                      <span>PhD candidates must sign up using the ScholarSync portal only. Please visit scholar_sync portal to complete your registration.</span>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#EF4444', marginTop: '6px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '10px 14px', borderRadius: 'var(--radius)', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+                      <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <span>
+                        Ph.D. candidates must register on the ScholarSync portal. {' '}
+                        <a href="https://sync.scholarhubhpu.in/signup" style={{ color: '#0F766E', fontWeight: 700, textDecoration: 'underline' }}>
+                          Click here to register on ScholarSync →
+                        </a>
+                      </span>
                     </div>
                   )}
                   {fieldErrors.degreeTypeId && (

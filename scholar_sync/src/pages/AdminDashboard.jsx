@@ -1452,7 +1452,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                                   </div>
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Tracking No. / Reference Reference</label>
+                                  <label style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 2 }}>Tracking No. / Dispatch Reference</label>
                                   <input type="text" className="form-input" style={{ padding: '4px', fontSize: '0.78rem', width: '100%' }} placeholder="e.g. SP123456789IN" value={dispatchForm.dispatchTrackingNumber} onChange={e => setDispatchForm({...dispatchForm, dispatchTrackingNumber: e.target.value})} />
                                 </div>
                                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>

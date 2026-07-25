@@ -53,10 +53,26 @@ const SuperAdminDashboard = () => {
         Redirecting to Unified Dashboard
       </h2>
       <p
-        style={{ color: "var(--text-secondary, #6B7280)", fontSize: "0.85rem" }}
+        style={{ color: "var(--text-secondary, #6B7280)", fontSize: "0.85rem", margin: 0 }}
       >
         Super Admin portal is now consolidated in ScholarTrack.
       </p>
+      <a
+        href={`${SCHOLAR_TRACK_URL}/super-dashboard`}
+        style={{
+          marginTop: "12px",
+          padding: "10px 20px",
+          background: "#10B981",
+          color: "#ffffff",
+          borderRadius: "8px",
+          textDecoration: "none",
+          fontWeight: 600,
+          fontSize: "0.88rem",
+          boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)"
+        }}
+      >
+        Click here if you are not redirected automatically →
+      </a>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
