@@ -512,7 +512,7 @@ const StaffProfileTab = ({ thesis }) => {
     setFetchingDoi(true);
     setDoiSuccessMsg('');
     try {
-      const res = await API.get(`/public/doi-lookup?doi=${encodeURIComponent(lookupDoiInput.trim())}`);
+      const res = await axios.get(`${API_URL}/public/doi-lookup?doi=${encodeURIComponent(lookupDoiInput.trim())}`);
       if (res.data && res.data.success) {
         const d = res.data;
         setPubForm(prev => ({
