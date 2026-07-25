@@ -496,7 +496,7 @@ const StaffProfileTab = ({ thesis }) => {
   const [editingProjectIndex, setEditingProjectIndex] = useState(-1);
   const [showProjectForm, setShowProjectForm] = useState(false);
 
-  const [pubForm, setPubForm] = useState({ title: '', journalName: '', authors: '', year: '', doi: '' });
+  const [pubForm, setPubForm] = useState({ title: '', journalName: '', authors: '', year: '', doi: '', citationCount: '' });
   const [editingPubIndex, setEditingPubIndex] = useState(-1);
   const [showPubForm, setShowPubForm] = useState(false);
 
@@ -1072,7 +1072,7 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ publications: updated }, 'Publication details saved');
     setShowPubForm(false);
     setEditingPubIndex(-1);
-    setPubForm({ title: '', journalName: '', authors: '', year: '', doi: '' });
+    setPubForm({ title: '', journalName: '', authors: '', year: '', doi: '', citationCount: '' });
   };
 
   const deletePub = async (index) => {
@@ -3356,6 +3356,10 @@ const StaffProfileTab = ({ thesis }) => {
                   <label className="form-label">DOI / URL</label>
                   <input type="text" className="form-input" value={pubForm.doi} onChange={e => setPubForm({ ...pubForm, doi: e.target.value })} placeholder="e.g. https://doi.org/10..." />
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Citations Count</label>
+                  <input type="number" className="form-input" value={pubForm.citationCount || ''} onChange={e => setPubForm({ ...pubForm, citationCount: e.target.value })} placeholder="e.g. 15" min="0" />
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowPubForm(false)} style={btnSecondaryStyle}>Cancel</button>
@@ -3412,7 +3416,7 @@ const StaffProfileTab = ({ thesis }) => {
                     <div>
                       <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{pb.title}</strong>
                       <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName}</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Authors: {pb.authors} | Year: {pb.year}{pb.citationCount ? ` | Citations: ${pb.citationCount}` : ''}</span>
                       {pb.doi && (
                         <a 
                           href={pb.doi.startsWith('http') ? pb.doi : `https://${pb.doi}`} 
