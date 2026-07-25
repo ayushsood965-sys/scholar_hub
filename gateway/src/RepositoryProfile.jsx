@@ -32,7 +32,8 @@ import {
   Line, 
   XAxis, 
   YAxis, 
-  Tooltip 
+  Tooltip,
+  CartesianGrid
 } from 'recharts';
 import { API_URL } from './config';
 
