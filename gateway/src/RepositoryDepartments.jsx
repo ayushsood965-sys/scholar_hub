@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building, 
   Users, 
@@ -11,9 +12,13 @@ import {
   Building2,
   Sparkles,
   ArrowUpRight,
-  GraduationCap
+  GraduationCap,
+  X,
+  RefreshCw,
+  Filter
 } from 'lucide-react';
 import { API_URL } from './config';
+import GatewayNavbar from './components/GatewayNavbar';
 import ResearchMetricsHero from './components/ResearchMetricsHero';
 import TopResearchersLeaderboard from './components/TopResearchersLeaderboard';
 import DepartmentAnalyticsChart from './components/DepartmentAnalyticsChart';
@@ -76,6 +81,9 @@ const RepositoryDepartments = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchField, setSearchField] = useState('all');
+  const [isSearching, setIsSearching] = useState(false);
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const catalogRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -111,16 +119,40 @@ const RepositoryDepartments = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  const handleSearchSubmit = () => {
+    setIsSearching(true);
+    setActiveSearchTerm(searchQuery.trim());
+    
+    setTimeout(() => {
+      setIsSearching(false);
+      if (catalogRef.current) {
+        catalogRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 350);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setActiveSearchTerm('');
+  };
+
   const filteredDepts = departments.filter(dept => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
-    if (searchField === 'department' || searchField === 'all') {
-      if (dept.name.toLowerCase().includes(q) || dept.code.toLowerCase().includes(q)) return true;
+    if (searchField === 'department') {
+      return dept.name.toLowerCase().includes(q) || dept.code.toLowerCase().includes(q);
     }
-    if (searchField === 'name' || searchField === 'all') {
-      if (dept.hod?.name?.toLowerCase().includes(q)) return true;
+    if (searchField === 'name') {
+      return dept.hod?.name?.toLowerCase().includes(q);
     }
-    return dept.name.toLowerCase().includes(q) || dept.code.toLowerCase().includes(q);
+    if (searchField === 'designation') {
+      return dept.hod?.name?.toLowerCase().includes(q);
+    }
+    return (
+      dept.name.toLowerCase().includes(q) || 
+      dept.code.toLowerCase().includes(q) ||
+      (dept.hod?.name && dept.hod.name.toLowerCase().includes(q))
+    );
   });
 
   return (
@@ -133,51 +165,7 @@ const RepositoryDepartments = () => {
       </div>
 
       {/* Navigation Header */}
-      <nav className="landing-nav">
-        <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="landing-logo" style={{ textDecoration: 'none' }}>
-          <div className="landing-logo-wrapper">
-            <img src="/hpu_logo.png" alt="HPU Logo" className="landing-logo-img" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-          </div>
-          <span className="logo-text">HPU ScholarHub</span>
-        </a>
-
-        <div className="nav-links">
-          <button onClick={() => navigate('/')} className="nav-link-btn">Home</button>
-          <button onClick={() => navigate('/', { state: { scrollTo: 'about' } })} className="nav-link-btn">About</button>
-          <button onClick={() => navigate('/', { state: { scrollTo: 'portals' } })} className="nav-link-btn">Portals</button>
-          <Link to="/discovery" className="nav-link-btn" style={{ color: 'var(--color-primary)', borderBottom: '2px solid var(--color-primary)' }}>Academic Research Directory</Link>
-          <Link to="/acknowledgements" className="nav-link-btn">Acknowledgements</Link>
-        </div>
-
-        <div className="nav-actions">
-          <button 
-            onClick={toggleTheme} 
-            className="icon-btn" 
-            title="Toggle theme mode"
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              cursor: 'pointer', 
-              color: 'var(--color-text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(0,0,0,0.02)'
-            }}
-          >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
-          
-          <button 
-            onClick={() => navigate('/', { state: { scrollTo: 'portals' } })} 
-            className="btn-primary login-nav-btn"
-          >
-            Login Portal <ArrowUpRight size={16} />
-          </button>
-        </div>
-      </nav>
+      <GatewayNavbar />
 
       {/* Main Content */}
       <main style={{ flex: 1, zIndex: 1, padding: '40px 8% 100px', width: '100%', boxSizing: 'border-box' }}>
@@ -194,14 +182,15 @@ const RepositoryDepartments = () => {
           </p>
         </div>
 
-        {/* Metrics Hero Card Component */}
+        {/* Metrics Hero Card Component with Interactive Search */}
         <ResearchMetricsHero 
           stats={stats} 
           searchQuery={searchQuery} 
           setSearchQuery={setSearchQuery} 
           searchField={searchField}
           setSearchField={setSearchField}
-          onSearchSubmit={() => {}}
+          onSearchSubmit={handleSearchSubmit}
+          isSearching={isSearching}
         />
 
         {/* Top Researchers Leaderboard (Top 10 Publications, Top 10 Citations, Top 10 Shernies) */}
@@ -209,6 +198,91 @@ const RepositoryDepartments = () => {
 
         {/* Department Analytics Chart (Recharts Dual-Axis Graph) */}
         <DepartmentAnalyticsChart analyticsData={analytics} />
+
+        {/* Anchor for Smooth Scroll Target */}
+        <div ref={catalogRef} id="departments-catalog" style={{ scrollMarginTop: '100px' }} />
+
+        {/* Active Search Results Feedback Banner */}
+        {searchQuery.trim() !== '' && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              background: 'linear-gradient(135deg, var(--color-sync-light) 0%, rgba(2, 132, 199, 0.08) 100%)',
+              border: '1px solid var(--color-primary)',
+              borderRadius: '20px',
+              padding: '16px 24px',
+              marginBottom: '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '14px',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'var(--color-primary)',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(26, 90, 59, 0.3)',
+                flexShrink: 0
+              }}>
+                <Search size={20} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
+                    Search Results for "{searchQuery}"
+                  </h4>
+                  <span style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-primary)',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    padding: '2px 10px',
+                    borderRadius: '10px',
+                    textTransform: 'uppercase'
+                  }}>
+                    Scope: {searchField === 'all' ? 'All Fields' : searchField}
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                  Found <strong style={{ color: 'var(--color-primary)' }}>{filteredDepts.length}</strong> matching department{filteredDepts.length === 1 ? '' : 's'} across Himachal Pradesh University
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleClearSearch}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '12px',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border)',
+                fontWeight: 700,
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <X size={15} /> Clear Search Filter
+            </button>
+          </motion.div>
+        )}
 
         {/* Department Catalog Grid Section Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
@@ -222,111 +296,173 @@ const RepositoryDepartments = () => {
           </div>
         </div>
 
-        {/* Department Grid */}
+        {/* Department Grid & Search Results State */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--color-text-muted)' }}>
             <Sparkles size={32} className="spin-icon" style={{ marginBottom: '12px', color: 'var(--color-primary)' }} />
             <p style={{ fontWeight: 600 }}>Loading academic departments and research data...</p>
           </div>
+        ) : filteredDepts.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              textAlign: 'center',
+              padding: '60px 20px',
+              background: 'var(--color-surface)',
+              borderRadius: '24px',
+              border: '1px dashed var(--color-border)',
+              maxWidth: '550px',
+              margin: '20px auto 40px',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px'
+            }}>
+              <Search size={30} />
+            </div>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
+              No Matching Departments
+            </h3>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.92rem', marginBottom: '20px', lineHeight: '1.5' }}>
+              No academic department or faculty HOD matching "<strong>{searchQuery}</strong>" was found in {searchField === 'all' ? 'any field' : searchField}.
+            </p>
+            <button
+              onClick={handleClearSearch}
+              className="btn-primary"
+              style={{
+                padding: '10px 20px',
+                borderRadius: '14px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <RefreshCw size={16} /> Reset Search Query
+            </button>
+          </motion.div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-            gap: '24px'
-          }}>
-            {filteredDepts.map(dept => (
-              <div 
-                key={dept._id} 
-                className="dept-card"
-                onClick={() => navigate(`/discovery/department/${dept.code.toLowerCase()}`)}
-                style={{
-                  background: 'var(--color-surface)',
-                  borderRadius: '20px',
-                  padding: '24px',
-                  border: '1px solid var(--color-border)',
-                  boxShadow: 'var(--shadow-sm)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  position: 'relative'
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div style={{
-                      width: '46px',
-                      height: '46px',
-                      borderRadius: '14px',
-                      background: 'var(--color-sync-light)',
-                      color: 'var(--color-primary)',
+          <motion.div 
+            layout
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '24px'
+            }}
+          >
+            <AnimatePresence>
+              {filteredDepts.map(dept => (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.25 }}
+                  key={dept._id} 
+                  className="dept-card"
+                  onClick={() => navigate(`/discovery/department/${dept.code.toLowerCase()}`)}
+                  style={{
+                    background: 'var(--color-surface)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: searchQuery.trim() !== '' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                    boxShadow: searchQuery.trim() !== '' ? '0 6px 20px rgba(26, 90, 59, 0.12)' : 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    position: 'relative'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <div style={{
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '14px',
+                        background: 'var(--color-sync-light)',
+                        color: 'var(--color-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px solid rgba(26, 90, 59, 0.15)',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+                      }}>
+                        <Building size={24} strokeWidth={2.2} color="var(--color-primary)" />
+                      </div>
+                      <span style={{
+                        background: 'var(--color-bg)',
+                        color: 'var(--color-primary)',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        letterSpacing: '0.5px',
+                        border: '1px solid var(--color-border)'
+                      }}>
+                        {dept.code}
+                      </span>
+                    </div>
+
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--color-text-primary)', marginBottom: '8px', lineHeight: '1.3' }}>
+                      {dept.name}
+                    </h3>
+
+                    {dept.hod && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', background: 'var(--color-bg)', padding: '10px 14px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+                        <HODAvatar hod={dept.hod} />
+                        <div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Head of Department</div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--color-text-primary)' }}>{dept.hod.name}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                        <UserCheck size={16} color="var(--color-primary)" />
+                        <span><strong>{dept.facultyCount}</strong> Faculty</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                        <GraduationCap size={16} color="var(--color-track)" />
+                        <span><strong>{dept.scholarCount}</strong> Scholars</span>
+                      </div>
+                    </div>
+
+                    <div className="arrow-btn" style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: 'var(--color-bg)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid rgba(26, 90, 59, 0.15)',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
-                    }}>
-                      <Building size={24} strokeWidth={2.2} color="var(--color-primary)" />
-                    </div>
-                    <span style={{
-                      background: 'var(--color-bg)',
                       color: 'var(--color-primary)',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
-                      letterSpacing: '0.5px',
                       border: '1px solid var(--color-border)'
                     }}>
-                      {dept.code}
-                    </span>
-                  </div>
-
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--color-text-primary)', marginBottom: '8px', lineHeight: '1.3' }}>
-                    {dept.name}
-                  </h3>
-
-                  {dept.hod && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', background: 'var(--color-bg)', padding: '10px 14px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
-                      <HODAvatar hod={dept.hod} />
-                      <div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Head of Department</div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--color-text-primary)' }}>{dept.hod.name}</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', gap: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                      <UserCheck size={16} color="var(--color-primary)" />
-                      <span><strong>{dept.facultyCount}</strong> Faculty</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                      <GraduationCap size={16} color="var(--color-track)" />
-                      <span><strong>{dept.scholarCount}</strong> Scholars</span>
+                      <ArrowRight size={16} />
                     </div>
                   </div>
-
-                  <div className="arrow-btn" style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'var(--color-bg)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--color-primary)',
-                    border: '1px solid var(--color-border)'
-                  }}>
-                    <ArrowRight size={16} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
       </main>
 

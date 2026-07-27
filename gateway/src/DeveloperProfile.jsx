@@ -40,7 +40,9 @@ import {
   Wrench,
   Workflow,
   Lightbulb,
-  Boxes
+  Boxes,
+  Menu,
+  X
 } from 'lucide-react';
 import './DeveloperProfile.css';
 import {
@@ -57,6 +59,7 @@ import {
 const DeveloperProfile = () => {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [isMobileDevMenuOpen, setIsMobileDevMenuOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
@@ -312,7 +315,7 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171005`
 
       {/* Sticky Header Navigation */}
       <nav className="dev-nav">
-        <Link to="/" className="dev-nav-brand">
+        <Link to="/" className="dev-nav-brand" onClick={() => setIsMobileDevMenuOpen(false)}>
           <div className="dev-brand-badge">AS</div>
           <div>
             <span style={{ display: 'block', lineHeight: 1.1 }}>Ayush Sood</span>
@@ -334,11 +337,79 @@ Address: 2nd floor, Dinesh Niwas, Dhainda, Shimla 171005`
           <MagneticButton onClick={toggleTheme} className="dev-btn-secondary" style={{ padding: '8px 12px', borderRadius: '50%' }}>
             {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
           </MagneticButton>
-          <MagneticButton onClick={() => navigate('/')} className="dev-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+          <MagneticButton onClick={() => navigate('/')} className="dev-btn-secondary dev-desktop-back-btn" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
             <ArrowLeft size={16} /> Back to Hub
           </MagneticButton>
+          <button 
+            className="dev-mobile-menu-btn"
+            onClick={() => setIsMobileDevMenuOpen(!isMobileDevMenuOpen)}
+            aria-label="Toggle Developer Navigation Menu"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '10px',
+              padding: '8px',
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {isMobileDevMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
       </nav>
+
+      {/* Developer Mobile Navigation Drawer */}
+      {isMobileDevMenuOpen && (
+        <div 
+          onClick={() => setIsMobileDevMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            zIndex: 999,
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--color-surface)',
+              borderBottom: '1px solid var(--color-border)',
+              padding: '24px 20px',
+              marginTop: '65px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              boxShadow: 'var(--shadow-lg)'
+            }}
+          >
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+              Developer Navigation
+            </div>
+            <a href="#orbit" onClick={() => setIsMobileDevMenuOpen(false)} className="mobile-drawer-item" style={{ padding: '12px', borderRadius: '10px', background: 'var(--color-bg)', color: 'var(--color-text-primary)', textDecoration: 'none', fontWeight: 700 }}>Constellation</a>
+            <a href="#capabilities" onClick={() => setIsMobileDevMenuOpen(false)} className="mobile-drawer-item" style={{ padding: '12px', borderRadius: '10px', background: 'var(--color-bg)', color: 'var(--color-text-primary)', textDecoration: 'none', fontWeight: 700 }}>Stack & AI Capabilities</a>
+            <a href="#projects" onClick={() => setIsMobileDevMenuOpen(false)} className="mobile-drawer-item" style={{ padding: '12px', borderRadius: '10px', background: 'var(--color-bg)', color: 'var(--color-text-primary)', textDecoration: 'none', fontWeight: 700 }}>Systems & Projects</a>
+            <a href="#experience" onClick={() => setIsMobileDevMenuOpen(false)} className="mobile-drawer-item" style={{ padding: '12px', borderRadius: '10px', background: 'var(--color-bg)', color: 'var(--color-text-primary)', textDecoration: 'none', fontWeight: 700 }}>Career & Education</a>
+            <a href="#terminal" onClick={() => setIsMobileDevMenuOpen(false)} className="mobile-drawer-item" style={{ padding: '12px', borderRadius: '10px', background: 'var(--color-bg)', color: 'var(--color-text-primary)', textDecoration: 'none', fontWeight: 700 }}>Interactive Cyber Terminal</a>
+            
+            <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+              <button 
+                onClick={() => { setIsMobileDevMenuOpen(false); navigate('/'); }}
+                className="dev-btn-primary"
+                style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '12px', fontWeight: 700 }}
+              >
+                <ArrowLeft size={16} /> Return to Gateway Hub
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* HERO SECTION */}
       <section className="dev-hero-section">

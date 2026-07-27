@@ -1141,3 +1141,64 @@
   align-items: center;
   gap: 20px;
 }
+
+/* Mobile Responsiveness Improvements */
+@media (max-width: 960px) {
+  .dev-nav-links {
+    display: none !important;
+  }
+  .dev-mobile-menu-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .dev-hero-section {
+    padding: 40px 4% 30px;
+  }
+  .dev-hero-title {
+    font-size: 2.5rem;
+    letter-spacing: -1px;
+  }
+  .dev-hero-subtitle {
+    font-size: 1.1rem;
+  }
+  .dev-hero-description {
+    font-size: 0.98rem;
+    line-height: 1.6;
+  }
+  .dev-desktop-back-btn {
+    display: none !important;
+  }
+  .dev-stat-number {
+    font-size: 1.4rem;
+  }
+  .dev-stat-label {
+    font-size: 0.7rem;
+  }
+  .dev-terminal-body {
+    padding: 16px;
+    font-size: 0.85rem;
+  }
+  .dev-project-card, .dev-skill-card {
+    padding: 22px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dev-hero-title {
+    font-size: 2.1rem;
+  }
+  .dev-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  .dev-cta-group button, .dev-cta-group a {
+    width: 100%;
+    justify-content: center;
+  }
+  .dev-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}

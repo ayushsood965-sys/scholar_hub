@@ -111,12 +111,15 @@ const TopResearchersLeaderboard = ({ topData }) => {
           background: 'var(--color-bg)',
           padding: '4px',
           borderRadius: '16px',
-          border: '1px solid var(--color-border)'
+          border: '1px solid var(--color-border)',
+          maxWidth: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch'
         }}>
           <button
             onClick={() => setActiveTab('publications')}
             style={{
-              padding: '8px 16px',
+              padding: '8px 14px',
               borderRadius: '12px',
               border: 'none',
               fontSize: '0.85rem',
@@ -125,10 +128,12 @@ const TopResearchersLeaderboard = ({ topData }) => {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              whiteSpace: 'nowrap',
               background: activeTab === 'publications' ? 'var(--color-surface)' : 'transparent',
               color: activeTab === 'publications' ? 'var(--color-primary)' : 'var(--color-text-muted)',
               boxShadow: activeTab === 'publications' ? 'var(--shadow-sm)' : 'none',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              flex: '1 0 auto'
             }}
           >
             <BookOpen size={15} /> Publications
@@ -137,7 +142,7 @@ const TopResearchersLeaderboard = ({ topData }) => {
           <button
             onClick={() => setActiveTab('citations')}
             style={{
-              padding: '8px 16px',
+              padding: '8px 14px',
               borderRadius: '12px',
               border: 'none',
               fontSize: '0.85rem',
@@ -146,10 +151,12 @@ const TopResearchersLeaderboard = ({ topData }) => {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              whiteSpace: 'nowrap',
               background: activeTab === 'citations' ? 'var(--color-surface)' : 'transparent',
               color: activeTab === 'citations' ? 'var(--color-primary)' : 'var(--color-text-muted)',
               boxShadow: activeTab === 'citations' ? 'var(--shadow-sm)' : 'none',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              flex: '1 0 auto'
             }}
           >
             <Quote size={15} /> Citations
@@ -158,7 +165,7 @@ const TopResearchersLeaderboard = ({ topData }) => {
           <button
             onClick={() => setActiveTab('shernies')}
             style={{
-              padding: '8px 16px',
+              padding: '8px 14px',
               borderRadius: '12px',
               border: 'none',
               fontSize: '0.85rem',
@@ -167,10 +174,12 @@ const TopResearchersLeaderboard = ({ topData }) => {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              whiteSpace: 'nowrap',
               background: activeTab === 'shernies' ? 'var(--color-surface)' : 'transparent',
               color: activeTab === 'shernies' ? 'var(--color-primary)' : 'var(--color-text-muted)',
               boxShadow: activeTab === 'shernies' ? 'var(--shadow-sm)' : 'none',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              flex: '1 0 auto'
             }}
           >
             <Award size={15} color="#ec4899" /> Top Shernies
@@ -188,7 +197,7 @@ const TopResearchersLeaderboard = ({ topData }) => {
           transition={{ duration: 0.3 }}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '20px'
           }}
         >

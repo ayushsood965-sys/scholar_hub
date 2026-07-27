@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { API_URL, SCHOLAR_SYNC_URL, SCHOLAR_TRACK_URL } from './config';
+import GatewayNavbar from './components/GatewayNavbar';
 import {
   useLenisScroll,
   ParticleCanvas,
@@ -297,53 +298,8 @@ const Landing = () => {
         <div className="liquid-blob blob-3"></div>
       </div>
 
-      {/* Navigation */}
-      <nav className="landing-nav" style={{ position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
-        <a href="/" className="landing-logo" style={{ textDecoration: 'none' }}>
-          <div className="landing-logo-wrapper">
-            <img src="/hpu_logo.png" alt="HPU Logo" className="landing-logo-img" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-          </div>
-          <span className="logo-text">HPU ScholarHub</span>
-        </a>
-
-        {/* Center Navigation Links */}
-        <div className="nav-links">
-          <button onClick={() => scrollToSection('home')} className="nav-link-btn">Home</button>
-          <button onClick={() => scrollToSection('about')} className="nav-link-btn">About</button>
-          <button onClick={() => scrollToSection('portals')} className="nav-link-btn">Portals</button>
-          <Link to="/discovery" className="nav-link-btn">Academic Research Discovery</Link>
-          <Link to="/acknowledgements" className="nav-link-btn">Acknowledgements</Link>
-        </div>
-
-        <div className="nav-actions">
-          <MagneticButton 
-            onClick={toggleTheme} 
-            className="icon-btn" 
-            title="Toggle theme mode"
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              cursor: 'pointer', 
-              color: 'var(--color-text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(0,0,0,0.02)'
-            }}
-          >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </MagneticButton>
-          
-          <MagneticButton 
-            onClick={() => scrollToSection('portals')} 
-            className="btn-primary login-nav-btn"
-          >
-            Login Portal <ArrowUpRight size={16} />
-          </MagneticButton>
-        </div>
-      </nav>
+      {/* Navigation Header */}
+      <GatewayNavbar />
 
       {/* Hero Section */}
       <section id="home" className="hero-section">

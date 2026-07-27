@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import GatewayNavbar from './components/GatewayNavbar';
 import { 
   ArrowLeft, 
   Sun, 
@@ -108,12 +109,7 @@ const RepositoryProfile = () => {
   if (error || !profileData) {
     return (
       <div className="landing-page" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <nav className="landing-nav">
-          <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="landing-logo" style={{ textDecoration: 'none' }}>
-            <div className="landing-logo-wrapper"><img src="/hpu_logo.png" alt="HPU Logo" className="landing-logo-img" style={{ width: '28px', height: '28px' }} /></div>
-            <span className="logo-text">HPU ScholarHub</span>
-          </a>
-        </nav>
+        <GatewayNavbar />
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="glass-panel" style={{ padding: '40px', borderRadius: '16px', textAlign: 'center', maxWidth: '500px' }}>
             <ShieldAlert size={48} style={{ color: '#ef4444', marginBottom: '16px' }} />
@@ -186,32 +182,8 @@ const RepositoryProfile = () => {
         <div className="liquid-blob blob-3"></div>
       </div>
 
-      {/* Navigation */}
-      <nav className="landing-nav">
-        <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="landing-logo" style={{ textDecoration: 'none' }}>
-          <div className="landing-logo-wrapper">
-            <img src="/hpu_logo.png" alt="HPU Logo" className="landing-logo-img" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-          </div>
-          <span className="logo-text">HPU ScholarHub</span>
-        </a>
-
-        <div className="nav-links">
-          <button onClick={() => navigate('/')} className="nav-link-btn">Home</button>
-          <button onClick={() => navigate('/', { state: { scrollTo: 'about' } })} className="nav-link-btn">About</button>
-          <button onClick={() => navigate('/', { state: { scrollTo: 'portals' } })} className="nav-link-btn">Portals</button>
-          <Link to="/discovery" className="nav-link-btn" style={{ color: 'var(--color-primary)', borderBottom: '2px solid var(--color-primary)' }}>Academic Research Discovery</Link>
-          <Link to="/acknowledgements" className="nav-link-btn">Acknowledgements</Link>
-        </div>
-
-        <div className="nav-actions">
-          <button onClick={toggleTheme} className="icon-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-primary)', padding: '8px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.02)' }}>
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
-          <button onClick={() => navigate('/', { state: { scrollTo: 'portals' } })} className="btn-primary login-nav-btn">
-            Login Portal <ArrowUpRight size={16} />
-          </button>
-        </div>
-      </nav>
+      {/* Navigation Header */}
+      <GatewayNavbar />
 
       {/* Main Content */}
       <main style={{ flex: 1, zIndex: 1, padding: '40px 8% 100px', maxWidth: '1000px', width: '100%', margin: '0 auto' }}>

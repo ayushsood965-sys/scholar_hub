@@ -316,16 +316,30 @@ a {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-family: inherit;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--color-text-secondary);
-  transition: color 0.2s ease, transform 0.2s ease;
-  padding: 4px 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 6px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .nav-link-btn:hover {
   color: var(--color-primary);
+  background: var(--color-bg);
   transform: translateY(-1px);
+}
+
+.nav-link-btn.active, 
+.nav-link-btn.active-link {
+  color: var(--color-primary) !important;
+  font-weight: 700 !important;
+  background: var(--color-sync-light);
 }
 
 .nav-actions {
@@ -1627,7 +1641,10 @@ a {
 
 @media (max-width: 820px) {
   .nav-links {
-    display: none; /* Hide navigation links on small tablets/mobile */
+    display: none !important; /* Hide desktop navigation links on small screens */
+  }
+  .mobile-hamburger-btn {
+    display: flex !important; /* Show mobile menu hamburger toggle */
   }
   .hero-section {
     flex-direction: column;
@@ -1660,25 +1677,60 @@ a {
   }
 }
 
+@media (max-width: 900px) {
+  .hero-search-wrapper {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+  .hero-search-select-box, 
+  .hero-search-input-box, 
+  .hero-search-btn {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  .hero-search-btn {
+    padding: 14px !important;
+  }
+  .hero-metrics-grid {
+    grid-template-columns: 1fr !important; /* SINGLE BOX / CARD PER ROW ON MOBILE & TABLET */
+    gap: 20px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-scroll-hint {
+    display: flex !important;
+  }
+  main {
+    padding: 24px 16px 60px !important;
+  }
+  .desktop-only-login {
+    display: none !important;
+  }
+}
+
 @media (max-width: 480px) {
   .landing-nav {
-    padding: 12px 6%;
+    padding: 12px 4%;
   }
   .logo-text {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
   }
   .login-nav-btn {
     padding: 8px 14px;
     font-size: 0.82rem;
   }
   .hero-section {
-    padding: 40px 5% 60px;
+    padding: 40px 4% 60px;
   }
   .hero-title {
-    font-size: 2.3rem;
+    font-size: 2.2rem;
   }
   .hero-subtitle {
-    font-size: 1.05rem;
+    font-size: 1rem;
     margin-bottom: 30px;
   }
   .hero-buttons {
@@ -1690,13 +1742,13 @@ a {
     width: 100%;
   }
   .section-title {
-    font-size: 1.8rem;
+    font-size: 1.7rem;
   }
   .deepdive-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
   .timeline-widget, .mock-dashboard-card {
-    padding: 20px;
+    padding: 16px;
   }
   .roles-tab-container {
     flex-direction: column;
@@ -1714,9 +1766,9 @@ a {
     font-size: 0.8rem;
   }
   .stats-infra-section, .portals-hub-section, .about-identity-section, .bulletins-directory-section {
-    padding: 60px 6%;
+    padding: 45px 4%;
   }
   .footer {
-    padding: 60px 6% 30px;
+    padding: 50px 4% 30px;
   }
 }

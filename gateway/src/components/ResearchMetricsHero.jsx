@@ -5,10 +5,12 @@ import {
   Users, 
   BookOpen, 
   Quote, 
-  ChevronDown
+  ChevronDown,
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 
-const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, setSearchField, onSearchSubmit }) => {
+const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, setSearchField, onSearchSubmit, isSearching }) => {
   const [animatedFaculty, setAnimatedFaculty] = useState(0);
   const [animatedPubs, setAnimatedPubs] = useState(0);
   const [animatedPatents, setAnimatedPatents] = useState(0);
@@ -52,6 +54,7 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="hero-search-wrapper"
         style={{
           maxWidth: '850px',
           margin: '0 auto 36px auto',
@@ -62,10 +65,11 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
           boxShadow: 'var(--shadow-md)',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '8px',
+          flexWrap: 'wrap'
         }}
       >
-        <div style={{ position: 'relative', minWidth: '170px' }}>
+        <div className="hero-search-select-box" style={{ position: 'relative', flex: '1 1 140px', minWidth: '130px' }}>
           <select 
             value={searchField} 
             onChange={(e) => setSearchField(e.target.value)}
@@ -92,7 +96,7 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
           <ChevronDown size={14} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-muted)' }} />
         </div>
 
-        <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+        <div className="hero-search-input-box" style={{ position: 'relative', flex: '2 1 220px', display: 'flex', alignItems: 'center', minWidth: '200px' }}>
           <Search size={18} style={{ position: 'absolute', left: '16px', color: 'var(--color-text-muted)' }} />
           <input 
             type="text" 
@@ -113,32 +117,48 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
           />
         </div>
 
-        <button 
+        <motion.button 
           onClick={onSearchSubmit}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.96 }}
+          className="hero-search-btn"
+          disabled={isSearching}
           style={{
-            padding: '14px 28px',
+            padding: '14px 26px',
             borderRadius: '16px',
-            background: 'var(--color-primary)',
+            background: isSearching ? 'var(--color-sidebar)' : 'var(--color-primary)',
             color: '#FFFFFF',
             fontWeight: 700,
             fontSize: '0.95rem',
             border: 'none',
-            cursor: 'pointer',
+            cursor: isSearching ? 'wait' : 'pointer',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
-            boxShadow: '0 4px 12px rgba(26, 90, 59, 0.25)',
-            transition: 'all 0.2s ease'
+            boxShadow: '0 4px 14px rgba(26, 90, 59, 0.3)',
+            transition: 'all 0.2s ease',
+            flex: '0 0 auto'
           }}
         >
-          <Search size={16} /> Search
-        </button>
+          {isSearching ? (
+            <>
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              <span>Searching...</span>
+            </>
+          ) : (
+            <>
+              <Search size={16} />
+              <span>Search Directory</span>
+            </>
+          )}
+        </motion.button>
       </motion.div>
 
       {/* 3 Metric Cards Grid */}
-      <div style={{
+      <div className="hero-metrics-grid" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: '24px',
         maxWidth: '1200px',
         margin: '0 auto'
@@ -174,7 +194,7 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
 
           {/* Grid Layout without scrollbar */}
           <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '14px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px 12px' }}>
               {(stats?.designations || [
                 { name: 'Professor', count: 61 },
                 { name: 'Associate Prof', count: 41 },
@@ -182,9 +202,9 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
                 { name: 'Director', count: 4 },
                 { name: 'Principal', count: 2 }
               ]).map((d, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</span>
-                  <span style={{ fontWeight: 700, background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.78rem' }}>{d.count}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem', gap: '6px' }}>
+                  <span style={{ color: 'var(--color-text-secondary)', fontWeight: 500, lineHeight: '1.2' }}>{d.name}</span>
+                  <span style={{ fontWeight: 700, background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.78rem', flexShrink: 0 }}>{d.count}</span>
                 </div>
               ))}
             </div>
@@ -224,7 +244,7 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
           </div>
 
           {/* Open Access Pills */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.75rem', background: '#fef9c3', color: '#854d0e', fontWeight: 700, padding: '3px 10px', borderRadius: '10px', border: '1px solid #fef08a' }}>Gold OA: {stats?.openAccess?.goldOA || 313}</span>
             <span style={{ fontSize: '0.75rem', background: '#ffedd5', color: '#9a3412', fontWeight: 700, padding: '3px 10px', borderRadius: '10px', border: '1px solid #fed7aa' }}>Bronze OA: {stats?.openAccess?.bronzeOA || 59}</span>
             <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', fontWeight: 700, padding: '3px 10px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>Green OA: {stats?.openAccess?.greenOA || 36}</span>
