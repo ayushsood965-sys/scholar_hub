@@ -842,6 +842,150 @@ const lookupDoi = async (req, res) => {
   }
 };
 
+const getRepositorySearch = async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const field = (req.query.field || 'all').toLowerCase();
+
+    if (!q) {
+      return res.status(200).json({
+        query: '',
+        field,
+        departments: [],
+        faculties: [],
+        scholars: []
+      });
+    }
+
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    const Department = require('../models/Department');
+    const allDepartments = await Department.find({});
+
+    const allUsers = await User.find({
+      isActive: true,
+      role: { $in: ['FACULTY', 'HOD', 'STUDENT'] }
+    }, 'name username role subRole department profile avatarUrl');
+
+    const matchesUser = (user) => {
+      const p = user.profile || {};
+      const nameMatch = regex.test(user.name || '') || regex.test(user.username || '');
+      const deptMatch = regex.test(user.department || '');
+      
+      const designationStr = [p.designation, user.role, user.subRole, p.degreeName, p.degreeType]
+        .filter(Boolean).join(' ');
+      const designationMatch = regex.test(designationStr);
+
+      const pubTitles = Array.isArray(p.publications) ? p.publications.map(pub => pub.title || '').join(' ') : '';
+      const expArray = Array.isArray(p.expertise) ? p.expertise.join(' ') : '';
+      const expertiseStr = [p.specialization, p.areaOfInterest, p.subject, p.thesisTitle, p.thesisKeywords, expArray, pubTitles]
+        .filter(Boolean).join(' ');
+      const expertiseMatch = regex.test(expertiseStr);
+
+      if (field === 'name') return nameMatch;
+      if (field === 'department') return deptMatch;
+      if (field === 'designation') return designationMatch;
+      if (field === 'expertise') return expertiseMatch;
+
+      return nameMatch || deptMatch || designationMatch || expertiseMatch;
+    };
+
+    const matchingUsers = allUsers.filter(matchesUser);
+
+    const matchingFaculties = matchingUsers
+      .filter(u => u.role === 'FACULTY' || u.role === 'HOD')
+      .map(u => {
+        const pubs = Array.isArray(u.profile?.publications) ? u.profile.publications : [];
+        let citeCount = 0;
+        pubs.forEach(p => { citeCount += Number(p.citationCount || p.citations || 0); });
+        return {
+          _id: u._id,
+          name: u.name,
+          username: u.username,
+          role: u.role,
+          subRole: u.subRole,
+          department: u.department,
+          avatarUrl: u.avatarUrl,
+          designation: u.profile?.designation || (u.role === 'HOD' ? 'Head of Department' : 'Faculty Member'),
+          specialization: u.profile?.specialization || u.profile?.areaOfInterest || '',
+          publicationCount: pubs.length,
+          citationCount: citeCount
+        };
+      });
+
+    const matchingScholars = matchingUsers
+      .filter(u => u.role === 'STUDENT')
+      .map(u => {
+        return {
+          _id: u._id,
+          name: u.name,
+          username: u.username,
+          role: u.role,
+          department: u.department,
+          avatarUrl: u.avatarUrl,
+          degreeName: u.profile?.degreeName || u.profile?.degreeType || (u.profile?.isPhD ? 'Ph.D. Scholar' : 'Research Scholar'),
+          subject: u.profile?.subject || u.profile?.areaOfInterest || '',
+          thesisTitle: u.profile?.thesisTitle || ''
+        };
+      });
+
+    const matchingDeptNames = new Set();
+
+    allDepartments.forEach(dept => {
+      const deptNameMatch = regex.test(dept.name) || regex.test(dept.code);
+      if (field === 'department' || field === 'all') {
+        if (deptNameMatch) matchingDeptNames.add(dept.name);
+      }
+    });
+
+    matchingUsers.forEach(u => {
+      if (u.department) matchingDeptNames.add(u.department);
+    });
+
+    const enrichedDepartments = await Promise.all(allDepartments.map(async (dept) => {
+      const isDirectMatch = (field === 'department' || field === 'all') && (regex.test(dept.name) || regex.test(dept.code));
+      const hasMemberMatch = matchingDeptNames.has(dept.name);
+
+      if (!isDirectMatch && !hasMemberMatch) return null;
+
+      const hodUser = allUsers.find(u => u.role === 'HOD' && u.department === dept.name);
+      const facultyCount = allUsers.filter(u => (u.role === 'FACULTY' || u.role === 'HOD') && u.department === dept.name).length;
+      const scholarCount = allUsers.filter(u => u.role === 'STUDENT' && u.department === dept.name).length;
+      const matchingFacultyCount = matchingFaculties.filter(f => f.department === dept.name).length;
+      const matchingScholarCount = matchingScholars.filter(s => s.department === dept.name).length;
+
+      return {
+        _id: dept._id,
+        name: dept.name,
+        code: dept.code,
+        hod: hodUser ? {
+          _id: hodUser._id,
+          name: hodUser.name,
+          username: hodUser.username,
+          role: hodUser.role,
+          avatarUrl: hodUser.avatarUrl
+        } : null,
+        facultyCount,
+        scholarCount,
+        matchingFacultyCount,
+        matchingScholarCount
+      };
+    }));
+
+    const matchingDepts = enrichedDepartments.filter(Boolean);
+
+    res.status(200).json({
+      query: q,
+      field,
+      departments: matchingDepts,
+      faculties: matchingFaculties,
+      scholars: matchingScholars
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getLabs,
   getPublications,
@@ -866,5 +1010,7 @@ module.exports = {
   getRepositoryStats,
   getRepositoryTopResearchers,
   getRepositoryAnalytics,
-  lookupDoi
+  lookupDoi,
+  getRepositorySearch
 };
+

@@ -100,7 +100,7 @@ const ResearchMetricsHero = ({ stats, searchQuery, setSearchQuery, searchField, 
           <Search size={18} style={{ position: 'absolute', left: '16px', color: 'var(--color-text-muted)' }} />
           <input 
             type="text" 
-            placeholder="Search researchers, publications, departments, or expertise..."
+            placeholder="Search faculty, HODs, scholars, departments, publications, or expertise..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit && onSearchSubmit()}

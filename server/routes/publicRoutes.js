@@ -25,7 +25,8 @@ const {
   getRepositoryStats,
   getRepositoryTopResearchers,
   getRepositoryAnalytics,
-  lookupDoi
+  lookupDoi,
+  getRepositorySearch
 } = require('../controllers/publicController');
 
 // Public routes
@@ -48,6 +49,7 @@ router.get('/partnerships/:id', getPartnershipById);
 router.get('/repository/stats', getRepositoryStats);
 router.get('/repository/top-researchers', getRepositoryTopResearchers);
 router.get('/repository/analytics', getRepositoryAnalytics);
+router.get('/repository/search', getRepositorySearch);
 router.get('/repository/departments', getRepositoryDepartments);
 router.get('/repository/departments/:code/faculties', getRepositoryDepartmentFaculties);
 router.get('/repository/departments/:code/scholars', getRepositoryDepartmentScholars);

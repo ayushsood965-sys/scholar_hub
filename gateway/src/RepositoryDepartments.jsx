@@ -83,6 +83,9 @@ const RepositoryDepartments = () => {
   const [searchField, setSearchField] = useState('all');
   const [isSearching, setIsSearching] = useState(false);
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
+
   const catalogRef = useRef(null);
   const navigate = useNavigate();
 
@@ -119,24 +122,45 @@ const RepositoryDepartments = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const handleSearchSubmit = () => {
-    setIsSearching(true);
-    setActiveSearchTerm(searchQuery.trim());
-    
-    setTimeout(() => {
-      setIsSearching(false);
-      if (catalogRef.current) {
-        catalogRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const executeSearch = async (term, field) => {
+    if (!term.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    try {
+      setIsSearching(true);
+      const res = await fetch(`${getAPIUrl()}/public/repository/search?q=${encodeURIComponent(term)}&field=${encodeURIComponent(field)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data);
       }
-    }, 350);
+    } catch (err) {
+      console.error("Search API failed:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchSubmit = () => {
+    const term = searchQuery.trim();
+    setActiveSearchTerm(term);
+    setActiveTab('all');
+    executeSearch(term, searchField);
+    
+    if (catalogRef.current) {
+      catalogRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleClearSearch = () => {
     setSearchQuery('');
     setActiveSearchTerm('');
+    setSearchResults(null);
+    setActiveTab('all');
   };
 
-  const filteredDepts = departments.filter(dept => {
+  // Fallback filtering if search API response pending or using offline departments list
+  const filteredDepts = searchResults ? searchResults.departments : departments.filter(dept => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     if (searchField === 'department') {
@@ -145,15 +169,16 @@ const RepositoryDepartments = () => {
     if (searchField === 'name') {
       return dept.hod?.name?.toLowerCase().includes(q);
     }
-    if (searchField === 'designation') {
-      return dept.hod?.name?.toLowerCase().includes(q);
-    }
     return (
       dept.name.toLowerCase().includes(q) || 
       dept.code.toLowerCase().includes(q) ||
       (dept.hod?.name && dept.hod.name.toLowerCase().includes(q))
     );
   });
+
+  const matchingFaculties = searchResults?.faculties || [];
+  const matchingScholars = searchResults?.scholars || [];
+  const totalMatches = (filteredDepts?.length || 0) + matchingFaculties.length + matchingScholars.length;
 
   return (
     <div className="landing-page" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
@@ -193,17 +218,17 @@ const RepositoryDepartments = () => {
           isSearching={isSearching}
         />
 
-        {/* Top Researchers Leaderboard (Top 10 Publications, Top 10 Citations, Top 10 Shernies) */}
+        {/* Top Researchers Leaderboard */}
         <TopResearchersLeaderboard topData={topResearchers} />
 
-        {/* Department Analytics Chart (Recharts Dual-Axis Graph) */}
+        {/* Department Analytics Chart */}
         <DepartmentAnalyticsChart analyticsData={analytics} />
 
         {/* Anchor for Smooth Scroll Target */}
         <div ref={catalogRef} id="departments-catalog" style={{ scrollMarginTop: '100px' }} />
 
         {/* Active Search Results Feedback Banner */}
-        {searchQuery.trim() !== '' && (
+        {activeSearchTerm !== '' && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -212,97 +237,145 @@ const RepositoryDepartments = () => {
               background: 'linear-gradient(135deg, var(--color-sync-light) 0%, rgba(2, 132, 199, 0.08) 100%)',
               border: '1px solid var(--color-primary)',
               borderRadius: '20px',
-              padding: '16px 24px',
+              padding: '20px 24px',
               marginBottom: '28px',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '14px',
+              flexDirection: 'column',
+              gap: '16px',
               boxShadow: 'var(--shadow-sm)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: 'var(--color-primary)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 10px rgba(26, 90, 59, 0.3)',
-                flexShrink: 0
-              }}>
-                <Search size={20} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                    Search Results for "{searchQuery}"
-                  </h4>
-                  <span style={{
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-primary)',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    padding: '2px 10px',
-                    borderRadius: '10px',
-                    textTransform: 'uppercase'
-                  }}>
-                    Scope: {searchField === 'all' ? 'All Fields' : searchField}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '50%',
+                  background: 'var(--color-primary)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 10px rgba(26, 90, 59, 0.3)',
+                  flexShrink: 0
+                }}>
+                  <Search size={20} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
+                      Search Results for "{activeSearchTerm}"
+                    </h4>
+                    <span style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      color: 'var(--color-primary)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      padding: '2px 10px',
+                      borderRadius: '10px',
+                      textTransform: 'uppercase'
+                    }}>
+                      Scope: {searchField === 'all' ? 'All Fields' : searchField}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                    Found <strong style={{ color: 'var(--color-primary)' }}>{totalMatches}</strong> match{totalMatches === 1 ? '' : 'es'} across Departments, Faculty & HODs, and Student Scholars
                   </span>
                 </div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                  Found <strong style={{ color: 'var(--color-primary)' }}>{filteredDepts.length}</strong> matching department{filteredDepts.length === 1 ? '' : 's'} across Himachal Pradesh University
-                </span>
               </div>
+
+              <button
+                onClick={handleClearSearch}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text-primary)',
+                  border: '1px solid var(--color-border)',
+                  fontWeight: 700,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <X size={15} /> Clear Search Filter
+              </button>
             </div>
 
-            <button
-              onClick={handleClearSearch}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '12px',
-                background: 'var(--color-surface)',
-                color: 'var(--color-text-primary)',
-                border: '1px solid var(--color-border)',
-                fontWeight: 700,
-                fontSize: '0.84rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: 'var(--shadow-sm)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <X size={15} /> Clear Search Filter
-            </button>
+            {/* Filter Tabs */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid var(--color-border)', paddingTop: '14px' }}>
+              {[
+                { id: 'all', label: 'All Results', count: totalMatches },
+                { id: 'departments', label: 'Departments', count: filteredDepts.length, icon: Building },
+                { id: 'faculties', label: 'Faculty & HODs', count: matchingFaculties.length, icon: UserCheck },
+                { id: 'scholars', label: 'Students & Scholars', count: matchingScholars.length, icon: GraduationCap }
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '12px',
+                      background: isActive ? 'var(--color-primary)' : 'var(--color-surface)',
+                      color: isActive ? '#FFFFFF' : 'var(--color-text-primary)',
+                      border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                      fontWeight: 700,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {Icon && <Icon size={14} />}
+                    <span>{tab.label}</span>
+                    <span style={{
+                      background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--color-bg)',
+                      color: isActive ? '#FFFFFF' : 'var(--color-primary)',
+                      padding: '1px 7px',
+                      borderRadius: '8px',
+                      fontSize: '0.75rem',
+                      fontWeight: 800
+                    }}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
         )}
 
-        {/* Department Catalog Grid Section Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: 0 }}>
-              University Academic Departments
-            </h2>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              Showing {filteredDepts.length} active departments & faculties
-            </span>
+        {/* Section Header when NOT searching */}
+        {activeSearchTerm === '' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: 0 }}>
+                University Academic Departments
+              </h2>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Showing {filteredDepts.length} active departments & faculties
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Department Grid & Search Results State */}
+        {/* Main Content Grid / State Rendering */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--color-text-muted)' }}>
             <Sparkles size={32} className="spin-icon" style={{ marginBottom: '12px', color: 'var(--color-primary)' }} />
             <p style={{ fontWeight: 600 }}>Loading academic departments and research data...</p>
           </div>
-        ) : filteredDepts.length === 0 ? (
+        ) : activeSearchTerm !== '' && totalMatches === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -331,10 +404,10 @@ const RepositoryDepartments = () => {
               <Search size={30} />
             </div>
             <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
-              No Matching Departments
+              No Matching Directory Records
             </h3>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.92rem', marginBottom: '20px', lineHeight: '1.5' }}>
-              No academic department or faculty HOD matching "<strong>{searchQuery}</strong>" was found in {searchField === 'all' ? 'any field' : searchField}.
+              No department, faculty, HOD, or student scholar matching "<strong>{activeSearchTerm}</strong>" was found in {searchField === 'all' ? 'any field' : searchField}.
             </p>
             <button
               onClick={handleClearSearch}
@@ -355,118 +428,298 @@ const RepositoryDepartments = () => {
             </button>
           </motion.div>
         ) : (
-          <motion.div 
-            layout
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap: '24px'
-            }}
-          >
-            <AnimatePresence>
-              {filteredDepts.map(dept => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+            {/* 1. DEPARTMENTS SECTION */}
+            {(activeTab === 'all' || activeTab === 'departments') && filteredDepts.length > 0 && (
+              <div>
+                {activeSearchTerm !== '' && (
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building size={20} color="var(--color-primary)" />
+                    <span>Matching Departments ({filteredDepts.length})</span>
+                  </h3>
+                )}
                 <motion.div 
                   layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.25 }}
-                  key={dept._id} 
-                  className="dept-card"
-                  onClick={() => navigate(`/discovery/department/${dept.code.toLowerCase()}`)}
                   style={{
-                    background: 'var(--color-surface)',
-                    borderRadius: '20px',
-                    padding: '24px',
-                    border: searchQuery.trim() !== '' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    boxShadow: searchQuery.trim() !== '' ? '0 6px 20px rgba(26, 90, 59, 0.12)' : 'var(--shadow-sm)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    position: 'relative'
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    gap: '24px'
                   }}
                 >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div style={{
-                        width: '46px',
-                        height: '46px',
-                        borderRadius: '14px',
-                        background: 'var(--color-sync-light)',
-                        color: 'var(--color-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '1px solid rgba(26, 90, 59, 0.15)',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
-                      }}>
-                        <Building size={24} strokeWidth={2.2} color="var(--color-primary)" />
-                      </div>
-                      <span style={{
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-primary)',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '0.75rem',
-                        fontWeight: '700',
-                        letterSpacing: '0.5px',
-                        border: '1px solid var(--color-border)'
-                      }}>
-                        {dept.code}
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--color-text-primary)', marginBottom: '8px', lineHeight: '1.3' }}>
-                      {dept.name}
-                    </h3>
-
-                    {dept.hod && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', background: 'var(--color-bg)', padding: '10px 14px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
-                        <HODAvatar hod={dept.hod} />
+                  <AnimatePresence>
+                    {filteredDepts.map(dept => (
+                      <motion.div 
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.25 }}
+                        key={dept._id} 
+                        className="dept-card"
+                        onClick={() => navigate(`/discovery/department/${dept.code.toLowerCase()}`)}
+                        style={{
+                          background: 'var(--color-surface)',
+                          borderRadius: '20px',
+                          padding: '24px',
+                          border: activeSearchTerm !== '' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                          boxShadow: activeSearchTerm !== '' ? '0 6px 20px rgba(26, 90, 59, 0.12)' : 'var(--shadow-sm)',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          position: 'relative'
+                        }}
+                      >
                         <div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Head of Department</div>
-                          <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--color-text-primary)' }}>{dept.hod.name}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <div style={{
+                              width: '46px',
+                              height: '46px',
+                              borderRadius: '14px',
+                              background: 'var(--color-sync-light)',
+                              color: 'var(--color-primary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '1px solid rgba(26, 90, 59, 0.15)',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+                            }}>
+                              <Building size={24} strokeWidth={2.2} color="var(--color-primary)" />
+                            </div>
+                            <span style={{
+                              background: 'var(--color-bg)',
+                              color: 'var(--color-primary)',
+                              padding: '4px 10px',
+                              borderRadius: '12px',
+                              fontSize: '0.75rem',
+                              fontWeight: '700',
+                              letterSpacing: '0.5px',
+                              border: '1px solid var(--color-border)'
+                            }}>
+                              {dept.code}
+                            </span>
+                          </div>
+
+                          <h3 style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--color-text-primary)', marginBottom: '8px', lineHeight: '1.3' }}>
+                            {dept.name}
+                          </h3>
+
+                          {dept.hod && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', background: 'var(--color-bg)', padding: '10px 14px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+                              <HODAvatar hod={dept.hod} />
+                              <div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Head of Department</div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--color-text-primary)' }}>{dept.hod.name}</div>
+                              </div>
+                            </div>
+                          )}
+
+                          {(dept.matchingFacultyCount > 0 || dept.matchingScholarCount > 0) && (
+                            <div style={{ marginBottom: '14px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {dept.matchingFacultyCount > 0 && (
+                                <span style={{ fontSize: '0.75rem', background: 'var(--color-sync-light)', color: 'var(--color-primary)', fontWeight: 700, padding: '2px 8px', borderRadius: '8px' }}>
+                                  Includes {dept.matchingFacultyCount} matching faculty
+                                </span>
+                              )}
+                              {dept.matchingScholarCount > 0 && (
+                                <span style={{ fontSize: '0.75rem', background: '#e0f2fe', color: '#0284c7', fontWeight: 700, padding: '2px 8px', borderRadius: '8px' }}>
+                                  Includes {dept.matchingScholarCount} matching scholars
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
 
-                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                        <UserCheck size={16} color="var(--color-primary)" />
-                        <span><strong>{dept.facultyCount}</strong> Faculty</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                        <GraduationCap size={16} color="var(--color-track)" />
-                        <span><strong>{dept.scholarCount}</strong> Scholars</span>
-                      </div>
-                    </div>
+                        <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', gap: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                              <UserCheck size={16} color="var(--color-primary)" />
+                              <span><strong>{dept.facultyCount}</strong> Faculty</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                              <GraduationCap size={16} color="var(--color-track)" />
+                              <span><strong>{dept.scholarCount}</strong> Scholars</span>
+                            </div>
+                          </div>
 
-                    <div className="arrow-btn" style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      background: 'var(--color-bg)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--color-primary)',
-                      border: '1px solid var(--color-border)'
-                    }}>
-                      <ArrowRight size={16} />
-                    </div>
-                  </div>
+                          <div className="arrow-btn" style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: 'var(--color-bg)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-primary)',
+                            border: '1px solid var(--color-border)'
+                          }}>
+                            <ArrowRight size={16} />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+              </div>
+            )}
+
+            {/* 2. FACULTY & HODs SECTION */}
+            {(activeTab === 'all' || activeTab === 'faculties') && matchingFaculties.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <UserCheck size={20} color="var(--color-primary)" />
+                  <span>Matching Faculty & HODs ({matchingFaculties.length})</span>
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                  {matchingFaculties.map(faculty => (
+                    <motion.div
+                      key={faculty._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="dept-card"
+                      onClick={() => navigate(`/discovery/profile/${faculty.username}`)}
+                      style={{
+                        background: 'var(--color-surface)',
+                        borderRadius: '20px',
+                        padding: '22px',
+                        border: '1px solid var(--color-border)',
+                        boxShadow: 'var(--shadow-sm)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+                          <HODAvatar hod={{ name: faculty.name, avatarUrl: faculty.avatarUrl }} />
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
+                                {faculty.name}
+                              </h4>
+                              {faculty.role === 'HOD' && (
+                                <span style={{ background: 'var(--color-sync-light)', color: 'var(--color-primary)', fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                                  HOD
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 700 }}>
+                              {faculty.designation}
+                            </span>
+                          </div>
+                        </div>
+
+                        {faculty.department && (
+                          <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Building size={14} color="var(--color-text-muted)" />
+                            <span>{faculty.department}</span>
+                          </div>
+                        )}
+
+                        {faculty.specialization && (
+                          <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Specialization</span>
+                            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{faculty.specialization}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '0.78rem' }}>
+                          <span style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: '3px 8px', borderRadius: '8px', color: 'var(--color-primary)', fontWeight: 700 }}>
+                            {faculty.publicationCount} Pubs
+                          </span>
+                          <span style={{ background: '#fef3c7', border: '1px solid #fde68a', padding: '3px 8px', borderRadius: '8px', color: '#d97706', fontWeight: 700 }}>
+                            {faculty.citationCount} Cites
+                          </span>
+                        </div>
+
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          Profile <ArrowRight size={14} />
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. STUDENTS & SCHOLARS SECTION */}
+            {(activeTab === 'all' || activeTab === 'scholars') && matchingScholars.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <GraduationCap size={20} color="var(--color-track)" />
+                  <span>Matching Students & Scholars ({matchingScholars.length})</span>
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                  {matchingScholars.map(scholar => (
+                    <motion.div
+                      key={scholar._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="dept-card"
+                      onClick={() => navigate(`/discovery/profile/${scholar.username}`)}
+                      style={{
+                        background: 'var(--color-surface)',
+                        borderRadius: '20px',
+                        padding: '22px',
+                        border: '1px solid var(--color-border)',
+                        boxShadow: 'var(--shadow-sm)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+                          <HODAvatar hod={{ name: scholar.name, avatarUrl: scholar.avatarUrl }} />
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
+                              {scholar.name}
+                            </h4>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-track)', fontWeight: 700 }}>
+                              {scholar.degreeName || 'Doctoral Scholar'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {scholar.department && (
+                          <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Building size={14} color="var(--color-text-muted)" />
+                            <span>{scholar.department}</span>
+                          </div>
+                        )}
+
+                        {(scholar.subject || scholar.thesisTitle) && (
+                          <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Research / Subject</span>
+                            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', lineClamp: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {scholar.thesisTitle || scholar.subject}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          Scholar Profile <ArrowRight size={14} />
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
-      {/* Footer - Fixed Alignment & Logo Visibility */}
+      {/* Footer */}
       <footer style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-surface)', padding: '24px 8%', zIndex: 1, width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
