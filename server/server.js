@@ -192,6 +192,7 @@ app.use('/api/student-mapping', studentMappingRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/install-logs', installLogRoutes);
 app.use('/api/email-logs', emailLogRoutes);
+app.use('/api/research-sync', require('./routes/researchSyncRoutes'));
 
 // Health check endpoint for UptimeRobot
 app.get('/api/health', (req, res) => {

@@ -469,8 +469,118 @@ const StaffProfileTab = ({ thesis }) => {
     yearsOfService: '',
     additionalResponsibilities: '',
     phoneNumber: '',
-    email: ''
+    email: '',
+    orcidId: '',
+    scopusId: '',
+    wosId: '',
+    googleScholarUrl: '',
+    vidwanId: '',
+    hIndex: '',
+    i10Index: '',
+    scopusCitations: '',
+    googleScholarCitations: ''
   });
+
+  const [syncingApiData, setSyncingApiData] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
+  const [showSyncModal, setShowSyncModal] = useState(false);
+
+  const handleFetchOnlineData = async () => {
+    const { orcidId, scopusId, wosId, vidwanId, googleScholarUrl } = personalForm;
+    if (!orcidId && !scopusId && !googleScholarUrl) {
+      toast.error('Please enter an ORCID iD, Scopus ID, or Google Scholar URL first');
+      return;
+    }
+    setSyncingApiData(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_URL}/research-sync/fetch-profile-data`, {
+        orcidId, scopusId, wosId, vidwanId, googleScholarUrl
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data && res.data.success) {
+        setSyncResult(res.data);
+        setShowSyncModal(true);
+        toast.success(`Fetched research data from ${res.data.sourcesSynced.join(', ') || 'online sources'}`);
+      } else {
+        toast.error('Failed to fetch data from research APIs');
+      }
+    } catch (err) {
+      console.error('Fetch research data error:', err);
+      toast.error(err.response?.data?.message || 'Error connecting to research APIs');
+    } finally {
+      setSyncingApiData(false);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!syncResult) return;
+    try {
+      setLoading(true);
+      const { metrics, fetchedData } = syncResult;
+      
+      const newHIndex = metrics.hIndex !== '' && metrics.hIndex !== null ? metrics.hIndex : personalForm.hIndex;
+      const newI10Index = metrics.i10Index !== '' && metrics.i10Index !== null ? metrics.i10Index : personalForm.i10Index;
+      const newScopusCitations = metrics.scopusCitations !== '' && metrics.scopusCitations !== null ? metrics.scopusCitations : personalForm.scopusCitations;
+      const newGoogleCitations = metrics.googleScholarCitations !== '' && metrics.googleScholarCitations !== null ? metrics.googleScholarCitations : personalForm.googleScholarCitations;
+
+      setPersonalForm(prev => ({
+        ...prev,
+        hIndex: newHIndex,
+        i10Index: newI10Index,
+        scopusCitations: newScopusCitations,
+        googleScholarCitations: newGoogleCitations
+      }));
+
+      const existingPubs = profile.publications || [];
+      const newPubs = fetchedData.publications || [];
+      const mergedPubs = [...existingPubs];
+      newPubs.forEach(np => {
+        if (!mergedPubs.some(ep => ep.title?.toLowerCase() === np.title?.toLowerCase())) {
+          mergedPubs.push(np);
+        }
+      });
+
+      const existingExp = profile.experience || [];
+      const newExp = fetchedData.experience || [];
+      const mergedExp = [...existingExp];
+      newExp.forEach(ne => {
+        if (!mergedExp.some(ee => ee.organization?.toLowerCase() === ne.organization?.toLowerCase() && ee.designation?.toLowerCase() === ne.designation?.toLowerCase())) {
+          mergedExp.push(ne);
+        }
+      });
+
+      const existingProj = profile.projects || [];
+      const newProj = fetchedData.projects || [];
+      const mergedProj = [...existingProj];
+      newProj.forEach(np => {
+        if (!mergedProj.some(ep => ep.projectTitle?.toLowerCase() === np.projectTitle?.toLowerCase())) {
+          mergedProj.push(np);
+        }
+      });
+
+      const updatedPayload = {
+        hIndex: newHIndex,
+        i10Index: newI10Index,
+        scopusCitations: newScopusCitations,
+        googleScholarCitations: newGoogleCitations,
+        publications: mergedPubs,
+        experience: mergedExp,
+        projects: mergedProj
+      };
+
+      await triggerProfileUpdate(updatedPayload, 'Profile updated with official API research data across all tabs!');
+      if (typeof fetchMe === 'function') await fetchMe();
+      setShowSyncModal(false);
+    } catch (err) {
+      console.error('Import error:', err);
+      toast.error('Error saving imported data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [newExpertise, setNewExpertise] = useState('');
 
@@ -2018,15 +2128,27 @@ const StaffProfileTab = ({ thesis }) => {
               <Shield size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: '#1A5A3B' }}>Academic Identifiers & Citation Metrics</h3>
             </div>
-            {!editModes.identifiers ? (
-              <button type="button" onClick={() => setEditModes(prev => ({ ...prev, identifiers: true }))} style={btnPrimaryStyle}>
-                <Edit size={14} /> Edit Identifiers
-              </button>
-            ) : (
-              <button type="button" onClick={() => setEditModes(prev => ({ ...prev, identifiers: false }))} style={btnSecondaryStyle}>
-                Cancel
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {!editModes.identifiers ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={syncingApiData || (!personalForm.orcidId && !personalForm.scopusId && !personalForm.googleScholarUrl)}
+                    onClick={handleFetchOnlineData}
+                    style={{ background: '#0284C7', color: 'white', border: 'none', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (syncingApiData || (!personalForm.orcidId && !personalForm.scopusId && !personalForm.googleScholarUrl)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (syncingApiData || (!personalForm.orcidId && !personalForm.scopusId && !personalForm.googleScholarUrl)) ? 0.6 : 1 }}
+                  >
+                    {syncingApiData ? '⏳ Fetching Data...' : '⚡ Fetch & Sync Online Data'}
+                  </button>
+                  <button type="button" onClick={() => setEditModes(prev => ({ ...prev, identifiers: true }))} style={btnPrimaryStyle}>
+                    <Edit size={14} /> Edit Identifiers
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={() => setEditModes(prev => ({ ...prev, identifiers: false }))} style={btnSecondaryStyle}>
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
 
           {editModes.identifiers ? (
@@ -3940,6 +4062,99 @@ const StaffProfileTab = ({ thesis }) => {
 
       </div>
     </div>
+      {/* ── SYNC CONFIRMATION MODAL ── */}
+      {showSyncModal && syncResult && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '640px', width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #F1F5F9', paddingBottom: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: '#E0F2FE', padding: '8px', borderRadius: '10px', color: '#0284C7' }}>
+                  <Shield size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0F172A' }}>Online Profile Sync Preview</h3>
+                  <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>Sources Synced: {syncResult.sourcesSynced?.join(', ') || 'APIs'}</span>
+                </div>
+              </div>
+              <button type="button" onClick={() => setShowSyncModal(false)} style={{ background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontWeight: 800 }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#0284C7', fontWeight: 700 }}>1. Academic Citation Metrics Found</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', background: '#F8FAFC', padding: '14px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', fontWeight: 600 }}>h-Index</span>
+                    <strong style={{ color: '#D97706', fontSize: '1.1rem' }}>{syncResult.metrics?.hIndex || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', fontWeight: 600 }}>i10-Index</span>
+                    <strong style={{ color: '#133A26', fontSize: '1.1rem' }}>{syncResult.metrics?.i10Index || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', fontWeight: 600 }}>Scopus Citations</span>
+                    <strong style={{ color: '#0284C7', fontSize: '1.1rem' }}>{syncResult.metrics?.scopusCitations || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', fontWeight: 600 }}>Scholar Citations</span>
+                    <strong style={{ color: '#0284C7', fontSize: '1.1rem' }}>{syncResult.metrics?.googleScholarCitations || 'N/A'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {syncResult.fetchedData?.publications?.length > 0 && (
+                <div>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#0284C7', fontWeight: 700 }}>
+                    2. Publications Found ({syncResult.fetchedData.publications.length})
+                  </h4>
+                  <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                    {syncResult.fetchedData.publications.map((pub, idx) => (
+                      <div key={idx} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.82rem' }}>
+                        <strong style={{ color: '#0F172A', display: 'block' }}>{pub.title}</strong>
+                        <span style={{ color: '#64748B' }}>{pub.journal} {pub.year ? `(${pub.year})` : ''}</span>
+                        {pub.doi && <span style={{ display: 'block', color: '#0284C7', fontSize: '0.75rem' }}>DOI: {pub.doi}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {syncResult.fetchedData?.experience?.length > 0 && (
+                <div>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#0284C7', fontWeight: 700 }}>
+                    3. Work Experience Found ({syncResult.fetchedData.experience.length})
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {syncResult.fetchedData.experience.map((exp, idx) => (
+                      <div key={idx} style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: '6px', fontSize: '0.82rem' }}>
+                        <strong>{exp.designation}</strong> at {exp.organization}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', paddingTop: '16px', borderTop: '2px solid #F1F5F9' }}>
+              <button
+                type="button"
+                onClick={() => setShowSyncModal(false)}
+                style={{ background: '#64748B', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmImport}
+                disabled={loading}
+                style={{ background: '#133A26', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                {loading ? 'Importing...' : '💾 Import & Update Profile'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
