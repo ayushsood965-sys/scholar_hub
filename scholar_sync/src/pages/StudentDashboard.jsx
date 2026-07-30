@@ -9258,8 +9258,10 @@ const ProfileTab = () => {
     const isDbComplete = dbClass10Ok && dbClass12Ok && dbGradOk && dbPgOk && dbMphilOk && dbNetJrfOk;
 
     const allowProfileEdit = user?.profile?.allowProfileEdit === true;
-    if (!hasInitializedAcademic && user?.profile) {
-      setAcademicUnlocked(allowProfileEdit ? true : !isDbComplete);
+    if (allowProfileEdit) {
+      if (!academicUnlocked) setAcademicUnlocked(true);
+    } else if (!hasInitializedAcademic && user?.profile) {
+      setAcademicUnlocked(!isDbComplete);
       setHasInitializedAcademic(true);
     }
 
@@ -10303,7 +10305,8 @@ const ProfileTab = () => {
     else if (docType.startsWith('fellowship_')) isEditingThisDoc = editModes.fellowships;
 
     const isUploaded = !!certUrl;
-    const isDisabled = !!thesis || !isEditingThisDoc;
+    const isProfileUnlocked = user?.profile?.allowProfileEdit === true;
+    const isDisabled = (!isProfileUnlocked && !!thesis) || !isEditingThisDoc;
     const currentSelectedName = selectedFileNames[docType];
     let displayFileName = '';
     if (currentSelectedName) {
@@ -10653,12 +10656,33 @@ const ProfileTab = () => {
     userPreferredGuide: user?.profile?.preferredGuideId
   });
 
+  const isProfileUnlocked = user?.profile?.allowProfileEdit === true;
+
   return (
     <div className="profile-tab-wrapper" style={{ position: 'relative' }}>
       <style>{profileLayoutCSS}</style>
 
       {/* Dynamic Profile Registration Status Banner */}
-      {!thesis ? (
+      {isProfileUnlocked ? (
+        <div style={{
+          background: '#EFF6FF',
+          border: '1px solid #BFDBFE',
+          borderLeft: '4px solid #3B82F6',
+          padding: '16px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          fontSize: '0.85rem',
+          color: '#1E3A8A',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🔓 Profile Editing Unlocked by HOD
+          </div>
+          <div>Your department HOD has unlocked your profile for editing. You can update your Personal Details and Academic Qualifications below and click "Save Profile Updates" when finished.</div>
+        </div>
+      ) : !thesis ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
           {user?.profile?.rejectionRemarks && (
             <div style={{
@@ -10926,13 +10950,17 @@ const ProfileTab = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Personal Details</h3>
-                {(isVerifiedCandidate || !!thesis || user?.isVerified) && (
+                {isProfileUnlocked ? (
+                  <span style={{ background: '#DBEAFE', color: '#1E40AF', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #93C5FD' }}>
+                    🔓 Unlocked by HOD
+                  </span>
+                ) : (isVerifiedCandidate || !!thesis || user?.isVerified) && (
                   <span style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #FCD34D' }}>
                     <Lock size={12} /> Locked (HOD Approved)
                   </span>
                 )}
               </div>
-              {!editModes.general && !(isVerifiedCandidate || !!thesis || user?.isVerified) && (
+              {!editModes.general && (isProfileUnlocked || !(isVerifiedCandidate || !!thesis || user?.isVerified)) && (
                 <button
                   type="button"
                   onClick={() => setEditModes(prev => ({ ...prev, general: true }))}
@@ -11215,7 +11243,7 @@ const ProfileTab = () => {
 
           </div>
           {/* Bottom action for personal section */}
-          {!thesis && editModes.general && !(isVerifiedCandidate || user?.isVerified) && (
+          {(isProfileUnlocked || (!thesis && !(isVerifiedCandidate || user?.isVerified))) && editModes.general && (
             <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
               <button
                 type="submit"
@@ -11458,9 +11486,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, class10: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !academicUnlocked) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, class10: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Class 10 Details
                     </button>
@@ -11559,9 +11587,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, class12: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !academicUnlocked) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, class12: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Class 12 Details
                     </button>
@@ -11664,9 +11692,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, graduation: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !academicUnlocked) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, graduation: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Graduation Details
                     </button>
@@ -11773,9 +11801,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, postGraduation: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !academicUnlocked) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, postGraduation: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit Post-Graduation Details
                     </button>
@@ -11885,9 +11913,9 @@ const ProfileTab = () => {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, otherQuals: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, otherQuals: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit / Add Other Qualifications
                     </button>
@@ -12028,9 +12056,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={user?.profile?.allowProfileEdit ? false : (!!thesis || !academicUnlocked)}
-                      onClick={() => (user?.profile?.allowProfileEdit || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, mphil: true }))}
-                      style={{ background: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, mphil: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit M.Phil Details
                     </button>
@@ -12167,9 +12195,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={user?.profile?.allowProfileEdit ? false : (!!thesis || !academicUnlocked)}
-                      onClick={() => (user?.profile?.allowProfileEdit || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, netJrf: true }))}
-                      style={{ background: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, netJrf: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit NET JRF Details
                     </button>
@@ -12300,9 +12328,9 @@ const ProfileTab = () => {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E5E7EB', paddingTop: '12px' }}>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, fellowships: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                      disabled={!isProfileUnlocked && (!!thesis || !academicUnlocked)}
+                      onClick={() => (isProfileUnlocked || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, fellowships: true }))}
+                      style={{ background: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!isProfileUnlocked && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit / Add Fellowships
                     </button>
@@ -12517,7 +12545,30 @@ const ProfileTab = () => {
 
           {/* Guide section bottom actions */}
           <div style={{ display: 'flex', gap: '16px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
-            {thesis && thesis.status === 'REGISTRATION_PENDING' && (
+            {isProfileUnlocked && thesis && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={(e) => handleUpdate(e, 'unlocked_profile')}
+                className="btn-primary"
+                style={{
+                  flex: 1,
+                  background: '#059669',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 20px',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.2)'
+                }}
+              >
+                {loading ? 'Saving Changes...' : '💾 Save Profile Updates'}
+              </button>
+            )}
+            {!isProfileUnlocked && thesis && thesis.status === 'REGISTRATION_PENDING' && (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 700, padding: '10px 16px' }}>
                 ⏳ Awaiting HOD Verification
               </div>
