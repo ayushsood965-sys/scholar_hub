@@ -90,17 +90,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     };
   }, []);
 
-  // PhD Academic Identifiers states
-  const [orcidId, setOrcidId] = useState('');
-  const [scopusId, setScopusId] = useState('');
-  const [wosId, setWosId] = useState('');
-  const [vidwanId, setVidwanId] = useState('');
-  const [googleScholarUrl, setGoogleScholarUrl] = useState('');
-  const [hIndex, setHIndex] = useState('');
-  const [i10Index, setI10Index] = useState('');
-  const [scopusCitations, setScopusCitations] = useState('');
-  const [googleScholarCitations, setGoogleScholarCitations] = useState('');
-
   useEffect(() => {
     if (profile?.profile) {
       setOrcidId(profile.profile.orcidId || '');
@@ -1541,6 +1530,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     publications: useRef(null),
     ipr: useRef(null),
     settings: useRef(null)
+  };
   const mobileBarRef = useRef(null);
   const milestonePlaceholderRef = useRef(null);
   const [isStuck, setIsStuck] = useState(false);

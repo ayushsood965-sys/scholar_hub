@@ -5788,6 +5788,7 @@ const AdminDashboard = () => {
     public_config: 'Public Portal Config'
   };
 
+  const renderContent = () => {
     if (!user?.isVerified && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
       const isHodRole = user?.role === 'HOD' || user?.subRole === 'HOD';
       const pendingMessage = isHodRole

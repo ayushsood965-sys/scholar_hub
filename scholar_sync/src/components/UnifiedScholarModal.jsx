@@ -3269,7 +3269,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <div><strong>h-Index:</strong> <span style={{ color: '#d97706', fontWeight: 700 }}>{profile.hIndex || profile.metrics?.hIndex || 'N/A'}</span></div>
                   <div><strong>i10-Index:</strong> <span style={{ color: '#133A26', fontWeight: 700 }}>{profile.i10Index || profile.metrics?.i10Index || 'N/A'}</span></div>
                   <div><strong>Scopus Citations:</strong> <span style={{ color: '#0284c7', fontWeight: 700 }}>{profile.scopusCitations || profile.metrics?.scopusCitations || 'N/A'}</span></div>
-                  <div><strong>Google Scholar Citations:</strong> <span style={{ color: '#0284c7', fontWeight 700 }}>{profile.googleScholarCitations || profile.metrics?.googleScholarCitations || 'N/A'}</span></div>
+                  <div><strong>Google Scholar Citations:</strong> <span style={{ color: '#0284c7', fontWeight: 700 }}>{profile.googleScholarCitations || profile.metrics?.googleScholarCitations || 'N/A'}</span></div>
                 </div>
               </div>
             </div>
