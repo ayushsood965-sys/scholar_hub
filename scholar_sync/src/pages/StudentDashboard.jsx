@@ -8711,14 +8711,17 @@ const ProfileTab = () => {
   );
   const [netJrfExamType, setNetJrfExamType] = useState(() => {
     const dbType = user?.profile?.qualifications?.netJrf?.examType || '';
-    const predefined = ['NET', 'JRF', 'GATE', 'SET'];
+    const predefined = ['UGC NET', 'CSIR UGC NET', 'GATE', 'SET'];
     return predefined.includes(dbType) ? dbType : (dbType ? 'Other' : '');
   });
   const [netJrfOtherExamType, setNetJrfOtherExamType] = useState(() => {
     const dbType = user?.profile?.qualifications?.netJrf?.examType || '';
-    const predefined = ['NET', 'JRF', 'GATE', 'SET'];
+    const predefined = ['UGC NET', 'CSIR UGC NET', 'GATE', 'SET'];
     return predefined.includes(dbType) ? '' : dbType;
   });
+  const [netJrfCategory, setNetJrfCategory] = useState(
+    user?.profile?.qualifications?.netJrf?.netCategory || user?.profile?.qualifications?.netJrf?.category || ''
+  );
   const [netJrfCertNumber, setNetJrfCertNumber] = useState(user?.profile?.qualifications?.netJrf?.certNumber || '');
   const [netJrfRoll, setNetJrfRoll] = useState(user?.profile?.qualifications?.netJrf?.rollNo || '');
   const [netJrfRank, setNetJrfRank] = useState(user?.profile?.qualifications?.netJrf?.rank || '');
@@ -9152,7 +9155,7 @@ const ProfileTab = () => {
           q?.netJrf?.qualified === false ? 'NO' : ''
         );
         const dbExamType = q?.netJrf?.examType || '';
-        const predefinedTypes = ['NET', 'JRF', 'GATE', 'SET'];
+        const predefinedTypes = ['UGC NET', 'CSIR UGC NET', 'GATE', 'SET'];
         if (dbExamType && !predefinedTypes.includes(dbExamType)) {
           setNetJrfExamType('Other');
           setNetJrfOtherExamType(dbExamType);
@@ -9160,6 +9163,7 @@ const ProfileTab = () => {
           setNetJrfExamType(dbExamType);
           setNetJrfOtherExamType('');
         }
+        setNetJrfCategory(q?.netJrf?.netCategory || q?.netJrf?.category || '');
         setNetJrfCertNumber(q?.netJrf?.certNumber || '');
         setNetJrfRoll(q?.netJrf?.rollNo || '');
         setNetJrfRank(q?.netJrf?.rank || '');
@@ -9253,8 +9257,9 @@ const ProfileTab = () => {
 
     const isDbComplete = dbClass10Ok && dbClass12Ok && dbGradOk && dbPgOk && dbMphilOk && dbNetJrfOk;
 
+    const allowProfileEdit = user?.profile?.allowProfileEdit === true;
     if (!hasInitializedAcademic && user?.profile) {
-      setAcademicUnlocked(!isDbComplete);
+      setAcademicUnlocked(allowProfileEdit ? true : !isDbComplete);
       setHasInitializedAcademic(true);
     }
 
@@ -9755,6 +9760,11 @@ const ProfileTab = () => {
           setLoading(false);
           return;
         }
+        if (['UGC NET', 'CSIR UGC NET'].includes(examTypeToCheck) && !netJrfCategory) {
+          toast.error('Please select a NET Category.');
+          setLoading(false);
+          return;
+        }
       }
     }
 
@@ -9857,9 +9867,12 @@ const ProfileTab = () => {
         certificateUrl: tempQualifications?.mphil?.certificateUrl
       };
     } else if (sectionKey === 'netJrf') {
+      const finalExamType = netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType;
+      const isNetType = ['UGC NET', 'CSIR UGC NET'].includes(finalExamType);
       sectionData = {
         qualified: netJrfQualified === 'YES',
-        examType: netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType,
+        examType: finalExamType,
+        netCategory: isNetType ? netJrfCategory : '',
         certNumber: netJrfCertNumber,
         rollNo: netJrfRoll,
         rank: netJrfRank,
@@ -12015,9 +12028,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, mphil: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !academicUnlocked) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={user?.profile?.allowProfileEdit ? false : (!!thesis || !academicUnlocked)}
+                      onClick={() => (user?.profile?.allowProfileEdit || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, mphil: true }))}
+                      style={{ background: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit M.Phil Details
                     </button>
@@ -12119,6 +12132,12 @@ const ProfileTab = () => {
                           <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Exam Type</span>
                           <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{netJrfExamType === 'Other' ? netJrfOtherExamType : (netJrfExamType || '—')}</strong>
                         </div>
+                        {['UGC NET', 'CSIR UGC NET'].includes(netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType) && (
+                          <div>
+                            <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Category</span>
+                            <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{netJrfCategory || '—'}</strong>
+                          </div>
+                        )}
                         <div>
                           <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '2px' }}>Award Letter Number</span>
                           <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{netJrfCertNumber || '—'}</strong>
@@ -12148,9 +12167,9 @@ const ProfileTab = () => {
                     </div>
                     <button
                       type="button"
-                      disabled={!!thesis || !academicUnlocked}
-                      onClick={() => !thesis && academicUnlocked && setEditModes(prev => ({ ...prev, netJrf: true }))}
-                      style={{ background: (!!thesis || !academicUnlocked) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!!thesis || !academicUnlocked) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!!thesis || !academicUnlocked) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                      disabled={user?.profile?.allowProfileEdit ? false : (!!thesis || !academicUnlocked)}
+                      onClick={() => (user?.profile?.allowProfileEdit || (!thesis && academicUnlocked)) && setEditModes(prev => ({ ...prev, netJrf: true }))}
+                      style={{ background: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: (!user?.profile?.allowProfileEdit && (!!thesis || !academicUnlocked)) ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                     >
                       ✏️ Edit NET JRF Details
                     </button>
@@ -12158,7 +12177,7 @@ const ProfileTab = () => {
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: netJrfQualified === 'YES' ? (netJrfExamType === 'Other' ? '1fr 1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr') : '1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Have you qualified NET JRF?</label>
                       <select className="form-input" value={netJrfQualified} onChange={e => setNetJrfQualified(e.target.value)}>
@@ -12171,10 +12190,15 @@ const ProfileTab = () => {
                       <>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Select Exam</label>
-                          <select className="form-input" value={netJrfExamType} onChange={e => setNetJrfExamType(e.target.value)}>
+                          <select className="form-input" value={netJrfExamType} onChange={e => {
+                            setNetJrfExamType(e.target.value);
+                            if (!['UGC NET', 'CSIR UGC NET'].includes(e.target.value)) {
+                              setNetJrfCategory('');
+                            }
+                          }}>
                             <option value="">Select Exam...</option>
-                            <option value="NET">NET</option>
-                            <option value="JRF">JRF</option>
+                            <option value="UGC NET">UGC NET</option>
+                            <option value="CSIR UGC NET">CSIR UGC NET</option>
                             <option value="GATE">GATE</option>
                             <option value="SET">SET</option>
                             <option value="Other">Other</option>
@@ -12184,6 +12208,17 @@ const ProfileTab = () => {
                           <div>
                             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Specify Exam Name</label>
                             <input type="text" className="form-input" placeholder="Enter exam name" value={netJrfOtherExamType} onChange={e => setNetJrfOtherExamType(e.target.value)} />
+                          </div>
+                        )}
+                        {['UGC NET', 'CSIR UGC NET'].includes(netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType) && (
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Select Category</label>
+                            <select className="form-input" value={netJrfCategory} onChange={e => setNetJrfCategory(e.target.value)}>
+                              <option value="">Select Category...</option>
+                              <option value="NET JRF (Junior Research Fellowship)">1: NET JRF (Junior Research Fellowship)</option>
+                              <option value="NET LS (Lectureship / Assistant Professor)">2. NET LS (Lectureship / Assistant Professor)</option>
+                              <option value="NET PhD (PhD Admission Only)">3. NET PhD (PhD Admission Only)</option>
+                            </select>
                           </div>
                         )}
                         <div>

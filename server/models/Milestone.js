@@ -54,4 +54,7 @@ const milestoneSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+milestoneSchema.index({ thesisId: 1 });
+milestoneSchema.index({ thesisId: 1, sequence: 1, createdAt: 1 });
+
 module.exports = mongoose.model('Milestone', milestoneSchema);

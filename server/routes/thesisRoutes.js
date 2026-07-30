@@ -13,7 +13,7 @@ const {
   approveCourseworkHOD, rejectCourseworkHOD,
   schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome,
   finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails,
-  provisionalSynopsisClear
+  provisionalSynopsisClear, toggleProfileLock
 } = require('../controllers/thesisController');
 
 const { createUpload } = require('../utils/uploadConfig');
@@ -26,8 +26,9 @@ router.put('/me/coursework/submit', protect, authorize('STUDENT'), upload.single
 
 // Admin & HOD Department Admins
 router.get('/all', protect, authorize('ADMIN', 'HOD'), getAllTheses);
-router.put('/:id/verify', protect, authorize('ADMIN', 'HOD'), verifyEnrollment);
-router.put('/:id/assign', protect, authorize('ADMIN', 'HOD'), assignSupervisor);
+router.put('/:id/verify', protect, authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), verifyEnrollment);
+router.put('/:id/toggle-profile-lock', protect, authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), toggleProfileLock);
+router.put('/:id/assign', protect, authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), assignSupervisor);
 router.put('/:id/coursework', protect, authorize('ADMIN', 'HOD', 'FACULTY'), clearCoursework);
 router.put('/:id/coursework/approve-faculty', protect, authorize('FACULTY'), approveCourseworkFaculty);
 router.put('/:id/coursework/reject-faculty', protect, authorize('FACULTY'), rejectCourseworkFaculty);

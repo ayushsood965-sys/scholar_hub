@@ -5007,8 +5007,21 @@ const FacultyDashboard = () => {
 
   const handleSelectThesis = async (id) => {
     setSelectedThesisId(id);
-    const data = await fetchThesisById(id);
-    setSelectedThesisData(data);
+    setSelectedThesisData(null);
+    // Brief preloader flash for visual polish
+    await new Promise(r => setTimeout(r, 400));
+    // Use locally cached thesis data for instant modal open
+    const local = allTheses.find(t => (t._id === id || t._id?.toString() === id));
+    if (local) {
+      setSelectedThesisData({ thesis: local, milestones: local.milestones || [] });
+    }
+    // Background refresh with full data (milestones, populated fields)
+    try {
+      const data = await fetchThesisById(id);
+      setSelectedThesisData(data);
+    } catch (err) {
+      if (!local) setSelectedThesisId(null);
+    }
   };
 
   const handleReview = async (milestoneId, action, comment) => {

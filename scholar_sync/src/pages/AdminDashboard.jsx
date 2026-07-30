@@ -5733,11 +5733,21 @@ const AdminDashboard = () => {
   // Fetch thesis data when a thesis is selected
   const handleSelectThesis = async (thesisId) => {
     setSelectedThesisId(thesisId);
+    setSelectedThesisData(null);
+    // Brief preloader flash for visual polish
+    await new Promise(r => setTimeout(r, 400));
+    // Use locally cached thesis data for instant modal open
+    const local = allTheses.find(t => (t._id === thesisId || t._id?.toString() === thesisId));
+    if (local) {
+      setSelectedThesisData({ thesis: local, milestones: local.milestones || [] });
+    }
+    // Background refresh with full data (milestones, populated fields)
     try {
       const data = await fetchThesisById(thesisId);
       setSelectedThesisData(data);
     } catch (err) {
-      setSelectedThesisId(null);
+      // Local data already shown, no need to close modal
+      if (!local) setSelectedThesisId(null);
     }
   };
 

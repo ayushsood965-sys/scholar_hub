@@ -199,26 +199,27 @@ const getAllTheses = async (req, res) => {
 // GET /api/thesis/:id — Single thesis detail
 const getThesisById = async (req, res) => {
   try {
-    const thesis = await Thesis.findById(req.params.id)
-      .populate('scholarId', 'name username email profile profileCompleted department')
-      .populate('supervisorId', 'name username subRole department');
+    // Run thesis lookup and milestone query in parallel to cut latency
+    const [thesis, allMilestones] = await Promise.all([
+      Thesis.findById(req.params.id)
+        .populate('scholarId', 'name username email profile profileCompleted department')
+        .populate('supervisorId', 'name username subRole department')
+        .lean(),
+      Milestone.find({ thesisId: req.params.id })
+        .populate('forwardedTo', 'name email role subRole')
+        .sort('sequence createdAt')
+        .lean()
+    ]);
+
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
-
-    // HOD department check bypassed for read-only global search viewing
-    // if (req.user.role === 'HOD' && thesis.department !== req.user.department) {
-    //   return res.status(403).json({ message: 'Not authorized to view theses outside your department' });
-    // }
-
-    let milestones = await Milestone.find({ thesisId: thesis._id })
-      .populate('forwardedTo', 'name email role subRole')
-      .sort('sequence createdAt');
 
     const scholarIdStr = thesis.scholarId?._id ? thesis.scholarId._id.toString() : thesis.scholarId?.toString();
     const isScholar = scholarIdStr === req.user._id.toString();
     const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
 
+    let milestones = allMilestones;
     if (!isScholar && !isAdmin && req.user.role !== 'STUDENT') {
-      milestones = milestones.filter(m => {
+      milestones = allMilestones.filter(m => {
         if (m.type === 'CHAPTER_DRAFT') {
           const fwdId = m.forwardedTo?._id ? m.forwardedTo._id.toString() : m.forwardedTo?.toString();
           return fwdId && fwdId === req.user._id.toString();
@@ -2192,6 +2193,42 @@ const provisionalSynopsisClear = async (req, res) => {
   }
 };
 
+// Toggle profile lock/allow edit for candidate
+const toggleProfileLock = async (req, res) => {
+  try {
+    const thesis = await Thesis.findById(req.params.id).select('scholarId').lean();
+    if (!thesis) return res.status(404).json({ message: 'Thesis record not found' });
+
+    const scholarId = thesis.scholarId?._id || thesis.scholarId;
+    let targetState = req.body.allowProfileEdit;
+
+    if (typeof targetState !== 'boolean') {
+      const scholar = await User.findById(scholarId).select('profile.allowProfileEdit').lean();
+      targetState = !(scholar?.profile?.allowProfileEdit);
+    }
+
+    const updatedScholar = await User.findByIdAndUpdate(
+      scholarId,
+      { $set: { 'profile.allowProfileEdit': targetState } },
+      { new: true, select: 'name profile.allowProfileEdit' }
+    ).lean();
+
+    if (!updatedScholar) return res.status(404).json({ message: 'Scholar user not found' });
+
+    const finalStatus = Boolean(updatedScholar.profile?.allowProfileEdit);
+
+    res.json({
+      success: true,
+      allowProfileEdit: finalStatus,
+      message: finalStatus 
+        ? `Profile editing UNLOCKED for ${updatedScholar.name}.`
+        : `Profile editing LOCKED for ${updatedScholar.name}.`
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createThesis, getMyThesis, getAllTheses, getThesisById,
   verifyEnrollment, assignSupervisor, clearCoursework, awardDegree, updateAuditLog,
@@ -2202,5 +2239,5 @@ module.exports = {
   approveCourseworkHOD, rejectCourseworkHOD,
   schedulePreSubmissionSeminar, recordPreSubmissionSeminarOutcome,
   finalReject, finalApproveHOD, finalRejectHOD, logExternalEvaluation, getEligibilityDetails,
-  provisionalSynopsisClear
+  provisionalSynopsisClear, toggleProfileLock
 };

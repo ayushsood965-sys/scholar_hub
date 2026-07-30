@@ -116,12 +116,24 @@ const ScholarSearchTab = ({ user }) => {
   const handleOpenProfile = async (thesisId) => {
     setModalLoading(true);
     setSelectedThesisId(thesisId);
+    setSelectedThesisData(null);
+    // Brief preloader flash for visual polish
+    await new Promise(r => setTimeout(r, 400));
+    // Use locally cached data for instant modal open
+    const local = results.find(r => r._id === thesisId || r._id?.toString() === thesisId);
+    if (local) {
+      setSelectedThesisData({ thesis: local, milestones: local.milestones || [] });
+      setModalLoading(false);
+    }
+    // Background refresh with full data
     try {
       const data = await fetchThesisById(thesisId);
       setSelectedThesisData(data);
     } catch (err) {
-      toast.error('Failed to retrieve full scholar profile details.');
-      setSelectedThesisId(null);
+      if (!local) {
+        toast.error('Failed to retrieve full scholar profile details.');
+        setSelectedThesisId(null);
+      }
     } finally {
       setModalLoading(false);
     }

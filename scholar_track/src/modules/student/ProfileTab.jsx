@@ -257,6 +257,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [pgPercentage, setPgPercentage] = useState('');
 
   const [netJrfQualified, setNetJrfQualified] = useState('');
+  const [netJrfExamType, setNetJrfExamType] = useState('');
+  const [netJrfOtherExamType, setNetJrfOtherExamType] = useState('');
+  const [netJrfCategory, setNetJrfCategory] = useState('');
   const [netJrfCertNumber, setNetJrfCertNumber] = useState('');
   const [netJrfRoll, setNetJrfRoll] = useState('');
   const [netJrfRank, setNetJrfRank] = useState('');
@@ -345,6 +348,16 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         q.netJrf?.qualified === true ? 'YES' : 
         q.netJrf?.qualified === false ? 'NO' : ''
       );
+      const dbExamType = q.netJrf?.examType || '';
+      const predefinedTypes = ['UGC NET', 'CSIR UGC NET', 'GATE', 'SET'];
+      if (dbExamType && !predefinedTypes.includes(dbExamType)) {
+        setNetJrfExamType('Other');
+        setNetJrfOtherExamType(dbExamType);
+      } else {
+        setNetJrfExamType(dbExamType);
+        setNetJrfOtherExamType('');
+      }
+      setNetJrfCategory(q.netJrf?.netCategory || q.netJrf?.category || '');
       setNetJrfCertNumber(q.netJrf?.certNumber || '');
       setNetJrfRoll(q.netJrf?.rollNo || '');
       setNetJrfRank(q.netJrf?.rank || '');
@@ -366,13 +379,14 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           return localRow;
         });
         if (dbQuals.length > prev.length) {
-          merged.push(...dbQuals.slice(prev.length));
+        merged.push(...dbQuals.slice(prev.length));
         }
         return merged;
       });
 
       // Set edit modes
-      const thesisActive = thesis && thesis.status !== 'REJECTED' ? thesis : null;
+      const allowProfileEdit = u?.profile?.allowProfileEdit === true;
+      const thesisActive = (thesis && thesis.status !== 'REJECTED' && !allowProfileEdit) ? thesis : null;
       setEditModes({
         general: !thesisActive && (!u.profile?.dob || (isPhDVal && !u.profile?.phdMode)),
         class10: !thesisActive && !q.class10?.rollNo,
@@ -564,8 +578,14 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         return;
       }
       if (netJrfQualified === 'YES') {
-        if (!netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
+        const examTypeToCheck = netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType;
+        if (!examTypeToCheck || !examTypeToCheck.trim() || !netJrfCertNumber.trim() || !netJrfRoll.trim() || !netJrfRank.trim() || !netJrfScore.trim() || !netJrfIssueDate.trim()) {
           toast.error('Please fill in all NET JRF details before saving.');
+          setLoading(false);
+          return;
+        }
+        if (['UGC NET', 'CSIR UGC NET'].includes(examTypeToCheck) && !netJrfCategory) {
+          toast.error('Please select a NET Category.');
           setLoading(false);
           return;
         }
@@ -683,9 +703,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         }
       };
     } else if (sectionKey === 'netJrf') {
+      const finalExamType = netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType;
+      const isNetType = ['UGC NET', 'CSIR UGC NET'].includes(finalExamType);
       sectionData = {
         netJrf: {
           qualified: netJrfQualified === 'YES',
+          examType: finalExamType,
+          netCategory: isNetType ? netJrfCategory : '',
           certNumber: netJrfCertNumber, rollNo: netJrfRoll, rank: netJrfRank, score: netJrfScore,
           issueDate: netJrfIssueDate,
           certificateUrl: tempQualifications?.netJrf?.certificateUrl
@@ -3085,8 +3109,17 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         {getDocBadge('netJrf', profile?.profile?.qualifications?.netJrf?.certificateUrl)}
                       </div>
                       {!editModes.netJrf ? (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                          <div>Qualified: <strong>{netJrfQualified || '—'}</strong> {netJrfQualified === 'YES' && `| Cert No: ${netJrfCertNumber || '—'} | Roll: ${netJrfRoll || '—'} | AIR: ${netJrfRank || '—'} | Date: ${netJrfIssueDate || '—'}`}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', flexWrap: 'wrap', gap: '8px' }}>
+                          <div>
+                            Qualified: <strong>{netJrfQualified || '—'}</strong> 
+                            {netJrfQualified === 'YES' && (
+                              <>
+                                {` | Exam: ${netJrfExamType === 'Other' ? netJrfOtherExamType : (netJrfExamType || '—')}`}
+                                {netJrfCategory && ` | Category: ${netJrfCategory}`}
+                                {` | Cert No: ${netJrfCertNumber || '—'} | Roll: ${netJrfRoll || '—'} | AIR: ${netJrfRank || '—'} | Date: ${netJrfIssueDate || '—'}`}
+                              </>
+                            )}
+                          </div>
                           {!isSubmitted && (
                             <button 
                               className="btn btn-sm btn-outline" 
@@ -3114,6 +3147,30 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                             </select>
                             {netJrfQualified === 'YES' && (
                               <>
+                                <select className="form-input" value={netJrfExamType} onChange={e => {
+                                  setNetJrfExamType(e.target.value);
+                                  if (!['UGC NET', 'CSIR UGC NET'].includes(e.target.value)) {
+                                    setNetJrfCategory('');
+                                  }
+                                }}>
+                                  <option value="">Select Exam...</option>
+                                  <option value="UGC NET">UGC NET</option>
+                                  <option value="CSIR UGC NET">CSIR UGC NET</option>
+                                  <option value="GATE">GATE</option>
+                                  <option value="SET">SET</option>
+                                  <option value="Other">Other</option>
+                                </select>
+                                {netJrfExamType === 'Other' && (
+                                  <input className="form-input" placeholder="Specify Exam Name" value={netJrfOtherExamType} onChange={e => setNetJrfOtherExamType(e.target.value)} />
+                                )}
+                                {['UGC NET', 'CSIR UGC NET'].includes(netJrfExamType === 'Other' ? netJrfOtherExamType : netJrfExamType) && (
+                                  <select className="form-input" value={netJrfCategory} onChange={e => setNetJrfCategory(e.target.value)}>
+                                    <option value="">Select Category...</option>
+                                    <option value="NET JRF (Junior Research Fellowship)">1: NET JRF (Junior Research Fellowship)</option>
+                                    <option value="NET LS (Lectureship / Assistant Professor)">2. NET LS (Lectureship / Assistant Professor)</option>
+                                    <option value="NET PhD (PhD Admission Only)">3. NET PhD (PhD Admission Only)</option>
+                                  </select>
+                                )}
                                 <input className="form-input" placeholder="Award Letter Number" value={netJrfCertNumber} onChange={e => setNetJrfCertNumber(e.target.value)} />
                                 <input className="form-input" placeholder="Roll No" value={netJrfRoll} onChange={e => setNetJrfRoll(e.target.value)} />
                               </>

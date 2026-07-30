@@ -1267,6 +1267,46 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const [editForm, setEditForm] = useState({});
   const [isVerifyingAndAssigning, setIsVerifyingAndAssigning] = useState(false);
 
+  const [profileEditUnlocked, setProfileEditUnlocked] = useState(
+    thesis?.scholarId?.profile?.allowProfileEdit || false
+  );
+  const [profileLockBusy, setProfileLockBusy] = useState(false);
+
+  const handleToggleProfileLock = async () => {
+    if (profileLockBusy) return;
+
+    const nextState = !profileEditUnlocked;
+    setProfileEditUnlocked(nextState);
+    setProfileLockBusy(true);
+
+    const scholarName = thesis?.scholarId?.name || 'Scholar';
+    if (nextState) {
+      toast.success(`Profile editing UNLOCKED for ${scholarName}. Student can now edit personal & qualification details.`);
+    } else {
+      toast.success(`Profile editing LOCKED for ${scholarName}.`);
+    }
+
+    try {
+      const res = await axios.put(
+        `${API}/thesis/${thesis._id}/toggle-profile-lock`,
+        { allowProfileEdit: nextState },
+        getAuthHeader()
+      );
+      if (res.data?.success) {
+        setProfileEditUnlocked(res.data.allowProfileEdit);
+      } else {
+        setProfileEditUnlocked(!nextState);
+      }
+    } catch (err) {
+      setProfileEditUnlocked(!nextState);
+      toast.error(err.response?.data?.message || 'Failed to sync profile lock state with server');
+    } finally {
+      setTimeout(() => {
+        setProfileLockBusy(false);
+      }, 500);
+    }
+  };
+
   const handleRejectAndSendToStudent = async () => {
     if (!rejectRemarks.trim()) {
       toast.warning('Please enter rejection remarks.');
@@ -3065,7 +3105,33 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
-          <div className="usm-section-title" style={{ marginBottom: '10px' }}>📁 Scholar Personal Details</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div className="usm-section-title" style={{ margin: 0 }}>📁 Scholar Personal Details</div>
+            {!isReadOnly && (subRole === 'HOD' || subRole === 'ADMIN' || subRole === 'SUPER_ADMIN') && (
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={handleToggleProfileLock}
+                disabled={profileLockBusy}
+                style={{
+                  padding: '5px 14px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  background: profileEditUnlocked ? '#ECFDF5' : '#F8FAFC',
+                  color: profileEditUnlocked ? '#047857' : '#475569',
+                  borderColor: profileEditUnlocked ? '#A7F3D0' : '#CBD5E1',
+                  borderRadius: '6px',
+                  cursor: profileLockBusy ? 'wait' : 'pointer',
+                  opacity: profileLockBusy ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                {profileLockBusy ? '⏳ Processing...' : profileEditUnlocked ? '🔓 Profile Edit UNLOCKED (Click to Lock)' : '🔒 Allow Profile Editing'}
+              </button>
+            )}
+          </div>
           {isEditing ? (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
               <div>
@@ -3470,6 +3536,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 12px' }}>
                   <div><strong>Exam Type:</strong> {qualifications.netJrf.examType || '—'}</div>
+                  {(qualifications.netJrf.netCategory || qualifications.netJrf.category) && (
+                    <div><strong>Category:</strong> {qualifications.netJrf.netCategory || qualifications.netJrf.category}</div>
+                  )}
                   <div><strong>Award Letter No:</strong> {qualifications.netJrf.certNumber || '—'}</div>
                   <div><strong>Roll Number:</strong> {qualifications.netJrf.rollNo || '—'}</div>
                   <div><strong>AIR Rank:</strong> {qualifications.netJrf.rank || '—'}</div>

@@ -148,13 +148,16 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 // Rate limiting for sensitive routes
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 login requests per 15 minutes
   message: { message: 'Too many login attempts from this IP, please try again after 15 minutes' },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: (req) => isDev || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'
 });
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/seed-users', loginLimiter);
@@ -166,7 +169,8 @@ const apiLimiter = rateLimit({
   max: 1000, // Limit each IP to 1000 requests per 15 minutes
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: (req) => isDev || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'
 });
 app.use('/api/', apiLimiter);
 
