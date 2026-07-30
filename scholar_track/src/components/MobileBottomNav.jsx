@@ -17,7 +17,7 @@ const MobileBottomNav = ({
   const homeKey = homeItem ? homeItem.key : "overview";
 
   const handleTabClick = (key) => {
-    if (isLocked && key !== "profile") return;
+    if (isLocked) return;
     onTabChange(key);
     setMenuOpen(false);
   };

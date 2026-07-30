@@ -75,6 +75,7 @@ const StaffProfileTab = ({ thesis }) => {
   // References for scroll navigation
   const sectionRefs = {
     personal: useRef(null),
+    identifiers: useRef(null),
     expertise: useRef(null),
     experience: useRef(null),
     education: useRef(null),
@@ -438,6 +439,7 @@ const StaffProfileTab = ({ thesis }) => {
   // Milestone list items definitions
   const milestoneItems = [
     { key: 'personal', label: 'Personal Info', Icon: User },
+    { key: 'identifiers', label: 'Academic Identifiers', Icon: Shield },
     { key: 'expertise', label: 'Expertise', Icon: Lightbulb },
     { key: 'experience', label: 'Experience', Icon: Briefcase },
     { key: 'education', label: 'Qualifications & Docs', Icon: GraduationCap },
@@ -870,6 +872,24 @@ const StaffProfileTab = ({ thesis }) => {
     } finally {
       setCheckingStatus(false);
     }
+  };
+
+  // Save Academic Identifiers
+  const saveAcademicIdentifiers = async (e) => {
+    e.preventDefault();
+    const payload = {
+      orcidId: personalForm.orcidId,
+      scopusId: personalForm.scopusId,
+      wosId: personalForm.wosId,
+      googleScholarUrl: personalForm.googleScholarUrl,
+      vidwanId: personalForm.vidwanId,
+      hIndex: personalForm.hIndex,
+      i10Index: personalForm.i10Index,
+      scopusCitations: personalForm.scopusCitations,
+      googleScholarCitations: personalForm.googleScholarCitations
+    };
+    await triggerProfileUpdate(payload, 'Academic Identifiers updated successfully');
+    setEditModes(prev => ({ ...prev, identifiers: false }));
   };
 
   // Save Personal Info
@@ -1978,7 +1998,113 @@ const StaffProfileTab = ({ thesis }) => {
 
         </section>
 
-        {/* 2. AREA OF EXPERTISE */}
+        {/* 2. ACADEMIC IDENTIFIERS */}
+        <section ref={sectionRefs.identifiers} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={20} style={{ color: '#1A5A3B' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: '#1A5A3B' }}>Academic Identifiers & Citation Metrics</h3>
+            </div>
+            {!editModes.identifiers ? (
+              <button type="button" onClick={() => setEditModes(prev => ({ ...prev, identifiers: true }))} style={btnPrimaryStyle}>
+                <Edit size={14} /> Edit Identifiers
+              </button>
+            ) : (
+              <button type="button" onClick={() => setEditModes(prev => ({ ...prev, identifiers: false }))} style={btnSecondaryStyle}>
+                Cancel
+              </button>
+            )}
+          </div>
+
+          {editModes.identifiers ? (
+            <form onSubmit={saveAcademicIdentifiers} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">ORCID iD</label>
+                  <input type="text" className="form-input" placeholder="e.g. 0000-0002-1825-0097" value={personalForm.orcidId} onChange={e => setPersonalForm({ ...personalForm, orcidId: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Scopus Author ID</label>
+                  <input type="text" className="form-input" placeholder="e.g. 57200012345" value={personalForm.scopusId} onChange={e => setPersonalForm({ ...personalForm, scopusId: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Web of Science ID</label>
+                  <input type="text" className="form-input" placeholder="e.g. AA-1234-2020" value={personalForm.wosId} onChange={e => setPersonalForm({ ...personalForm, wosId: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Vidwan ID</label>
+                  <input type="text" className="form-input" placeholder="e.g. 154892" value={personalForm.vidwanId} onChange={e => setPersonalForm({ ...personalForm, vidwanId: e.target.value })} />
+                </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label">Google Scholar Profile URL</label>
+                  <input type="url" className="form-input" placeholder="https://scholar.google.com/citations?user=..." value={personalForm.googleScholarUrl} onChange={e => setPersonalForm({ ...personalForm, googleScholarUrl: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">h-Index</label>
+                  <input type="number" className="form-input" placeholder="e.g. 18" value={personalForm.hIndex} onChange={e => setPersonalForm({ ...personalForm, hIndex: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">i10-Index</label>
+                  <input type="number" className="form-input" placeholder="e.g. 24" value={personalForm.i10Index} onChange={e => setPersonalForm({ ...personalForm, i10Index: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Scopus Citations</label>
+                  <input type="number" className="form-input" placeholder="e.g. 1420" value={personalForm.scopusCitations} onChange={e => setPersonalForm({ ...personalForm, scopusCitations: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Google Scholar Citations</label>
+                  <input type="number" className="form-input" placeholder="e.g. 2890" value={personalForm.googleScholarCitations} onChange={e => setPersonalForm({ ...personalForm, googleScholarCitations: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button type="submit" style={btnPrimaryStyle} disabled={loading}>
+                  Save Identifiers
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>ORCID iD</span>
+                <strong style={{ color: 'var(--color-text-primary)' }}>{profile.orcidId || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Scopus ID</span>
+                <strong style={{ color: 'var(--color-text-primary)' }}>{profile.scopusId || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Web of Science ID</span>
+                <strong style={{ color: 'var(--color-text-primary)' }}>{profile.wosId || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Vidwan ID</span>
+                <strong style={{ color: 'var(--color-text-primary)' }}>{profile.vidwanId || 'N/A'}</strong>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Google Scholar Profile</span>
+                <strong style={{ color: 'var(--color-text-primary)', wordBreak: 'break-all' }}>{profile.googleScholarUrl || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>h-Index</span>
+                <strong style={{ color: '#d97706' }}>{profile.hIndex || profile.metrics?.hIndex || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>i10-Index</span>
+                <strong style={{ color: '#1A5A3B' }}>{profile.i10Index || profile.metrics?.i10Index || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Scopus Citations</span>
+                <strong style={{ color: '#0284c7' }}>{profile.scopusCitations || profile.metrics?.scopusCitations || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.78rem' }}>Google Scholar Citations</span>
+                <strong style={{ color: '#0284c7' }}>{profile.googleScholarCitations || profile.metrics?.googleScholarCitations || 'N/A'}</strong>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* 3. AREA OF EXPERTISE */}
         <section ref={sectionRefs.expertise} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

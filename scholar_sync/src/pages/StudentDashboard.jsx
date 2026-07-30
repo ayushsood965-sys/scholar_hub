@@ -8273,6 +8273,7 @@ const ProfileTab = () => {
   const [activeSection, setActiveSection] = useState('personal');
   const sectionRefs = {
     personal: React.useRef(null),
+    identifiers: React.useRef(null),
     education: React.useRef(null),
     supervisor: React.useRef(null),
     expertise: React.useRef(null),
@@ -8299,6 +8300,7 @@ const ProfileTab = () => {
 
   if (isVerifiedCandidate) {
     milestoneItems.push(
+      { key: 'identifiers', label: 'Academic Identifiers', Icon: Shield },
       { key: 'expertise', label: 'Expertise', Icon: Lightbulb },
       { key: 'experience', label: 'Experience', Icon: Briefcase },
       { key: 'awards', label: 'Awards', Icon: Award },
@@ -8546,6 +8548,15 @@ const ProfileTab = () => {
   const [thesisKeywords, setThesisKeywords] = useState(user?.profile?.thesisKeywords || '');
   const [academicSession, setAcademicSession] = useState(user?.profile?.academicSession || '');
   const [degreeType, setDegreeType] = useState(user?.profile?.degreeType || '');
+  const [orcidId, setOrcidId] = useState(user?.profile?.orcidId || '');
+  const [scopusId, setScopusId] = useState(user?.profile?.scopusId || '');
+  const [wosId, setWosId] = useState(user?.profile?.wosId || '');
+  const [googleScholarUrl, setGoogleScholarUrl] = useState(user?.profile?.googleScholarUrl || '');
+  const [vidwanId, setVidwanId] = useState(user?.profile?.vidwanId || '');
+  const [hIndex, setHIndex] = useState(user?.profile?.hIndex || user?.profile?.metrics?.hIndex || '');
+  const [i10Index, setI10Index] = useState(user?.profile?.i10Index || user?.profile?.metrics?.i10Index || '');
+  const [scopusCitations, setScopusCitations] = useState(user?.profile?.scopusCitations || user?.profile?.metrics?.scopusCitations || '');
+  const [googleScholarCitations, setGoogleScholarCitations] = useState(user?.profile?.googleScholarCitations || user?.profile?.metrics?.googleScholarCitations || '');
   const isPhD = user?.profile?.isPhD === true;
   // Class 10
   const [class10Roll, setClass10Roll] = useState(user?.profile?.qualifications?.class10?.rollNo || '');
@@ -8967,6 +8978,15 @@ const ProfileTab = () => {
         setThesisKeywords(user.profile.thesisKeywords || '');
         setAcademicSession(user.profile.academicSession || '');
         setDegreeType(user.profile.degreeType || '');
+        setOrcidId(user.profile.orcidId || '');
+        setScopusId(user.profile.scopusId || '');
+        setWosId(user.profile.wosId || '');
+        setGoogleScholarUrl(user.profile.googleScholarUrl || '');
+        setVidwanId(user.profile.vidwanId || '');
+        setHIndex(user.profile.hIndex || user.profile.metrics?.hIndex || '');
+        setI10Index(user.profile.i10Index || user.profile.metrics?.i10Index || '');
+        setScopusCitations(user.profile.scopusCitations || user.profile.metrics?.scopusCitations || '');
+        setGoogleScholarCitations(user.profile.googleScholarCitations || user.profile.metrics?.googleScholarCitations || '');
       }
       setPreferredGuideId(user.profile.preferredGuideId || '');
 
@@ -9309,6 +9329,15 @@ const ProfileTab = () => {
       setThesisKeywords(user?.profile?.thesisKeywords || '');
       setAcademicSession(user?.profile?.academicSession || '');
       setDegreeType(user?.profile?.degreeType || '');
+      setOrcidId(user?.profile?.orcidId || '');
+      setScopusId(user?.profile?.scopusId || '');
+      setWosId(user?.profile?.wosId || '');
+      setGoogleScholarUrl(user?.profile?.googleScholarUrl || '');
+      setVidwanId(user?.profile?.vidwanId || '');
+      setHIndex(user?.profile?.hIndex || user?.profile?.metrics?.hIndex || '');
+      setI10Index(user?.profile?.i10Index || user?.profile?.metrics?.i10Index || '');
+      setScopusCitations(user?.profile?.scopusCitations || user?.profile?.metrics?.scopusCitations || '');
+      setGoogleScholarCitations(user?.profile?.googleScholarCitations || user?.profile?.metrics?.googleScholarCitations || '');
     } else if (sectionKey === 'class10') {
       setClass10Roll(q?.class10?.rollNo || '');
       setClass10Board(q?.class10?.board || '');
@@ -9469,6 +9498,15 @@ const ProfileTab = () => {
       thesisKeywords,
       academicSession,
       degreeType: degreeType || user?.profile?.degreeType || '',
+      orcidId,
+      scopusId,
+      wosId,
+      googleScholarUrl,
+      vidwanId,
+      hIndex,
+      i10Index,
+      scopusCitations,
+      googleScholarCitations,
       qualifications: {
         class10: {
           rollNo: class10Roll,
@@ -10771,13 +10809,19 @@ const ProfileTab = () => {
         <div ref={sectionRefs.personal} className="card" style={{ padding: '24px', border: '1px solid var(--color-border)', borderRadius: '12px', transition: 'all 0.3s' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Personal Details</h3>
-              {!editModes.general && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Personal Details</h3>
+                {(isVerifiedCandidate || !!thesis || user?.isVerified) && (
+                  <span style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #FCD34D' }}>
+                    <Lock size={12} /> Locked (HOD Approved)
+                  </span>
+                )}
+              </div>
+              {!editModes.general && !(isVerifiedCandidate || !!thesis || user?.isVerified) && (
                 <button
                   type="button"
-                  disabled={!!thesis}
-                  onClick={() => !thesis && setEditModes(prev => ({ ...prev, general: true }))}
-                  style={{ background: !!thesis ? '#9CA3AF' : '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: !!thesis ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: !!thesis ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
+                  onClick={() => setEditModes(prev => ({ ...prev, general: true }))}
+                  style={{ background: '#3B82F6', color: 'white', border: 'none', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(59, 130, 246, 0.15)', transition: 'all 0.2s' }}
                 >
                   ✏️ Edit General Info
                 </button>
@@ -11056,7 +11100,7 @@ const ProfileTab = () => {
 
           </div>
           {/* Bottom action for personal section */}
-          {!thesis && editModes.general && (
+          {!thesis && editModes.general && !(isVerifiedCandidate || user?.isVerified) && (
             <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
               <button
                 type="submit"
@@ -11069,6 +11113,146 @@ const ProfileTab = () => {
             </div>
           )}
         </div>
+
+        {/* --- Section: Academic Identifiers (Unlocked Post-HOD Approval) --- */}
+        {isVerifiedCandidate && (
+          <div 
+            ref={sectionRefs.identifiers} 
+            className="card" 
+            style={{ 
+              padding: '24px', 
+              border: '1px solid var(--color-border)', 
+              borderRadius: '12px', 
+              transition: 'all 0.3s'
+            }}
+          >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={20} style={{ color: '#133A26' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: '#133A26' }}>
+                Academic Identifiers & Citation Metrics
+              </h3>
+            </div>
+            {!editModes.identifiers ? (
+              <button
+                type="button"
+                onClick={() => setEditModes(prev => ({ ...prev, identifiers: true }))}
+                style={{ background: '#133A26', color: 'white', border: 'none', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                ✏️ Edit Identifiers
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleCancel('identifiers')}
+                style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+
+          {editModes.identifiers ? (
+            <form onSubmit={e => { handleUpdate(e, 'identifiers'); setEditModes(prev => ({ ...prev, identifiers: false })); }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>ORCID iD</label>
+                  <input type="text" className="form-input" placeholder="e.g. 0000-0002-1825-0097" value={orcidId} onChange={e => setOrcidId(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Scopus Author ID</label>
+                  <input type="text" className="form-input" placeholder="e.g. 57200012345" value={scopusId} onChange={e => setScopusId(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Web of Science ID</label>
+                  <input type="text" className="form-input" placeholder="e.g. AA-1234-2020" value={wosId} onChange={e => setWosId(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Vidwan ID</label>
+                  <input type="text" className="form-input" placeholder="e.g. 154892" value={vidwanId} onChange={e => setVidwanId(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Google Scholar Profile URL</label>
+                  <input type="url" className="form-input" placeholder="https://scholar.google.com/citations?user=..." value={googleScholarUrl} onChange={e => setGoogleScholarUrl(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>h-Index</label>
+                  <input type="number" className="form-input" placeholder="e.g. 18" value={hIndex} onChange={e => setHIndex(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>i10-Index</label>
+                  <input type="number" className="form-input" placeholder="e.g. 24" value={i10Index} onChange={e => setI10Index(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Scopus Citations</label>
+                  <input type="number" className="form-input" placeholder="e.g. 1420" value={scopusCitations} onChange={e => setScopusCitations(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Google Scholar Citations</label>
+                  <input type="number" className="form-input" placeholder="e.g. 2890" value={googleScholarCitations} onChange={e => setGoogleScholarCitations(e.target.value)} />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{ background: '#133A26', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
+              >
+                {loading ? 'Saving...' : '💾 Save Academic Identifiers'}
+              </button>
+            </form>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>ORCID iD</span>
+                <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{orcidId || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Scopus ID</span>
+                <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{scopusId || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Web of Science ID</span>
+                <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{wosId || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Vidwan ID</span>
+                <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{vidwanId || 'N/A'}</strong>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Google Scholar Profile</span>
+                <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', wordBreak: 'break-all' }}>{googleScholarUrl || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>h-Index</span>
+                <strong style={{ color: '#d97706', fontSize: '0.9rem' }}>{hIndex || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>i10-Index</span>
+                <strong style={{ color: '#133A26', fontSize: '0.9rem' }}>{i10Index || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Scopus Citations</span>
+                <strong style={{ color: '#0284c7', fontSize: '0.9rem' }}>{scopusCitations || 'N/A'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Google Scholar Citations</span>
+                <strong style={{ color: '#0284c7', fontSize: '0.9rem' }}>{googleScholarCitations || 'N/A'}</strong>
+              </div>
+            </div>
+          )}
+        </div>
+        )}
 
         {/* --- Section 2: Academic Qualifications --- */}
         <div 

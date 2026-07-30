@@ -58,6 +58,15 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [thesisKeywords, setThesisKeywords] = useState('');
   const [academicSession, setAcademicSession] = useState('');
   const [degreeType, setDegreeType] = useState('');
+  const [orcidId, setOrcidId] = useState('');
+  const [scopusId, setScopusId] = useState('');
+  const [wosId, setWosId] = useState('');
+  const [googleScholarUrl, setGoogleScholarUrl] = useState('');
+  const [vidwanId, setVidwanId] = useState('');
+  const [hIndex, setHIndex] = useState('');
+  const [i10Index, setI10Index] = useState('');
+  const [scopusCitations, setScopusCitations] = useState('');
+  const [googleScholarCitations, setGoogleScholarCitations] = useState('');
   const [sessions, setSessions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [genders, setGenders] = useState([]);
@@ -178,6 +187,15 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       setDegreeTypeId(u.profile?.degreeTypeId?._id || u.profile?.degreeTypeId || '');
       setDegreeNameId(u.profile?.degreeNameId?._id || u.profile?.degreeNameId || '');
       setErpAdmissionNo(u.profile?.erpAdmissionNo || '');
+      setOrcidId(u.profile?.orcidId || '');
+      setScopusId(u.profile?.scopusId || '');
+      setWosId(u.profile?.wosId || '');
+      setGoogleScholarUrl(u.profile?.googleScholarUrl || '');
+      setVidwanId(u.profile?.vidwanId || '');
+      setHIndex(u.profile?.hIndex || u.profile?.metrics?.hIndex || '');
+      setI10Index(u.profile?.i10Index || u.profile?.metrics?.i10Index || '');
+      setScopusCitations(u.profile?.scopusCitations || u.profile?.metrics?.scopusCitations || '');
+      setGoogleScholarCitations(u.profile?.googleScholarCitations || u.profile?.metrics?.googleScholarCitations || '');
 
       const q = u.profile?.qualifications || {};
       setClass10Roll(q.class10?.rollNo || '');
@@ -514,6 +532,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         phoneNumber, address, areaOfInterest, academicBackground,
         thesisTitle, thesisSummary, thesisKeywords, academicSession,
         degreeTypeId, degreeNameId, isPhD, erpAdmissionNo, preferredGuideId,
+        orcidId, scopusId, wosId, googleScholarUrl, vidwanId,
+        hIndex, i10Index, scopusCitations, googleScholarCitations,
         degreeType: isPhD ? 'Ph.D.' : (degreeTypes.find(t => t._id === degreeTypeId)?.name || ''),
         degreeName: degreeNames.find(n => n._id === degreeNameId)?.name || '',
       };
@@ -1385,6 +1405,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [activeSection, setActiveSection] = useState('personal');
   const sectionRefs = {
     personal: useRef(null),
+    identifiers: useRef(null),
     education: useRef(null),
     supervisor: useRef(null),
     expertise: useRef(null),
@@ -1396,7 +1417,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     publications: useRef(null),
     ipr: useRef(null),
     settings: useRef(null)
-  };
   const mobileBarRef = useRef(null);
   const milestonePlaceholderRef = useRef(null);
   const [isStuck, setIsStuck] = useState(false);
@@ -1411,6 +1431,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     milestoneItems.push({ key: 'supervisor', label: 'Supervisor Preference', Icon: UserCheck });
     if (isVerifiedPhD) {
       milestoneItems.push(
+        { key: 'identifiers', label: 'Academic Identifiers', Icon: Shield },
         { key: 'expertise', label: 'Expertise', Icon: Lightbulb },
         { key: 'experience', label: 'Experience', Icon: Briefcase },
         { key: 'awards', label: 'Awards', Icon: Award },
@@ -2072,6 +2093,124 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           </div>
         </div>
 
+        {/* --- Section 2: Academic Identifiers (Unlocked Post-HOD Approval) --- */}
+        {isPhD && isVerifiedPhD && (
+          <div 
+            ref={sectionRefs.identifiers} 
+            className="card" 
+            style={{ 
+              padding: '24px', 
+              border: '1px solid var(--color-border)', 
+              borderRadius: '12px', 
+              transition: 'all 0.3s' 
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Shield size={20} style={{ color: '#1A5A3B' }} />
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1A5A3B', margin: 0 }}>
+                  Academic Identifiers & Citation Metrics
+                </h3>
+              </div>
+              {!editModes.identifiers ? (
+                <button className="btn btn-primary" type="button" onClick={() => setEditModes({ ...editModes, identifiers: true })}>
+                  ✏️ Edit Identifiers
+                </button>
+              ) : (
+                <button className="btn btn-secondary" type="button" onClick={() => handleCancel('identifiers')}>
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            {editModes.identifiers ? (
+              <form onSubmit={e => { e.preventDefault(); handleSaveSection('identifiers'); setEditModes(prev => ({ ...prev, identifiers: false })); }}>
+                <div className="responsive-three-col-grid" style={{ gap: '12px', marginBottom: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">ORCID iD</label>
+                    <input className="form-input" value={orcidId} onChange={e => setOrcidId(e.target.value)} placeholder="e.g. 0000-0002-1825-0097" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Scopus ID</label>
+                    <input className="form-input" value={scopusId} onChange={e => setScopusId(e.target.value)} placeholder="e.g. 57200012345" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Web of Science ID</label>
+                    <input className="form-input" value={wosId} onChange={e => setWosId(e.target.value)} placeholder="e.g. AA-1234-2020" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Vidwan ID</label>
+                    <input className="form-input" value={vidwanId} onChange={e => setVidwanId(e.target.value)} placeholder="e.g. 154892" />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Google Scholar Profile URL</label>
+                    <input className="form-input" value={googleScholarUrl} onChange={e => setGoogleScholarUrl(e.target.value)} placeholder="https://scholar.google.com/citations?user=..." />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">h-Index</label>
+                    <input type="number" className="form-input" value={hIndex} onChange={e => setHIndex(e.target.value)} placeholder="e.g. 18" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">i10-Index</label>
+                    <input type="number" className="form-input" value={i10Index} onChange={e => setI10Index(e.target.value)} placeholder="e.g. 24" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Scopus Citations</label>
+                    <input type="number" className="form-input" value={scopusCitations} onChange={e => setScopusCitations(e.target.value)} placeholder="e.g. 1420" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Google Scholar Citations</label>
+                    <input type="number" className="form-input" value={googleScholarCitations} onChange={e => setGoogleScholarCitations(e.target.value)} placeholder="e.g. 2890" />
+                  </div>
+                </div>
+
+                <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: '12px' }}>
+                  {loading ? 'Saving...' : '💾 Save Academic Identifiers'}
+                </button>
+              </form>
+            ) : (
+              <div className="responsive-three-col-grid" style={{ gap: '16px', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>ORCID iD</span>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{orcidId || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Scopus ID</span>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{scopusId || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Web of Science ID</span>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{wosId || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Vidwan ID</span>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>{vidwanId || 'N/A'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Google Scholar Profile</span>
+                  <strong style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', wordBreak: 'break-all' }}>{googleScholarUrl || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>h-Index</span>
+                  <strong style={{ color: '#d97706', fontSize: '0.9rem' }}>{hIndex || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>i10-Index</span>
+                  <strong style={{ color: '#133A26', fontSize: '0.9rem' }}>{i10Index || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Scopus Citations</span>
+                  <strong style={{ color: '#0284c7', fontSize: '0.9rem' }}>{scopusCitations || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Google Scholar Citations</span>
+                  <strong style={{ color: '#0284c7', fontSize: '0.9rem' }}>{googleScholarCitations || 'N/A'}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Right Side: Scrollable Details Cards */}
         <div className="profile-details-column">
           
@@ -2101,12 +2240,17 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
               
               {/* SECTION 1: Personal Info */}
               <div ref={sectionRefs.personal} className="card p-lg clay-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', color: 'var(--text-primary)', margin: 0 }}>
-                    <User style={{ color: 'var(--color-primary)' }} /> 1. Personal & Admission Info
-                  </h3>
-                  {!isSubmitted && !editModes.general && (
-                    <button className="btn btn-sm btn-outline" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-primary)', margin: 0 }}>General Information</h3>
+                    {(isSubmitted || isVerifiedPhD || profile?.isVerified) && (
+                      <span style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #FCD34D' }}>
+                        <Lock size={12} /> Locked (HOD Approved)
+                      </span>
+                    )}
+                  </div>
+                  {!editModes.general && !(isSubmitted || isVerifiedPhD || profile?.isVerified) && (
+                    <button className="btn btn-primary" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
                       ✏️ Edit General Info
                     </button>
                   )}
@@ -2344,9 +2488,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                   <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       {!editModes.general ? (
-                        <button className="btn btn-primary" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
-                          ✏️ Edit General Info
-                        </button>
+                        !(isSubmitted || isVerifiedPhD || profile?.isVerified) && (
+                          <button className="btn btn-primary" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
+                            ✏️ Edit General Info
+                          </button>
+                        )
                       ) : (
                         <div style={{ display: 'flex', gap: '10px' }}>
                           <button className="btn btn-secondary" type="button" onClick={() => handleCancel('general')}>Cancel</button>

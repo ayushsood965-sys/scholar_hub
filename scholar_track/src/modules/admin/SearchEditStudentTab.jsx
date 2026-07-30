@@ -374,6 +374,15 @@ const SearchEditStudentTab = () => {
       thesisTitle: p.thesisTitle || '',
       thesisSummary: p.thesisSummary || '',
       thesisKeywords: p.thesisKeywords || '',
+      orcidId: p.orcidId || '',
+      scopusId: p.scopusId || '',
+      wosId: p.wosId || '',
+      googleScholarUrl: p.googleScholarUrl || '',
+      vidwanId: p.vidwanId || '',
+      hIndex: p.hIndex || p.metrics?.hIndex || '',
+      i10Index: p.i10Index || p.metrics?.i10Index || '',
+      scopusCitations: p.scopusCitations || p.metrics?.scopusCitations || '',
+      googleScholarCitations: p.googleScholarCitations || p.metrics?.googleScholarCitations || '',
 
       // Qualifications Details
       qualifications: {
@@ -805,6 +814,22 @@ const SearchEditStudentTab = () => {
                           </div>
                         </div>
                       )}
+                      {(viewStudent.profile?.isPhD || viewStudent.profile?.orcidId) && (
+                        <div style={{ borderTop: '1px solid var(--color-border, #E2E8F0)', marginTop: '16px', paddingTop: '16px' }}>
+                          <h6 style={{ margin: '0 0 10px', color: 'var(--color-text-primary, #1E293B)', fontWeight: 700, fontSize: '0.85rem' }}>Academic Identifiers & Citation Metrics (Research Profile Sync)</h6>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                            {renderDetailItem('ORCID iD', viewStudent.profile?.orcidId)}
+                            {renderDetailItem('Scopus ID', viewStudent.profile?.scopusId)}
+                            {renderDetailItem('Web of Science ID', viewStudent.profile?.wosId)}
+                            {renderDetailItem('Vidwan ID', viewStudent.profile?.vidwanId)}
+                            {renderDetailItem('Google Scholar Profile', viewStudent.profile?.googleScholarUrl)}
+                            {renderDetailItem('h-Index', viewStudent.profile?.hIndex || viewStudent.profile?.metrics?.hIndex)}
+                            {renderDetailItem('i10-Index', viewStudent.profile?.i10Index || viewStudent.profile?.metrics?.i10Index)}
+                            {renderDetailItem('Scopus Citations', viewStudent.profile?.scopusCitations || viewStudent.profile?.metrics?.scopusCitations)}
+                            {renderDetailItem('Google Scholar Citations', viewStudent.profile?.googleScholarCitations || viewStudent.profile?.metrics?.googleScholarCitations)}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Academic Qualifications Details */}
@@ -1077,6 +1102,48 @@ const SearchEditStudentTab = () => {
                         <div>
                           <label className="form-label" style={{ fontWeight: 600, color: '#B45309', fontSize: '0.78rem' }}>Thesis Keywords (Separated by commas)</label>
                           <input type="text" name="thesisKeywords" value={editForm.thesisKeywords} onChange={handleEditFormChange} className="form-input" style={{ borderColor: '#FCD34D' }} placeholder="e.g. forensics, dna profiling, ballistics" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#F0FDF4', padding: '16px', borderRadius: '10px', border: '1px solid #BBF7D0', marginTop: '12px' }}>
+                      <h6 style={{ margin: '0 0 10px', color: '#133A26', fontWeight: 700, fontSize: '0.85rem' }}>Academic Identifiers & Citation Metrics (Research Profile Sync)</h6>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>ORCID iD</label>
+                          <input type="text" name="orcidId" value={editForm.orcidId} onChange={handleEditFormChange} className="form-input" placeholder="e.g. 0000-0002-1825-0097" />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>Scopus ID</label>
+                          <input type="text" name="scopusId" value={editForm.scopusId} onChange={handleEditFormChange} className="form-input" placeholder="e.g. 57200012345" />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>Web of Science ID</label>
+                          <input type="text" name="wosId" value={editForm.wosId} onChange={handleEditFormChange} className="form-input" placeholder="e.g. AA-1234-2020" />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>Vidwan ID</label>
+                          <input type="text" name="vidwanId" value={editForm.vidwanId} onChange={handleEditFormChange} className="form-input" placeholder="e.g. 154892" />
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>Google Scholar Profile URL</label>
+                          <input type="url" name="googleScholarUrl" value={editForm.googleScholarUrl} onChange={handleEditFormChange} className="form-input" placeholder="https://scholar.google.com/citations?user=..." />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>h-Index</label>
+                          <input type="number" name="hIndex" value={editForm.hIndex} onChange={handleEditFormChange} className="form-input" placeholder="e.g. 18" />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>i10-Index</label>
+                          <input type="number" name="i10Index" value={editForm.i10Index} onChange={handleEditFormChange} className="form-input" placeholder="e.g. 24" />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>Scopus Citations</label>
+                          <input type="number" name="scopusCitations" value={editForm.scopusCitations} onChange={handleEditFormChange} className="form-input" placeholder="e.g. 1420" />
+                        </div>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 600, fontSize: '0.78rem' }}>Google Scholar Citations</label>
+                          <input type="number" name="googleScholarCitations" value={editForm.googleScholarCitations} onChange={handleEditFormChange} className="form-input" placeholder="e.g. 2890" />
                         </div>
                       </div>
                     </div>

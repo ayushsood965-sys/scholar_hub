@@ -61,7 +61,7 @@ const MobileBottomNav = ({
 
     // Faculty, HOD, and Admin dashboards check isVerified
     if (isVerified === false) {
-      return key !== "profile";
+      return true;
     }
 
     return false;

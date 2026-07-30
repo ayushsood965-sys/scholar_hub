@@ -1316,6 +1316,15 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       thesisSummary: thesis.abstract || profile.thesisSummary || '',
       thesisKeywords: profile.thesisKeywords || '',
       preferredGuideId: profile.preferredGuideId || '',
+      orcidId: profile.orcidId || '',
+      scopusId: profile.scopusId || '',
+      wosId: profile.wosId || '',
+      googleScholarUrl: profile.googleScholarUrl || '',
+      vidwanId: profile.vidwanId || '',
+      hIndex: profile.hIndex || profile.metrics?.hIndex || '',
+      i10Index: profile.i10Index || profile.metrics?.i10Index || '',
+      scopusCitations: profile.scopusCitations || profile.metrics?.scopusCitations || '',
+      googleScholarCitations: profile.googleScholarCitations || profile.metrics?.googleScholarCitations || '',
       
       qualifications: {
         class10: {
@@ -3184,6 +3193,45 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <strong>Keywords:</strong>
                 <input type="text" value={editForm.thesisKeywords || profile.thesisKeywords || ''} onChange={e => setEditForm({...editForm, thesisKeywords: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} />
               </div>
+              <div style={{ gridColumn: 'span 2', borderTop: '1px dashed #CBD5E1', paddingTop: '12px', marginTop: '12px' }}>
+                <strong style={{ color: '#133A26' }}>Academic Identifiers & Citation Metrics (Research Profile Sync)</strong>
+              </div>
+              <div>
+                <strong>ORCID iD:</strong>
+                <input type="text" value={editForm.orcidId || ''} onChange={e => setEditForm({...editForm, orcidId: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. 0000-0002-1825-0097" />
+              </div>
+              <div>
+                <strong>Scopus ID:</strong>
+                <input type="text" value={editForm.scopusId || ''} onChange={e => setEditForm({...editForm, scopusId: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. 57200012345" />
+              </div>
+              <div>
+                <strong>Web of Science ID:</strong>
+                <input type="text" value={editForm.wosId || ''} onChange={e => setEditForm({...editForm, wosId: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. AA-1234-2020" />
+              </div>
+              <div>
+                <strong>Vidwan ID:</strong>
+                <input type="text" value={editForm.vidwanId || ''} onChange={e => setEditForm({...editForm, vidwanId: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. 154892" />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <strong>Google Scholar Profile URL:</strong>
+                <input type="url" value={editForm.googleScholarUrl || ''} onChange={e => setEditForm({...editForm, googleScholarUrl: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="https://scholar.google.com/citations?user=..." />
+              </div>
+              <div>
+                <strong>h-Index:</strong>
+                <input type="number" value={editForm.hIndex || ''} onChange={e => setEditForm({...editForm, hIndex: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. 18" />
+              </div>
+              <div>
+                <strong>i10-Index:</strong>
+                <input type="number" value={editForm.i10Index || ''} onChange={e => setEditForm({...editForm, i10Index: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. 24" />
+              </div>
+              <div>
+                <strong>Scopus Citations:</strong>
+                <input type="number" value={editForm.scopusCitations || ''} onChange={e => setEditForm({...editForm, scopusCitations: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. 1420" />
+              </div>
+              <div>
+                <strong>Google Scholar Citations:</strong>
+                <input type="number" value={editForm.googleScholarCitations || ''} onChange={e => setEditForm({...editForm, googleScholarCitations: e.target.value})} style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', marginTop: '4px' }} placeholder="e.g. 2890" />
+              </div>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: '0.82rem' }}>
@@ -3210,6 +3258,20 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <div style={{ gridColumn: 'span 2' }}><strong>Thesis Title:</strong> <span style={{ color: 'var(--color-text-primary)', fontWeight: 700 }}>{profile.thesisTitle || thesis.title || 'N/A'}</span></div>
               <div style={{ gridColumn: 'span 2' }}><strong>Thesis Summary / Abstract:</strong> <span style={{ color: 'var(--color-text-secondary)', display: 'block', whiteSpace: 'pre-wrap', lineHeight: 1.4, marginTop: 4 }}>{profile.thesisSummary || thesis.abstract || 'N/A'}</span></div>
               <div style={{ gridColumn: 'span 2' }}><strong>Keywords:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.thesisKeywords || thesis.keywords || 'N/A'}</span></div>
+              <div style={{ gridColumn: 'span 2', borderTop: '1px dashed #CBD5E1', paddingTop: '12px', marginTop: '12px' }}>
+                <strong style={{ color: '#133A26', display: 'block', marginBottom: '8px' }}>Academic Identifiers & Citation Metrics (Research Profile Sync)</strong>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px 16px' }}>
+                  <div><strong>ORCID iD:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.orcidId || 'N/A'}</span></div>
+                  <div><strong>Scopus ID:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.scopusId || 'N/A'}</span></div>
+                  <div><strong>Web of Science ID:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.wosId || 'N/A'}</span></div>
+                  <div><strong>Vidwan ID:</strong> <span style={{ color: 'var(--color-text-secondary)' }}>{profile.vidwanId || 'N/A'}</span></div>
+                  <div style={{ gridColumn: 'span 2' }}><strong>Google Scholar Profile:</strong> <span style={{ color: 'var(--color-text-secondary)', wordBreak: 'break-all' }}>{profile.googleScholarUrl || 'N/A'}</span></div>
+                  <div><strong>h-Index:</strong> <span style={{ color: '#d97706', fontWeight: 700 }}>{profile.hIndex || profile.metrics?.hIndex || 'N/A'}</span></div>
+                  <div><strong>i10-Index:</strong> <span style={{ color: '#133A26', fontWeight: 700 }}>{profile.i10Index || profile.metrics?.i10Index || 'N/A'}</span></div>
+                  <div><strong>Scopus Citations:</strong> <span style={{ color: '#0284c7', fontWeight: 700 }}>{profile.scopusCitations || profile.metrics?.scopusCitations || 'N/A'}</span></div>
+                  <div><strong>Google Scholar Citations:</strong> <span style={{ color: '#0284c7', fontWeight 700 }}>{profile.googleScholarCitations || profile.metrics?.googleScholarCitations || 'N/A'}</span></div>
+                </div>
+              </div>
             </div>
           )}
         </div>

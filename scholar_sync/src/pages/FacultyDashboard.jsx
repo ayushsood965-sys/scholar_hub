@@ -336,7 +336,7 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
             );
           }
           const { key, label, Icon } = item;
-          const disabled = !isVerified && key !== 'profile' && key !== 'overview';
+          const disabled = !isVerified;
           return (
             <button 
               key={key} 
@@ -5038,30 +5038,35 @@ const FacultyDashboard = () => {
     }
 
     if (!user?.isVerified) {
+      const isHodRole = user?.role === 'HOD' || user?.subRole === 'HOD' || subRole === 'HOD';
+      const pendingMessage = isHodRole
+        ? "Email verified successfully. Please contact the super admin for account activation."
+        : "Email verified successfully. Please contact the HOD of your department or super admin of the portal for account activation.";
+
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: 24 }}>
-          <div className="card" style={{ maxWidth: 520, width: '100%', textAlign: 'center', padding: '40px 32px', borderLeft: '8px solid #DC2626', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <div style={{ width: 64, height: 64, background: '#FEE2E2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <XCircle size={32} color="#DC2626" />
+          <div className="card" style={{ maxWidth: 540, width: '100%', textAlign: 'center', padding: '40px 32px', borderLeft: '8px solid #F59E0B', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', borderRadius: '12px', background: 'var(--color-surface, #ffffff)' }}>
+            <div style={{ width: 64, height: 64, background: '#FEF3C7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid #FDE68A' }}>
+              <ShieldAlert size={32} color="#D97706" />
             </div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginBottom: 12 }}>Account Unverified</h2>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
-              account is not verified. Please contact HOD of your deaprtment in case of faculty and contact the super admin in case of HOD.
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginBottom: 12 }}>Account Pending Activation</h2>
+            <p style={{ color: '#374151', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24, fontWeight: 500 }}>
+              {pendingMessage}
             </p>
             <button 
               onClick={async () => {
                 const fresh = await fetchMe();
                 if (fresh?.isVerified) {
-                  toast.success("Your account has been approved! Reloading dashboard...");
+                  toast.success("Your account has been activated! Reloading dashboard...");
                   window.location.reload();
                 } else {
-                  toast.warning("Your account is still unverified. Please contact HOD of your department in case of faculty and contact the super admin in case of HOD.");
+                  toast.warning(pendingMessage);
                 }
               }}
               className="btn-primary"
-              style={{ background: '#059669', border: 'none', padding: '10px 20px', fontSize: '0.85rem' }}
+              style={{ background: '#133A26', color: '#ffffff', border: 'none', padding: '10px 24px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', borderRadius: '6px' }}
             >
-              🔄 Check Status
+              🔄 Check Activation Status
             </button>
           </div>
         </div>

@@ -10,6 +10,7 @@ import {
   Users,
   FileCheck,
   AlertTriangle,
+  ShieldAlert,
   BookOpen,
   BarChart3,
   LogOut,
@@ -222,7 +223,7 @@ const DashboardShell = ({
                 </div>
               );
             }
-            const isDisabled = isLocked && item.key !== "profile" && item.key !== "overview";
+            const isDisabled = isLocked && ((role === "FACULTY" || role === "HOD") ? true : (item.key !== "profile" && item.key !== "overview"));
             return (
               <button
                 key={item.key}
@@ -340,7 +341,32 @@ const DashboardShell = ({
               transition={{ duration: 0.25, ease: "easeOut" }}
               style={{ position: "relative", zIndex: 10 }}
             >
-              {children}
+              {isLocked && (role === "FACULTY" || role === "HOD") ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: 24 }}>
+                  <div className="card" style={{ maxWidth: 540, width: '100%', textAlign: 'center', padding: '40px 32px', borderLeft: '8px solid #F59E0B', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', borderRadius: '12px', background: 'var(--color-surface, #ffffff)' }}>
+                    <div style={{ width: 64, height: 64, background: '#FEF3C7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid #FDE68A' }}>
+                      <ShieldAlert size={32} color="#D97706" />
+                    </div>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginBottom: 12 }}>Account Pending Activation</h2>
+                    <p style={{ color: '#374151', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24, fontWeight: 500 }}>
+                      {role === "HOD" 
+                        ? "Email verified successfully. Please contact the super admin for account activation."
+                        : "Email verified successfully. Please contact the HOD of your department or super admin of the portal for account activation."}
+                    </p>
+                    <button 
+                      onClick={() => {
+                        window.location.reload();
+                      }}
+                      className="btn-primary"
+                      style={{ background: '#133A26', color: '#ffffff', border: 'none', padding: '10px 24px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', borderRadius: '6px' }}
+                    >
+                      🔄 Check Activation Status
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                children
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
