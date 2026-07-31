@@ -15,7 +15,8 @@ import {
   GraduationCap,
   X,
   RefreshCw,
-  Filter
+  Filter,
+  MapPin
 } from 'lucide-react';
 import { API_URL } from './config';
 import GatewayNavbar from './components/GatewayNavbar';
@@ -143,6 +144,7 @@ const RepositoryDepartments = () => {
 
   const handleSearchSubmit = () => {
     const term = searchQuery.trim();
+    if (!term) return;
     setActiveSearchTerm(term);
     setActiveTab('all');
     executeSearch(term, searchField);
@@ -152,16 +154,24 @@ const RepositoryDepartments = () => {
     }
   };
 
+  const handleSearchFieldChange = (newField) => {
+    setSearchField(newField);
+    if (activeSearchTerm) {
+      executeSearch(activeSearchTerm, newField);
+    }
+  };
+
   const handleClearSearch = () => {
     setSearchQuery('');
     setActiveSearchTerm('');
     setSearchResults(null);
     setActiveTab('all');
+    setSearchField('all');
   };
 
   // Fallback filtering if search API response pending or using offline departments list
   const filteredDepts = searchResults ? searchResults.departments : departments.filter(dept => {
-    const q = searchQuery.toLowerCase().trim();
+    const q = (activeSearchTerm || searchQuery).toLowerCase().trim();
     if (!q) return true;
     if (searchField === 'department') {
       return dept.name.toLowerCase().includes(q) || dept.code.toLowerCase().includes(q);
@@ -213,7 +223,7 @@ const RepositoryDepartments = () => {
           searchQuery={searchQuery} 
           setSearchQuery={setSearchQuery} 
           searchField={searchField}
-          setSearchField={setSearchField}
+          setSearchField={handleSearchFieldChange}
           onSearchSubmit={handleSearchSubmit}
           isSearching={isSearching}
         />
@@ -720,16 +730,43 @@ const RepositoryDepartments = () => {
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-surface)', padding: '24px 8%', zIndex: 1, width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', maxWidth: '1400px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <img src="/hpu_logo.png" alt="HPU Logo" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+      <footer className="footer">
+        <div className="footer-content">
+          <div className="footer-brand">
+            <div className="landing-logo">
+              <div className="landing-logo-wrapper" style={{ width: '36px', height: '36px' }}>
+                <img src="/hpu_logo.png" alt="HPU Logo" className="landing-logo-img" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+              </div>
+              <span className="logo-text" style={{ 
+                background: 'linear-gradient(135deg, #ffffff 0%, #34d399 100%)', 
+                WebkitBackgroundClip: 'text', 
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                color: 'transparent'
+              }}>HPU ScholarHub</span>
             </div>
-            <span style={{ fontWeight: '700', color: 'var(--color-text-primary)', fontSize: '0.9rem' }}>Himachal Pradesh University • Academic Research Directory Portal</span>
+            <p className="footer-text">
+              Centralized digital service gateway for PG attendance and PhD thesis tracking at Himachal Pradesh University (HPU), Summer Hill, Shimla.
+            </p>
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-            © {new Date().getFullYear()} ScholarHub. All rights reserved.
+          <div className="footer-contact-info">
+            <div className="contact-item">
+              <MapPin size={16} />
+              <span>HPU Campus, Summer Hill, Shimla, HP, India</span>
+            </div>
+            <div className="contact-item">
+              <Building size={16} />
+              <span>Himachal Pradesh University Shimla</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="footer-bottom-bar">
+          <div>
+            <span>© {new Date().getFullYear()} Himachal Pradesh University. All rights reserved.</span>
+          </div>
+          <div className="developer-tag">
+            Designed and Developed by - <Link to="/ayush-sood" style={{ fontWeight: 700, textDecoration: 'underline', color: '#ffffff' }}>Ayush Sood</Link>
           </div>
         </div>
       </footer>

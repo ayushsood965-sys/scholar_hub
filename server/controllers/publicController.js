@@ -863,8 +863,8 @@ const getRepositorySearch = async (req, res) => {
     const allDepartments = await Department.find({});
 
     const allUsers = await User.find({
-      isActive: true,
-      role: { $in: ['FACULTY', 'HOD', 'STUDENT'] }
+      isActive: { $ne: false },
+      role: { $in: ['FACULTY', 'HOD', 'STUDENT', 'faculty', 'hod', 'student'] }
     }, 'name username role subRole department profile avatarUrl');
 
     const matchesUser = (user) => {
@@ -876,10 +876,22 @@ const getRepositorySearch = async (req, res) => {
         .filter(Boolean).join(' ');
       const designationMatch = regex.test(designationStr);
 
-      const pubTitles = Array.isArray(p.publications) ? p.publications.map(pub => pub.title || '').join(' ') : '';
+      const pubTitles = Array.isArray(p.publications) ? p.publications.map(pub => (pub.title || '') + ' ' + (pub.journal || '') + ' ' + (pub.publisher || '')).join(' ') : '';
       const expArray = Array.isArray(p.expertise) ? p.expertise.join(' ') : '';
-      const expertiseStr = [p.specialization, p.areaOfInterest, p.subject, p.thesisTitle, p.thesisKeywords, expArray, pubTitles]
-        .filter(Boolean).join(' ');
+      const projArray = Array.isArray(p.projects) ? p.projects.map(pr => (pr.title || '') + ' ' + (pr.agency || '')).join(' ') : '';
+      const iprArray = Array.isArray(p.ipr) ? p.ipr.map(ip => (ip.title || '') + ' ' + (ip.patentNo || '')).join(' ') : '';
+
+      const expertiseStr = [
+        p.specialization, 
+        p.areaOfInterest, 
+        p.subject, 
+        p.thesisTitle, 
+        p.thesisKeywords, 
+        expArray, 
+        pubTitles,
+        projArray,
+        iprArray
+      ].filter(Boolean).join(' ');
       const expertiseMatch = regex.test(expertiseStr);
 
       if (field === 'name') return nameMatch;
@@ -893,7 +905,7 @@ const getRepositorySearch = async (req, res) => {
     const matchingUsers = allUsers.filter(matchesUser);
 
     const matchingFaculties = matchingUsers
-      .filter(u => u.role === 'FACULTY' || u.role === 'HOD')
+      .filter(u => String(u.role).toUpperCase() === 'FACULTY' || String(u.role).toUpperCase() === 'HOD')
       .map(u => {
         const pubs = Array.isArray(u.profile?.publications) ? u.profile.publications : [];
         let citeCount = 0;
@@ -906,7 +918,7 @@ const getRepositorySearch = async (req, res) => {
           subRole: u.subRole,
           department: u.department,
           avatarUrl: u.avatarUrl,
-          designation: u.profile?.designation || (u.role === 'HOD' ? 'Head of Department' : 'Faculty Member'),
+          designation: u.profile?.designation || (String(u.role).toUpperCase() === 'HOD' ? 'Head of Department' : 'Faculty Member'),
           specialization: u.profile?.specialization || u.profile?.areaOfInterest || '',
           publicationCount: pubs.length,
           citationCount: citeCount
@@ -914,7 +926,7 @@ const getRepositorySearch = async (req, res) => {
       });
 
     const matchingScholars = matchingUsers
-      .filter(u => u.role === 'STUDENT')
+      .filter(u => String(u.role).toUpperCase() === 'STUDENT')
       .map(u => {
         return {
           _id: u._id,
@@ -933,9 +945,7 @@ const getRepositorySearch = async (req, res) => {
 
     allDepartments.forEach(dept => {
       const deptNameMatch = regex.test(dept.name) || regex.test(dept.code);
-      if (field === 'department' || field === 'all') {
-        if (deptNameMatch) matchingDeptNames.add(dept.name);
-      }
+      if (deptNameMatch) matchingDeptNames.add(dept.name);
     });
 
     matchingUsers.forEach(u => {
@@ -943,14 +953,15 @@ const getRepositorySearch = async (req, res) => {
     });
 
     const enrichedDepartments = await Promise.all(allDepartments.map(async (dept) => {
-      const isDirectMatch = (field === 'department' || field === 'all') && (regex.test(dept.name) || regex.test(dept.code));
-      const hasMemberMatch = matchingDeptNames.has(dept.name);
+      const hodUser = allUsers.find(u => String(u.role).toUpperCase() === 'HOD' && u.department === dept.name);
+      const hodNameMatch = hodUser && regex.test(hodUser.name);
+      const isDirectMatch = regex.test(dept.name) || regex.test(dept.code) || hodNameMatch;
+      const hasMemberMatch = matchingDeptNames.has(dept.name) || (hodUser && matchingUsers.some(u => String(u._id) === String(hodUser._id)));
 
       if (!isDirectMatch && !hasMemberMatch) return null;
 
-      const hodUser = allUsers.find(u => u.role === 'HOD' && u.department === dept.name);
-      const facultyCount = allUsers.filter(u => (u.role === 'FACULTY' || u.role === 'HOD') && u.department === dept.name).length;
-      const scholarCount = allUsers.filter(u => u.role === 'STUDENT' && u.department === dept.name).length;
+      const facultyCount = allUsers.filter(u => (String(u.role).toUpperCase() === 'FACULTY' || String(u.role).toUpperCase() === 'HOD') && u.department === dept.name).length;
+      const scholarCount = allUsers.filter(u => String(u.role).toUpperCase() === 'STUDENT' && u.department === dept.name).length;
       const matchingFacultyCount = matchingFaculties.filter(f => f.department === dept.name).length;
       const matchingScholarCount = matchingScholars.filter(s => s.department === dept.name).length;
 
