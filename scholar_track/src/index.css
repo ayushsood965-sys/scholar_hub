@@ -1667,7 +1667,7 @@ img {
 }
 
 .landing-logo:hover .landing-logo-wrapper {
-  transform: scale(1.08) rotate(6deg);
+  transform: scale(1.08);
 }
 
 .landing-logo:hover .landing-logo-wrapper::after {
@@ -1856,7 +1856,7 @@ img {
 }
 
 .feature-card:hover .feature-icon-wrapper {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.1);
   background: rgba(var(--color-primary-rgb), 0.15);
 }
 
@@ -3560,7 +3560,7 @@ img {
 }
 
 .st-landing .landing-logo:hover .landing-logo-wrapper {
-  transform: scale(1.08) rotate(5deg);
+  transform: scale(1.08);
 }
 
 .st-landing .logo-text {
@@ -3903,7 +3903,7 @@ img {
 }
 
 .st-lifecycle-card:hover .st-lifecycle-icon-box {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.1);
   background: rgba(var(--color-primary-rgb), 0.14);
 }
 
@@ -3993,7 +3993,7 @@ img {
 }
 
 .st-feature-card:hover .st-feature-icon {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.1);
 }
 
 .st-feature-title {

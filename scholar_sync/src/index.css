@@ -1022,7 +1022,7 @@ body {
 }
 
 .sidebar-logo:hover svg {
-  transform: rotate(15deg) scale(1.08);
+  transform: scale(1.08);
 }
 
 .sidebar-logo img {
@@ -3626,7 +3626,7 @@ body {
 
 /* Hover effects */
 .landing-logo:hover .landing-logo-wrapper {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.1);
   box-shadow: 
     0 12px 32px rgba(19, 58, 38, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -3639,7 +3639,7 @@ body {
 }
 
 .landing-logo:hover .landing-logo-img {
-  transform: scale(1.08) rotate(-5deg);
+  transform: scale(1.08);
 }
 
 @keyframes logoFloat {

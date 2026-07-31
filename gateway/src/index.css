@@ -277,7 +277,7 @@ a {
 }
 
 .landing-logo:hover .landing-logo-wrapper {
-  transform: scale(1.08) rotate(6deg);
+  transform: scale(1.08);
   box-shadow: 0 8px 20px rgba(19, 58, 38, 0.1);
 }
 
@@ -496,8 +496,8 @@ a {
 }
 
 @keyframes floatImage {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(1deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }
 
 /* Scroll reveal initial state */
@@ -649,7 +649,7 @@ a {
 }
 
 .project-launch-card:hover .project-icon-wrapper {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.1);
 }
 
 .sync-launcher:hover .project-icon-wrapper {
