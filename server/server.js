@@ -164,6 +164,9 @@ const loginLimiter = rateLimit({
   skip: (req) => isDev || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'
 });
 app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/register', loginLimiter);
+app.use('/api/auth/forgot-password', loginLimiter);
+app.use('/api/auth/resend-verification', loginLimiter);
 app.use('/api/seed-users', loginLimiter);
 app.use('/api/clear-all', loginLimiter);
 
@@ -178,8 +181,12 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files statically with security headers
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api', cacheMiddleware(300));

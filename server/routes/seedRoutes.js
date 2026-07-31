@@ -10,19 +10,10 @@ const SemesterMaster = require('../models/attendance/SemesterMaster');
 const Department = require('../models/Department');
 const User = require('../models/User');
 
-const SEED_PASSWORD = 'Ayush1994*';
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Middleware to check password
-const verifySeedPassword = (req, res, next) => {
-  const { password } = req.body;
-  if (password !== SEED_PASSWORD) {
-    return res.status(401).json({ message: 'Invalid seeding password' });
-  }
-  next();
-};
-
-// Seed Masters
-router.post('/masters', verifySeedPassword, async (req, res) => {
+// Seed Masters (Protected - Super Admin Only)
+router.post('/masters', protect, authorize('SUPER_ADMIN'), async (req, res) => {
   try {
     // 1. Seed Sessions (2021-2022 to 2027-2028)
     const sessions = [];
@@ -135,8 +126,8 @@ router.post('/masters', verifySeedPassword, async (req, res) => {
   }
 });
 
-// Seed Students
-router.post('/students', verifySeedPassword, async (req, res) => {
+// Seed Students (Protected - Super Admin Only)
+router.post('/students', protect, authorize('SUPER_ADMIN'), async (req, res) => {
   try {
     // Ensure "Forensic Science" department exists
     let forensicDept = await Department.findOne({ name: /Forensic Science/i });

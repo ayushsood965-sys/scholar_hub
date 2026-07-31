@@ -5,15 +5,8 @@ const router = express.Router();
 const { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword, logout } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const prefix = file.fieldname === 'avatar' ? 'avatar-' : 'doc-';
-    cb(null, prefix + unique + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // limit extended to 10MB for documents
+const { createUpload } = require('../utils/uploadConfig');
+const upload = createUpload(10);
 
 router.post('/login', login);
 router.post('/logout', logout);

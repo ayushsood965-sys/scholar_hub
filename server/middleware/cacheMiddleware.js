@@ -30,7 +30,7 @@ const cacheMiddleware = (ttl = 300) => {
 
     // Determine cache key namespace based on authenticated user session
     let sessionNamespace = 'anonymous';
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    if (req.headers?.authorization && req.headers.authorization.startsWith('Bearer')) {
       const token = req.headers.authorization.split(' ')[1];
       if (token && token.length > 10) {
         sessionNamespace = token.slice(-20);
@@ -51,22 +51,24 @@ const cacheMiddleware = (ttl = 300) => {
     }
 
     // Capture original res.send to cache response body asynchronously
-    const originalSend = res.send;
-    res.send = function (body) {
-      res.send = originalSend;
+    if (res && typeof res.send === 'function') {
+      const originalSend = res.send;
+      res.send = function (body) {
+        res.send = originalSend;
 
-      const activeClient = getRedisClient();
-      if (activeClient && res.statusCode >= 200 && res.statusCode < 300) {
-        try {
-          const dataToCache = typeof body === 'object' ? JSON.stringify(body) : body;
-          activeClient.setEx(key, ttl, dataToCache).catch(() => {});
-        } catch (err) {
-          // Ignore serialization error
+        const activeClient = getRedisClient();
+        if (activeClient && res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const dataToCache = typeof body === 'object' ? JSON.stringify(body) : body;
+            activeClient.setEx(key, ttl, dataToCache).catch(() => {});
+          } catch (err) {
+            // Ignore serialization error
+          }
         }
-      }
-      res.setHeader('X-Cache', 'MISS');
-      return originalSend.call(this, body);
-    };
+        if (typeof res.setHeader === 'function') res.setHeader('X-Cache', 'MISS');
+        return originalSend.call(this, body);
+      };
+    }
 
     next();
   };

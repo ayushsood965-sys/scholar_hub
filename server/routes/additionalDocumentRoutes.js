@@ -11,11 +11,8 @@ const {
   reviewDocument
 } = require('../controllers/additionalDocumentController');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads/')),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-const upload = multer({ storage });
+const { createUpload } = require('../utils/uploadConfig');
+const upload = createUpload(50);
 
 router.post('/', protect, upload.single('document'), uploadDocument);
 router.get('/me', protect, getMyDocuments);

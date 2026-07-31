@@ -5,14 +5,8 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const { getMilestones, submitDocument, reviewMilestone, createMilestone, getDefaulters, updateFeeDetails } = require('../controllers/milestoneController');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+const { createUpload } = require('../utils/uploadConfig');
+const upload = createUpload(50);
 
 router.get('/defaulters', protect, getDefaulters);
 router.get('/:thesisId', protect, getMilestones);
