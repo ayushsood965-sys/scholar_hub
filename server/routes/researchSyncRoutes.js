@@ -19,6 +19,7 @@ router.post('/fetch-profile-data', protect, async (req, res) => {
 
     const fetchedData = {
       publications: [],
+      conferenceProceedings: [],
       experience: [],
       qualifications: [],
       projects: []
@@ -59,14 +60,19 @@ router.post('/fetch-profile-data', protect, async (req, res) => {
               }
 
               if (title) {
-                fetchedData.publications.push({
+                const item = {
                   title,
-                  journal,
+                  journal: journal || (type.includes('CONFERENCE') ? 'Conference Proceedings' : 'Academic Journal'),
                   year: year ? parseInt(year, 10) : '',
                   type: type.includes('CONFERENCE') ? 'CONFERENCE' : 'JOURNAL',
                   doi: doi || '',
                   url: doi ? `https://doi.org/${doi}` : ''
-                });
+                };
+                if (type.includes('CONFERENCE')) {
+                  fetchedData.conferenceProceedings.push(item);
+                } else {
+                  fetchedData.publications.push(item);
+                }
               }
             });
 

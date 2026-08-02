@@ -8552,35 +8552,9 @@ const ProfileTab = () => {
       });
 
       if (res.data && res.data.success) {
-        const { metrics, fetchedData } = res.data;
-        const sources = res.data.sourcesSynced || [];
-
-        // Update citation metrics in local state
-        const newHIndex = metrics.hIndex !== '' && metrics.hIndex !== null ? metrics.hIndex : hIndex;
-        const newI10Index = metrics.i10Index !== '' && metrics.i10Index !== null ? metrics.i10Index : i10Index;
-        const newScopusCitations = metrics.scopusCitations !== '' && metrics.scopusCitations !== null ? metrics.scopusCitations : scopusCitations;
-        const newGoogleCitations = metrics.googleScholarCitations !== '' && metrics.googleScholarCitations !== null ? metrics.googleScholarCitations : googleScholarCitations;
-
-        setHIndex(newHIndex);
-        setI10Index(newI10Index);
-        setScopusCitations(newScopusCitations);
-        setGoogleScholarCitations(newGoogleCitations);
-
-        // Save metrics to profile
-        const updatedPayload = {
-          hIndex: newHIndex,
-          i10Index: newI10Index,
-          scopusCitations: newScopusCitations,
-          googleScholarCitations: newGoogleCitations
-        };
-
-        const saveRes = await updateProfile(updatedPayload);
-        if (saveRes?.success !== false) {
-          if (typeof fetchMe === 'function') await fetchMe();
-          toast.success(`Synced metrics from ${sources.join(', ') || 'online sources'}: h-Index=${newHIndex || 'N/A'}, i10=${newI10Index || 'N/A'}, Citations=${newScopusCitations || newGoogleCitations || 'N/A'}`);
-        } else {
-          toast.error(saveRes?.message || 'Failed to save fetched data');
-        }
+        setSyncResult(res.data);
+        setShowSyncModal(true);
+        toast.success(`Fetched online research data! Please review and confirm import.`);
       } else {
         toast.error('Failed to fetch data from research APIs');
       }
@@ -8589,6 +8563,65 @@ const ProfileTab = () => {
       toast.error(err.response?.data?.message || 'Error connecting to research APIs');
     } finally {
       setSyncingApiData(false);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!syncResult) return;
+    try {
+      setLoading(true);
+      const { metrics, fetchedData } = syncResult;
+      
+      const newHIndex = metrics.hIndex !== '' && metrics.hIndex !== null ? metrics.hIndex : hIndex;
+      const newI10Index = metrics.i10Index !== '' && metrics.i10Index !== null ? metrics.i10Index : i10Index;
+      const newScopusCitations = metrics.scopusCitations !== '' && metrics.scopusCitations !== null ? metrics.scopusCitations : scopusCitations;
+      const newGoogleCitations = metrics.googleScholarCitations !== '' && metrics.googleScholarCitations !== null ? metrics.googleScholarCitations : googleScholarCitations;
+
+      setHIndex(newHIndex);
+      setI10Index(newI10Index);
+      setScopusCitations(newScopusCitations);
+      setGoogleScholarCitations(newGoogleCitations);
+
+      const existingExp = user?.profile?.experience || [];
+      const newExp = fetchedData.experience || [];
+      const mergedExp = [...existingExp];
+      newExp.forEach(ne => {
+        if (!mergedExp.some(ee => ee.organization?.toLowerCase() === ne.organization?.toLowerCase() && ee.designation?.toLowerCase() === ne.designation?.toLowerCase())) {
+          mergedExp.push(ne);
+        }
+      });
+
+      const existingProj = user?.profile?.projects || [];
+      const newProj = fetchedData.projects || [];
+      const mergedProj = [...existingProj];
+      newProj.forEach(np => {
+        if (!mergedProj.some(ep => ep.projectTitle?.toLowerCase() === np.projectTitle?.toLowerCase())) {
+          mergedProj.push(np);
+        }
+      });
+
+      const updatedPayload = {
+        hIndex: newHIndex,
+        i10Index: newI10Index,
+        scopusCitations: newScopusCitations,
+        googleScholarCitations: newGoogleCitations,
+        experience: mergedExp,
+        projects: mergedProj
+      };
+
+      const res = await updateProfile(updatedPayload);
+      if (res?.success !== false) {
+        if (typeof fetchMe === 'function') await fetchMe();
+        toast.success('Profile updated with fetched citation metrics, experience, and R&D projects!');
+        setShowSyncModal(false);
+      } else {
+        toast.error(res?.message || 'Failed to save imported data');
+      }
+    } catch (err) {
+      console.error('Import error:', err);
+      toast.error('Error saving imported data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -14021,22 +14054,10 @@ const ProfileTab = () => {
                 </div>
               </div>
 
-              {syncResult.fetchedData?.publications?.length > 0 && (
-                <div>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#0284C7', fontWeight: 700 }}>
-                    2. Publications Found ({syncResult.fetchedData.publications.length})
-                  </h4>
-                  <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
-                    {syncResult.fetchedData.publications.map((pub, idx) => (
-                      <div key={idx} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.82rem' }}>
-                        <strong style={{ color: '#0F172A', display: 'block' }}>{pub.title}</strong>
-                        <span style={{ color: '#64748B' }}>{pub.journal} {pub.year ? `(${pub.year})` : ''}</span>
-                        {pub.doi && <span style={{ display: 'block', color: '#0284C7', fontSize: '0.75rem' }}>DOI: {pub.doi}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '12px 16px', borderRadius: '10px', fontSize: '0.82rem', color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.1rem' }}>💡</span>
+                <span><strong>PhD Candidate Profile Note</strong>: Citation Metrics, Work Experience ({syncResult.fetchedData?.experience?.length || 0}), and R&D Projects ({syncResult.fetchedData?.projects?.length || 0}) will be added to your profile. Publications are registered separately via your <strong>Research Outputs</strong> module.</span>
+              </div>
 
               {syncResult.fetchedData?.experience?.length > 0 && (
                 <div>
