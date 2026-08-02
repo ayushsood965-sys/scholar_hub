@@ -882,7 +882,7 @@ const presentationCSS = `
 .pres-page {
   background: #07080c;
   color: #e2e8f0;
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;

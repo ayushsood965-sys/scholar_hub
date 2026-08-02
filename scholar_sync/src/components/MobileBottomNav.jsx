@@ -42,6 +42,7 @@ const MobileBottomNav = ({
         "sixMonthReports",
         "chapterDrafts",
         "publications",
+        "funding",
         "meetings",
         "documents",
         "changes",

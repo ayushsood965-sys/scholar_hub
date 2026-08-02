@@ -961,7 +961,7 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
@@ -2242,7 +2242,7 @@ body {
 
   /* Dashboard responsive grid systems */
   .dashboard-area {
-    padding: calc(70px + 16px) 16px 80px 16px !important;
+    padding: calc(75px + 16px) 16px 80px 16px !important;
   }
   .dashboard-grid {
     grid-template-columns: 1fr !important;
@@ -2542,7 +2542,7 @@ body {
   
   /* Dashboard content areas margins */
   .dashboard-area {
-    padding: 16px 16px 80px 16px !important;
+    padding: calc(75px + 16px) 16px 80px 16px !important;
   }
   
   .welcome-banner {
