@@ -185,8 +185,8 @@ const StaffProfileTab = ({ thesis }) => {
     .timeline-sidebar-panel {
       width: 255px !important;
       position: sticky !important;
-      top: calc(var(--header-height, 70px) + 15px) !important;
-      max-height: calc(100vh - var(--header-height, 70px) - 30px) !important;
+      top: 15px !important;
+      max-height: calc(100vh - 120px) !important;
       align-self: flex-start !important;
       overflow-y: auto !important;
       display: flex !important;
@@ -195,7 +195,7 @@ const StaffProfileTab = ({ thesis }) => {
       flex-shrink: 0 !important;
       scrollbar-width: thin !important;
       padding-right: 2px !important;
-      z-index: 10 !important;
+      z-index: 100 !important;
     }
     
     .profile-details-column {

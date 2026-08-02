@@ -8664,8 +8664,8 @@ const ProfileTab = () => {
     .timeline-sidebar-panel {
       width: 255px;
       position: sticky;
-      top: calc(var(--header-height, 70px) + 15px);
-      max-height: calc(100vh - var(--header-height, 70px) - 30px);
+      top: 15px;
+      max-height: calc(100vh - 120px);
       align-self: flex-start;
       overflow-y: auto;
       display: flex;
@@ -8674,7 +8674,7 @@ const ProfileTab = () => {
       flex-shrink: 0;
       scrollbar-width: thin;
       padding-right: 2px;
-      z-index: 10;
+      z-index: 100;
     }
     .profile-details-column { flex:1; display:flex; flex-direction:column; gap:24px; min-width:0; }
     .mobile-milestones-bar {

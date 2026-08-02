@@ -1610,10 +1610,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     .timeline-sidebar-panel {
       width: 255px;
       position: sticky;
-      top: calc(var(--header-height, 70px) + 15px);
+      top: 15px;
+      max-height: calc(100vh - 120px);
       align-self: flex-start;
       flex-shrink: 0;
-      z-index: 10;
+      z-index: 100;
     }
 
     .card, .clay-card, .glass-transparent {
@@ -2156,8 +2157,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         <div className="timeline-sidebar-panel">
           <div style={{
             position: 'sticky',
-            top: 'calc(var(--header-height, 70px) + 15px)',
-            maxHeight: 'calc(100vh - var(--header-height, 70px) - 30px)',
+            top: '15px',
+            maxHeight: 'calc(100vh - 120px)',
             overflowY: 'auto',
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
