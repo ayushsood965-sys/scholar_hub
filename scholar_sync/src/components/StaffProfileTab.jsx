@@ -3623,10 +3623,21 @@ const StaffProfileTab = ({ thesis }) => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Category *</label>
-                  <select className="form-input" value={pubForm.publicationCategory} onChange={e => setPubForm({ ...pubForm, publicationCategory: e.target.value })} required>
+                  <select className="form-input" value={pubForm.publicationCategory || 'Journal Paper'} onChange={e => setPubForm({ ...pubForm, publicationCategory: e.target.value })} required>
                     <option value="Journal Paper">Journal Paper</option>
                     <option value="Book">Book</option>
                     <option value="Book Chapter">Book Chapter</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Article Type *</label>
+                  <select className="form-input" value={pubForm.articleType || 'Original Research Article'} onChange={e => setPubForm({ ...pubForm, articleType: e.target.value })} required>
+                    <option value="Original Research Article">Original Research Article</option>
+                    <option value="Review Article">Review Article</option>
+                    <option value="Letter to Editor / Short Communication">Letter to Editor / Short Communication</option>
+                    <option value="Hypothesis / Conceptual Paper">Hypothesis / Conceptual Paper</option>
+                    <option value="Case Study / Editorial / Opinion">Case Study / Editorial / Opinion</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -3648,7 +3659,43 @@ const StaffProfileTab = ({ thesis }) => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Journal / Publisher Name *</label>
+                  <label className="form-label">Publisher Name *</label>
+                  <select className="form-input" value={pubForm.publisherSelect || (['Elsevier','Springer Nature','IEEE','Wiley','Taylor & Francis','Oxford University Press','Cambridge University Press','ACM (Association for Computing Machinery)','SAGE Publications','Nature Publishing Group','MDPI','Frontiers','PLOS (Public Library of Science)','ACS (American Chemical Society)','RSC (Royal Society of Chemistry)','Emerald Publishing','Inderscience','Bentham Science','De Gruyter'].includes(pubForm.publisherName) ? pubForm.publisherName : (pubForm.publisherName ? 'Other' : ''))} onChange={e => {
+                    const val = e.target.value;
+                    if (val === 'Other') {
+                      setPubForm({ ...pubForm, publisherSelect: 'Other', publisherName: '' });
+                    } else {
+                      setPubForm({ ...pubForm, publisherSelect: val, publisherName: val });
+                    }
+                  }}>
+                    <option value="">-- Select Publisher --</option>
+                    <option value="Elsevier">Elsevier</option>
+                    <option value="Springer Nature">Springer Nature</option>
+                    <option value="IEEE">IEEE</option>
+                    <option value="Wiley">Wiley</option>
+                    <option value="Taylor & Francis">Taylor & Francis</option>
+                    <option value="Oxford University Press">Oxford University Press</option>
+                    <option value="Cambridge University Press">Cambridge University Press</option>
+                    <option value="ACM (Association for Computing Machinery)">ACM (Association for Computing Machinery)</option>
+                    <option value="SAGE Publications">SAGE Publications</option>
+                    <option value="Nature Publishing Group">Nature Publishing Group</option>
+                    <option value="MDPI">MDPI</option>
+                    <option value="Frontiers">Frontiers</option>
+                    <option value="PLOS (Public Library of Science)">PLOS (Public Library of Science)</option>
+                    <option value="ACS (American Chemical Society)">ACS (American Chemical Society)</option>
+                    <option value="RSC (Royal Society of Chemistry)">RSC (Royal Society of Chemistry)</option>
+                    <option value="Emerald Publishing">Emerald Publishing</option>
+                    <option value="Inderscience">Inderscience</option>
+                    <option value="Bentham Science">Bentham Science</option>
+                    <option value="De Gruyter">De Gruyter</option>
+                    <option value="Other">Other (Specify Custom Publisher)</option>
+                  </select>
+                  {(pubForm.publisherSelect === 'Other' || (!['Elsevier','Springer Nature','IEEE','Wiley','Taylor & Francis','Oxford University Press','Cambridge University Press','ACM (Association for Computing Machinery)','SAGE Publications','Nature Publishing Group','MDPI','Frontiers','PLOS (Public Library of Science)','ACS (American Chemical Society)','RSC (Royal Society of Chemistry)','Emerald Publishing','Inderscience','Bentham Science','De Gruyter'].includes(pubForm.publisherName) && !!pubForm.publisherName)) && (
+                    <input type="text" className="form-input" required value={pubForm.publisherName} onChange={e => setPubForm({ ...pubForm, publisherName: e.target.value })} placeholder="Type custom publisher name" style={{ marginTop: '6px' }} />
+                  )}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Journal / Book Name *</label>
                   <input type="text" className="form-input" value={pubForm.journalName} onChange={e => setPubForm({ ...pubForm, journalName: e.target.value })} required />
                 </div>
                 <div className="form-group">
@@ -3699,7 +3746,9 @@ const StaffProfileTab = ({ thesis }) => {
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
                       <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{p.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{p.journalName} ({p.publicationCategory || p.type})</span>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                        {p.journalName} {p.publisherName ? `(${p.publisherName})` : ''} • <span style={{ color: '#0284c7' }}>{p.articleType || 'Original Research Article'}</span>
+                      </span>
                       <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
                         Scope: {p.scope || 'N/A'} | Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Pages: {p.pages || 'N/A'}
                       </span>
@@ -3723,7 +3772,9 @@ const StaffProfileTab = ({ thesis }) => {
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
                       <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{pb.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{pb.journalName} ({pb.publicationCategory || 'Journal Paper'})</span>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                        {pb.journalName} {pb.publisherName ? `(${pb.publisherName})` : ''} • <span style={{ color: '#0284c7' }}>{pb.articleType || 'Original Research Article'}</span>
+                      </span>
                       <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {pb.scope || 'National'} | Indexing: {pb.indexing || 'Peer-Reviewed'} | Authors: {pb.authors || 'N/A'}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>

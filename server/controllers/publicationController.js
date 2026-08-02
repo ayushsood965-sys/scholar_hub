@@ -6,7 +6,7 @@ const paginate = require('../utils/paginate');
 const submitPublication = async (req, res) => {
   try {
     const { 
-      thesisId, title, journalName, issn, isbn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, 
+      thesisId, title, journalName, publisherName, articleType, issn, isbn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, 
       volume, issue, pages, publicationCategory, scope, role, mode, presentationType, conferenceName, proceedingsTitle, 
       organizer, venueLocation, trainingType, duration, startDate, endDate, authors, inventors, applicant, applicationNo, impactFactor 
     } = req.body;
@@ -25,6 +25,8 @@ const submitPublication = async (req, res) => {
       thesisId,
       title,
       journalName: journalName || '',
+      publisherName: publisherName || '',
+      articleType: articleType || 'Original Research Article',
       issn: issn || '',
       isbn: isbn || '',
       publicationDate: publicationDate || new Date(),
@@ -174,7 +176,7 @@ const updatePublication = async (req, res) => {
   try {
     const { id } = req.params;
     const { 
-      title, journalName, issn, isbn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, 
+      title, journalName, publisherName, articleType, issn, isbn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, 
       volume, issue, pages, publicationCategory, scope, role, mode, presentationType, conferenceName, proceedingsTitle, 
       organizer, venueLocation, trainingType, duration, startDate, endDate, authors, inventors, applicant, applicationNo, impactFactor 
     } = req.body;
@@ -201,6 +203,8 @@ const updatePublication = async (req, res) => {
 
     pub.title = title || pub.title;
     pub.journalName = journalName !== undefined ? journalName : pub.journalName;
+    pub.publisherName = publisherName !== undefined ? publisherName : pub.publisherName;
+    pub.articleType = articleType !== undefined ? articleType : pub.articleType;
     pub.issn = issn !== undefined ? issn : pub.issn;
     pub.isbn = isbn !== undefined ? isbn : pub.isbn;
     if (publicationDate) pub.publicationDate = publicationDate;

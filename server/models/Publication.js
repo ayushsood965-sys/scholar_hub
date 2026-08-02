@@ -9,6 +9,8 @@ const PublicationSchema = new mongoose.Schema({
     default: 'PUBLICATION' 
   },
   publicationCategory: { type: String, default: '' },
+  articleType: { type: String, default: 'Original Research Article' },
+  publisherName: { type: String, default: '' },
   scope: { type: String, default: '' },
   role: { type: String, default: '' },
   mode: { type: String, default: '' },

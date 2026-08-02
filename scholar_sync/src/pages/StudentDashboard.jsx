@@ -5597,7 +5597,10 @@ const ResearchOutputsTab = ({ thesis }) => {
     setForm({
       title: p.title || '',
       journalName: p.journalName || '',
+      publisherName: p.publisherName || '',
+      articleType: p.articleType || 'Original Research Article',
       issn: p.issn || '',
+      isbn: p.isbn || '',
       publicationDate: p.publicationDate ? p.publicationDate.split('T')[0] : '',
       paperLink: p.paperLink || '',
       type: (p.type === 'PATENT' || p.type === 'IPR') ? 'IPR' : (p.type || 'JOURNAL'),
@@ -5607,7 +5610,10 @@ const ResearchOutputsTab = ({ thesis }) => {
       indexing: p.indexing || '',
       volume: p.volume || '',
       issue: p.issue || '',
-      pages: p.pages || ''
+      pages: p.pages || '',
+      publicationCategory: p.publicationCategory || 'Journal Paper',
+      scope: p.scope || 'International',
+      authors: p.authors || ''
     });
     setEditingPubId(p._id);
     setFile(null);
@@ -5623,7 +5629,7 @@ const ResearchOutputsTab = ({ thesis }) => {
   const resetForm = () => {
     setShowForm(false);
     setEditingPubId(null);
-    setForm({ title: '', journalName: '', issn: '', publicationDate: '', paperLink: '', type: 'JOURNAL', doiUrl: '', iprType: '', itemStatus: '', indexing: '', volume: '', issue: '', pages: '' });
+    setForm({ title: '', journalName: '', publisherName: '', articleType: 'Original Research Article', issn: '', isbn: '', publicationDate: '', paperLink: '', type: 'JOURNAL', doiUrl: '', iprType: '', itemStatus: '', indexing: '', volume: '', issue: '', pages: '', publicationCategory: 'Journal Paper', scope: 'International', authors: '' });
     setFile(null);
   };
 
@@ -5914,13 +5920,24 @@ const ResearchOutputsTab = ({ thesis }) => {
             {/* JOURNAL FORM FIELDS */}
             {form.type === 'JOURNAL' && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Category *</label>
                     <select className="form-input" required value={form.publicationCategory || 'Journal Paper'} onChange={e => setForm({ ...form, publicationCategory: e.target.value })} style={{ width: '100%' }}>
                       <option value="Journal Paper">Journal Paper</option>
                       <option value="Book">Book</option>
                       <option value="Book Chapter">Book Chapter</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Article Type *</label>
+                    <select className="form-input" required value={form.articleType || 'Original Research Article'} onChange={e => setForm({ ...form, articleType: e.target.value })} style={{ width: '100%' }}>
+                      <option value="Original Research Article">Original Research Article</option>
+                      <option value="Review Article">Review Article</option>
+                      <option value="Letter to Editor / Short Communication">Letter to Editor / Short Communication</option>
+                      <option value="Hypothesis / Conceptual Paper">Hypothesis / Conceptual Paper</option>
+                      <option value="Case Study / Editorial / Opinion">Case Study / Editorial / Opinion</option>
+                      <option value="Other">Other</option>
                     </select>
                   </div>
                   <div>
@@ -5941,7 +5958,7 @@ const ResearchOutputsTab = ({ thesis }) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Journal Indexing / Database *</label>
                     <select className="form-input" required value={form.indexing} onChange={e => setForm({ ...form, indexing: e.target.value })} style={{ width: '100%' }}>
@@ -5955,7 +5972,43 @@ const ResearchOutputsTab = ({ thesis }) => {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Journal / Publisher Name *</label>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Publisher Name *</label>
+                    <select className="form-input" required value={form.publisherSelect || (['Elsevier','Springer Nature','IEEE','Wiley','Taylor & Francis','Oxford University Press','Cambridge University Press','ACM (Association for Computing Machinery)','SAGE Publications','Nature Publishing Group','MDPI','Frontiers','PLOS (Public Library of Science)','ACS (American Chemical Society)','RSC (Royal Society of Chemistry)','Emerald Publishing','Inderscience','Bentham Science','De Gruyter'].includes(form.publisherName) ? form.publisherName : (form.publisherName ? 'Other' : ''))} onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setForm({ ...form, publisherSelect: 'Other', publisherName: '' });
+                      } else {
+                        setForm({ ...form, publisherSelect: val, publisherName: val });
+                      }
+                    }} style={{ width: '100%' }}>
+                      <option value="">-- Select Publisher --</option>
+                      <option value="Elsevier">Elsevier</option>
+                      <option value="Springer Nature">Springer Nature</option>
+                      <option value="IEEE">IEEE</option>
+                      <option value="Wiley">Wiley</option>
+                      <option value="Taylor & Francis">Taylor & Francis</option>
+                      <option value="Oxford University Press">Oxford University Press</option>
+                      <option value="Cambridge University Press">Cambridge University Press</option>
+                      <option value="ACM (Association for Computing Machinery)">ACM (Association for Computing Machinery)</option>
+                      <option value="SAGE Publications">SAGE Publications</option>
+                      <option value="Nature Publishing Group">Nature Publishing Group</option>
+                      <option value="MDPI">MDPI</option>
+                      <option value="Frontiers">Frontiers</option>
+                      <option value="PLOS (Public Library of Science)">PLOS (Public Library of Science)</option>
+                      <option value="ACS (American Chemical Society)">ACS (American Chemical Society)</option>
+                      <option value="RSC (Royal Society of Chemistry)">RSC (Royal Society of Chemistry)</option>
+                      <option value="Emerald Publishing">Emerald Publishing</option>
+                      <option value="Inderscience">Inderscience</option>
+                      <option value="Bentham Science">Bentham Science</option>
+                      <option value="De Gruyter">De Gruyter</option>
+                      <option value="Other">Other (Specify Custom Publisher)</option>
+                    </select>
+                    {(form.publisherSelect === 'Other' || (!['Elsevier','Springer Nature','IEEE','Wiley','Taylor & Francis','Oxford University Press','Cambridge University Press','ACM (Association for Computing Machinery)','SAGE Publications','Nature Publishing Group','MDPI','Frontiers','PLOS (Public Library of Science)','ACS (American Chemical Society)','RSC (Royal Society of Chemistry)','Emerald Publishing','Inderscience','Bentham Science','De Gruyter'].includes(form.publisherName) && !!form.publisherName)) && (
+                      <input type="text" className="form-input" required value={form.publisherName} onChange={e => setForm({ ...form, publisherName: e.target.value })} placeholder="Type custom publisher name" style={{ marginTop: 6 }} />
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Journal / Book Name *</label>
                     <input type="text" className="form-input" required value={form.journalName} onChange={e => setForm({ ...form, journalName: e.target.value })} placeholder="e.g. IEEE Transactions on Forensics" />
                   </div>
                 </div>

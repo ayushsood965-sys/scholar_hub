@@ -3948,7 +3948,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                         <div>
                           <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{p.title}</strong>
-                          <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{p.journalName} ({p.type})</span>
+                          <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                            {p.journalName} {p.publisherName ? `(${p.publisherName})` : ''} • <span style={{ color: '#0284c7' }}>{p.articleType || 'Original Research Article'}</span>
+                          </span>
                           {p.type === 'JOURNAL' ? (
                             <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
                               Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Issue: {p.issue || 'N/A'} | Pages: {p.pages || 'N/A'}
