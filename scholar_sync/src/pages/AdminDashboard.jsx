@@ -5502,7 +5502,7 @@ const adminHODNavItems = [
   { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
 ];
 
-const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
+const Sidebar = ({ activeTab, setActiveTab, isVerified, badgeCounts = {} }) => {
   const { logout = (() => {}), user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const items = user?.role === 'ADMIN' ? adminNavItems : adminHODNavItems;
@@ -5525,6 +5525,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
           }
           const { key, label, Icon } = item;
           const disabled = !isVerified && (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' ? false : true);
+          const count = badgeCounts[key] || 0;
           return (
             <button 
               key={key} 
@@ -5540,7 +5541,11 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified }) => {
                 opacity: disabled ? 0.45 : 1
               }}
             >
-              <Icon className="nav-icon" /> {label} {disabled && '🔒'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                <Icon className="nav-icon" style={{ flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+              </div>
+              {disabled ? '🔒' : (count > 0 && <span className="sidebar-badge">{count}</span>)}
             </button>
           );
         })}
@@ -5967,7 +5972,15 @@ const AdminDashboard = () => {
   return (
     <div className="app-container">
       <div className="mobile-overlay" onClick={() => document.body.classList.remove('sidebar-mobile-open')} />
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isVerified={user?.isVerified} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        isVerified={user?.isVerified} 
+        badgeCounts={{
+          evaluation: (allTheses || []).filter(t => t.status === 'SUBMITTED').length,
+          scholars: (allTheses || []).filter(t => t.status === 'REGISTRATION_PENDING').length
+        }}
+      />
       <div className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         {/* Floating warning banner */}
         {user && !user.profileCompleted && (

@@ -137,6 +137,7 @@ const DashboardShell = ({
   onTabChange,
   headerTitle,
   isLocked = false,
+  badgeCounts = {},
   children,
 }) => {
   const { user, logout } = useContext(AuthContext);
@@ -224,6 +225,7 @@ const DashboardShell = ({
               );
             }
             const isDisabled = isLocked && ((role === "FACULTY" || role === "HOD") ? true : (item.key !== "profile" && item.key !== "overview"));
+            const count = badgeCounts[item.key] || 0;
             return (
               <button
                 key={item.key}
@@ -239,10 +241,12 @@ const DashboardShell = ({
               >
                 <item.icon className="nav-icon" />
                 {item.label}
-                {isDisabled && (
+                {isDisabled ? (
                   <span style={{ marginLeft: "auto", fontSize: "0.85rem" }}>
                     🔒
                   </span>
+                ) : (
+                  count > 0 && <span className="sidebar-badge">{count}</span>
                 )}
               </button>
             );

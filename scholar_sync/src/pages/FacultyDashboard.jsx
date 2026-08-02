@@ -313,7 +313,7 @@ const FacultyLabAndFundingTab = () => {
   );
 };
 
-const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
+const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified, badgeCounts = {} }) => {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const items = subRole === 'HOD' ? hodNavItems : supervisorNavItems;
@@ -337,6 +337,7 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
           }
           const { key, label, Icon } = item;
           const disabled = !isVerified;
+          const count = badgeCounts[key] || 0;
           return (
             <button 
               key={key} 
@@ -352,7 +353,11 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified }) => {
                 opacity: disabled ? 0.45 : 1
               }}
             >
-              <Icon className="nav-icon" /> {label} {disabled && '🔒'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                <Icon className="nav-icon" style={{ flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+              </div>
+              {disabled ? '🔒' : (count > 0 && <span className="sidebar-badge">{count}</span>)}
             </button>
           );
         })}

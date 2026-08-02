@@ -1438,7 +1438,7 @@ const studentNavItems = [
   { key: 'certificates', label: 'Certificates', Icon: Award },
 ];
 
-const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) => {
+const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones, badgeCounts = {} }) => {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const items = studentNavItems;
@@ -1499,6 +1499,8 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
             return true;
           })();
 
+          const count = badgeCounts[key] || 0;
+
           return (
             <button 
               key={key} 
@@ -1515,7 +1517,11 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones }) =>
                 pointerEvents: disabled ? 'none' : 'auto'
               }}
             >
-              <Icon className="nav-icon" /> {label} {disabled && '🔒'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                <Icon className="nav-icon" style={{ flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+              </div>
+              {disabled ? '🔒' : (count > 0 && <span className="sidebar-badge">{count}</span>)}
             </button>
           );
         })}
