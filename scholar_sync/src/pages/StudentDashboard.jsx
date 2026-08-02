@@ -1439,7 +1439,7 @@ const studentNavItems = [
 ];
 
 const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones, badgeCounts = {} }) => {
-  const { logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const items = studentNavItems;
   return (
@@ -1462,7 +1462,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVerified, thesis, milestones, badg
           const { key, label, Icon } = item;
           const disabled = (() => {
             if (key === 'profile' || key === 'overview') return false;
-            if (!thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
+            if (!user?.isVerified || !user?.profileCompleted || !thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
             
             const status = thesis.status;
             if (key === 'overview') return false;
@@ -4819,7 +4819,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
 
   const isTabDisabled = (key) => {
     if (key === 'profile') return false;
-    if (!thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
+    if (!user?.isVerified || !user?.profileCompleted || !thesis || thesis.status === 'REGISTRATION_PENDING' || thesis.status === 'REJECTED') return true;
     
     const status = thesis.status;
     if (key === 'overview') return false;
@@ -4838,6 +4838,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
       'sixMonthReports', 
       'chapterDrafts', 
       'publications', 
+      'funding',
       'meetings', 
       'documents', 
       'changes'
@@ -14906,11 +14907,14 @@ const StudentDashboard = () => {
       return <ProfileTab />;
     }
 
-    if (!thesis) {
+    if (!user?.isVerified || !user?.profileCompleted || !thesis || thesis.status === 'REGISTRATION_PENDING') {
+      if (thesis && thesis.status === 'REGISTRATION_PENDING') {
+        return <WaitingRoom thesis={thesis} />;
+      }
       return (
         <div className="card" style={{ maxWidth: 650, margin: '40px auto', textAlign: 'center', padding: 48 }}>
           <AlertCircle size={64} color="#10B981" style={{ margin: '0 auto 16px' }} />
-          {user && user.profileCompleted ? (
+          {user && (user.profileCompleted || (thesis && thesis.status === 'REGISTRATION_PENDING')) ? (
             <>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>Profile Under HOD Review</h3>
               <p style={{ color: 'var(--color-text-muted)', marginBottom: 24 }}>You have submitted your Ph.D. profile details. Once the HOD approves your registration, your workspace will be unlocked.</p>

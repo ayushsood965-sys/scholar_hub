@@ -25,6 +25,7 @@
 }
 
 .mobile-nav-btn {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -117,6 +118,7 @@
 }
 
 .mobile-menu-section {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -126,6 +128,7 @@
 }
 
 .mobile-menu-item {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
   display: flex;
   align-items: center;
   gap: 12px;

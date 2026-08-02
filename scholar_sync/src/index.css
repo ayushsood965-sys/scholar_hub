@@ -960,8 +960,19 @@
   scrollbar-color: rgba(19, 58, 38, 0.2) transparent;
 }
 
+button, input, select, textarea {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html {
+  font-size: 17px;
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
@@ -1052,7 +1063,8 @@ body {
 }
 
 .sidebar-section-label {
-  font-size: 0.68rem;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #94A3B8;
   text-transform: uppercase;
@@ -1067,6 +1079,7 @@ body {
 }
 
 .nav-item {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1075,7 +1088,7 @@ body {
   color: #64748B;
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.83rem;
+  font-size: 0.88rem;
   transition: all 0.2s ease;
   cursor: pointer;
   position: relative;
