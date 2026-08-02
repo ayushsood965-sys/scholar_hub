@@ -1576,7 +1576,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         { key: 'memberships', label: 'Professional Bodies', Icon: Users },
         { key: 'committees', label: 'Committees', Icon: Bookmark },
         { key: 'projects', label: 'Projects', Icon: Folder },
-        { key: 'publications', label: 'Publications/Conferences', Icon: BookOpen },
+        { key: 'publications', label: 'Research Publications', Icon: BookOpen },
+        { key: 'conferenceProceedings', label: 'Conference Proceedings', Icon: FileText },
+        { key: 'workshops', label: 'Workshops', Icon: Users },
+        { key: 'symposiums', label: 'Symposiums', Icon: Lightbulb },
+        { key: 'training', label: 'Training (FDP/STTP)', Icon: GraduationCap },
         { key: 'ipr', label: 'Intellectual Property Rights', Icon: Copyright },
         { key: 'settings', label: 'Privacy Settings', Icon: Settings }
       );
@@ -4217,7 +4221,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                       {[
                         ...(isPhD ? [
-                          { key: 'publications', label: 'Publications/Conferences', mandatory: true },
+                          { key: 'publications', label: 'Research Publications', mandatory: true },
+                          { key: 'conferenceProceedings', label: 'Conference Proceedings', mandatory: true },
+                          { key: 'workshops', label: 'Workshops' },
+                          { key: 'symposiums', label: 'Symposiums' },
+                          { key: 'training', label: 'Training (FDP/STTP)' },
                           { key: 'projects', label: 'Research Projects' },
                           { key: 'ipr', label: 'IPR / Patents', mandatory: true }
                         ] : []),

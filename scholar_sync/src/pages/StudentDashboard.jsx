@@ -5871,7 +5871,7 @@ const ResearchOutputsTab = ({ thesis }) => {
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Research Output Type *</label>
               <select className="form-input" required value={form.type} onChange={e => setForm({ ...form, type: e.target.value, iprType: '', itemStatus: '', indexing: '', volume: '', issue: '', pages: '', publicationCategory: '', scope: '', role: '', mode: '', presentationType: '', conferenceName: '', proceedingsTitle: '', organizer: '', venueLocation: '', trainingType: '', duration: '', startDate: '', endDate: '' })} style={{ maxWidth: '400px' }} disabled={!!editingPubId}>
-                <option value="JOURNAL">1. Publications (Journal / Book / Book Chapter)</option>
+                <option value="JOURNAL">1. Research Publications (Journal / Book / Book Chapter)</option>
                 <option value="CONFERENCE">2. Conference Proceedings</option>
                 <option value="WORKSHOP">3. Workshops</option>
                 <option value="SYMPOSIUM">4. Symposiums</option>
@@ -8647,7 +8647,7 @@ const ProfileTab = () => {
       { key: 'memberships', label: 'Professional Bodies', Icon: Users },
       { key: 'committees', label: 'Committees', Icon: Bookmark },
       { key: 'projects', label: 'Projects', Icon: Folder },
-      { key: 'publications', label: 'Publications', Icon: BookOpen },
+      { key: 'publications', label: 'Research Publications', Icon: BookOpen },
       { key: 'conferenceProceedings', label: 'Conference Proceedings', Icon: FileText },
       { key: 'workshops', label: 'Workshops', Icon: Users },
       { key: 'symposiums', label: 'Symposiums', Icon: Lightbulb },
@@ -13410,13 +13410,13 @@ const ProfileTab = () => {
           <div ref={sectionRefs.publications} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <BookOpen size={20} style={{ color: '#133A26' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Publications</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Research Publications</h3>
             </div>
 
             <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
               <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #334155)', lineHeight: 1.4 }}>
-                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Publications</strong> entries is disabled on this page. Please submit your publication entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
+                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Research Publications</strong> entries is disabled on this page. Please submit your publication entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
               </div>
             </div>
 
@@ -13838,7 +13838,7 @@ const ProfileTab = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                   {[
                     ...(isPhD ? [
-                      { key: 'publications', label: 'Publications', mandatory: true },
+                      { key: 'publications', label: 'Research Publications', mandatory: true },
                       { key: 'conferenceProceedings', label: 'Conference Proceedings', mandatory: true },
                       { key: 'workshops', label: 'Workshops' },
                       { key: 'symposiums', label: 'Symposiums' },

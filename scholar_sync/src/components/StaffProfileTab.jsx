@@ -464,7 +464,7 @@ const StaffProfileTab = ({ thesis }) => {
     { key: 'memberships', label: 'Professional Bodies', Icon: Users },
     { key: 'committees', label: 'Committees', Icon: Bookmark },
     { key: 'projects', label: 'Projects', Icon: Folder },
-    { key: 'publications', label: 'Publications', Icon: BookOpen },
+    { key: 'publications', label: 'Research Publications', Icon: BookOpen },
     { key: 'conferenceProceedings', label: 'Conference Proceedings', Icon: FileText },
     { key: 'workshops', label: 'Workshops', Icon: Users },
     { key: 'symposiums', label: 'Symposiums', Icon: Lightbulb },
@@ -3581,7 +3581,7 @@ const StaffProfileTab = ({ thesis }) => {
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <BookOpen size={20} style={{ color: '#1A5A3B' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Publications</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Research Publications</h3>
             </div>
             {user?.role !== 'STUDENT' && (
               <div className="section-header-buttons">
@@ -3603,7 +3603,7 @@ const StaffProfileTab = ({ thesis }) => {
             <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
               <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #334155)', lineHeight: 1.4 }}>
-                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Publications</strong> entries is disabled on this page. Please submit your publication entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
+                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Research Publications</strong> entries is disabled on this page. Please submit your publication entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
               </div>
             </div>
           )}
@@ -4648,7 +4648,7 @@ const StaffProfileTab = ({ thesis }) => {
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                 {[
-                  { key: 'publications', label: 'Publications' },
+                  { key: 'publications', label: 'Research Publications' },
                   { key: 'conferenceProceedings', label: 'Conference Proceedings' },
                   { key: 'workshops', label: 'Workshops' },
                   { key: 'symposiums', label: 'Symposiums' },
