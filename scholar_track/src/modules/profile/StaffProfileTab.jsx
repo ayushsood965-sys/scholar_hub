@@ -517,9 +517,63 @@ const StaffProfileTab = ({ thesis }) => {
       });
 
       if (res.data && res.data.success) {
-        setSyncResult(res.data);
-        setShowSyncModal(true);
-        toast.success(`Fetched research data from ${res.data.sourcesSynced.join(', ') || 'online sources'}`);
+        const { metrics, fetchedData } = res.data;
+        const sources = res.data.sourcesSynced || [];
+
+        // Update citation metrics in local form state
+        const newHIndex = metrics.hIndex !== '' && metrics.hIndex !== null ? metrics.hIndex : personalForm.hIndex;
+        const newI10Index = metrics.i10Index !== '' && metrics.i10Index !== null ? metrics.i10Index : personalForm.i10Index;
+        const newScopusCitations = metrics.scopusCitations !== '' && metrics.scopusCitations !== null ? metrics.scopusCitations : personalForm.scopusCitations;
+        const newGoogleCitations = metrics.googleScholarCitations !== '' && metrics.googleScholarCitations !== null ? metrics.googleScholarCitations : personalForm.googleScholarCitations;
+
+        setPersonalForm(prev => ({
+          ...prev,
+          hIndex: newHIndex,
+          i10Index: newI10Index,
+          scopusCitations: newScopusCitations,
+          googleScholarCitations: newGoogleCitations
+        }));
+
+        // Merge fetched publications, experience, projects into existing profile data
+        const existingPubs = profile.publications || [];
+        const newPubs = fetchedData.publications || [];
+        const mergedPubs = [...existingPubs];
+        newPubs.forEach(np => {
+          if (!mergedPubs.some(ep => ep.title?.toLowerCase() === np.title?.toLowerCase())) {
+            mergedPubs.push(np);
+          }
+        });
+
+        const existingExp = profile.experience || [];
+        const newExp = fetchedData.experience || [];
+        const mergedExp = [...existingExp];
+        newExp.forEach(ne => {
+          if (!mergedExp.some(ee => ee.organization?.toLowerCase() === ne.organization?.toLowerCase() && ee.designation?.toLowerCase() === ne.designation?.toLowerCase())) {
+            mergedExp.push(ne);
+          }
+        });
+
+        const existingProj = profile.projects || [];
+        const newProj = fetchedData.projects || [];
+        const mergedProj = [...existingProj];
+        newProj.forEach(np => {
+          if (!mergedProj.some(ep => ep.projectTitle?.toLowerCase() === np.projectTitle?.toLowerCase())) {
+            mergedProj.push(np);
+          }
+        });
+
+        const updatedPayload = {
+          hIndex: newHIndex,
+          i10Index: newI10Index,
+          scopusCitations: newScopusCitations,
+          googleScholarCitations: newGoogleCitations,
+          publications: mergedPubs,
+          experience: mergedExp,
+          projects: mergedProj
+        };
+
+        await triggerProfileUpdate(updatedPayload, `Synced from ${sources.join(', ') || 'online sources'}: h-Index=${newHIndex || 'N/A'}, i10=${newI10Index || 'N/A'}`);
+        if (typeof fetchMe === 'function') await fetchMe();
       } else {
         toast.error('Failed to fetch data from research APIs');
       }
@@ -528,73 +582,6 @@ const StaffProfileTab = ({ thesis }) => {
       toast.error(err.response?.data?.message || 'Error connecting to research APIs');
     } finally {
       setSyncingApiData(false);
-    }
-  };
-
-  const handleConfirmImport = async () => {
-    if (!syncResult) return;
-    try {
-      setLoading(true);
-      const { metrics, fetchedData } = syncResult;
-      
-      const newHIndex = metrics.hIndex !== '' && metrics.hIndex !== null ? metrics.hIndex : personalForm.hIndex;
-      const newI10Index = metrics.i10Index !== '' && metrics.i10Index !== null ? metrics.i10Index : personalForm.i10Index;
-      const newScopusCitations = metrics.scopusCitations !== '' && metrics.scopusCitations !== null ? metrics.scopusCitations : personalForm.scopusCitations;
-      const newGoogleCitations = metrics.googleScholarCitations !== '' && metrics.googleScholarCitations !== null ? metrics.googleScholarCitations : personalForm.googleScholarCitations;
-
-      setPersonalForm(prev => ({
-        ...prev,
-        hIndex: newHIndex,
-        i10Index: newI10Index,
-        scopusCitations: newScopusCitations,
-        googleScholarCitations: newGoogleCitations
-      }));
-
-      const existingPubs = profile.publications || [];
-      const newPubs = fetchedData.publications || [];
-      const mergedPubs = [...existingPubs];
-      newPubs.forEach(np => {
-        if (!mergedPubs.some(ep => ep.title?.toLowerCase() === np.title?.toLowerCase())) {
-          mergedPubs.push(np);
-        }
-      });
-
-      const existingExp = profile.experience || [];
-      const newExp = fetchedData.experience || [];
-      const mergedExp = [...existingExp];
-      newExp.forEach(ne => {
-        if (!mergedExp.some(ee => ee.organization?.toLowerCase() === ne.organization?.toLowerCase() && ee.designation?.toLowerCase() === ne.designation?.toLowerCase())) {
-          mergedExp.push(ne);
-        }
-      });
-
-      const existingProj = profile.projects || [];
-      const newProj = fetchedData.projects || [];
-      const mergedProj = [...existingProj];
-      newProj.forEach(np => {
-        if (!mergedProj.some(ep => ep.projectTitle?.toLowerCase() === np.projectTitle?.toLowerCase())) {
-          mergedProj.push(np);
-        }
-      });
-
-      const updatedPayload = {
-        hIndex: newHIndex,
-        i10Index: newI10Index,
-        scopusCitations: newScopusCitations,
-        googleScholarCitations: newGoogleCitations,
-        publications: mergedPubs,
-        experience: mergedExp,
-        projects: mergedProj
-      };
-
-      await triggerProfileUpdate(updatedPayload, 'Profile updated with official API research data across all tabs!');
-      if (typeof fetchMe === 'function') await fetchMe();
-      setShowSyncModal(false);
-    } catch (err) {
-      console.error('Import error:', err);
-      toast.error('Error saving imported data');
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -121,9 +121,35 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       });
 
       if (res.data && res.data.success) {
-        setSyncResult(res.data);
-        setShowSyncModal(true);
-        toast.success(`Fetched research data from ${res.data.sourcesSynced.join(', ') || 'online sources'}`);
+        const { metrics } = res.data;
+        const sources = res.data.sourcesSynced || [];
+
+        // Update citation metrics in local state
+        const newHIndex = metrics.hIndex !== '' && metrics.hIndex !== null ? metrics.hIndex : hIndex;
+        const newI10Index = metrics.i10Index !== '' && metrics.i10Index !== null ? metrics.i10Index : i10Index;
+        const newScopusCitations = metrics.scopusCitations !== '' && metrics.scopusCitations !== null ? metrics.scopusCitations : scopusCitations;
+        const newGoogleCitations = metrics.googleScholarCitations !== '' && metrics.googleScholarCitations !== null ? metrics.googleScholarCitations : googleScholarCitations;
+
+        setHIndex(newHIndex);
+        setI10Index(newI10Index);
+        setScopusCitations(newScopusCitations);
+        setGoogleScholarCitations(newGoogleCitations);
+
+        // Save metrics to profile
+        const updatedPayload = {
+          hIndex: newHIndex,
+          i10Index: newI10Index,
+          scopusCitations: newScopusCitations,
+          googleScholarCitations: newGoogleCitations
+        };
+
+        const saveRes = await updateProfile(updatedPayload);
+        if (saveRes?.success !== false) {
+          if (typeof fetchProfile === 'function') await fetchProfile();
+          toast.success(`Synced metrics from ${sources.join(', ') || 'online sources'}: h-Index=${newHIndex || 'N/A'}, i10=${newI10Index || 'N/A'}, Citations=${newScopusCitations || newGoogleCitations || 'N/A'}`);
+        } else {
+          toast.error(saveRes?.message || 'Failed to save fetched data');
+        }
       } else {
         toast.error('Failed to fetch data from research APIs');
       }
@@ -132,75 +158,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       toast.error(err.response?.data?.message || 'Error connecting to research APIs');
     } finally {
       setSyncingApiData(false);
-    }
-  };
-
-  const handleConfirmImport = async () => {
-    if (!syncResult) return;
-    try {
-      setLoading(true);
-      const { metrics, fetchedData } = syncResult;
-      
-      const newHIndex = metrics.hIndex !== '' && metrics.hIndex !== null ? metrics.hIndex : hIndex;
-      const newI10Index = metrics.i10Index !== '' && metrics.i10Index !== null ? metrics.i10Index : i10Index;
-      const newScopusCitations = metrics.scopusCitations !== '' && metrics.scopusCitations !== null ? metrics.scopusCitations : scopusCitations;
-      const newGoogleCitations = metrics.googleScholarCitations !== '' && metrics.googleScholarCitations !== null ? metrics.googleScholarCitations : googleScholarCitations;
-
-      setHIndex(newHIndex);
-      setI10Index(newI10Index);
-      setScopusCitations(newScopusCitations);
-      setGoogleScholarCitations(newGoogleCitations);
-
-      const existingPubs = profile?.profile?.publications || [];
-      const newPubs = fetchedData.publications || [];
-      const mergedPubs = [...existingPubs];
-      newPubs.forEach(np => {
-        if (!mergedPubs.some(ep => ep.title?.toLowerCase() === np.title?.toLowerCase())) {
-          mergedPubs.push(np);
-        }
-      });
-
-      const existingExp = profile?.profile?.experience || [];
-      const newExp = fetchedData.experience || [];
-      const mergedExp = [...existingExp];
-      newExp.forEach(ne => {
-        if (!mergedExp.some(ee => ee.organization?.toLowerCase() === ne.organization?.toLowerCase() && ee.designation?.toLowerCase() === ne.designation?.toLowerCase())) {
-          mergedExp.push(ne);
-        }
-      });
-
-      const existingProj = profile?.profile?.projects || [];
-      const newProj = fetchedData.projects || [];
-      const mergedProj = [...existingProj];
-      newProj.forEach(np => {
-        if (!mergedProj.some(ep => ep.projectTitle?.toLowerCase() === np.projectTitle?.toLowerCase())) {
-          mergedProj.push(np);
-        }
-      });
-
-      const updatedPayload = {
-        hIndex: newHIndex,
-        i10Index: newI10Index,
-        scopusCitations: newScopusCitations,
-        googleScholarCitations: newGoogleCitations,
-        publications: mergedPubs,
-        experience: mergedExp,
-        projects: mergedProj
-      };
-
-      const res = await updateProfile(updatedPayload);
-      if (res.success) {
-        if (typeof fetchProfile === 'function') await fetchProfile();
-        toast.success('Profile updated with official API research data across all tabs!');
-        setShowSyncModal(false);
-      } else {
-        toast.error(res.message || 'Failed to save imported data');
-      }
-    } catch (err) {
-      console.error('Import error:', err);
-      toast.error('Error saving imported data');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -213,7 +170,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     otherQuals: false,
     netJrf: false,
     other: false,
-    guide: false
+    guide: false,
+    identifiers: false
   });
 
   const isEditingAcademic = !!(
@@ -2284,7 +2242,18 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     </button>
                   </>
                 ) : (
-                  <button className="btn btn-secondary" type="button" onClick={() => handleCancel('identifiers')}>
+                  <button className="btn btn-secondary" type="button" onClick={() => {
+                    setOrcidId(profile?.profile?.orcidId || '');
+                    setScopusId(profile?.profile?.scopusId || '');
+                    setWosId(profile?.profile?.wosId || '');
+                    setVidwanId(profile?.profile?.vidwanId || '');
+                    setGoogleScholarUrl(profile?.profile?.googleScholarUrl || '');
+                    setHIndex(profile?.profile?.hIndex || '');
+                    setI10Index(profile?.profile?.i10Index || '');
+                    setScopusCitations(profile?.profile?.scopusCitations || '');
+                    setGoogleScholarCitations(profile?.profile?.googleScholarCitations || '');
+                    setEditModes(prev => ({ ...prev, identifiers: false }));
+                  }}>
                     Cancel
                   </button>
                 )}
@@ -2292,7 +2261,23 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
             </div>
 
             {editModes.identifiers ? (
-              <form onSubmit={e => { e.preventDefault(); handleSaveSection('identifiers'); setEditModes(prev => ({ ...prev, identifiers: false })); }}>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                  const res = await updateProfile({ orcidId, scopusId, wosId, vidwanId, googleScholarUrl, hIndex, i10Index, scopusCitations, googleScholarCitations });
+                  if (res?.success !== false) {
+                    toast.success('Academic Identifiers updated successfully');
+                    setEditModes(prev => ({ ...prev, identifiers: false }));
+                  } else {
+                    toast.error(res?.message || 'Failed to update identifiers');
+                  }
+                } catch (err) {
+                  toast.error('Failed to update identifiers');
+                } finally {
+                  setLoading(false);
+                }
+              }}>
                 <div className="responsive-three-col-grid" style={{ gap: '12px', marginBottom: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">ORCID iD</label>
