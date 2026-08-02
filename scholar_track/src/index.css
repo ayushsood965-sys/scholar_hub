@@ -4465,13 +4465,14 @@ img {
     display: flex !important;
     width: 100% !important;
     justify-content: space-between !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     text-align: right !important;
     padding: 10px 4px !important;
     border: none !important;
     border-bottom: 1px dashed var(--color-border, #f1f5f9) !important;
     font-size: 0.85rem !important;
     box-sizing: border-box !important;
+    word-break: break-word !important;
   }
   
   [data-theme="dark"] table:not(.no-responsive) td {
@@ -4489,19 +4490,20 @@ img {
     text-align: left !important;
     margin-right: 16px !important;
     flex-shrink: 0 !important;
+    padding-top: 2px !important;
   }
   
   [data-theme="dark"] table:not(.no-responsive) td::before {
     color: var(--color-text-secondary, #94a3b8) !important;
   }
   
-  /* Ensure actions display clean in card columns */
-  .table-actions,
-  table:not(.no-responsive) td div,
-  table:not(.no-responsive) td span {
+  /* Ensure actions and card content display cleanly without breaking layout column stacks */
+  .table-actions {
     display: flex !important;
     justify-content: flex-end !important;
     align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
   }
 }
 

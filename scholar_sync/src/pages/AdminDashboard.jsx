@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Home, Users, FileText, BarChart2, Settings, LogOut, Bell, CheckCircle2, User, GraduationCap, ShieldCheck, Clock, XCircle, Layers, Award, Edit, File, Plus, Calendar, Search, BookOpen } from 'lucide-react';
+import { Home, Users, FileText, BarChart2, Settings, LogOut, Bell, CheckCircle2, User, GraduationCap, ShieldCheck, Clock, XCircle, Layers, Award, Edit, File, Plus, Calendar, Search, BookOpen, UserCheck, Briefcase, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -2485,61 +2485,26 @@ const ProfileTab = () => {
 
 // ── Manage Department Users ──
 const ManageUsers = () => {
-  const toast = useToast();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('DEFAULT');
-
-  const sortedAndFilteredUsers = useMemo(() => {
-    let result = [...users];
-
-    // 1. Filter by Role
-    if (roleFilter !== 'ALL') {
-      result = result.filter(u => u.role === roleFilter);
-    }
-
-    // 2. Sort
-    if (sortBy === 'ROLE_ASC') {
-      const roleOrder = { HOD: 1, FACULTY: 2, STUDENT: 3 };
-      result.sort((a, b) => {
-        const orderA = roleOrder[a.role] || 4;
-        const orderB = roleOrder[b.role] || 4;
-        return orderA - orderB;
-      });
-    } else if (sortBy === 'ROLE_DESC') {
-      const roleOrder = { HOD: 1, FACULTY: 2, STUDENT: 3 };
-      result.sort((a, b) => {
-        const orderA = roleOrder[a.role] || 4;
-        const orderB = roleOrder[b.role] || 4;
-        return orderB - orderA;
-      });
-    } else if (sortBy === 'NAME_ASC') {
-      result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    } else if (sortBy === 'NAME_DESC') {
-      result.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
-    }
-
-    return result;
-  }, [users, roleFilter, sortBy]);
-
-  const { paginatedData, currentPage, pageSize, totalPages, setCurrentPage, setPageSize, searchTerm, setSearchTerm } = useGridControl(
-    sortedAndFilteredUsers,
-    ['name', 'username', 'role']
-  );
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [roleFilter, sortBy]);
+  const [pageSize, setPageSize] = useState('10');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hodSubTab, setHodSubTab] = useState('FACULTY'); // 'FACULTY' | 'STUDENT'
+  const { user } = useContext(AuthContext);
+  const toast = useToast();
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${API}/auth/dept-users`, getAuthHeader());
-      setUsers(data);
+      const endpoint = user?.role === 'SUPER_ADMIN' ? `${API}/auth/all-users` : `${API}/auth/dept-users`;
+      const res = await axios.get(endpoint, getAuthHeader());
+      const filteredUsers = (res.data || []).filter(u => u._id !== user?._id && u.role !== 'SUPER_ADMIN');
+      setUsers(filteredUsers);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch department directory');
+      toast.error('Failed to load user directory');
     } finally {
       setLoading(false);
     }
@@ -2549,339 +2514,486 @@ const ManageUsers = () => {
     fetchUsers();
   }, []);
 
-  const handleToggleActive = async (userId) => {
+  const handleVerify = async (id) => {
     try {
-      await axios.put(`${API}/auth/users/${userId}/active`, {}, getAuthHeader());
-      setUsers(users.map(u => u._id === userId ? { ...u, isActive: !u.isActive } : u));
+      await axios.put(`${API}/auth/users/${id}/verify`, {}, getAuthHeader());
+      toast.success('User account verified successfully');
+      fetchUsers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to toggle account active status.');
+      toast.error(err.response?.data?.message || 'Error verifying user');
     }
   };
 
+  const handleToggleActive = async (id) => {
+    try {
+      await axios.put(`${API}/auth/users/${id}/active`, {}, getAuthHeader());
+      toast.success('Account status updated');
+      fetchUsers();
+    } catch (err) {
+      toast.error('Error toggling account status');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to permanently delete this user account? This cannot be undone.')) return;
+    try {
+      await axios.delete(`${API}/auth/users/${id}`, getAuthHeader());
+      toast.success('Account deleted successfully');
+      fetchUsers();
+    } catch (err) {
+      toast.error('Error deleting account');
+    }
+  };
+
+  const isHodRole = user?.role === 'HOD' || user?.subRole === 'HOD';
+
+  // Filter logic
+  const filteredUsers = users.filter(u => {
+    const courseName = 
+      u.profile?.degreeName || 
+      u.profile?.degreeNameLabel || 
+      (typeof u.profile?.degreeNameId === 'object' ? u.profile?.degreeNameId?.name : '') ||
+      u.profile?.degreeType || '';
+    const academicSession = u.profile?.academicSession || '';
+
+    const matchesSearch = 
+      (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      academicSession.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    let matchesRole = true;
+    if (isHodRole) {
+      if (hodSubTab === 'FACULTY') {
+        matchesRole = u.role === 'FACULTY' || u.role === 'HOD';
+      } else if (hodSubTab === 'STUDENT') {
+        matchesRole = u.role === 'STUDENT';
+      }
+    } else {
+      matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+    }
+
+    return matchesSearch && matchesRole;
+  });
+
+  // Sort logic
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (sortBy === 'NAME_ASC') return (a.name || '').localeCompare(b.name || '');
+    if (sortBy === 'NAME_DESC') return (b.name || '').localeCompare(a.name || '');
+    if (sortBy === 'UNVERIFIED_FIRST') return (a.isVerified === b.isVerified) ? 0 : a.isVerified ? 1 : -1;
+    return 0;
+  });
+
+  // Pagination logic
+  const numericPageSize = pageSize === 'ALL' ? sortedUsers.length : parseInt(pageSize, 10);
+  const totalPages = Math.ceil(sortedUsers.length / (numericPageSize || 1)) || 1;
+  const paginatedUsers = sortedUsers.slice(
+    (currentPage - 1) * numericPageSize,
+    currentPage * numericPageSize
+  );
+
+  const facultyCount = users.filter(u => u.role === 'FACULTY' || u.role === 'HOD').length;
+  const studentCount = users.filter(u => u.role === 'STUDENT').length;
+
+  if (loading) {
+    return (
+      <div className="card documents-card" style={{ padding: '32px', textAlign: 'center' }}>
+        <div className="premium-preloader-spinner" style={{ margin: '0 auto 12px auto' }}></div>
+        <div style={{ color: '#64748B', fontWeight: 600 }}>Loading department directory...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="card documents-card">
-      <h3 className="card-title">Department Directory & User Access</h3>
-      <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
-        Verify profiles and toggle user logins active or disabled to coordinate access boundaries within your department.
-      </p>
-      
-      {error && <div style={{ color: '#DC2626', marginBottom: 16 }}>{error}</div>}
-      
-      {loading ? (
-        <div className="premium-preloader-container">
-          <div className="premium-preloader-spinner"></div>
-          <div className="premium-preloader-text">Loading department directory...</div>
+    <div className="card documents-card" style={{ padding: '24px', borderRadius: '16px', background: 'var(--color-surface, #ffffff)' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ color: 'var(--color-text-primary, #1E293B)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem', fontWeight: 700 }}>
+          <Users size={24} /> {isHodRole ? 'Department User Management' : 'Faculty & HOD Verification'}
+        </h2>
+        <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.9rem' }}>
+          {isHodRole 
+            ? `Manage and approve registered faculty members and student IDs for the ${user?.department || ''} department.`
+            : 'Verify registered faculty and department head accounts across the institution.'}
+        </p>
+      </div>
+
+      {/* Sub-tabs for HOD Level: Faculty Members vs Department Students */}
+      {isHodRole && (
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', borderBottom: '2px solid var(--color-border, #E2E8F0)', paddingBottom: '10px' }}>
+          <button
+            onClick={() => { setHodSubTab('FACULTY'); setCurrentPage(1); }}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: hodSubTab === 'FACULTY' ? '#10B981' : 'transparent',
+              color: hodSubTab === 'FACULTY' ? '#FFFFFF' : 'var(--color-text-secondary, #64748B)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Briefcase size={18} />
+            1. Faculty Members ({facultyCount})
+          </button>
+          <button
+            onClick={() => { setHodSubTab('STUDENT'); setCurrentPage(1); }}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: hodSubTab === 'STUDENT' ? '#10B981' : 'transparent',
+              color: hodSubTab === 'STUDENT' ? '#FFFFFF' : 'var(--color-text-secondary, #64748B)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <GraduationCap size={18} />
+            2. Department Students ({studentCount})
+          </button>
         </div>
-      ) : (
-        <>
-          {/* Custom Controls Bar */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            gap: '12px', 
-            marginBottom: '20px',
-            flexWrap: 'wrap',
-            background: 'var(--color-bg, #F8FAFC)',
-            padding: '16px',
-            borderRadius: '12px',
-            border: '1px solid var(--color-border, #E2E8F0)'
-          }}>
-            {/* Search and Filters group */}
-            <div style={{ display: 'flex', gap: '12px', flex: 1, minWidth: '300px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-                <input
-                  type="text"
-                  placeholder="Search by name, email, or role..."
-                  className="form-input search-input"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', fontSize: '0.9rem' }}
-                />
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}>🔍</span>
-              </div>
+      )}
 
-              {/* Role Filter */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>Role:</span>
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="form-input"
-                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', cursor: 'pointer', fontSize: '0.85rem', minWidth: '120px' }}
-                >
-                  <option value="ALL">All Roles</option>
-                  <option value="STUDENT">Student</option>
-                  <option value="FACULTY">Faculty</option>
-                  <option value="HOD">HOD</option>
-                </select>
-              </div>
+      {/* Control Bar */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px', 
+        marginBottom: '24px',
+        background: '#EAF5ED',
+        padding: '12px 18px',
+        borderRadius: '16px',
+        border: '1px solid rgba(16, 185, 129, 0.2)',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+      }}>
+        {/* Search Bar */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px', 
+          background: '#FFFFFF', 
+          padding: '8px 16px', 
+          borderRadius: '24px', 
+          border: '1px solid #CBD5E1', 
+          flex: '1 1 300px',
+          minWidth: '240px',
+          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
+        }}>
+          <Search size={18} color="#10B981" />
+          <input 
+            type="text" 
+            placeholder="Search by name, email, or role..." 
+            value={searchTerm} 
+            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            style={{ 
+              border: 'none', 
+              background: 'none', 
+              outline: 'none', 
+              width: '100%', 
+              fontSize: '0.88rem',
+              color: '#1E293B',
+              fontWeight: 500
+            }}
+          />
+        </div>
 
-              {/* Sorting */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>Sort:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="form-input"
-                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', cursor: 'pointer', fontSize: '0.85rem', minWidth: '150px' }}
-                >
-                  <option value="DEFAULT">Default Order</option>
-                  <option value="NAME_ASC">Name (A to Z)</option>
-                  <option value="NAME_DESC">Name (Z to A)</option>
-                  <option value="ROLE_ASC">Role (HOD First)</option>
-                  <option value="ROLE_DESC">Role (Student First)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Pagination Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary, #64748B)' }}>Show:</span>
-                <select
-                  className="form-input page-size-select"
-                  value={pageSize}
-                  onChange={(e) => setPageSize(e.target.value)}
-                  style={{ width: 'auto', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border, #CBD5E1)', cursor: 'pointer', fontSize: '0.85rem' }}
-                >
-                  <option value="10">10 rows</option>
-                  <option value="20">20 rows</option>
-                  <option value="30">30 rows</option>
-                </select>
-              </div>
-
-              {totalPages > 1 && (
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    className="btn-outline-small"
-                    style={{ 
-                      padding: '6px 10px', 
-                      borderRadius: '6px',
-                      border: '1px solid var(--color-border, #CBD5E1)',
-                      background: 'white',
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === 1 ? 0.5 : 1
-                    }}
-                  >
-                    ◀
-                  </button>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary, #1F2937)' }}>
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    className="btn-outline-small"
-                    style={{ 
-                      padding: '6px 10px', 
-                      borderRadius: '6px',
-                      border: '1px solid var(--color-border, #CBD5E1)',
-                      background: 'white',
-                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === totalPages ? 0.5 : 1
-                    }}
-                  >
-                    ▶
-                  </button>
-                </div>
-              )}
-            </div>
+        {/* Control Selectors */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          {/* Sort Element */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Sort:</span>
+            <select 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value)}
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '6px 14px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#1E293B',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              <option value="DEFAULT">Default Order</option>
+              <option value="NAME_ASC">Name (A to Z)</option>
+              <option value="NAME_DESC">Name (Z to A)</option>
+              <option value="UNVERIFIED_FIRST">Pending Verification First</option>
+            </select>
           </div>
 
-          {/* Redesigned Premium Table */}
-          {paginatedData.length === 0 ? (
-            <div style={{ padding: 32, textAlign: 'center', color: '#9CA3AF' }}>No records found.</div>
-          ) : (
-            <div className="table-container" style={{ 
-              overflowX: 'auto', 
-              borderRadius: '12px', 
-              border: '1px solid var(--color-border, #E2E8F0)',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              background: 'white'
-            }}>
-              <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '60px' }}>S.No.</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Name</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569' }}>Email Address</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '110px' }}>Role</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '110px' }}>Profile</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '120px' }}>Verification</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '100px' }}>Status</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 700, color: '#475569', width: '180px' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.map((u, idx) => (
-                    <tr 
-                      key={u._id} 
-                      style={{ 
-                        borderBottom: '1px solid #E2E8F0', 
-                        opacity: u.isActive ? 1 : 0.65,
-                        transition: 'background-color 0.2s',
-                        verticalAlign: 'middle'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'} 
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      {/* S.No */}
-                      <td style={{ padding: '14px 16px', fontWeight: 600, color: '#64748B' }}>
-                        {(currentPage - 1) * pageSize + idx + 1}
-                      </td>
-                      
-                      {/* Name */}
-                      <td style={{ padding: '14px 16px', fontWeight: 600, color: '#1E293B' }}>
-                        {u.name}
-                      </td>
+          {/* Show Rows Element */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Show:</span>
+            <select 
+              value={pageSize} 
+              onChange={e => { setPageSize(e.target.value); setCurrentPage(1); }}
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '6px 14px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#1E293B',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              <option value="10">10 rows</option>
+              <option value="20">20 rows</option>
+              <option value="30">30 rows</option>
+              <option value="50">50 rows</option>
+              <option value="ALL">All rows</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-                      {/* Email Address */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ color: '#334155', fontWeight: 500 }}>{u.username}</span>
+      {/* Table Container */}
+      {paginatedUsers.length === 0 ? (
+        <div style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF' }}>No user records found matching your filters.</div>
+      ) : (
+        <div className="table-container" style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid var(--color-border, #E2E8F0)', background: 'white' }}>
+          <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569', width: '60px' }}>S.NO.</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569' }}>NAME / EMAIL</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569' }}>ROLE</th>
+                {(isHodRole ? hodSubTab === 'STUDENT' : true) && (
+                  <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569' }}>COURSE / SESSION</th>
+                )}
+                <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569' }}>DEPARTMENT</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569' }}>VERIFICATION</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569' }}>STATUS</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, color: '#475569' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedUsers.map((row, idx) => {
+                const degIdStr = row.profile?.degreeNameId ? (typeof row.profile.degreeNameId === 'object' ? row.profile.degreeNameId.name : String(row.profile.degreeNameId)) : '';
+                const isHexId = /^[0-9a-fA-F]{24}$/.test(degIdStr);
+
+                const courseName = 
+                  row.profile?.degreeName || 
+                  row.profile?.degreeNameLabel || 
+                  (typeof row.profile?.degreeNameId === 'object' ? row.profile?.degreeNameId?.name : null) || 
+                  (!isHexId && degIdStr ? degIdStr : null) || 
+                  row.profile?.degreeTypeName ||
+                  row.profile?.degreeType || 
+                  (row.profile?.isPhD ? 'Ph.D. Forensic Science' : 'M.Sc. Forensic Science');
+
+                const session = row.profile?.academicSession || '2026-2027';
+
+                return (
+                  <tr key={row._id} style={{ borderBottom: '1px solid #E2E8F0', verticalAlign: 'middle' }}>
+                    {/* S.No */}
+                    <td data-label="S.NO." style={{ padding: '12px 14px', fontWeight: 600, color: '#64748B' }}>
+                      {(currentPage - 1) * numericPageSize + idx + 1}
+                    </td>
+
+                    {/* Name / Email */}
+                    <td data-label="NAME / EMAIL" style={{ padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', textAlign: 'right' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>{row.name}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)', display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-end', marginTop: '2px' }}>
+                          <span style={{ wordBreak: 'break-all' }}>{row.username}</span>
                           <span style={{
-                            alignSelf: 'flex-start',
                             fontSize: '0.65rem',
                             fontWeight: 700,
-                            padding: '2px 6px',
+                            padding: '1px 5px',
                             borderRadius: '4px',
                             textTransform: 'uppercase',
-                            background: u.isEmailVerified ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                            color: u.isEmailVerified ? '#10B981' : '#EF4444',
-                            border: `1px solid ${u.isEmailVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+                            background: row.isEmailVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                            color: row.isEmailVerified ? '#10B981' : '#EF4444',
+                            border: `1px solid ${row.isEmailVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
                           }}>
-                            {u.isEmailVerified ? '✓ Email Verified' : '⚠ Email Unverified'}
+                            {row.isEmailVerified ? 'Email Verified' : 'Email Unverified'}
                           </span>
                         </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      {/* Role */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          background: u.role === 'HOD' ? '#FEF3C7' : u.role === 'FACULTY' ? '#DBEAFE' : '#E0F2FE',
-                          color: u.role === 'HOD' ? '#D97706' : u.role === 'FACULTY' ? '#1D4ED8' : '#0369A1',
-                          border: `1px solid ${u.role === 'HOD' ? '#FDE68A' : u.role === 'FACULTY' ? '#BFDBFE' : '#BAE6FD'}`
-                        }}>
-                          {u.role}
-                        </span>
-                      </td>
+                    {/* Role */}
+                    <td data-label="ROLE" style={{ padding: '12px 14px' }}>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        background: row.role === 'HOD' ? '#FEF3C7' : row.role === 'STUDENT' ? '#E0F2FE' : '#DBEAFE',
+                        color: row.role === 'HOD' ? '#D97706' : row.role === 'STUDENT' ? '#0369A1' : '#1D4ED8',
+                        border: `1px solid ${row.role === 'HOD' ? '#FDE68A' : row.role === 'STUDENT' ? '#BAE6FD' : '#BFDBFE'}`
+                      }}>
+                        {row.role === 'HOD' ? 'HOD' : row.role === 'STUDENT' ? 'STUDENT' : row.subRole || 'FACULTY'}
+                      </span>
+                    </td>
 
-                      {/* Profile */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          background: u.profileCompleted ? '#D1FAE5' : '#FEF2F2',
-                          color: u.profileCompleted ? '#065F46' : '#991B1B',
-                          border: `1px solid ${u.profileCompleted ? '#A7F3D0' : '#FEE2E2'}`
-                        }}>
-                          {u.profileCompleted ? 'Complete' : 'Incomplete'}
-                        </span>
-                      </td>
-
-                      {/* Verification */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          background: u.isVerified ? '#D1FAE5' : '#FEF3C7',
-                          color: u.isVerified ? '#065F46' : '#D97706',
-                          border: `1px solid ${u.isVerified ? '#A7F3D0' : '#FDE68A'}`
-                        }}>
-                          {u.isVerified ? 'Verified' : 'Unverified'}
-                        </span>
-                      </td>
-
-                      {/* Status */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          background: u.isActive ? '#D1FAE5' : '#F3F4F6',
-                          color: u.isActive ? '#065F46' : '#374151',
-                          border: `1px solid ${u.isActive ? '#A7F3D0' : '#E5E7EB'}`
-                        }}>
-                          {u.isActive ? 'Active' : 'Disabled'}
-                        </span>
-                      </td>
-
-                      {/* Action */}
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <button 
-                            onClick={() => handleToggleActive(u._id)}
-                            style={{
-                              background: u.isActive ? '#EF4444' : '#10B981',
-                              color: 'white',
-                              border: 'none',
-                              padding: '6px 12px',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                              transition: 'opacity 0.2s'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.opacity = 0.9}
-                            onMouseOut={(e) => e.currentTarget.style.opacity = 1}
-                          >
-                            {u.isActive ? 'Disable ID' : 'Enable ID'}
-                          </button>
-                          {!u.isVerified && (u.role === 'STUDENT' || u.role === 'FACULTY' || u.role === 'HOD') && (
-                            <button 
-                              onClick={async () => {
-                                if (u.isEmailVerified === false) return;
-                                try {
-                                  await axios.put(`${API}/auth/users/${u._id}/verify`, {}, getAuthHeader());
-                                  toast.success("Account verified successfully!");
-                                  fetchUsers();
-                                } catch (err) {
-                                  toast.error(err.response?.data?.message || 'Verification failed');
-                                }
-                              }}
-                              disabled={u.isEmailVerified === false}
-                              title={u.isEmailVerified ? "Verify ID" : "Email must be verified first"}
-                              style={{
-                                background: u.isEmailVerified ? '#3B82F6' : '#94A3B8',
-                                color: 'white',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                cursor: u.isEmailVerified ? 'pointer' : 'not-allowed',
-                                opacity: u.isEmailVerified ? 1 : 0.6,
-                                boxShadow: u.isEmailVerified ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
-                                transition: 'opacity 0.2s'
-                              }}
-                              onMouseOver={(e) => { if (u.isEmailVerified) e.currentTarget.style.opacity = 0.9; }}
-                              onMouseOut={(e) => { if (u.isEmailVerified) e.currentTarget.style.opacity = 1; }}
-                            >
-                              Verify ID
-                            </button>
-                          )}
+                    {/* Course / Session (Only for Students) */}
+                    {(isHodRole ? hodSubTab === 'STUDENT' : true) && (
+                      <td data-label="COURSE / SESSION" style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', textAlign: 'right' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>
+                            {courseName}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: 600, marginTop: '2px' }}>
+                            {session}
+                          </div>
                         </div>
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
+                    )}
+
+                    {/* Department */}
+                    <td data-label="DEPARTMENT" style={{ padding: '12px 14px', color: '#334155', fontWeight: 500 }}>
+                      {row.department || '—'}
+                    </td>
+
+                    {/* Verification */}
+                    <td data-label="VERIFICATION" style={{ padding: '12px 14px' }}>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        background: row.isVerified ? '#D1FAE5' : '#FEF3C7',
+                        color: row.isVerified ? '#065F46' : '#D97706',
+                        border: `1px solid ${row.isVerified ? '#A7F3D0' : '#FDE68A'}`
+                      }}>
+                        {row.isVerified ? 'Verified' : 'Unverified'}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td data-label="STATUS" style={{ padding: '12px 14px' }}>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        background: row.isActive ? '#D1FAE5' : '#FEF2F2',
+                        color: row.isActive ? '#065F46' : '#991B1B',
+                        border: `1px solid ${row.isActive ? '#A7F3D0' : '#FEE2E2'}`
+                      }}>
+                        {row.isActive ? 'Active' : 'Disabled'}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td data-label="ACTIONS" style={{ padding: '12px 14px' }}>
+                      <div className="table-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        {!row.isVerified && (
+                          <button 
+                            style={{ 
+                              padding: '6px 14px', 
+                              borderRadius: '6px',
+                              border: 'none',
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              cursor: row.isEmailVerified ? 'pointer' : 'not-allowed',
+                              opacity: row.isEmailVerified ? 1 : 0.6,
+                              background: row.isEmailVerified ? '#10B981' : '#9CA3AF',
+                              color: '#FFFFFF',
+                              fontWeight: 700,
+                              fontSize: '0.8rem'
+                            }}
+                            onClick={() => {
+                              if (row.isEmailVerified === false) return;
+                              handleVerify(row._id);
+                            }}
+                            disabled={row.isEmailVerified === false}
+                            title={row.isEmailVerified ? "Approve User Account" : "Email must be verified first"}
+                          >
+                            <UserCheck size={14} /> {row.isEmailVerified ? 'Approve' : 'Verify ID'}
+                          </button>
+                        )}
+
+                        {row.isVerified && (
+                          <button 
+                            style={{ 
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              background: 'transparent',
+                              color: row.isActive ? '#EF4444' : '#10B981',
+                              border: `1px solid ${row.isActive ? '#EF4444' : '#10B981'}`,
+                              fontWeight: 700,
+                              fontSize: '0.8rem',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => handleToggleActive(row._id)}
+                          >
+                            {row.isActive ? 'Disable ID' : 'Enable ID'}
+                          </button>
+                        )}
+
+                        {user?.role === 'SUPER_ADMIN' && (
+                          <button 
+                            style={{ 
+                              background: 'transparent',
+                              color: '#EF4444', 
+                              border: '1px solid #EF4444', 
+                              padding: '6px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            onClick={() => handleDelete(row._id)}
+                            title="Delete Account"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {pageSize !== 'ALL' && totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '12px 16px', background: 'rgba(0,0,0,0.02)', borderRadius: '10px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary, #64748B)' }}>
+            Showing {((currentPage - 1) * numericPageSize) + 1} to {Math.min(currentPage * numericPageSize, sortedUsers.length)} of {sortedUsers.length} users
+          </span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontSize: '0.85rem' }}
+            >
+              ◀ Prev
+            </button>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary, #1E293B)' }}>Page {currentPage} of {totalPages}</span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, fontSize: '0.85rem' }}
+            >
+              Next ▶
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -5368,7 +5480,7 @@ const adminNavItems = [
   { key: 'requests', label: 'Change Requests', Icon: Edit },
   { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
   { kind: 'section', label: '⚙️ User & Portal Settings' },
-  { key: 'users', label: 'Manage Users', Icon: Users },
+  { key: 'users', label: 'Manage Department Users', Icon: Users },
   { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
 ];
 
@@ -5386,7 +5498,7 @@ const adminHODNavItems = [
   { kind: 'section', label: '⚖️ Requests' },
   { key: 'requests', label: 'Change Requests', Icon: Edit },
   { kind: 'section', label: '⚙️ User & Portal Settings' },
-  { key: 'users', label: 'Manage Users', Icon: Users },
+  { key: 'users', label: 'Manage Department Users', Icon: Users },
   { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
 ];
 
@@ -5789,7 +5901,7 @@ const AdminDashboard = () => {
     lifecycle: 'RAC Reviews', 
     documents: 'Document Review Manager', 
     meetings: 'Guidance Consultations & Meetings',
-    users: 'Manage Users', 
+    users: 'Manage Department Users', 
     profile: 'My Profile', 
     evaluation: 'External Evaluation', 
     defaulters: 'Progress Report Defaulter Tracking',

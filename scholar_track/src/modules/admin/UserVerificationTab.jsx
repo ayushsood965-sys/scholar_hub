@@ -70,11 +70,20 @@ const UserVerificationTab = () => {
 
   // Filter logic
   const filteredUsers = users.filter(u => {
+    const courseName = 
+      u.profile?.degreeName || 
+      u.profile?.degreeNameLabel || 
+      (typeof u.profile?.degreeNameId === 'object' ? u.profile?.degreeNameId?.name : '') ||
+      u.profile?.degreeType || '';
+    const academicSession = u.profile?.academicSession || '';
+
     const matchesSearch = 
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()));
+      (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      academicSession.toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesRole = true;
     if (user?.role === 'HOD') {
@@ -113,10 +122,10 @@ const UserVerificationTab = () => {
     {
       header: 'Name / Email',
       accessor: (row) => (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', textAlign: 'right' }}>
           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{row.name}</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start', marginTop: '2px' }}>
-            <span>{row.username}</span>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-end', marginTop: '2px' }}>
+            <span style={{ wordBreak: 'break-all' }}>{row.username}</span>
             <span style={{
               fontSize: '0.65rem',
               fontWeight: 700,
@@ -141,6 +150,35 @@ const UserVerificationTab = () => {
         </span>
       )
     },
+    ...((user?.role === 'HOD' ? hodSubTab === 'STUDENT' : true) ? [{
+      header: 'Course / Session',
+      accessor: (row) => {
+        const degIdStr = row.profile?.degreeNameId ? (typeof row.profile.degreeNameId === 'object' ? row.profile.degreeNameId.name : String(row.profile.degreeNameId)) : '';
+        const isHexId = /^[0-9a-fA-F]{24}$/.test(degIdStr);
+
+        const courseName = 
+          row.profile?.degreeName || 
+          row.profile?.degreeNameLabel || 
+          (typeof row.profile?.degreeNameId === 'object' ? row.profile?.degreeNameId?.name : null) || 
+          (!isHexId && degIdStr ? degIdStr : null) || 
+          row.profile?.degreeTypeName ||
+          row.profile?.degreeType || 
+          (row.profile?.isPhD ? 'Ph.D. Forensic Science' : 'M.Sc. Forensic Science');
+        
+        const session = row.profile?.academicSession || '2026-2027';
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', textAlign: 'right' }}>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+              {courseName}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: 600, marginTop: '2px' }}>
+              {session}
+            </div>
+          </div>
+        );
+      }
+    }] : []),
     {
       header: 'Department',
       accessor: (row) => row.department || '—'
@@ -164,7 +202,7 @@ const UserVerificationTab = () => {
     {
       header: 'Actions',
       accessor: (row) => (
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className="table-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           {/* Unverified users: Show Approve button if email verified, disabled Verify ID button if email unverified */}
           {!row.isVerified && (
             <button 
@@ -334,31 +372,6 @@ const UserVerificationTab = () => {
 
         {/* Control Selectors */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          {/* Role Filter Element */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Role:</span>
-            <select 
-              value={roleFilter} 
-              onChange={e => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #CBD5E1',
-                borderRadius: '12px',
-                padding: '6px 14px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                color: '#1E293B',
-                cursor: 'pointer',
-                outline: 'none'
-              }}
-            >
-              <option value="ALL">All Roles</option>
-              <option value="FACULTY">Faculty</option>
-              <option value="STUDENT">Student</option>
-              {user?.role === 'SUPER_ADMIN' && <option value="HOD">HOD</option>}
-            </select>
-          </div>
-
           {/* Sort Element */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Sort:</span>

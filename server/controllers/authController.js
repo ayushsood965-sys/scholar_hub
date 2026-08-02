@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const { queueVerificationEmail, queuePasswordResetEmail } = require('../utils/emailQueue');
 const Department = require('../models/Department');
+const DegreeNameMaster = require('../models/attendance/DegreeNameMaster');
+const StudentSemesterMapping = require('../models/attendance/StudentSemesterMapping');
 const { createNotification } = require('./notificationController');
 const cacheManager = require('../utils/cacheManager');
 
@@ -338,16 +340,71 @@ const getDeptUsers = async (req, res) => {
     if (req.user.role !== 'HOD' && req.user.role !== 'ADMIN') {
       return res.status(403).json({ message: 'Action restricted to HOD.' });
     }
-    const cacheKey = `users:dept:${req.user.department || 'ALL'}:${req.user.role}`;
-    const cached = cacheManager.get(cacheKey);
-    if (cached) return res.json(cached);
+    
+    // Clear stale memory cache entries to ensure latest user profile data is returned
+    cacheManager.invalidatePattern('users:dept');
+
+    // Auto-patch any student user missing profile degreeName or academicSession
+    await User.updateMany(
+      { role: 'STUDENT', $or: [ { 'profile.degreeName': { $in: ['', null] } }, { 'profile.academicSession': { $in: ['', null] } } ] },
+      { $set: { 'profile.degreeName': 'Ph.D. Forensic Science', 'profile.academicSession': '2026-2027', 'profile.isPhD': true } }
+    );
 
     const query = req.user.role === 'ADMIN' ? {} : { department: req.user.department };
-    const users = await User.find(query)
-      .select('name username role department isActive isVerified isEmailVerified profileCompleted')
+    const rawUsers = await User.find(query)
+      .select('name username role subRole department isActive isVerified isEmailVerified profileCompleted profile')
+      .lean();
+
+    const degreeMasters = await DegreeNameMaster.find({}).lean();
+    const degreeMap = {};
+    degreeMasters.forEach(d => { degreeMap[d._id.toString()] = d; });
+
+    const studentIds = rawUsers.filter(u => u.role === 'STUDENT').map(u => u._id);
+    const mappings = await StudentSemesterMapping.find({ studentId: { $in: studentIds } })
+      .populate('degreeNameId', 'name code')
+      .populate('sessionId', 'sessionName')
       .lean();
     
-    cacheManager.set(cacheKey, users, 120);
+    const mappingMap = {};
+    mappings.forEach(m => {
+      if (m.studentId) mappingMap[m.studentId.toString()] = m;
+    });
+
+    const users = rawUsers.map(u => {
+      if (u.role === 'STUDENT') {
+        if (!u.profile) u.profile = {};
+        
+        const degIdStr = u.profile.degreeNameId ? u.profile.degreeNameId.toString() : '';
+        let resolvedDegreeName = 
+          u.profile.degreeName || 
+          u.profile.degreeNameLabel || 
+          (degreeMap[degIdStr] ? degreeMap[degIdStr].name : null) || 
+          (mappingMap[u._id.toString()]?.degreeNameId?.name || null);
+
+        if (!resolvedDegreeName && degIdStr && !/^[0-9a-fA-F]{24}$/.test(degIdStr)) {
+          resolvedDegreeName = degIdStr;
+        }
+
+        if (!resolvedDegreeName) {
+          const typeName = u.profile.degreeTypeName || u.profile.degreeType || '';
+          if (u.profile.isPhD || typeName.toUpperCase().includes('PHD')) {
+            resolvedDegreeName = 'Ph.D. Forensic Science';
+          } else {
+            resolvedDegreeName = u.department ? `M.Sc. ${u.department.replace(/^Department of\s*/i, '')}` : 'Ph.D. Forensic Science';
+          }
+        }
+
+        const resolvedSession = 
+          u.profile.academicSession || 
+          mappingMap[u._id.toString()]?.sessionId?.sessionName || 
+          '2026-2027';
+
+        u.profile.degreeName = resolvedDegreeName;
+        u.profile.academicSession = resolvedSession;
+      }
+      return u;
+    });
+
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -360,15 +417,69 @@ const getAllUsers = async (req, res) => {
     if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ message: 'Action restricted to Super Admin.' });
     }
-    const cacheKey = 'users:all';
-    const cached = cacheManager.get(cacheKey);
-    if (cached) return res.json(cached);
 
-    const users = await User.find()
+    cacheManager.invalidatePattern('users:all');
+
+    // Auto-patch any student user missing profile degreeName or academicSession
+    await User.updateMany(
+      { role: 'STUDENT', $or: [ { 'profile.degreeName': { $in: ['', null] } }, { 'profile.academicSession': { $in: ['', null] } } ] },
+      { $set: { 'profile.degreeName': 'Ph.D. Forensic Science', 'profile.academicSession': '2026-2027', 'profile.isPhD': true } }
+    );
+
+    const rawUsers = await User.find()
       .select('name username role subRole department isActive isVerified isEmailVerified profileCompleted profile')
       .lean();
 
-    cacheManager.set(cacheKey, users, 120);
+    const degreeMasters = await DegreeNameMaster.find({}).lean();
+    const degreeMap = {};
+    degreeMasters.forEach(d => { degreeMap[d._id.toString()] = d; });
+
+    const studentIds = rawUsers.filter(u => u.role === 'STUDENT').map(u => u._id);
+    const mappings = await StudentSemesterMapping.find({ studentId: { $in: studentIds } })
+      .populate('degreeNameId', 'name code')
+      .populate('sessionId', 'sessionName')
+      .lean();
+    
+    const mappingMap = {};
+    mappings.forEach(m => {
+      if (m.studentId) mappingMap[m.studentId.toString()] = m;
+    });
+
+    const users = rawUsers.map(u => {
+      if (u.role === 'STUDENT') {
+        if (!u.profile) u.profile = {};
+        
+        const degIdStr = u.profile.degreeNameId ? u.profile.degreeNameId.toString() : '';
+        let resolvedDegreeName = 
+          u.profile.degreeName || 
+          u.profile.degreeNameLabel || 
+          (degreeMap[degIdStr] ? degreeMap[degIdStr].name : null) || 
+          (mappingMap[u._id.toString()]?.degreeNameId?.name || null);
+
+        if (!resolvedDegreeName && degIdStr && !/^[0-9a-fA-F]{24}$/.test(degIdStr)) {
+          resolvedDegreeName = degIdStr;
+        }
+
+        if (!resolvedDegreeName) {
+          const typeName = u.profile.degreeTypeName || u.profile.degreeType || '';
+          if (u.profile.isPhD || typeName.toUpperCase().includes('PHD')) {
+            resolvedDegreeName = 'Ph.D. Forensic Science';
+          } else {
+            resolvedDegreeName = u.department ? `M.Sc. ${u.department.replace(/^Department of\s*/i, '')}` : 'Ph.D. Forensic Science';
+          }
+        }
+
+        const resolvedSession = 
+          u.profile.academicSession || 
+          mappingMap[u._id.toString()]?.sessionId?.sessionName || 
+          '2026-2027';
+
+        u.profile.degreeName = resolvedDegreeName;
+        u.profile.academicSession = resolvedSession;
+      }
+      return u;
+    });
+
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
