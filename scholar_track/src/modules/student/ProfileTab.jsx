@@ -2653,8 +2653,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                             className="btn btn-primary" 
                             type="button" 
                             onClick={() => saveSection('general')} 
-                            disabled={loading || !undertakingGeneral}
-                            style={{ opacity: undertakingGeneral ? 1 : 0.5, cursor: undertakingGeneral ? 'pointer' : 'not-allowed' }}
+                            disabled={loading}
+                            style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
                           >
                             <Save size={16} /> {!isPersonalInfoSavedState ? 'Save Personal Info & Proceed to Academic Qualifications' : 'Save General Details'}
                           </button>

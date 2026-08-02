@@ -2058,7 +2058,7 @@ const StaffProfileTab = ({ thesis }) => {
                       <button type="button" onClick={() => setIsEditingPersonal(false)} style={btnSecondaryStyle}>
                         Cancel
                       </button>
-                      <button type="submit" disabled={loading || !undertakingPersonal} style={{ ...btnPrimaryStyle, opacity: undertakingPersonal ? 1 : 0.5, cursor: undertakingPersonal ? 'pointer' : 'not-allowed' }}>
+                      <button type="submit" disabled={loading} style={{ ...btnPrimaryStyle, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
                         {loading ? 'Saving...' : 'Save Info'}
                       </button>
                     </div>

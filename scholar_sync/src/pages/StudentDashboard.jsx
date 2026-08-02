@@ -11545,9 +11545,9 @@ const ProfileTab = () => {
             <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #E5E7EB' }}>
               <button
                 type="submit"
-                disabled={loading || !undertakingGeneral}
+                disabled={loading}
                 className="btn-primary"
-                style={{ background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', opacity: undertakingGeneral ? 1 : 0.5, cursor: undertakingGeneral ? 'pointer' : 'not-allowed' }}
+                style={{ background: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
               >
                 {loading ? 'Saving Changes...' : (user?.profile?.dob ? '💾 Save General Info' : '💾 Save Personal Info & Proceed to Academic Qualifications')}
               </button>
