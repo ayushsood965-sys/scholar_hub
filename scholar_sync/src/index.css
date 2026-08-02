@@ -984,7 +984,7 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 250px;
+  width: 265px;
   background: linear-gradient(180deg, #F0FDF4 0%, #E2F8EC 50%, #D3F2E3 100%);
   color: var(--color-text-primary);
   display: flex;

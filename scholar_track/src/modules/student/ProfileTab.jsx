@@ -1533,7 +1533,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         { key: 'awards', label: 'Awards', Icon: Award },
         { key: 'memberships', label: 'Professional Bodies', Icon: Users },
         { key: 'committees', label: 'Committees', Icon: Bookmark },
-        { key: 'projects', label: 'Projects', Icon: Folder },
+        { key: 'projects', label: 'R&D Projects', Icon: Folder },
         { key: 'publications', label: 'Research Publications', Icon: BookOpen },
         { key: 'conferenceProceedings', label: 'Conference Proceedings', Icon: FileText },
         { key: 'workshops', label: 'Workshops', Icon: Users },
@@ -3816,7 +3816,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Folder size={20} style={{ color: 'var(--color-primary)' }} />
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Research Projects</h3>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>R&D Projects</h3>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {projectsList.length > 0 && (
@@ -4224,7 +4224,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                           { key: 'workshops', label: 'Workshops' },
                           { key: 'symposiums', label: 'Symposiums' },
                           { key: 'training', label: 'Training (FDP/STTP)' },
-                          { key: 'projects', label: 'Research Projects' },
+                          { key: 'projects', label: 'R&D Projects' },
                           { key: 'ipr', label: 'IPR / Patents', mandatory: true }
                         ] : []),
                         { key: 'awards', label: 'Awards & Achievements' },

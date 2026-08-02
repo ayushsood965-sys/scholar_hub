@@ -462,7 +462,7 @@ const StaffProfileTab = ({ thesis }) => {
     { key: 'theses', label: 'Theses Guidance', Icon: FileText },
     { key: 'memberships', label: 'Professional Bodies', Icon: Users },
     { key: 'committees', label: 'Committees', Icon: Bookmark },
-    { key: 'projects', label: 'Projects', Icon: Folder },
+    { key: 'projects', label: 'R&D Projects', Icon: Folder },
     { key: 'publications', label: 'Research Publications', Icon: BookOpen },
     { key: 'conferenceProceedings', label: 'Conference Proceedings', Icon: FileText },
     { key: 'workshops', label: 'Workshops', Icon: Users },
@@ -3329,7 +3329,7 @@ const StaffProfileTab = ({ thesis }) => {
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Folder size={20} style={{ color: '#1A5A3B' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Research Projects</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>R&D Projects</h3>
             </div>
             <div className="section-header-buttons">
               {projectsList.length > 0 && (
@@ -4028,7 +4028,7 @@ const StaffProfileTab = ({ thesis }) => {
                   { key: 'workshops', label: 'Workshops' },
                   { key: 'symposiums', label: 'Symposiums' },
                   { key: 'training', label: 'Training (FDP/STTP)' },
-                  { key: 'projects', label: 'Research Projects' },
+                  { key: 'projects', label: 'R&D Projects' },
                   { key: 'awards', label: 'Awards & Achievements' },
                   { key: 'ipr', label: 'IPR / Patents' },
                   { key: 'thesesSupervised', label: 'Guided Ph.D. Theses' },

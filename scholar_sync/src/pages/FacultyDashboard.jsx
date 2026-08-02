@@ -355,7 +355,7 @@ const Sidebar = ({ activeTab, setActiveTab, subRole, isVerified, badgeCounts = {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                 <Icon className="nav-icon" style={{ flexShrink: 0 }} />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.81rem' }}>{label}</span>
               </div>
               {disabled ? '🔒' : (count > 0 && <span className="sidebar-badge">{count}</span>)}
             </button>
