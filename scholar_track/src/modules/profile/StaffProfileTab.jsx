@@ -37,8 +37,12 @@ const StaffProfileTab = ({ thesis }) => {
     };
   }, []);
 
-  // States and hooks to load candidate's verified publications & IPRs from the research outputs collection
+  // States and hooks to load candidate's verified research outputs from the collection
   const [verifiedPubs, setVerifiedPubs] = useState([]);
+  const [verifiedConferences, setVerifiedConferences] = useState([]);
+  const [verifiedWorkshops, setVerifiedWorkshops] = useState([]);
+  const [verifiedSymposiums, setVerifiedSymposiums] = useState([]);
+  const [verifiedTrainings, setVerifiedTrainings] = useState([]);
   const [verifiedIprs, setVerifiedIprs] = useState([]);
   const [loadingPubsAndIprs, setLoadingPubsAndIprs] = useState(false);
 
@@ -51,16 +55,17 @@ const StaffProfileTab = ({ thesis }) => {
           const res = await axios.get(`${API_URL}/publications/thesis/${thesis._id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          const ips = res.data.filter(p => 
-            (p.type === 'IPR' || p.type === 'PATENT') && p.status === 'VERIFIED'
-          );
-          const pubs = res.data.filter(p => 
-            (p.type === 'JOURNAL' || p.type === 'CONFERENCE') && p.status === 'VERIFIED'
-          );
-          setVerifiedIprs(ips);
-          setVerifiedPubs(pubs);
+          const rawItems = Array.isArray(res.data) ? res.data : (res.data.data || []);
+          const verifiedOnly = rawItems.filter(p => p.status === 'VERIFIED');
+
+          setVerifiedPubs(verifiedOnly.filter(p => p.type === 'JOURNAL' || p.type === 'PUBLICATION'));
+          setVerifiedConferences(verifiedOnly.filter(p => p.type === 'CONFERENCE' || p.type === 'CONFERENCE_PROCEEDINGS'));
+          setVerifiedWorkshops(verifiedOnly.filter(p => p.type === 'WORKSHOP'));
+          setVerifiedSymposiums(verifiedOnly.filter(p => p.type === 'SYMPOSIUM'));
+          setVerifiedTrainings(verifiedOnly.filter(p => p.type === 'TRAINING'));
+          setVerifiedIprs(verifiedOnly.filter(p => p.type === 'IPR' || p.type === 'PATENT'));
         } catch (err) {
-          console.error("Error fetching candidate verified publications and IPRs:", err);
+          console.error("Error fetching candidate verified research outputs:", err);
         } finally {
           setLoadingPubsAndIprs(false);
         }
@@ -85,6 +90,10 @@ const StaffProfileTab = ({ thesis }) => {
     committees: useRef(null),
     projects: useRef(null),
     publications: useRef(null),
+    conferenceProceedings: useRef(null),
+    workshops: useRef(null),
+    symposiums: useRef(null),
+    training: useRef(null),
     ipr: useRef(null),
     settings: useRef(null)
   };
@@ -173,14 +182,17 @@ const StaffProfileTab = ({ thesis }) => {
     }
     
     .timeline-sidebar-panel {
-      width: 260px !important;
+      width: 255px !important;
       position: sticky !important;
-      top: 90px !important;
-      height: fit-content !important;
+      top: 15px !important;
+      max-height: calc(100vh - 30px) !important;
+      overflow-y: auto !important;
       display: flex !important;
       flex-direction: column !important;
-      gap: 4px !important;
+      gap: 2px !important;
       flex-shrink: 0 !important;
+      scrollbar-width: thin !important;
+      padding-right: 2px !important;
     }
     
     .profile-details-column {
@@ -448,7 +460,11 @@ const StaffProfileTab = ({ thesis }) => {
     { key: 'memberships', label: 'Professional Bodies', Icon: Users },
     { key: 'committees', label: 'Committees', Icon: Bookmark },
     { key: 'projects', label: 'Projects', Icon: Folder },
-    { key: 'publications', label: 'Publications/Conferences', Icon: BookOpen },
+    { key: 'publications', label: 'Publications', Icon: BookOpen },
+    { key: 'conferenceProceedings', label: 'Conference Proceedings', Icon: FileText },
+    { key: 'workshops', label: 'Workshops', Icon: Users },
+    { key: 'symposiums', label: 'Symposiums', Icon: Lightbulb },
+    { key: 'training', label: 'Training (FDP/STTP)', Icon: GraduationCap },
     { key: 'ipr', label: 'Intellectual Property Rights', Icon: Copyright },
     { key: 'settings', label: 'Privacy Settings', Icon: Settings }
   ].filter(item => !(user?.role === 'STUDENT' && item.key === 'theses'));
@@ -1551,16 +1567,16 @@ const StaffProfileTab = ({ thesis }) => {
       
       {/* LEFT: Sticky Timeline Side Panel */}
       <div className="timeline-sidebar-panel">
-        <h4 style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 800, textTransform: 'uppercase', paddingLeft: '12px', marginBottom: '8px', letterSpacing: '0.05em' }}>
+        <h4 style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 800, textTransform: 'uppercase', paddingLeft: '10px', marginBottom: '6px', letterSpacing: '0.05em' }}>
           Profile Timeline
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
           {/* Vertical Connective Line */}
           <div style={{
             position: 'absolute',
-            left: '20px',
-            top: '20px',
-            bottom: '20px',
+            left: '15px',
+            top: '14px',
+            bottom: '14px',
             width: '2px',
             background: '#e5e7eb',
             zIndex: 0
@@ -1576,11 +1592,11 @@ const StaffProfileTab = ({ thesis }) => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  padding: '10px 14px',
+                  gap: '10px',
+                  padding: '5px 10px',
                   background: 'none',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '7px',
                   width: '100%',
                   textAlign: 'left',
                   cursor: 'pointer',
@@ -1594,15 +1610,16 @@ const StaffProfileTab = ({ thesis }) => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '14px',
-                  height: '14px',
+                  width: '12px',
+                  height: '12px',
                   borderRadius: '50%',
                   background: isActive ? '#1A5A3B' : '#e5e7eb',
-                  boxShadow: isActive ? '0 0 0 4px rgba(26,90,59,0.15)' : 'none',
-                  transition: 'all 0.2s'
+                  boxShadow: isActive ? '0 0 0 3px rgba(26,90,59,0.15)' : 'none',
+                  transition: 'all 0.2s',
+                  flexShrink: 0
                 }} />
-                <item.Icon size={16} />
-                <span style={{ fontSize: '0.85rem' }}>{item.label}</span>
+                <item.Icon size={14} style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '0.8rem', flex: 1, lineHeight: 1.25 }}>{item.label}</span>
               </button>
             );
           })}
@@ -3957,7 +3974,11 @@ const StaffProfileTab = ({ thesis }) => {
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', fontSize: '0.85rem' }}>
                 {[
-                  { key: 'publications', label: 'Publications/Conferences' },
+                  { key: 'publications', label: 'Publications' },
+                  { key: 'conferenceProceedings', label: 'Conference Proceedings' },
+                  { key: 'workshops', label: 'Workshops' },
+                  { key: 'symposiums', label: 'Symposiums' },
+                  { key: 'training', label: 'Training (FDP/STTP)' },
                   { key: 'projects', label: 'Research Projects' },
                   { key: 'awards', label: 'Awards & Achievements' },
                   { key: 'ipr', label: 'IPR / Patents' },

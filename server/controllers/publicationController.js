@@ -5,7 +5,11 @@ const paginate = require('../utils/paginate');
 // POST /api/publications — Submit a publication log with PDF proof file
 const submitPublication = async (req, res) => {
   try {
-    const { thesisId, title, journalName, issn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, volume, issue, pages } = req.body;
+    const { 
+      thesisId, title, journalName, issn, isbn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, 
+      volume, issue, pages, publicationCategory, scope, role, mode, presentationType, conferenceName, proceedingsTitle, 
+      organizer, venueLocation, trainingType, duration, startDate, endDate, authors, inventors, applicant, applicationNo, impactFactor 
+    } = req.body;
     const thesis = await Thesis.findById(thesisId);
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
@@ -20,20 +24,39 @@ const submitPublication = async (req, res) => {
       scholarId: thesis.scholarId,
       thesisId,
       title,
-      journalName,
-      issn,
+      journalName: journalName || '',
+      issn: issn || '',
+      isbn: isbn || '',
       publicationDate: publicationDate || new Date(),
       paperLink: paperLink || doiUrl || '',
       doiUrl: doiUrl || '',
       attachmentUrl: documentUrl, // legacy compatibility
       documentUrl, // new Phase 5 field
-      type: type || 'JOURNAL',
+      type: type || 'PUBLICATION',
       iprType: iprType || '',
       itemStatus: itemStatus || '',
       indexing: indexing || '',
       volume: volume || '',
       issue: issue || '',
       pages: pages || '',
+      publicationCategory: publicationCategory || '',
+      scope: scope || '',
+      role: role || '',
+      mode: mode || '',
+      presentationType: presentationType || '',
+      conferenceName: conferenceName || '',
+      proceedingsTitle: proceedingsTitle || '',
+      organizer: organizer || '',
+      venueLocation: venueLocation || '',
+      trainingType: trainingType || '',
+      duration: duration || '',
+      startDate: startDate || null,
+      endDate: endDate || null,
+      authors: authors || '',
+      inventors: inventors || '',
+      applicant: applicant || '',
+      applicationNo: applicationNo || '',
+      impactFactor: impactFactor || '',
       status: 'DRAFT'
     });
 
@@ -42,7 +65,7 @@ const submitPublication = async (req, res) => {
     // Log to thesis audit
     thesis.auditLog.push({
       action: 'PUBLICATION_SUBMITTED',
-      note: `Logged publication: "${title}" in ${journalName}`
+      note: `Logged research output (${type || 'PUBLICATION'}): "${title}"`
     });
     await thesis.save();
 
@@ -150,7 +173,11 @@ const verifyPublication = async (req, res) => {
 const updatePublication = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, journalName, issn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, volume, issue, pages } = req.body;
+    const { 
+      title, journalName, issn, isbn, publicationDate, paperLink, type, doiUrl, iprType, itemStatus, indexing, 
+      volume, issue, pages, publicationCategory, scope, role, mode, presentationType, conferenceName, proceedingsTitle, 
+      organizer, venueLocation, trainingType, duration, startDate, endDate, authors, inventors, applicant, applicationNo, impactFactor 
+    } = req.body;
     const pub = await Publication.findById(id);
     if (!pub) return res.status(404).json({ message: 'Publication not found' });
 
@@ -173,18 +200,37 @@ const updatePublication = async (req, res) => {
     }
 
     pub.title = title || pub.title;
-    pub.journalName = journalName || pub.journalName;
+    pub.journalName = journalName !== undefined ? journalName : pub.journalName;
     pub.issn = issn !== undefined ? issn : pub.issn;
+    pub.isbn = isbn !== undefined ? isbn : pub.isbn;
     if (publicationDate) pub.publicationDate = publicationDate;
     pub.paperLink = paperLink || doiUrl || pub.paperLink || '';
     pub.doiUrl = doiUrl !== undefined ? doiUrl : pub.doiUrl;
     pub.type = type || pub.type;
-    if (type === 'IPR') pub.iprType = iprType;
-    pub.itemStatus = itemStatus || pub.itemStatus;
+    pub.iprType = iprType !== undefined ? iprType : pub.iprType;
+    pub.itemStatus = itemStatus !== undefined ? itemStatus : pub.itemStatus;
     pub.indexing = indexing !== undefined ? indexing : pub.indexing;
     pub.volume = volume !== undefined ? volume : pub.volume;
     pub.issue = issue !== undefined ? issue : pub.issue;
     pub.pages = pages !== undefined ? pages : pub.pages;
+    pub.publicationCategory = publicationCategory !== undefined ? publicationCategory : pub.publicationCategory;
+    pub.scope = scope !== undefined ? scope : pub.scope;
+    pub.role = role !== undefined ? role : pub.role;
+    pub.mode = mode !== undefined ? mode : pub.mode;
+    pub.presentationType = presentationType !== undefined ? presentationType : pub.presentationType;
+    pub.conferenceName = conferenceName !== undefined ? conferenceName : pub.conferenceName;
+    pub.proceedingsTitle = proceedingsTitle !== undefined ? proceedingsTitle : pub.proceedingsTitle;
+    pub.organizer = organizer !== undefined ? organizer : pub.organizer;
+    pub.venueLocation = venueLocation !== undefined ? venueLocation : pub.venueLocation;
+    pub.trainingType = trainingType !== undefined ? trainingType : pub.trainingType;
+    pub.duration = duration !== undefined ? duration : pub.duration;
+    if (startDate) pub.startDate = startDate;
+    if (endDate) pub.endDate = endDate;
+    pub.authors = authors !== undefined ? authors : pub.authors;
+    pub.inventors = inventors !== undefined ? inventors : pub.inventors;
+    pub.applicant = applicant !== undefined ? applicant : pub.applicant;
+    pub.applicationNo = applicationNo !== undefined ? applicationNo : pub.applicationNo;
+    pub.impactFactor = impactFactor !== undefined ? impactFactor : pub.impactFactor;
     pub.documentUrl = documentUrl;
     pub.attachmentUrl = documentUrl; // legacy compatibility
 

@@ -2342,36 +2342,52 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                         })()}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #64748B)', margin: '6px 0' }}>
-                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Office/Org:' : p.type === 'CONFERENCE' ? 'Conference Name:' : 'Journal/Publisher:'}</strong> {p.journalName}</div>
-                        <div><strong>Type:</strong> {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type} {p.itemStatus && <span style={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem', marginLeft: 4 }}>({p.itemStatus})</span>}</div>
-                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR Number:' : p.type === 'CONFERENCE' ? 'Location/Venue:' : 'ISSN:'}</strong> {p.issn || 'N/A'}</div>
-                        <div><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'Filing/Award Date:' : 'Date:'}</strong> {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}</div>
+                        <div><strong>Organization / Publisher:</strong> {p.organizer || p.journalName || 'N/A'}</div>
+                        <div><strong>Type:</strong> {p.type === 'IPR' && p.iprType ? `IPR: ${p.iprType}` : p.type === 'PATENT' ? 'IPR: Patent' : p.type === 'CONFERENCE_PROCEEDINGS' ? 'Conference Proceedings' : p.type} {p.itemStatus && <span style={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem', marginLeft: 4 }}>({p.itemStatus})</span>}</div>
+                        <div><strong>Scope / Level:</strong> {p.scope || 'N/A'}</div>
+                        <div><strong>Role:</strong> {p.role || p.presentationType || 'N/A'}</div>
+                        <div><strong>Date:</strong> {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : p.startDate ? new Date(p.startDate).toLocaleDateString() : 'N/A'}</div>
 
                         {(p.type === 'PATENT' || p.type === 'IPR') && (
                           <>
-                            <div><strong>Inventors/Applicants:</strong> {p.volume || 'N/A'}</div>
-                            <div><strong>App/Grant No:</strong> {p.issue || 'N/A'}</div>
+                            <div><strong>Inventors:</strong> {p.inventors || p.volume || 'N/A'}</div>
+                            <div><strong>App/Grant No:</strong> {p.applicationNo || p.issue || 'N/A'}</div>
                             <div><strong>Country/Region:</strong> {p.pages || 'N/A'}</div>
                           </>
                         )}
                         
-                        {p.type === 'JOURNAL' && (
+                        {(p.type === 'JOURNAL' || p.type === 'PUBLICATION') && (
                           <>
+                            <div><strong>Category:</strong> {p.publicationCategory || 'Journal Paper'}</div>
                             <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
-                            <div><strong>Volume:</strong> {p.volume || 'N/A'}</div>
-                            <div><strong>Issue:</strong> {p.issue || 'N/A'}</div>
+                            <div><strong>Volume / Issue:</strong> {p.volume || 'N/A'} / {p.issue || 'N/A'}</div>
                             <div><strong>Pages:</strong> {p.pages || 'N/A'}</div>
                           </>
                         )}
 
-                        {p.type === 'CONFERENCE' && (
+                        {(p.type === 'CONFERENCE' || p.type === 'CONFERENCE_PROCEEDINGS') && (
                           <>
+                            <div><strong>Conference:</strong> {p.conferenceName || p.journalName || 'N/A'}</div>
                             <div><strong>Indexing:</strong> {p.indexing || 'N/A'}</div>
-                            <div><strong>Organizer:</strong> {p.volume || 'N/A'}</div>
+                            <div><strong>Venue:</strong> {p.venueLocation || p.issn || 'N/A'}</div>
+                          </>
+                        )}
+
+                        {(p.type === 'WORKSHOP' || p.type === 'SYMPOSIUM') && (
+                          <>
+                            <div><strong>Duration / Mode:</strong> {p.duration || 'N/A'} ({p.mode || 'Offline'})</div>
+                            <div><strong>Venue:</strong> {p.venueLocation || 'N/A'}</div>
+                          </>
+                        )}
+
+                        {p.type === 'TRAINING' && (
+                          <>
+                            <div><strong>Training Type:</strong> {p.trainingType || 'FDP'}</div>
+                            <div><strong>Duration:</strong> {p.duration || 'N/A'}</div>
                           </>
                         )}
                         
-                        {p.doiUrl && <div style={{ gridColumn: 'span 2' }}><strong>{p.type === 'PATENT' || p.type === 'IPR' ? 'IPR ID/Ref:' : p.type === 'CONFERENCE' ? 'Proceedings Link:' : 'DOI:'}</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
+                        {p.doiUrl && <div style={{ gridColumn: 'span 2' }}><strong>Link / DOI:</strong> <a href={p.paperLink || `https://doi.org/${p.doiUrl}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'underline' }}>{p.doiUrl}</a></div>}
                       </div>
                       {p.documentUrl && (
                         <a href={`${API_BASE_URL}${p.documentUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: '#3B82F6', fontWeight: 600, display: 'inline-block', marginBottom: 8 }}>

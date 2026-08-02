@@ -2142,22 +2142,25 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         <div className="timeline-sidebar-panel">
           <div style={{
             position: 'sticky',
-            top: '92px',
+            top: '15px',
+            maxHeight: 'calc(100vh - 30px)',
+            overflowY: 'auto',
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
             borderRadius: '12px',
-            padding: '20px 16px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+            padding: '12px 10px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            scrollbarWidth: 'thin'
           }}>
-            <h4 style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: 700, marginBottom: '20px', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+            <h4 style={{ color: '#1e293b', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '6px', letterSpacing: '0.05em' }}>
               Profile Progress
             </h4>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', position: 'relative' }}>
               {/* Stepper Vertical Track */}
               <div style={{
                 position: 'absolute',
-                left: '15px',
+                left: '12px',
                 top: '12px',
                 bottom: '12px',
                 width: '2px',
@@ -2181,49 +2184,49 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                       border: 'none',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: '8px',
                       cursor: 'pointer',
                       width: '100%',
                       textAlign: 'left',
-                      padding: '4px 0',
+                      padding: '3px 4px',
                       outline: 'none',
                       zIndex: 2
                     }}
                   >
                     <div style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '22px',
+                      height: '22px',
                       borderRadius: '50%',
                       background: isActive ? '#1A5A3B' : isCompleted ? '#e6f4ea' : '#f8fafc',
-                      border: `2px solid ${isActive ? '#1A5A3B' : isCompleted ? '#10b981' : '#cbd5e1'}`,
+                      border: `1.5px solid ${isActive ? '#1A5A3B' : isCompleted ? '#10b981' : '#cbd5e1'}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: isActive ? '#ffffff' : isCompleted ? '#10b981' : '#64748b',
                       fontWeight: 700,
-                      fontSize: '0.9rem',
-                      transition: 'all 0.25s'
+                      transition: 'all 0.25s',
+                      flexShrink: 0
                     }}>
-                      <item.Icon size={14} />
+                      <item.Icon size={12} />
                     </div>
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{
                         display: 'block',
-                        fontSize: '0.82rem',
+                        fontSize: '0.78rem',
                         fontWeight: isActive ? 700 : 500,
                         color: isActive ? '#1A5A3B' : '#475569',
-                        transition: 'all 0.25s'
+                        transition: 'all 0.25s',
+                        lineHeight: 1.25,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
                       }}>
                         {item.label}
                       </span>
-                      <span style={{
-                        display: 'block',
-                        fontSize: '0.7rem',
-                        color: isCompleted ? '#10b981' : '#94a3b8'
-                      }}>
-                        {isCompleted ? 'Completed' : 'Pending'}
-                      </span>
                     </div>
+                    {isCompleted && (
+                      <span style={{ color: '#10b981', fontSize: '0.78rem', fontWeight: 700 }}>✓</span>
+                    )}
                   </button>
                 );
               })}
