@@ -1597,6 +1597,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
     .profile-layout-container {
       display: flex;
+      align-items: flex-start;
       gap: 28px;
       max-width: 1280px;
       margin: 0 auto;
@@ -1604,6 +1605,15 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
       position: relative;
       width: 100%;
       box-sizing: border-box;
+    }
+
+    .timeline-sidebar-panel {
+      width: 255px;
+      position: sticky;
+      top: calc(var(--header-height, 70px) + 15px);
+      align-self: flex-start;
+      flex-shrink: 0;
+      z-index: 10;
     }
 
     .card, .clay-card, .glass-transparent {
@@ -2146,8 +2156,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         <div className="timeline-sidebar-panel">
           <div style={{
             position: 'sticky',
-            top: '15px',
-            maxHeight: 'calc(100vh - 30px)',
+            top: 'calc(var(--header-height, 70px) + 15px)',
+            maxHeight: 'calc(100vh - var(--header-height, 70px) - 30px)',
             overflowY: 'auto',
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',

@@ -8659,13 +8659,14 @@ const ProfileTab = () => {
 
   const profileLayoutCSS = `
     .profile-tab-wrapper { padding: 24px; }
-    .profile-layout-container { display:flex; gap:28px; max-width:1280px; margin:0 auto; padding:12px; position:relative; }
+    .profile-layout-container { display:flex; align-items:flex-start; gap:28px; max-width:1280px; margin:0 auto; padding:12px; position:relative; }
     .card.active-card { border-color:#133A26 !important; box-shadow:0 6px 20px rgba(19,58,38,0.12) !important; }
     .timeline-sidebar-panel {
       width: 255px;
       position: sticky;
-      top: 15px;
-      max-height: calc(100vh - 30px);
+      top: calc(var(--header-height, 70px) + 15px);
+      max-height: calc(100vh - var(--header-height, 70px) - 30px);
+      align-self: flex-start;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -8673,6 +8674,7 @@ const ProfileTab = () => {
       flex-shrink: 0;
       scrollbar-width: thin;
       padding-right: 2px;
+      z-index: 10;
     }
     .profile-details-column { flex:1; display:flex; flex-direction:column; gap:24px; min-width:0; }
     .mobile-milestones-bar {
