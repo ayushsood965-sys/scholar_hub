@@ -57,6 +57,18 @@ const UserVerificationTab = () => {
     }
   };
 
+  const handleToggleAllowProfileEdit = async (id, currentAllowState) => {
+    try {
+      const res = await api.put(`/auth/users/${id}/allow-profile-edit`, {
+        allowProfileEdit: !currentAllowState
+      });
+      toast.success(res.data?.message || 'Profile editing permission updated');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error updating profile edit permission');
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to permanently delete this user account? This cannot be undone.')) return;
     try {
@@ -230,7 +242,7 @@ const UserVerificationTab = () => {
             </button>
           )}
 
-          {/* Verified users: Show Disable ID / Enable ID button only */}
+          {/* Verified users: Show Disable ID / Enable ID button */}
           {row.isVerified && (
             <button 
               className={`btn btn-sm ${row.isActive ? 'btn-outline-danger' : 'btn-outline-success'}`}
@@ -243,6 +255,23 @@ const UserVerificationTab = () => {
               onClick={() => handleToggleActive(row._id)}
             >
               {row.isActive ? 'Disable ID' : 'Enable ID'}
+            </button>
+          )}
+
+          {/* Verified Students: Show Allow Edit / Disable Edit toggle */}
+          {row.isVerified && row.role === 'STUDENT' && (
+            <button 
+              className={`btn btn-sm ${row.profile?.allowProfileEdit ? 'btn-outline-warning' : 'btn-outline-primary'}`}
+              style={{ 
+                padding: '6px 12px',
+                color: row.profile?.allowProfileEdit ? '#D97706' : '#0284C7',
+                borderColor: row.profile?.allowProfileEdit ? '#D97706' : '#0284C7',
+                fontWeight: 700
+              }}
+              onClick={() => handleToggleAllowProfileEdit(row._id, row.profile?.allowProfileEdit)}
+              title={row.profile?.allowProfileEdit ? "Click to lock student profile editing" : "Click to unlock student profile editing"}
+            >
+              {row.profile?.allowProfileEdit ? 'Disable Edit' : 'Allow Edit'}
             </button>
           )}
 

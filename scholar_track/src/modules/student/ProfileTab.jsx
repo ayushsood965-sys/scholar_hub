@@ -31,8 +31,9 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [degreeNameId, setDegreeNameId] = useState('');
   const [isPhD, setIsPhD] = useState(false);
 
+  const allowProfileEdit = user?.profile?.allowProfileEdit === true || profile?.profile?.allowProfileEdit === true;
   const thesisActive = thesis && thesis.status !== 'REJECTED' ? thesis : null;
-  const isSubmitted = !!thesisActive || !!profile?.profileCompleted || !!user?.profileCompleted;
+  const isSubmitted = !allowProfileEdit && (!!thesisActive || !!profile?.profileCompleted || !!user?.profileCompleted || !!profile?.isVerified || !!user?.isVerified);
   const isVerifiedPhD = thesisActive && thesisActive.enrollmentVerified === true;
   const isPersonalInfoSaved = isPhD ? !!profile?.profile?.dob : (!!profile?.profile?.phoneNumber && !!profile?.profile?.address);
 
@@ -2400,13 +2401,18 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-primary)', margin: 0 }}>General Information</h3>
-                    {(isSubmitted || isVerifiedPhD || profile?.isVerified) && (
+                    {isSubmitted && (
                       <span style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #FCD34D' }}>
                         <Lock size={12} /> Locked (HOD Approved)
                       </span>
                     )}
+                    {allowProfileEdit && (
+                      <span style={{ background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #6EE7B7' }}>
+                        ✏️ Profile Editing Unlocked by HOD
+                      </span>
+                    )}
                   </div>
-                  {!editModes.general && !(isSubmitted || isVerifiedPhD || profile?.isVerified) && (
+                  {!editModes.general && !isSubmitted && (
                     <button className="btn btn-primary" type="button" onClick={() => setEditModes({ ...editModes, general: true })}>
                       ✏️ Edit General Info
                     </button>

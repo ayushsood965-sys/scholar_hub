@@ -346,8 +346,8 @@ const getDeptUsers = async (req, res) => {
 
     // Auto-patch any student user missing profile degreeName or academicSession
     await User.updateMany(
-      { role: 'STUDENT', $or: [ { 'profile.degreeName': { $in: ['', null] } }, { 'profile.academicSession': { $in: ['', null] } } ] },
-      { $set: { 'profile.degreeName': 'Ph.D. Forensic Science', 'profile.academicSession': '2026-2027', 'profile.isPhD': true } }
+      { role: 'STUDENT', 'profile.isPhD': true, $or: [ { 'profile.degreeName': { $in: ['', null] } }, { 'profile.academicSession': { $in: ['', null] } } ] },
+      { $set: { 'profile.degreeName': 'Ph.D. Forensic Science', 'profile.academicSession': '2026-2027' } }
     );
 
     const query = req.user.role === 'ADMIN' ? {} : { department: req.user.department };
@@ -422,8 +422,8 @@ const getAllUsers = async (req, res) => {
 
     // Auto-patch any student user missing profile degreeName or academicSession
     await User.updateMany(
-      { role: 'STUDENT', $or: [ { 'profile.degreeName': { $in: ['', null] } }, { 'profile.academicSession': { $in: ['', null] } } ] },
-      { $set: { 'profile.degreeName': 'Ph.D. Forensic Science', 'profile.academicSession': '2026-2027', 'profile.isPhD': true } }
+      { role: 'STUDENT', 'profile.isPhD': true, $or: [ { 'profile.degreeName': { $in: ['', null] } }, { 'profile.academicSession': { $in: ['', null] } } ] },
+      { $set: { 'profile.degreeName': 'Ph.D. Forensic Science', 'profile.academicSession': '2026-2027' } }
     );
 
     const rawUsers = await User.find()
@@ -1221,10 +1221,48 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// PUT /api/auth/users/:id/allow-profile-edit — HOD / Admin toggles profile edit permission for a student
+const toggleAllowProfileEdit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const targetUser = await User.findById(id);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (req.user.role === 'HOD' && req.user.department !== targetUser.department) {
+      return res.status(403).json({ message: 'Not authorized. Can only manage users in your own department.' });
+    }
+
+    let targetState = req.body.allowProfileEdit;
+    if (typeof targetState !== 'boolean') {
+      targetState = !(targetUser.profile?.allowProfileEdit);
+    }
+
+    targetUser.profile = targetUser.profile || {};
+    targetUser.profile.allowProfileEdit = targetState;
+    targetUser.markModified('profile');
+    await targetUser.save();
+
+    cacheManager.invalidatePattern('users:');
+
+    res.json({
+      success: true,
+      allowProfileEdit: targetState,
+      message: targetState
+        ? `Profile editing UNLOCKED for ${targetUser.name}.`
+        : `Profile editing LOCKED for ${targetUser.name}.`,
+      user: targetUser
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/auth/logout
 const logout = async (req, res) => {
   res.clearCookie('token', getCookieOptions(req));
   res.json({ success: true, message: 'Logged out successfully' });
 };
 
-module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword, logout };
+module.exports = { login, register, getFacultyList, updateProfile, toggleUserActive, toggleAllowProfileEdit, getDeptUsers, getAllUsers, adminCreateUser, deleteUser, uploadAvatar, uploadDocument, verifyUser, rejectUser, updateUserProfileByHod, getMe, getStudentsFiltered, uploadStudentDocumentByAdmin, verifyEmail, resendVerificationEmail, forgotPassword, verifyResetToken, resetPassword, logout };
