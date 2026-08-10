@@ -31,6 +31,11 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const [degreeNameId, setDegreeNameId] = useState('');
   const [isPhD, setIsPhD] = useState(false);
 
+  const thesisActive = thesis && thesis.status !== 'REJECTED' ? thesis : null;
+  const isSubmitted = !!thesisActive || !!profile?.profileCompleted || !!user?.profileCompleted;
+  const isVerifiedPhD = thesisActive && thesisActive.enrollmentVerified === true;
+  const isPersonalInfoSaved = isPhD ? !!profile?.profile?.dob : (!!profile?.profile?.phoneNumber && !!profile?.profile?.address);
+
   // Masters lists for non-PhD
   const [degreeNames, setDegreeNames] = useState([]);
   const [degreeTypes, setDegreeTypes] = useState([]);
@@ -381,15 +386,17 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
           api.get('/auth/faculty').catch(() => ({ data: [] })),
           api.get('/attendance/public/masters/category-gender').catch(() => ({ data: [] }))
         ]);
-        setDegreeNames(nameRes.data);
-        setDegreeTypes(typeRes.data);
-        setSessions(sessRes.data);
-        setCategories(cgRes.data.filter(d => d.type === 'CATEGORY'));
-        setGenders(cgRes.data.filter(d => d.type === 'GENDER'));
+        setDegreeNames(Array.isArray(nameRes.data) ? nameRes.data : []);
+        setDegreeTypes(Array.isArray(typeRes.data) ? typeRes.data : []);
+        setSessions(Array.isArray(sessRes.data) ? sessRes.data : []);
+
+        const cgData = Array.isArray(cgRes.data) ? cgRes.data : [];
+        setCategories(cgData.filter(d => d && d.type === 'CATEGORY'));
+        setGenders(cgData.filter(d => d && d.type === 'GENDER'));
 
         // Filter supervisors in the student's department
-        if (user?.department) {
-          const deptFaculty = facRes.data.filter(f => f.department === user.department);
+        if (user?.department && Array.isArray(facRes.data)) {
+          const deptFaculty = facRes.data.filter(f => f && f.department === user.department);
           setFaculties(deptFaculty);
         }
       } catch (e) {
@@ -400,8 +407,8 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   }, [user]);
 
   useEffect(() => {
-    if (isPhD && degreeTypes.length > 0 && !degreeTypeId) {
-      const phdType = degreeTypes.find(t => t.code === 'PHD' || t.name?.toLowerCase()?.includes('phd'));
+    if (isPhD && Array.isArray(degreeTypes) && degreeTypes.length > 0 && !degreeTypeId) {
+      const phdType = degreeTypes.find(t => t && (t.code === 'PHD' || t.name?.toLowerCase()?.includes('phd')));
       if (phdType) {
         setDegreeTypeId(phdType._id);
       }
@@ -1491,11 +1498,6 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }
   }, [profile, isPhD]);
 
-  const thesisActive = thesis && thesis.status !== 'REJECTED' ? thesis : null;
-  const isSubmitted = !!thesisActive || !!profile?.profileCompleted || !!user?.profileCompleted;
-  const isVerifiedPhD = thesisActive && thesisActive.enrollmentVerified === true;
-  const isPersonalInfoSaved = isPhD ? !!profile?.profile?.dob : (!!profile?.profile?.phoneNumber && !!profile?.profile?.address);
-
   // Active section track & timeline navigation refs
   const [activeSection, setActiveSection] = useState('personal');
   const sectionRefs = {
@@ -1872,11 +1874,13 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }, 850);
   };
 
-  const filteredDegreeTypes = isVerifiedPhD 
-    ? degreeTypes.filter(t => t.code === 'PHD' || t.name?.toLowerCase()?.includes('phd'))
-    : degreeTypes;
+  const filteredDegreeTypes = Array.isArray(degreeTypes)
+    ? (isVerifiedPhD ? degreeTypes.filter(t => t && (t.code === 'PHD' || t.name?.toLowerCase()?.includes('phd'))) : degreeTypes)
+    : [];
 
-  const availableDegreeNames = degreeNames.filter(d => d.degreeTypeId?._id === degreeTypeId || d.degreeTypeId === degreeTypeId);
+  const availableDegreeNames = Array.isArray(degreeNames)
+    ? degreeNames.filter(d => d && (d.degreeTypeId?._id === degreeTypeId || d.degreeTypeId === degreeTypeId))
+    : [];
 
   const isGeneralInfoComplete = () => {
     const baseFields = !!(
@@ -2450,7 +2454,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     {editModes.general && !isSubmitted && !academicSession ? (
                       <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)}>
                         <option value="">Select Session...</option>
-                        {sessions.map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
+                        {(Array.isArray(sessions) ? sessions : []).map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
                       </select>
                     ) : (
                       <input className="form-input" disabled value={academicSession || 'N/A'} />
@@ -2469,17 +2473,17 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                           const selectedId = e.target.value;
                           setDegreeTypeId(selectedId);
                           setDegreeNameId('');
-                          const selectedType = degreeTypes.find(t => t._id === selectedId);
+                          const selectedType = (Array.isArray(degreeTypes) ? degreeTypes : []).find(t => t && t._id === selectedId);
                           const isSelectedPhD = selectedType ? (selectedType.code === 'PHD' || selectedType.name?.toLowerCase()?.includes('phd')) : false;
                           setIsPhD(isSelectedPhD);
                         }}
                         disabled={isVerifiedPhD}
                       >
                         <option value="">Select Type...</option>
-                        {filteredDegreeTypes.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                        {(Array.isArray(filteredDegreeTypes) ? filteredDegreeTypes : []).map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                       </select>
                     ) : (
-                      <input className="form-input" disabled value={degreeTypes.find(t => t._id === degreeTypeId)?.name || (isPhD ? 'Ph.D.' : 'N/A')} />
+                      <input className="form-input" disabled value={(Array.isArray(degreeTypes) ? degreeTypes : []).find(t => t && t._id === degreeTypeId)?.name || (isPhD ? 'Ph.D.' : 'N/A')} />
                     )}
                   </div>
                   <div className="form-group">
@@ -2496,12 +2500,12 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         ) : (
                           <>
                             <option value="">Select Degree...</option>
-                            {availableDegreeNames.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                            {(Array.isArray(availableDegreeNames) ? availableDegreeNames : []).map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                           </>
                         )}
                       </select>
                     ) : (
-                      <input className="form-input" disabled value={degreeNames.find(n => n._id === degreeNameId)?.name || (isPhD ? 'Ph.D. Research' : 'N/A')} />
+                      <input className="form-input" disabled value={(Array.isArray(degreeNames) ? degreeNames : []).find(n => n && n._id === degreeNameId)?.name || (isPhD ? 'Ph.D. Research' : 'N/A')} />
                     )}
                   </div>
                   {isPhD && (
@@ -3298,7 +3302,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                           disabled={isSubmitted || !editModes.guide}
                         >
                           <option value="">Select Preferred Guide...</option>
-                          {faculties.map(fac => (
+                          {(Array.isArray(faculties) ? faculties : []).map(fac => (
                             <option key={fac._id} value={fac._id}>
                               {fac.name} ({(fac.role === 'HOD' || fac.subRole === 'HOD') ? 'HOD' : (fac.subRole || 'Faculty')})
                             </option>
@@ -3316,7 +3320,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                           color: 'var(--status-present)',
                           fontSize: '0.88rem'
                         }}>
-                          ✓ Selected Preference: <strong>{faculties.find(f => f._id === preferredGuideId)?.name}</strong>
+                          ✓ Selected Preference: <strong>{(Array.isArray(faculties) ? faculties : []).find(f => f && f._id === preferredGuideId)?.name || 'N/A'}</strong>
                         </div>
                       )}
 
