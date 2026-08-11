@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,6 +29,7 @@ import {
   UserCog,
   Mail,
   Globe,
+  ChevronDown,
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { NotificationContext } from "../context/NotificationContext";
@@ -145,7 +146,19 @@ const DashboardShell = ({
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const bellRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   React.useEffect(() => {
     if (isLocked && activeTab !== "profile" && activeTab !== "overview") {
@@ -320,8 +333,92 @@ const DashboardShell = ({
               )}
             </div>
 
-            <div className="header-avatar">
-              {user?.name?.[0]?.toUpperCase() ?? "U"}
+            <div style={{ position: "relative" }} ref={userMenuRef}>
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer"
+                }}
+              >
+                <div className="header-avatar">
+                  {user?.name?.[0]?.toUpperCase() ?? "U"}
+                </div>
+                <ChevronDown size={16} style={{ color: "var(--color-text-muted)" }} />
+              </button>
+
+              {userDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "45px",
+                    right: 0,
+                    width: "210px",
+                    background: "var(--color-surface, #ffffff)",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                    zIndex: 100,
+                    overflow: "hidden",
+                    border: "1px solid var(--color-border, #E5E7EB)"
+                  }}
+                >
+                  <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--color-border, #E5E7EB)" }}>
+                    <div style={{ fontWeight: "bold", color: "var(--color-text-primary, #111827)", fontSize: "0.92rem" }}>
+                      {user?.name ?? "User"}
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: "var(--color-text-muted, #6B7280)", textTransform: "capitalize", marginTop: "2px" }}>
+                      {role?.replace("_", " ")}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem("allow_landing", "true");
+                      window.location.href = "/?view=home";
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      width: "100%",
+                      padding: "12px 16px",
+                      background: "none",
+                      border: "none",
+                      borderBottom: "1px solid var(--color-border, #E5E7EB)",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      color: "#10B981",
+                      fontSize: "0.88rem",
+                      fontWeight: "500"
+                    }}
+                  >
+                    <Globe size={16} style={{ color: "#10B981" }} /> Visit Home Page
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      width: "100%",
+                      padding: "12px 16px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      color: "#EF4444",
+                      fontSize: "0.88rem",
+                      fontWeight: "600"
+                    }}
+                  >
+                    <LogOut size={16} style={{ color: "#EF4444" }} /> Log Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
