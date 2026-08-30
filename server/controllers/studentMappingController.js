@@ -9,6 +9,22 @@ const AcademicSessionMaster = require('../models/attendance/AcademicSessionMaste
 const StudentSemesterMapping = require('../models/attendance/StudentSemesterMapping');
 const SemesterDegreeMapping = require('../models/attendance/SemesterDegreeMapping');
 
+// Helper: Convert "HH:MM" string to minutes from midnight
+const timeToMinutes = (timeStr) => {
+  if (!timeStr || typeof timeStr !== 'string') return 0;
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+// Helper: Check if two time intervals overlap
+const isTimeslotOverlapping = (s1, e1, s2, e2) => {
+  const start1 = timeToMinutes(s1);
+  const end1 = timeToMinutes(e1);
+  const start2 = timeToMinutes(s2);
+  const end2 = timeToMinutes(e2);
+  return start1 < end2 && end1 > start2;
+};
+
 // ==========================================
 // 1. GET FILTER DATA (sessions, degree types, names, semesters)
 // ==========================================
@@ -99,28 +115,56 @@ exports.getPreview = async (req, res) => {
       // Note: semesterId not on student profile yet - that's what we're mapping!
     }).select('name username profile');
 
-    // 3. Get existing mappings for these students + session + degree + semester
-    const existingMappings = await StudentSemesterMapping.find({
-      sessionId,
-      degreeTypeId,
-      degreeNameId,
-      semesterId,
-      departmentId
-    });
+    const studentIds = allStudents.map(s => s._id);
 
-    // 4. Build a map of which subjects are already assigned to which students
-    // existingSubjectsMap: subjectId -> Set of studentIds that have this subject
+    // 3. Get existing mappings for these students in this session (across all degrees/semesters)
+    const allSessionStudentMappings = await StudentSemesterMapping.find({
+      studentId: { $in: studentIds },
+      sessionId
+    }).populate('mappedSubjects.timetableSlotId');
+
+    // Mappings strictly matching the selected filter criteria
+    const existingMappings = allSessionStudentMappings.filter(m => 
+      m.degreeTypeId?.toString() === degreeTypeId &&
+      m.degreeNameId?.toString() === degreeNameId &&
+      m.semesterId?.toString() === semesterId &&
+      (!departmentId || !m.departmentId || m.departmentId.toString() === departmentId.toString())
+    );
+
+    // 4. Build map of which subjects are already assigned to which students
     const existingSubjectsMap = {};
     const studentsWithMapping = new Set();
     
     existingMappings.forEach(mapping => {
       studentsWithMapping.add(mapping.studentId.toString());
       mapping.mappedSubjects.forEach(sub => {
-        const slotId = sub.timetableSlotId.toString();
-        if (!existingSubjectsMap[slotId]) {
-          existingSubjectsMap[slotId] = new Set();
+        const slotId = sub.timetableSlotId?._id ? sub.timetableSlotId._id.toString() : sub.timetableSlotId?.toString();
+        if (slotId) {
+          if (!existingSubjectsMap[slotId]) {
+            existingSubjectsMap[slotId] = new Set();
+          }
+          existingSubjectsMap[slotId].add(mapping.studentId.toString());
         }
-        existingSubjectsMap[slotId].add(mapping.studentId.toString());
+      });
+    });
+
+    // Build map of all active timetable slots assigned to each student across this session
+    const studentSlotsMap = {};
+    allSessionStudentMappings.forEach(m => {
+      const stId = m.studentId.toString();
+      if (!studentSlotsMap[stId]) studentSlotsMap[stId] = [];
+      (m.mappedSubjects || []).forEach(ms => {
+        const slot = ms.timetableSlotId;
+        if (slot && typeof slot === 'object' && slot.isActive !== false) {
+          studentSlotsMap[stId].push({
+            _id: slot._id.toString(),
+            subjectCode: slot.subjectCode || ms.subjectCode,
+            subjectName: slot.subjectName || ms.subjectName,
+            dayOfWeek: slot.dayOfWeek,
+            startTime: slot.startTime,
+            endTime: slot.endTime
+          });
+        }
       });
     });
 
@@ -144,28 +188,43 @@ exports.getPreview = async (req, res) => {
       };
     });
 
-    // 6. Return eligible students (those NOT fully mapped for ALL subjects)
-    // If a student has all subjects mapped, don't show them
-    const eligibleStudents = allStudents.filter(st => {
+    // 6. Compute timetable schedule clashes for each student against candidate subjects
+    // studentClashes: { [studentId]: { [candidateSlotId]: { clashingSubjectName, clashingSubjectCode, dayOfWeek, startTime, endTime } } }
+    const studentClashes = {};
+    allStudents.forEach(st => {
       const stId = st._id.toString();
-      if (!studentsWithMapping.has(stId)) return true;
-      
-      // Check if this student is missing any subject mapping
-      const studentMappings = existingMappings.filter(m => m.studentId.toString() === stId);
-      const studentSubjectIds = new Set();
-      studentMappings.forEach(m => {
-        m.mappedSubjects.forEach(sub => studentSubjectIds.add(sub.timetableSlotId.toString()));
+      const existingSlots = studentSlotsMap[stId] || [];
+      subjects.forEach(candSub => {
+        const candId = candSub._id.toString();
+        // If student is already mapped to this exact candidate slot, not a clash
+        const alreadyMapped = existingSlots.some(es => es._id === candId);
+        if (alreadyMapped) return;
+
+        // Check if student has another mapped slot on same day with overlapping time interval
+        const clashingSlot = existingSlots.find(es =>
+          es._id !== candId &&
+          es.dayOfWeek === candSub.dayOfWeek &&
+          isTimeslotOverlapping(es.startTime, es.endTime, candSub.startTime, candSub.endTime)
+        );
+
+        if (clashingSlot) {
+          if (!studentClashes[stId]) studentClashes[stId] = {};
+          studentClashes[stId][candId] = {
+            clashingSubjectName: clashingSlot.subjectName,
+            clashingSubjectCode: clashingSlot.subjectCode,
+            dayOfWeek: clashingSlot.dayOfWeek,
+            startTime: clashingSlot.startTime,
+            endTime: clashingSlot.endTime
+          };
+        }
       });
-      
-      // Student is eligible if they don't have ALL subjects mapped
-      const hasAllSubjects = subjects.every(sub => studentSubjectIds.has(sub._id.toString()));
-      return !hasAllSubjects;
     });
 
     res.status(200).json({
       subjects: subjectsWithMappingInfo,
       students: allStudents,
-      existingMappingsCount: existingMappings.length
+      existingMappingsCount: existingMappings.length,
+      studentClashes
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -211,6 +270,19 @@ exports.saveMapping = async (req, res) => {
       });
     }
 
+    // Check internal timetable clashes among the selected subjects themselves
+    for (let i = 0; i < subjects.length; i++) {
+      for (let j = i + 1; j < subjects.length; j++) {
+        const s1 = subjects[i];
+        const s2 = subjects[j];
+        if (s1.dayOfWeek === s2.dayOfWeek && isTimeslotOverlapping(s1.startTime, s1.endTime, s2.startTime, s2.endTime)) {
+          return res.status(400).json({
+            message: `Timetable Clash Barrier: Selected subjects "${s1.subjectName}" and "${s2.subjectName}" have overlapping schedules on ${s1.dayOfWeek} (${s1.startTime}-${s1.endTime} vs ${s2.startTime}-${s2.endTime}). Students cannot be mapped to overlapping classes simultaneously.`
+          });
+        }
+      }
+    }
+
     // Validate that all students belong to the selected degree type and degree name and are verified
     const invalidStudents = await User.find({
       _id: { $in: studentIds },
@@ -237,15 +309,13 @@ exports.saveMapping = async (req, res) => {
     existingMappings.forEach(mapping => {
       const stId = mapping.studentId.toString();
       mapping.mappedSubjects.forEach(sub => {
-        const slotId = sub.timetableSlotId.toString();
+        const slotId = sub.timetableSlotId?.toString();
         if (!conflictMap[slotId]) conflictMap[slotId] = new Set();
         conflictMap[slotId].add(stId);
       });
     });
 
     // Check if any selected subjects already have existing mappings to selected students
-    // Rule: If MULTIPLE subjects are selected AND any of them have existing mappings -> error
-    // If a SINGLE subject is selected, only map students who don't already have it
     const subjectsWithPreExistingMappings = [];
     subjectIds.forEach(sid => {
       if (conflictMap[sid] && conflictMap[sid].size > 0) {
@@ -282,6 +352,40 @@ exports.saveMapping = async (req, res) => {
       return res.status(400).json({
         message: 'All selected students already have this subject mapped. No new mappings to create.'
       });
+    }
+
+    // TIMETABLE CLASH BARRIER: Check each eligible student against all their active timetable slots in this session
+    const allStudentExistingMappings = await StudentSemesterMapping.find({
+      studentId: { $in: eligibleStudentIds },
+      sessionId
+    }).populate('mappedSubjects.timetableSlotId');
+
+    for (const stId of eligibleStudentIds) {
+      const userMappings = allStudentExistingMappings.filter(m => m.studentId.toString() === stId.toString());
+      const existingSlots = [];
+      userMappings.forEach(m => {
+        (m.mappedSubjects || []).forEach(ms => {
+          const slot = ms.timetableSlotId;
+          if (slot && typeof slot === 'object' && slot.isActive !== false) {
+            existingSlots.push(slot);
+          }
+        });
+      });
+
+      for (const newSub of subjects) {
+        for (const existingSlot of existingSlots) {
+          if (existingSlot._id.toString() === newSub._id.toString()) continue; // already mapped, handled above
+          if (
+            existingSlot.dayOfWeek === newSub.dayOfWeek &&
+            isTimeslotOverlapping(existingSlot.startTime, existingSlot.endTime, newSub.startTime, newSub.endTime)
+          ) {
+            const studentUser = await User.findById(stId).select('name username');
+            return res.status(409).json({
+              message: `Timetable Clash Barrier: Student ${studentUser?.name || 'Candidate'} (${studentUser?.username || stId}) cannot be mapped to "${newSub.subjectName}". They are already enrolled in "${existingSlot.subjectName}" on ${existingSlot.dayOfWeek} (${existingSlot.startTime} - ${existingSlot.endTime}), which clashes with "${newSub.subjectName}" (${newSub.startTime} - ${newSub.endTime}).`
+            });
+          }
+        }
+      }
     }
 
     // Get the subject data for the selected subjects

@@ -631,7 +631,7 @@ exports.getFacultyTimetables = async (req, res) => {
 };
 exports.createTimetableSlot = async (req, res) => {
   try {
-    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime, subjectCode, subjectName } = req.body;
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime, subjectCode, subjectName, facultyId } = req.body;
     
     // Validate subject code uniqueness
     if (subjectCode && subjectName) {
@@ -658,18 +658,22 @@ exports.createTimetableSlot = async (req, res) => {
       return res.status(400).json({ message: 'End time must be after start time.' });
     }
     
-    const overlapQuery = {
-      sessionId, degreeTypeId, degreeNameId, semesterId,
-      departmentId: req.user.departmentId, dayOfWeek, isActive: true
-    };
-    const existingSlots = await TimetableMaster.find(overlapQuery);
-    for (const slot of existingSlots) {
-      const exStart = timeToMinutes(slot.startTime);
-      const exEnd = timeToMinutes(slot.endTime);
-      if (newStart < exEnd && newEnd > exStart) {
-        return res.status(409).json({ 
-          message: `Time slot conflicts with existing entry: ${slot.startTime} - ${slot.endTime} (${slot.subjectName}). Please choose a different time.` 
-        });
+    if (facultyId) {
+      const overlapQuery = {
+        sessionId,
+        facultyId,
+        dayOfWeek,
+        isActive: true
+      };
+      const existingSlots = await TimetableMaster.find(overlapQuery);
+      for (const slot of existingSlots) {
+        const exStart = timeToMinutes(slot.startTime);
+        const exEnd = timeToMinutes(slot.endTime);
+        if (newStart < exEnd && newEnd > exStart) {
+          return res.status(409).json({ 
+            message: `Selected faculty member already has a scheduled class (${slot.subjectName}, ${slot.startTime} - ${slot.endTime}) during this time slot on ${dayOfWeek}.` 
+          });
+        }
       }
     }
     
@@ -688,7 +692,7 @@ exports.deleteTimetableSlot = async (req, res) => {
 };
 exports.updateTimetableSlot = async (req, res) => {
   try {
-    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime, subjectCode, subjectName } = req.body;
+    const { sessionId, degreeTypeId, degreeNameId, semesterId, dayOfWeek, startTime, endTime, subjectCode, subjectName, facultyId } = req.body;
     
     // Validate subject code uniqueness
     if (subjectCode && subjectName) {
@@ -716,9 +720,23 @@ exports.updateTimetableSlot = async (req, res) => {
       return res.status(400).json({ message: 'End time must be after start time.' });
     }
     
+    let targetFacultyId = facultyId;
+    let targetSessionId = sessionId;
+    let targetDayOfWeek = dayOfWeek;
+    
+    if (!targetFacultyId || !targetSessionId || !targetDayOfWeek) {
+      const currentSlot = await TimetableMaster.findById(req.params.id);
+      if (!currentSlot) return res.status(404).json({ message: 'Slot not found' });
+      if (!targetFacultyId) targetFacultyId = currentSlot.facultyId;
+      if (!targetSessionId) targetSessionId = currentSlot.sessionId;
+      if (!targetDayOfWeek) targetDayOfWeek = currentSlot.dayOfWeek;
+    }
+    
     const overlapQuery = {
-      sessionId, degreeTypeId, degreeNameId, semesterId,
-      departmentId: req.user.departmentId, dayOfWeek, isActive: true,
+      sessionId: targetSessionId,
+      facultyId: targetFacultyId,
+      dayOfWeek: targetDayOfWeek,
+      isActive: true,
       _id: { $ne: req.params.id }
     };
     const existingSlots = await TimetableMaster.find(overlapQuery);
@@ -727,7 +745,7 @@ exports.updateTimetableSlot = async (req, res) => {
       const exEnd = timeToMinutes(slot.endTime);
       if (newStart < exEnd && newEnd > exStart) {
         return res.status(409).json({ 
-          message: `Time slot conflicts with existing entry: ${slot.startTime} - ${slot.endTime} (${slot.subjectName}). Please choose a different time.` 
+          message: `Selected faculty member already has a scheduled class (${slot.subjectName}, ${slot.startTime} - ${slot.endTime}) during this time slot on ${targetDayOfWeek}.` 
         });
       }
     }

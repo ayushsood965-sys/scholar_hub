@@ -35,8 +35,21 @@ const Signup = () => {
     }
   }, [navigate, toast]);
 
+  const DESIGNATION_OPTIONS = [
+    'Assistant Professor',
+    'Associate Professor',
+    'Professor',
+    'Assistant Professor (Contract / Guest Faculty)',
+    'Librarian',
+    'Assistant Librarian',
+    'Deputy Librarian',
+    'Dean',
+    'Director'
+  ];
+
   const [role, setRole] = useState('');
   const [name, setName] = useState('');
+  const [designation, setDesignation] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -265,8 +278,13 @@ const Signup = () => {
     }
 
     // Faculty/HOD validations
-    if ((role === 'FACULTY' || role === 'HOD') && !name) {
-      newErrors.name = 'Please enter your full name.';
+    if (role === 'FACULTY' || role === 'HOD') {
+      if (!name) {
+        newErrors.name = 'Please enter your full name.';
+      }
+      if (!designation) {
+        newErrors.designation = 'Please select your designation.';
+      }
     }
 
     const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
@@ -301,6 +319,7 @@ const Signup = () => {
       userData.category = category;
     } else {
       userData.name = name;
+      userData.designation = designation;
     }
 
     const result = await register(userData);
@@ -406,6 +425,7 @@ const Signup = () => {
                   setGender('');
                   setCategory('');
                   setName('');
+                  setDesignation('');
                 }}
                 required
               >
@@ -1002,6 +1022,29 @@ const Signup = () => {
                   {fieldErrors.name && (
                     <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
                       ⚠ {fieldErrors.name}
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Designation <span className="required">*</span></label>
+                  <select
+                    className="form-input"
+                    value={designation}
+                    onChange={e => {
+                      setDesignation(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, designation: null }));
+                    }}
+                    required
+                  >
+                    <option value="">-- Select Designation --</option>
+                    {DESIGNATION_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.designation && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.designation}
                     </span>
                   )}
                 </div>

@@ -799,7 +799,7 @@ const seminarClear = async (req, res) => {
 
     if (verifiedJournals < 2 || verifiedConferences < 2) {
       return res.status(400).json({
-        message: `Cannot clear pre-submission seminar. The scholar must have at least 2 verified Journal publications (Current: ${verifiedJournals}/2) and 2 verified Conference presentations (Current: ${verifiedConferences}/2).`
+        message: `Cannot clear pre-submission seminar. The scholar must have at least 2 verified Journal publications (Current: ${verifiedJournals}/2) and 2 verified Conference proceedings (Current: ${verifiedConferences}/2).`
       });
     }
 

@@ -34,6 +34,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
   const allowProfileEdit = user?.profile?.allowProfileEdit === true || profile?.profile?.allowProfileEdit === true;
   const thesisActive = thesis && thesis.status !== 'REJECTED' ? thesis : null;
   const isSubmitted = !allowProfileEdit && (!!thesisActive || !!profile?.profileCompleted || !!user?.profileCompleted || !!profile?.isVerified || !!user?.isVerified);
+  const isInitialSetup = !(profile?.profile?.dob || profile?.profile?.phoneNumber || profile?.profileCompleted || user?.profileCompleted || profile?.isVerified || user?.isVerified || thesisActive);
   const isVerifiedPhD = thesisActive && thesisActive.enrollmentVerified === true;
   const isPersonalInfoSaved = isPhD ? !!profile?.profile?.dob : (!!profile?.profile?.phoneNumber && !!profile?.profile?.address);
 
@@ -2439,31 +2440,33 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                     <label className="form-label">Enrollment Number</label>
                     <input 
                       className="form-input" 
-                      disabled={!editModes.general || isSubmitted} 
+                      disabled={!editModes.general || !isInitialSetup || isSubmitted} 
                       value={enrollmentNumber} 
                       onChange={e => setEnrollmentNumber(e.target.value)} 
                       placeholder="Enrollment Number (optional)"
+                      style={(!isInitialSetup || isSubmitted) ? { background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' } : {}}
                     />
                   </div>
                   <div className="form-group">
                     <label className="form-label">HPU ERP Admission No.</label>
                     <input 
                       className="form-input" 
-                      disabled={!editModes.general || isSubmitted} 
+                      disabled={!editModes.general || !isInitialSetup || isSubmitted} 
                       value={erpAdmissionNo} 
                       onChange={e => setErpAdmissionNo(e.target.value)} 
                       placeholder="H248808080"
+                      style={(!isInitialSetup || isSubmitted) ? { background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' } : {}}
                     />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Academic Session</label>
-                    {editModes.general && !isSubmitted && !academicSession ? (
+                    {editModes.general && isInitialSetup && !isSubmitted && !academicSession ? (
                       <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)}>
                         <option value="">Select Session...</option>
                         {(Array.isArray(sessions) ? sessions : []).map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
                       </select>
                     ) : (
-                      <input className="form-input" disabled value={academicSession || 'N/A'} />
+                      <input className="form-input" disabled value={academicSession || 'N/A'} style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                     )}
                   </div>
                 </div>
@@ -2471,7 +2474,7 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                 <div className="responsive-three-col-grid" style={{ marginTop: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Degree Type</label>
-                    {editModes.general && !isSubmitted && !degreeTypeId ? (
+                    {editModes.general && isInitialSetup && !isSubmitted && !degreeTypeId ? (
                       <select 
                         className="form-input" 
                         value={degreeTypeId} 
@@ -2489,12 +2492,12 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         {(Array.isArray(filteredDegreeTypes) ? filteredDegreeTypes : []).map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                       </select>
                     ) : (
-                      <input className="form-input" disabled value={(Array.isArray(degreeTypes) ? degreeTypes : []).find(t => t && t._id === degreeTypeId)?.name || (isPhD ? 'Ph.D.' : 'N/A')} />
+                      <input className="form-input" disabled value={(Array.isArray(degreeTypes) ? degreeTypes : []).find(t => t && t._id === degreeTypeId)?.name || (isPhD ? 'Ph.D.' : 'N/A')} style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                     )}
                   </div>
                   <div className="form-group">
                     <label className="form-label">Degree Name</label>
-                    {editModes.general && !isSubmitted && !degreeNameId ? (
+                    {editModes.general && isInitialSetup && !isSubmitted && !degreeNameId ? (
                       <select 
                         className="form-input" 
                         value={degreeNameId} 
@@ -2511,20 +2514,20 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
                         )}
                       </select>
                     ) : (
-                      <input className="form-input" disabled value={(Array.isArray(degreeNames) ? degreeNames : []).find(n => n && n._id === degreeNameId)?.name || (isPhD ? 'Ph.D. Research' : 'N/A')} />
+                      <input className="form-input" disabled value={(Array.isArray(degreeNames) ? degreeNames : []).find(n => n && n._id === degreeNameId)?.name || (isPhD ? 'Ph.D. Research' : 'N/A')} style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                     )}
                   </div>
                   {isPhD && (
                     <div className="form-group">
                       <label className="form-label">Ph.D. Mode</label>
-                      {editModes.general && !isSubmitted ? (
+                      {editModes.general && isInitialSetup && !isSubmitted ? (
                         <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)}>
                           <option value="">Select Mode...</option>
                           <option value="Full Time">Full Time</option>
                           <option value="Part Time">Part Time</option>
                         </select>
                       ) : (
-                        <input className="form-input" disabled value={phdMode || 'N/A'} />
+                        <input className="form-input" disabled value={phdMode || 'N/A'} style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                       )}
                     </div>
                   )}

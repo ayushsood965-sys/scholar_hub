@@ -7,6 +7,22 @@ import { AuthContext } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { useGridControl } from '../../hooks/useGridControl';
 
+// Helper: Convert "HH:MM" to minutes from midnight
+const timeToMinutes = (timeStr) => {
+  if (!timeStr || typeof timeStr !== 'string') return 0;
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+// Helper: Check if two time intervals overlap
+const isTimeslotOverlapping = (s1, e1, s2, e2) => {
+  const start1 = timeToMinutes(s1);
+  const end1 = timeToMinutes(e1);
+  const start2 = timeToMinutes(s2);
+  const end2 = timeToMinutes(e2);
+  return start1 < end2 && end1 > start2;
+};
+
 const StudentSubjectMappingTab = () => {
   const [sessions, setSessions] = useState([]);
   const [degreeTypes, setDegreeTypes] = useState([]);
@@ -25,6 +41,7 @@ const StudentSubjectMappingTab = () => {
   const [allStudents, setAllStudents] = useState([]);
   const [selectedSubjects, setSelectedSubjects] = useState({});
   const [selectedStudents, setSelectedStudents] = useState({});
+  const [studentClashes, setStudentClashes] = useState({});
   const [previewData, setPreviewData] = useState(null);
 
   const [loadingFilters, setLoadingFilters] = useState(true);
@@ -74,14 +91,15 @@ const StudentSubjectMappingTab = () => {
       });
       const res = await api.get(`/student-mapping/preview?${queryParams.toString()}`);
       setPreviewData(res.data);
-      setSubjects(res.data.subjects);
+      setSubjects(res.data.subjects || []);
+      setStudentClashes(res.data.studentClashes || {});
 
       // Initialize subject selection:
       // - Subjects with NO existing mappings → auto-selected
       // - Subjects with partial/full mappings → unselected
       const initialSelected = {};
       let hasPartiallyMapped = false;
-      res.data.subjects.forEach(sub => {
+      (res.data.subjects || []).forEach(sub => {
         if (sub.isFullyMapped || sub.isPartiallyMapped) {
           initialSelected[sub._id] = false;
           if (sub.isPartiallyMapped) hasPartiallyMapped = true;
@@ -91,7 +109,7 @@ const StudentSubjectMappingTab = () => {
       });
       setSelectedSubjects(initialSelected);
 
-      setAllStudents(res.data.students);
+      setAllStudents(res.data.students || []);
       setSelectedStudents({});
       setSelectAllStudents(false);
     } catch (err) {
@@ -105,6 +123,7 @@ const StudentSubjectMappingTab = () => {
       setPreviewData(null);
       setSubjects([]);
       setAllStudents([]);
+      setStudentClashes({});
     } finally {
       setLoadingPreview(false);
     }
@@ -124,6 +143,45 @@ const StudentSubjectMappingTab = () => {
     return ids;
   }, [selectedSubjects, subjects]);
 
+  // ── Compute internal schedule clashes among the selected subjects themselves ──
+  const internalSubjectClashes = useMemo(() => {
+    const selectedSubIds = Object.entries(selectedSubjects)
+      .filter(([, val]) => val)
+      .map(([id]) => id);
+    const selectedSubs = subjects.filter(s => selectedSubIds.includes(s._id));
+    const clashes = [];
+    for (let i = 0; i < selectedSubs.length; i++) {
+      for (let j = i + 1; j < selectedSubs.length; j++) {
+        const s1 = selectedSubs[i];
+        const s2 = selectedSubs[j];
+        if (s1.dayOfWeek === s2.dayOfWeek && isTimeslotOverlapping(s1.startTime, s1.endTime, s2.startTime, s2.endTime)) {
+          clashes.push({ sub1: s1, sub2: s2 });
+        }
+      }
+    }
+    return clashes;
+  }, [selectedSubjects, subjects]);
+
+  // ── Helper: Check if a student has a timetable collision with ANY of the selected subjects ──
+  const getStudentClashForSelected = (studentId) => {
+    const studentClashMap = studentClashes[studentId];
+    if (!studentClashMap) return null;
+    const selectedSubIds = Object.entries(selectedSubjects)
+      .filter(([, val]) => val)
+      .map(([id]) => id);
+    
+    for (const subId of selectedSubIds) {
+      if (studentClashMap[subId]) {
+        const targetSub = subjects.find(s => s._id === subId);
+        return {
+          ...studentClashMap[subId],
+          targetSubjectName: targetSub?.subjectName || 'Selected Subject'
+        };
+      }
+    }
+    return null;
+  };
+
   // ── Compute displayed students based on selected subjects ──
   const displayedStudents = useMemo(() => {
     if (!previewData) return [];
@@ -137,20 +195,31 @@ const StudentSubjectMappingTab = () => {
     return allStudents;
   }, [selectedSubjects, allStudents, previewData]);
 
+  // ── Unmapped & Eligible (No Clash) Students ──
+  const unmappedEligibleStudents = useMemo(() => {
+    return displayedStudents.filter(st => {
+      const isMapped = mappedStudentIdsForSelected.has(st._id);
+      const hasClash = !!getStudentClashForSelected(st._id);
+      return !isMapped && !hasClash;
+    });
+  }, [displayedStudents, mappedStudentIdsForSelected, selectedSubjects, studentClashes]);
+
   const { paginatedData, renderGridControls } = useGridControl(
     displayedStudents,
     ['name', 'username', 'profile.shNo', 'profile.fatherName'],
     10
   );
 
-  // When displayed students changes, synchronize selection state
+  // When displayed students or clash status changes, synchronize selection state
   useEffect(() => {
     const updated = {};
     let changed = false;
 
     displayedStudents.forEach(s => {
       const wasSelected = !!selectedStudents[s._id];
-      const shouldBeSelected = wasSelected && !mappedStudentIdsForSelected.has(s._id);
+      const isMapped = mappedStudentIdsForSelected.has(s._id);
+      const hasClash = !!getStudentClashForSelected(s._id);
+      const shouldBeSelected = wasSelected && !isMapped && !hasClash;
       updated[s._id] = shouldBeSelected;
       if (wasSelected !== shouldBeSelected || selectedStudents[s._id] === undefined) {
         changed = true;
@@ -167,12 +236,11 @@ const StudentSubjectMappingTab = () => {
       setSelectedStudents(updated);
     }
 
-    const unmappedStudents = displayedStudents.filter(st => !mappedStudentIdsForSelected.has(st._id));
     setSelectAllStudents(
-      unmappedStudents.length > 0 &&
-      unmappedStudents.every(s => updated[s._id])
+      unmappedEligibleStudents.length > 0 &&
+      unmappedEligibleStudents.every(s => updated[s._id])
     );
-  }, [displayedStudents, mappedStudentIdsForSelected]);
+  }, [displayedStudents, mappedStudentIdsForSelected, selectedSubjects, studentClashes]);
 
   // ── Subject toggle: enforce single-select for partially-mapped subjects ──
   const handleSubjectToggle = (subjectId) => {
@@ -192,7 +260,6 @@ const StudentSubjectMappingTab = () => {
     }
 
     // Normal subject (no mappings): allow toggle
-    // But check if any partially-mapped subject is currently selected
     const currentlySelected = Object.entries(selectedSubjects)
       .filter(([, val]) => val)
       .map(([id]) => id);
@@ -202,7 +269,6 @@ const StudentSubjectMappingTab = () => {
       return s?.isPartiallyMapped;
     });
 
-    // If a partially-mapped subject is currently selected, clear all first
     if (partialSelected) {
       const updated = {};
       subjects.forEach(s => { updated[s._id] = false; });
@@ -223,7 +289,6 @@ const StudentSubjectMappingTab = () => {
       if (sub.isFullyMapped) {
         updated[sub._id] = false;
       } else if (sub.isPartiallyMapped) {
-        // Never auto-select partially mapped subjects in "Select All"
         updated[sub._id] = false;
       } else {
         updated[sub._id] = !allSelected;
@@ -234,28 +299,31 @@ const StudentSubjectMappingTab = () => {
 
   const handleStudentToggle = (studentId) => {
     if (mappedStudentIdsForSelected.has(studentId)) return;
+    const clash = getStudentClashForSelected(studentId);
+    if (clash) {
+      toast.error(`Timetable Conflict Barrier: This student is already mapped to "${clash.clashingSubjectName}" on ${clash.dayOfWeek} (${clash.startTime} - ${clash.endTime}) which clashes with the selected class timing.`);
+      return;
+    }
     setSelectedStudents(prev => {
       const updated = { ...prev, [studentId]: !prev[studentId] };
-      const unmappedStudents = displayedStudents.filter(st => !mappedStudentIdsForSelected.has(st._id));
-      const allChecked = unmappedStudents.length > 0 && unmappedStudents.every(s => updated[s._id]);
+      const allChecked = unmappedEligibleStudents.length > 0 && unmappedEligibleStudents.every(s => updated[s._id]);
       setSelectAllStudents(allChecked);
       return updated;
     });
   };
 
   const handleSelectAllStudentsChange = () => {
-    const unmappedStudents = displayedStudents.filter(st => !mappedStudentIdsForSelected.has(st._id));
-    const allUnmappedSelected = unmappedStudents.length > 0 && unmappedStudents.every(st => !!selectedStudents[st._id]);
-    const newVal = !allUnmappedSelected;
+    const allEligibleSelected = unmappedEligibleStudents.length > 0 && unmappedEligibleStudents.every(st => !!selectedStudents[st._id]);
+    const newVal = !allEligibleSelected;
     setSelectAllStudents(newVal);
     const updated = { ...selectedStudents };
-    unmappedStudents.forEach(st => {
+    unmappedEligibleStudents.forEach(st => {
       updated[st._id] = newVal;
     });
     setSelectedStudents(updated);
   };
 
-  const selectedStudentCount = Object.entries(selectedStudents).filter(([id, val]) => val && !mappedStudentIdsForSelected.has(id)).length;
+  const selectedStudentCount = Object.entries(selectedStudents).filter(([id, val]) => val && !mappedStudentIdsForSelected.has(id) && !getStudentClashForSelected(id)).length;
   const selectedSubjectCount = Object.values(selectedSubjects).filter(v => v).length;
   const hasPartiallyMappedSubjects = subjects.some(s => s.isPartiallyMapped);
   const hasSelectedPartial = Object.entries(selectedSubjects)
@@ -265,6 +333,12 @@ const StudentSubjectMappingTab = () => {
   const handleSave = async () => {
     if (!previewData) return;
 
+    // Hard Barrier 1: Check internal clashes between selected subjects
+    if (internalSubjectClashes.length > 0) {
+      const firstClash = internalSubjectClashes[0];
+      return toast.error(`Timetable Conflict Barrier: Selected subjects "${firstClash.sub1.subjectName}" and "${firstClash.sub2.subjectName}" have overlapping schedules on ${firstClash.sub1.dayOfWeek} (${firstClash.sub1.startTime}-${firstClash.sub1.endTime} vs ${firstClash.sub2.startTime}-${firstClash.sub2.endTime}). Please map them separately.`);
+    }
+
     const selectedSubIds = Object.entries(selectedSubjects)
       .filter(([, val]) => val)
       .map(([id]) => id);
@@ -273,12 +347,13 @@ const StudentSubjectMappingTab = () => {
       return toast.error('Please select at least one subject to map.');
     }
 
+    // Hard Barrier 2: Only allow eligible students (strictly excluding any clashing or already mapped students)
     const selectedStudIds = Object.entries(selectedStudents)
-      .filter(([, val]) => val)
+      .filter(([id, val]) => val && !mappedStudentIdsForSelected.has(id) && !getStudentClashForSelected(id))
       .map(([id]) => id);
 
     if (selectedStudIds.length === 0) {
-      return toast.error('Please select at least one student to map.');
+      return toast.error('Please select at least one eligible student to map.');
     }
 
     setSaving(true);
@@ -437,8 +512,27 @@ const StudentSubjectMappingTab = () => {
         previewData && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}>
             
+            {/* ── Internal Subject Clash Banner ── */}
+            {internalSubjectClashes.length > 0 && (
+              <div className="glass-panel p-lg mb-lg" style={{ borderLeft: '4px solid #EF4444', background: 'rgba(239, 68, 68, 0.05)' }}>
+                <div className="flex items-center gap-md">
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <AlertTriangle size={20} color="#DC2626" />
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: '#DC2626', fontSize: '0.92rem' }}>
+                      🚫 Timetable Collision Barrier: Selected Subjects Conflict in Timing
+                    </span>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                      <strong>{internalSubjectClashes[0].sub1.subjectName}</strong> and <strong>{internalSubjectClashes[0].sub2.subjectName}</strong> are scheduled at overlapping times on <strong>{internalSubjectClashes[0].sub1.dayOfWeek}</strong> ({internalSubjectClashes[0].sub1.startTime} - {internalSubjectClashes[0].sub1.endTime} vs {internalSubjectClashes[0].sub2.startTime} - {internalSubjectClashes[0].sub2.endTime}). Students cannot be mapped to multiple classes simultaneously. Please unselect one of them.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── Info Banner when partial mappings exist ── */}
-            {hasPartiallyMappedSubjects && (
+            {hasPartiallyMappedSubjects && internalSubjectClashes.length === 0 && (
               <div className="glass-panel p-lg mb-lg" style={{ borderLeft: '4px solid var(--status-warning)' }}>
                 <div className="flex items-center gap-md">
                   <AlertTriangle size={20} style={{ color: '#D97706', flexShrink: 0 }} />
@@ -540,28 +634,38 @@ const StudentSubjectMappingTab = () => {
             {displayedStudents.length > 0 && selectedSubjectCount > 0 && (
               <div className="glass-panel p-lg mb-lg">
                 <div className="flex justify-between items-center flex-wrap gap-md">
-                  <div className="flex items-center gap-sm" style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                    <Users size={18} style={{ color: 'var(--color-primary)' }} />
-                    Candidates: <strong style={{ color: 'var(--color-text-primary)' }}>{displayedStudents.length}</strong>
-                    {hasSelectedPartial && (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginLeft: 4 }}>
-                        ({displayedStudents.length - mappedStudentIdsForSelected.size} unmapped remaining)
+                  <div className="flex items-center gap-md flex-wrap" style={{ color: 'var(--color-text-secondary)', fontSize: '0.88rem' }}>
+                    <div className="flex items-center gap-xs">
+                      <Users size={18} style={{ color: 'var(--color-primary)' }} />
+                      Candidates: <strong style={{ color: 'var(--color-text-primary)' }}>{displayedStudents.length}</strong>
+                    </div>
+                    <div className="flex items-center gap-xs">
+                      <span className="badge badge-success" style={{ fontSize: '0.72rem', padding: '3px 8px' }}>
+                        ✓ {unmappedEligibleStudents.length} Available to Map
                       </span>
+                    </div>
+                    {displayedStudents.some(st => !mappedStudentIdsForSelected.has(st._id) && !!getStudentClashForSelected(st._id)) && (
+                      <div className="flex items-center gap-xs">
+                        <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FECACA', fontSize: '0.72rem', padding: '3px 8px' }}>
+                          ⚠️ {displayedStudents.filter(st => !mappedStudentIdsForSelected.has(st._id) && !!getStudentClashForSelected(st._id)).length} Schedule Clashes (Blocked)
+                        </span>
+                      </div>
                     )}
                     {selectedStudentCount > 0 && (
-                      <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--color-primary)' }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                         ({selectedStudentCount} selected)
                       </span>
                     )}
                   </div>
-                  <label className="flex items-center gap-sm" style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                  <label className="flex items-center gap-sm" style={{ cursor: unmappedEligibleStudents.length === 0 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                     <input
                       type="checkbox"
                       checked={selectAllStudents}
+                      disabled={unmappedEligibleStudents.length === 0}
                       onChange={handleSelectAllStudentsChange}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      style={{ width: '18px', height: '18px', cursor: unmappedEligibleStudents.length === 0 ? 'not-allowed' : 'pointer' }}
                     />
-                    Select All Unmapped
+                    Select All Eligible ({unmappedEligibleStudents.length})
                   </label>
                 </div>
               </div>
@@ -580,8 +684,9 @@ const StudentSubjectMappingTab = () => {
                           <input
                             type="checkbox"
                             checked={selectAllStudents}
+                            disabled={unmappedEligibleStudents.length === 0}
                             onChange={handleSelectAllStudentsChange}
-                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            style={{ width: '16px', height: '16px', cursor: unmappedEligibleStudents.length === 0 ? 'not-allowed' : 'pointer' }}
                           />
                         </th>
                         <th style={{ width: '110px' }}>Sh. No.</th>
@@ -595,41 +700,67 @@ const StudentSubjectMappingTab = () => {
                       {paginatedData.map((st, sIdx) => {
                         const stId = st._id;
                         const isAlreadyMapped = mappedStudentIdsForSelected.has(stId);
-                        const isChecked = isAlreadyMapped || !!selectedStudents[stId];
+                        const clashDetails = getStudentClashForSelected(stId);
+                        const isClashing = !isAlreadyMapped && !!clashDetails;
+                        const isDisabled = isAlreadyMapped || isClashing;
+                        const isChecked = isAlreadyMapped ? true : (isClashing ? false : !!selectedStudents[stId]);
+                        
                         return (
                           <motion.tr
                             key={stId}
                             initial={{ opacity: 0, y: 4 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: Math.min(sIdx * 0.015, 0.3) }}
-                            onClick={() => !isAlreadyMapped && handleStudentToggle(stId)}
+                            onClick={() => !isDisabled && handleStudentToggle(stId)}
                             style={{
-                              cursor: isAlreadyMapped ? 'not-allowed' : 'pointer',
+                              cursor: isDisabled ? 'not-allowed' : 'pointer',
                               background: isAlreadyMapped
                                 ? 'rgba(16, 185, 129, 0.04)'
-                                : isChecked
-                                  ? 'rgba(99, 102, 241, 0.04)'
-                                  : 'transparent',
-                              opacity: isAlreadyMapped ? 0.85 : 1
+                                : isClashing
+                                  ? 'rgba(239, 68, 68, 0.05)'
+                                  : isChecked
+                                    ? 'rgba(99, 102, 241, 0.04)'
+                                    : 'transparent',
+                              opacity: isAlreadyMapped ? 0.85 : (isClashing ? 0.75 : 1)
                             }}
                           >
                             <td style={{ textAlign: 'center' }}>
                               <input
                                 type="checkbox"
                                 checked={isChecked}
-                                disabled={isAlreadyMapped}
-                                onChange={() => !isAlreadyMapped && handleStudentToggle(stId)}
+                                disabled={isDisabled}
+                                onChange={() => !isDisabled && handleStudentToggle(stId)}
                                 onClick={e => e.stopPropagation()}
-                                style={{ width: '16px', height: '16px', cursor: isAlreadyMapped ? 'not-allowed' : 'pointer' }}
+                                style={{ width: '16px', height: '16px', cursor: isDisabled ? 'not-allowed' : 'pointer' }}
                               />
                             </td>
                             <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.82rem' }}>{st.profile?.shNo || 'N/A'}</td>
                             <td>
-                              <div className="flex items-center gap-sm">
+                              <div className="flex items-center gap-sm flex-wrap">
                                 <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{st.name}</div>
                                 {isAlreadyMapped && (
                                   <span className="badge badge-success" style={{ fontSize: '0.65rem', padding: '2px 6px', whiteSpace: 'nowrap' }}>
                                     Already Mapped
+                                  </span>
+                                )}
+                                {isClashing && (
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: '#FEE2E2',
+                                      color: '#B91C1C',
+                                      border: '1px solid #FECACA',
+                                      fontSize: '0.68rem',
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    title={`Schedule Clash: Candidate is already mapped to ${clashDetails.clashingSubjectName} on ${clashDetails.dayOfWeek} (${clashDetails.startTime} - ${clashDetails.endTime})`}
+                                  >
+                                    <AlertTriangle size={12} /> Clash: {clashDetails.clashingSubjectName} ({clashDetails.dayOfWeek} {clashDetails.startTime}-{clashDetails.endTime})
                                   </span>
                                 )}
                               </div>
@@ -676,10 +807,27 @@ const StudentSubjectMappingTab = () => {
             )}
 
             {/* ── Save Button ── */}
-            {selectedStudentCount > 0 && selectedSubjectCount > 0 && (
+            {selectedSubjectCount > 0 && (
               <div className="flex justify-end mt-lg">
-                <button type="button" className="btn btn-primary btn-lg" onClick={handleSave} disabled={saving}>
-                  <Save size={18} /> {saving ? 'Saving...' : 'Save Mapping'}
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg"
+                  onClick={handleSave}
+                  disabled={saving || internalSubjectClashes.length > 0 || selectedStudentCount === 0}
+                  style={{
+                    opacity: (saving || internalSubjectClashes.length > 0 || selectedStudentCount === 0) ? 0.6 : 1,
+                    cursor: (saving || internalSubjectClashes.length > 0 || selectedStudentCount === 0) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <Save size={18} /> {
+                    saving
+                      ? 'Saving...'
+                      : internalSubjectClashes.length > 0
+                        ? 'Timetable Clash Between Selected Subjects (Blocked)'
+                        : selectedStudentCount === 0
+                          ? 'Select Eligible Students to Save'
+                          : `Save Mapping (${selectedStudentCount} Students)`
+                  }
                 </button>
               </div>
             )}

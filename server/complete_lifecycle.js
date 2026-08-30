@@ -245,7 +245,7 @@ async function run() {
     });
     console.log('Supervisor: Approved Progress Report & logged RAC Review');
 
-    // 13. Create 2 Verified Journal Publications and 2 Verified Conference Presentations
+    // 13. Create 2 Verified Journal Publications and 2 Verified Conference Proceedings
     console.log('Scholar: Adding and verifying required research publications...');
     await Publication.create([
       {

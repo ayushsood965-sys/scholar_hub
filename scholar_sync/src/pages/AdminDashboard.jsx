@@ -1264,7 +1264,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                           <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span>⚠️ Pre-Submission Prerequisites Locked</span>
                           </div>
-                          <div>This scholar does not meet publication prerequisites. At least 2 verified Journal publications and 2 verified Conference presentations are required.</div>
+                          <div>This scholar does not meet publication prerequisites. At least 2 verified Journal publications and 2 verified Conference proceedings are required.</div>
                           <div style={{ marginTop: 2, fontWeight: 700, fontSize: '0.8rem', color: '#B91C1C' }}>
                             Current Progress: Journals: {verifiedJournalsCount}/2 | Conferences: {verifiedConferencesCount}/2
                           </div>

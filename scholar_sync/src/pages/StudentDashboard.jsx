@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users, Lightbulb, Briefcase, Bookmark, Folder, Copyright, Eye, EyeOff, Shield, Globe, GraduationCap } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users, Lightbulb, Briefcase, Bookmark, Folder, Copyright, Eye, EyeOff, Shield, Globe, GraduationCap, ExternalLink } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -5804,7 +5804,7 @@ const ResearchOutputsTab = ({ thesis }) => {
             gap: 6
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>Conference Presentations</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>Conference Proceedings</span>
               <span style={{ 
                 fontSize: '0.72rem', 
                 fontWeight: 700, 
@@ -5863,7 +5863,7 @@ const ResearchOutputsTab = ({ thesis }) => {
           <div>
             <h3 className="card-title" style={{ margin: 0 }}>Research Outputs Log</h3>
             <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', marginTop: 4 }}>
-              Log and track peer-reviewed journal papers, scientific conference presentations, and Intellectual Property Rights (IPRs) completed during your active Ph.D. tenure.
+              Log and track peer-reviewed journal papers, scientific conference proceedings, and Intellectual Property Rights (IPRs) completed during your active Ph.D. tenure.
             </p>
           </div>
           <button onClick={() => { if (editingPubId) resetForm(); else setShowForm(!showForm); }} className="btn-primary" style={{ background: 'var(--color-primary, #059669)', display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -8601,19 +8601,64 @@ const ProfileTab = () => {
         }
       });
 
+      const existingPubs = user?.profile?.publications || [];
+      const newPubs = fetchedData.publications || [];
+      const mergedPubs = [...existingPubs];
+      newPubs.forEach(np => {
+        if (!mergedPubs.some(ep => ep.title?.toLowerCase() === np.title?.toLowerCase())) {
+          mergedPubs.push({
+            title: np.title || '',
+            journalName: np.journal || np.journalName || '',
+            publicationCategory: np.type === 'CONFERENCE' ? 'Conference Paper' : 'Journal Paper',
+            articleType: 'Original Research Article',
+            scope: 'International',
+            indexing: 'SCI / Scopus',
+            authors: np.authors || '',
+            year: np.year || '',
+            doi: np.doi || '',
+            paperLink: np.url || (np.doi ? `https://doi.org/${np.doi}` : ''),
+            citationCount: np.citationCount || 0,
+            isApiFetched: true,
+            source: np.source || syncResult.sourcesSynced?.join(', ') || 'Online API'
+          });
+        }
+      });
+
+      const existingConfs = user?.profile?.conferenceProceedings || [];
+      const newConfs = fetchedData.conferenceProceedings || [];
+      const mergedConfs = [...existingConfs];
+      newConfs.forEach(nc => {
+        if (!mergedConfs.some(ec => ec.title?.toLowerCase() === nc.title?.toLowerCase())) {
+          mergedConfs.push({
+            title: nc.title || '',
+            conferenceName: nc.journal || nc.conferenceName || '',
+            scope: 'International',
+            indexing: 'Scopus Indexed',
+            presentationType: 'Oral Presentation',
+            year: nc.year || '',
+            doi: nc.doi || '',
+            paperLink: nc.url || (nc.doi ? `https://doi.org/${nc.doi}` : ''),
+            isApiFetched: true,
+            source: nc.source || syncResult.sourcesSynced?.join(', ') || 'Online API'
+          });
+        }
+      });
+
       const updatedPayload = {
         hIndex: newHIndex,
         i10Index: newI10Index,
         scopusCitations: newScopusCitations,
         googleScholarCitations: newGoogleCitations,
         experience: mergedExp,
-        projects: mergedProj
+        projects: mergedProj,
+        publications: mergedPubs,
+        conferenceProceedings: mergedConfs
       };
 
       const res = await updateProfile(updatedPayload);
       if (res?.success !== false) {
         if (typeof fetchMe === 'function') await fetchMe();
-        toast.success('Profile updated with fetched citation metrics, experience, and R&D projects!');
+        toast.success(`Profile updated with fetched Publications (${newPubs.length}), Conferences (${newConfs.length}), Experience & Citation metrics!`);
         setShowSyncModal(false);
       } else {
         toast.error(res?.message || 'Failed to save imported data');
@@ -9041,6 +9086,79 @@ const ProfileTab = () => {
   const [projectForm, setProjectForm] = useState({ projectTitle: '', fundingAgency: '', amount: '', duration: '', role: 'Principal Investigator', status: 'Ongoing' });
   const [editingProjectIndex, setEditingProjectIndex] = useState(-1);
   const [showProjectForm, setShowProjectForm] = useState(false);
+
+  const [pubForm, setPubForm] = useState({
+    title: '',
+    publicationCategory: 'Journal Paper',
+    articleType: 'Original Research Article',
+    scope: 'International',
+    indexing: 'SCI / SCIE',
+    publisherSelect: '',
+    publisherName: '',
+    journalName: '',
+    authors: '',
+    volume: '',
+    issue: '',
+    pages: '',
+    issn: '',
+    doi: '',
+    publicationDate: '',
+    impactFactor: '',
+    citationCount: '',
+    paperLink: '',
+    source: 'Online API'
+  });
+  const [editingPubIndex, setEditingPubIndex] = useState(-1);
+  const [showPubForm, setShowPubForm] = useState(false);
+
+  const [confForm, setConfForm] = useState({
+    title: '',
+    conferenceName: '',
+    scope: 'International',
+    indexing: 'Scopus Indexed',
+    organizer: '',
+    venueLocation: '',
+    presentationType: 'Oral Presentation',
+    proceedingsTitle: '',
+    isbn: '',
+    doi: '',
+    publicationDate: '',
+    authors: '',
+    paperLink: '',
+    source: 'Online API'
+  });
+  const [editingConfIndex, setEditingConfIndex] = useState(-1);
+  const [showConfForm, setShowConfForm] = useState(false);
+
+  const [lookupDoiInput, setLookupDoiInput] = useState('');
+  const [fetchingDoi, setFetchingDoi] = useState(false);
+  const [doiSuccessMsg, setDoiSuccessMsg] = useState('');
+
+  const handleFetchDoiDetails = async () => {
+    if (!lookupDoiInput.trim()) return;
+    setFetchingDoi(true);
+    setDoiSuccessMsg('');
+    try {
+      const res = await axios.get(`${API_URL}/public/doi-lookup?doi=${encodeURIComponent(lookupDoiInput.trim())}`);
+      if (res.data && res.data.success) {
+        const d = res.data;
+        setPubForm(prev => ({
+          ...prev,
+          title: d.title || prev.title,
+          journalName: d.journalName || prev.journalName,
+          authors: d.authors || prev.authors,
+          year: d.year || prev.year,
+          doi: d.doi || lookupDoiInput.trim(),
+          citationCount: d.citationCount !== undefined ? d.citationCount : prev.citationCount
+        }));
+        setDoiSuccessMsg(`Fetched via ${d.source || 'OpenAlex API'} (${d.citationCount || 0} citations)`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to fetch DOI details via API.');
+    } finally {
+      setFetchingDoi(false);
+    }
+  };
   const [privacySettings, setPrivacySettings] = useState({
     dob: true,
     gender: true,
@@ -9158,6 +9276,7 @@ const ProfileTab = () => {
   const committeesList = user?.profile?.committees || [];
   const projectsList = user?.profile?.projects || [];
   const publicationsList = user?.profile?.publications || [];
+  const conferenceProceedingsList = user?.profile?.conferenceProceedings || [];
   const iprList = user?.profile?.ipr || [];
 
   const handleAddExpertise = async (e) => {
@@ -9295,6 +9414,93 @@ const ProfileTab = () => {
 
   const clearAllProjects = async () => {
     await triggerProfileUpdate({ projects: [] }, 'All research projects cleared');
+  };
+
+  const saveApiPublication = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingPubIndex === -1) {
+      updated = [...publicationsList, { ...pubForm, isApiFetched: true }];
+    } else {
+      updated = [...publicationsList];
+      updated[editingPubIndex] = { ...updated[editingPubIndex], ...pubForm, isApiFetched: true };
+    }
+    await triggerProfileUpdate({ publications: updated }, 'Publication details saved successfully');
+    setShowPubForm(false);
+    setEditingPubIndex(-1);
+    setPubForm({
+      title: '',
+      publicationCategory: 'Journal Paper',
+      articleType: 'Original Research Article',
+      scope: 'International',
+      indexing: 'SCI / SCIE',
+      publisherSelect: '',
+      publisherName: '',
+      journalName: '',
+      authors: '',
+      volume: '',
+      issue: '',
+      pages: '',
+      issn: '',
+      doi: '',
+      publicationDate: '',
+      impactFactor: '',
+      citationCount: '',
+      paperLink: '',
+      source: 'Online API'
+    });
+  };
+
+  const deleteApiPublication = async (index) => {
+    if (!window.confirm('Are you sure you want to remove this publication entry from your profile?')) return;
+    const updated = publicationsList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ publications: updated }, 'Publication entry removed');
+  };
+
+  const clearAllApiPublications = async () => {
+    if (!window.confirm('Are you sure you want to clear all API/profile publication entries?')) return;
+    await triggerProfileUpdate({ publications: [] }, 'All profile publication entries cleared');
+  };
+
+  const saveApiConference = async (e) => {
+    e.preventDefault();
+    let updated;
+    if (editingConfIndex === -1) {
+      updated = [...conferenceProceedingsList, { ...confForm, isApiFetched: true }];
+    } else {
+      updated = [...conferenceProceedingsList];
+      updated[editingConfIndex] = { ...updated[editingConfIndex], ...confForm, isApiFetched: true };
+    }
+    await triggerProfileUpdate({ conferenceProceedings: updated }, 'Conference proceeding saved successfully');
+    setShowConfForm(false);
+    setEditingConfIndex(-1);
+    setConfForm({
+      title: '',
+      conferenceName: '',
+      scope: 'International',
+      indexing: 'Scopus Indexed',
+      organizer: '',
+      venueLocation: '',
+      presentationType: 'Oral Presentation',
+      proceedingsTitle: '',
+      isbn: '',
+      doi: '',
+      publicationDate: '',
+      authors: '',
+      paperLink: '',
+      source: 'Online API'
+    });
+  };
+
+  const deleteApiConference = async (index) => {
+    if (!window.confirm('Are you sure you want to remove this conference entry from your profile?')) return;
+    const updated = conferenceProceedingsList.filter((_, i) => i !== index);
+    await triggerProfileUpdate({ conferenceProceedings: updated }, 'Conference entry removed');
+  };
+
+  const clearAllApiConferences = async () => {
+    if (!window.confirm('Are you sure you want to clear all API/profile conference entries?')) return;
+    await triggerProfileUpdate({ conferenceProceedings: [] }, 'All profile conference entries cleared');
   };
 
   const savePrivacy = async (e) => {
@@ -11373,11 +11579,11 @@ const ProfileTab = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Full Name</label>
-                    <input type="text" className="form-input" value={user?.name} disabled style={{ background: 'var(--color-bg)', color: '#64748B' }} />
+                    <input type="text" className="form-input" value={user?.name} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>University Email (ID)</label>
-                    <input type="text" className="form-input" value={user?.username} disabled style={{ background: 'var(--color-bg)', color: '#64748B' }} />
+                    <input type="text" className="form-input" value={user?.username} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                 </div>
 
@@ -11387,21 +11593,29 @@ const ProfileTab = () => {
                     <input type="date" className="form-input" value={dob} onChange={e => setDob(e.target.value)} required />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Gender <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required>
-                      <option value="">Select...</option>
-                      {genders.map(g => <option key={g._id} value={g.value}>{g.label}</option>)}
-                    </select>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Gender (Official)</label>
+                    {(!user?.profile?.dob && !isVerifiedCandidate && !user?.isVerified && !thesis) ? (
+                      <select className="form-input" value={gender} onChange={e => setGender(e.target.value)} required>
+                        <option value="">Select...</option>
+                        {genders.map(g => <option key={g._id} value={g.value}>{g.label}</option>)}
+                      </select>
+                    ) : (
+                      <input type="text" className="form-input" value={gender || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
+                    )}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Social Category <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={category} onChange={e => setCategory(e.target.value)} required>
-                      <option value="">Select Category...</option>
-                      {categories.map(c => <option key={c._id} value={c.value}>{c.label}</option>)}
-                    </select>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Social Category (Official)</label>
+                    {(!user?.profile?.dob && !isVerifiedCandidate && !user?.isVerified && !thesis) ? (
+                      <select className="form-input" value={category} onChange={e => setCategory(e.target.value)} required>
+                        <option value="">Select Category...</option>
+                        {categories.map(c => <option key={c._id} value={c.value}>{c.label}</option>)}
+                      </select>
+                    ) : (
+                      <input type="text" className="form-input" value={category || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
+                    )}
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Nationality <span style={{ color: '#EF4444' }}>*</span></label>
@@ -11448,19 +11662,16 @@ const ProfileTab = () => {
 
                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Academic Session <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={academicSession} onChange={e => setAcademicSession(e.target.value)} required disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }}>
-                      <option value="">Select Session...</option>
-                      {sessions.map(s => <option key={s._id} value={s.name || s.sessionName}>{s.name || s.sessionName}</option>)}
-                    </select>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Academic Session</label>
+                    <input type="text" className="form-input" value={academicSession || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Degree Type</label>
-                    <input type="text" className="form-input" value="Ph.D." disabled style={{ background: 'var(--color-bg)', color: '#64748B' }} />
+                    <input type="text" className="form-input" value="Ph.D." disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Department</label>
-                    <input type="text" className="form-input" value={user?.department} disabled style={{ background: 'var(--color-bg)', color: '#64748B' }} />
+                    <input type="text" className="form-input" value={user?.department || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
                   </div>
                 </div>
 
@@ -11471,22 +11682,34 @@ const ProfileTab = () => {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>University Enrollment Number</label>
-                    <input type="text" className="form-input" placeholder="Enter enrollment number" value={enrollmentNumber} onChange={e => setEnrollmentNumber(e.target.value)} />
+                    {(!user?.profile?.dob && !isVerifiedCandidate && !user?.isVerified && !thesis) ? (
+                      <input type="text" className="form-input" placeholder="Enter enrollment number" value={enrollmentNumber} onChange={e => setEnrollmentNumber(e.target.value)} />
+                    ) : (
+                      <input type="text" className="form-input" value={enrollmentNumber || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
+                    )}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Date of Admission <span style={{ color: '#EF4444' }}>*</span></label>
-                    <input type="date" className="form-input" value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} required />
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Date of Admission</label>
+                    {(!user?.profile?.dob && !isVerifiedCandidate && !user?.isVerified && !thesis) ? (
+                      <input type="date" className="form-input" value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} required />
+                    ) : (
+                      <input type="text" className="form-input" value={admissionDate || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
+                    )}
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Mode of Ph.D. <span style={{ color: '#EF4444' }}>*</span></label>
-                    <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)} required>
-                      <option value="">Select Mode...</option>
-                      <option value="Full-time">Full-time Regular</option>
-                      <option value="Part-time">Part-time / Sponsored</option>
-                    </select>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Mode of Ph.D.</label>
+                    {(!user?.profile?.dob && !isVerifiedCandidate && !user?.isVerified && !thesis) ? (
+                      <select className="form-input" value={phdMode} onChange={e => setPhdMode(e.target.value)} required>
+                        <option value="">Select Mode...</option>
+                        <option value="Full-time">Full-time Regular</option>
+                        <option value="Part-time">Part-time / Sponsored</option>
+                      </select>
+                    ) : (
+                      <input type="text" className="form-input" value={phdMode || '—'} disabled style={{ background: 'var(--color-bg)', color: '#64748B', cursor: 'not-allowed' }} />
+                    )}
                   </div>
                 </div>
 
@@ -13482,36 +13705,326 @@ const ProfileTab = () => {
 
           {/* 10. PUBLICATIONS */}
           <div ref={sectionRefs.publications} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BookOpen size={20} style={{ color: '#133A26' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Research Publications</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BookOpen size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Research Publications</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {publicationsList.length > 0 && (
+                  <button type="button" onClick={clearAllApiPublications} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Clear API Entries
+                  </button>
+                )}
+                {!showPubForm && (
+                  <button type="button" onClick={() => { setShowPubForm(true); setEditingPubIndex(-1); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Publication
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
               <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #334155)', lineHeight: 1.4 }}>
-                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Research Publications</strong> entries is disabled on this page. Please submit your publication entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
+                <strong>PhD Scholar Publication Guide:</strong> Institutional research outputs verified through your PhD lifecycle (Supervisor & HOD Approval) are officially audited and locked. Publications synced from academic APIs (ORCID, Scopus, Google Scholar, OpenAlex) appear with an <strong>Edit</strong> button so you can curate and refine their metadata.
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Publication Add / Edit Form */}
+            {showPubForm && (
+              <form onSubmit={saveApiPublication} style={{ padding: '20px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: '700', margin: 0, color: '#133A26' }}>
+                    {editingPubIndex === -1 ? 'Add Profile Publication' : 'Edit Profile Publication'}
+                  </h4>
+                  <span style={{ fontSize: '0.75rem', background: '#DBEAFE', color: '#1E40AF', padding: '3px 8px', borderRadius: '4px', fontWeight: 600 }}>API / Profile Entry</span>
+                </div>
+
+                {/* Auto DOI Lookup */}
+                <div style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>⚡ Quick Autofill via DOI (OpenAlex & CrossRef)</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. 10.1016/j.jbi.2021.103756 or full DOI URL" 
+                      value={lookupDoiInput} 
+                      onChange={e => setLookupDoiInput(e.target.value)} 
+                      style={{ fontSize: '0.82rem' }}
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleFetchDoiDetails} 
+                      disabled={fetchingDoi} 
+                      className="btn-primary" 
+                      style={{ padding: '6px 14px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                    >
+                      {fetchingDoi ? 'Fetching...' : 'Fetch DOI Details'}
+                    </button>
+                  </div>
+                  {doiSuccessMsg && <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>✓ {doiSuccessMsg}</span>}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label">Paper / Book Title *</label>
+                    <input type="text" className="form-input" value={pubForm.title} onChange={e => setPubForm({ ...pubForm, title: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Category *</label>
+                    <select className="form-input" value={pubForm.publicationCategory || 'Journal Paper'} onChange={e => setPubForm({ ...pubForm, publicationCategory: e.target.value })} required>
+                      <option value="Journal Paper">Journal Paper</option>
+                      <option value="Book">Book</option>
+                      <option value="Book Chapter">Book Chapter</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Article Type *</label>
+                    <select className="form-input" value={pubForm.articleType || 'Original Research Article'} onChange={e => setPubForm({ ...pubForm, articleType: e.target.value })} required>
+                      <option value="Original Research Article">Original Research Article</option>
+                      <option value="Review Article">Review Article</option>
+                      <option value="Letter to Editor / Short Communication">Letter to Editor / Short Communication</option>
+                      <option value="Hypothesis / Conceptual Paper">Hypothesis / Conceptual Paper</option>
+                      <option value="Case Study / Editorial / Opinion">Case Study / Editorial / Opinion</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Scope *</label>
+                    <select className="form-input" value={pubForm.scope} onChange={e => setPubForm({ ...pubForm, scope: e.target.value })} required>
+                      <option value="International">International</option>
+                      <option value="National">National</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Indexing / Database *</label>
+                    <select className="form-input" value={pubForm.indexing} onChange={e => setPubForm({ ...pubForm, indexing: e.target.value })} required>
+                      <option value="SCI / SCIE">SCI / SCIE</option>
+                      <option value="Scopus">Scopus</option>
+                      <option value="UGC CARE">UGC CARE</option>
+                      <option value="Web of Science">Web of Science</option>
+                      <option value="Peer-Reviewed / Refereed">Peer-Reviewed / Refereed</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Publisher Name</label>
+                    <select className="form-input" value={pubForm.publisherSelect || (['Elsevier','Springer Nature','IEEE','Wiley','Taylor & Francis','Oxford University Press','Cambridge University Press','ACM (Association for Computing Machinery)','SAGE Publications','Nature Publishing Group','MDPI','Frontiers','PLOS (Public Library of Science)','ACS (American Chemical Society)','RSC (Royal Society of Chemistry)','Emerald Publishing','Inderscience','Bentham Science','De Gruyter'].includes(pubForm.publisherName) ? pubForm.publisherName : (pubForm.publisherName ? 'Other' : ''))} onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setPubForm({ ...pubForm, publisherSelect: 'Other', publisherName: '' });
+                      } else {
+                        setPubForm({ ...pubForm, publisherSelect: val, publisherName: val });
+                      }
+                    }}>
+                      <option value="">-- Select Publisher --</option>
+                      <option value="Elsevier">Elsevier</option>
+                      <option value="Springer Nature">Springer Nature</option>
+                      <option value="IEEE">IEEE</option>
+                      <option value="Wiley">Wiley</option>
+                      <option value="Taylor & Francis">Taylor & Francis</option>
+                      <option value="Oxford University Press">Oxford University Press</option>
+                      <option value="Cambridge University Press">Cambridge University Press</option>
+                      <option value="ACM (Association for Computing Machinery)">ACM (Association for Computing Machinery)</option>
+                      <option value="SAGE Publications">SAGE Publications</option>
+                      <option value="Nature Publishing Group">Nature Publishing Group</option>
+                      <option value="MDPI">MDPI</option>
+                      <option value="Frontiers">Frontiers</option>
+                      <option value="PLOS (Public Library of Science)">PLOS (Public Library of Science)</option>
+                      <option value="ACS (American Chemical Society)">ACS (American Chemical Society)</option>
+                      <option value="RSC (Royal Society of Chemistry)">RSC (Royal Society of Chemistry)</option>
+                      <option value="Emerald Publishing">Emerald Publishing</option>
+                      <option value="Inderscience">Inderscience</option>
+                      <option value="Bentham Science">Bentham Science</option>
+                      <option value="De Gruyter">De Gruyter</option>
+                      <option value="Other">Other (Specify Custom Publisher)</option>
+                    </select>
+                    {(pubForm.publisherSelect === 'Other' || (!['Elsevier','Springer Nature','IEEE','Wiley','Taylor & Francis','Oxford University Press','Cambridge University Press','ACM (Association for Computing Machinery)','SAGE Publications','Nature Publishing Group','MDPI','Frontiers','PLOS (Public Library of Science)','ACS (American Chemical Society)','RSC (Royal Society of Chemistry)','Emerald Publishing','Inderscience','Bentham Science','De Gruyter'].includes(pubForm.publisherName) && !!pubForm.publisherName)) && (
+                      <input type="text" className="form-input" value={pubForm.publisherName} onChange={e => setPubForm({ ...pubForm, publisherName: e.target.value })} placeholder="Type custom publisher name" style={{ marginTop: '6px' }} />
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Journal / Book Name *</label>
+                    <input type="text" className="form-input" value={pubForm.journalName} onChange={e => setPubForm({ ...pubForm, journalName: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Authors</label>
+                    <input type="text" className="form-input" value={pubForm.authors} onChange={e => setPubForm({ ...pubForm, authors: e.target.value })} placeholder="e.g. A. Sood, H. Negi" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Volume & Issue</label>
+                    <input type="text" className="form-input" value={pubForm.volume} onChange={e => setPubForm({ ...pubForm, volume: e.target.value })} placeholder="Vol. 12, Issue 3" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Pages</label>
+                    <input type="text" className="form-input" value={pubForm.pages} onChange={e => setPubForm({ ...pubForm, pages: e.target.value })} placeholder="pp. 45-58" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">ISSN / ISBN</label>
+                    <input type="text" className="form-input" value={pubForm.issn} onChange={e => setPubForm({ ...pubForm, issn: e.target.value })} placeholder="e.g. 1549-3652" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">DOI / Paper URL</label>
+                    <input type="text" className="form-input" value={pubForm.doi} onChange={e => setPubForm({ ...pubForm, doi: e.target.value })} placeholder="e.g. 10.1016/j.jbi.2021.103756" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Publication Date</label>
+                    <input type="date" className="form-input" value={pubForm.publicationDate} onChange={e => setPubForm({ ...pubForm, publicationDate: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Impact Factor</label>
+                    <input type="text" className="form-input" value={pubForm.impactFactor} onChange={e => setPubForm({ ...pubForm, impactFactor: e.target.value })} placeholder="e.g. 4.5" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Citation Count</label>
+                    <input type="number" className="form-input" value={pubForm.citationCount} onChange={e => setPubForm({ ...pubForm, citationCount: e.target.value })} placeholder="e.g. 12" />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label">Paper Link / Online Access URL</label>
+                    <input type="text" className="form-input" value={pubForm.paperLink} onChange={e => setPubForm({ ...pubForm, paperLink: e.target.value })} placeholder="https://..." />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                  <button type="button" onClick={() => setShowPubForm(false)} style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '6px 16px', fontSize: '0.82rem' }}>Save Publication</button>
+                </div>
+              </form>
+            )}
+
+            {/* Subsection 10.A: Verified Institutional Outputs (Locked) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '6px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#133A26' }}>
+                  🏛️ Verified Research Outputs <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>({verifiedPubs.length} cleared by Supervisor & HOD)</span>
+                </span>
+                <span style={{ fontSize: '0.72rem', background: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                  🔒 Read-Only Deliverables
+                </span>
+              </div>
+
               {loadingPubsAndIprs ? (
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified publication entries...</span>
               ) : verifiedPubs.length === 0 ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified publications found. Submit entries on Research Outputs page.</span>
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified thesis milestone publications yet. Submit your deliverables via the Research Outputs tab for formal supervisor & HOD sign-off.</span>
               ) : (
                 verifiedPubs.map((p, i) => (
-                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                    <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{p.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>{p.journalName} ({p.publicationCategory || p.type})</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {p.scope || 'N/A'} | Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Pages: {p.pages || 'N/A'}</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block', marginTop: '2px' }}>Date: {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}</span>
+                  <div key={i} style={{ border: '1px solid #CBD5E1', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: '#F8FAFC' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{p.title}</strong>
+                        <span style={{ background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          ✓ Supervisor & HOD Verified
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                        {p.journalName} {p.publisherName ? `(${p.publisherName})` : ''} • <span style={{ color: '#0284C7' }}>{p.publicationCategory || p.type}</span>
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                        Scope: {p.scope || 'N/A'} | Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Pages: {p.pages || 'N/A'}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block', marginTop: '2px' }}>
+                        Date: {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}
+                      </span>
                       {p.paperLink && (
                         <a href={p.paperLink.startsWith('http') ? p.paperLink : `https://${p.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#133A26', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
-                          Paper Link / DOI
+                          <ExternalLink size={12} /> Paper Link / DOI
                         </a>
                       )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Subsection 10.B: API-Imported & Profile Publications (Editable) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '6px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1E40AF' }}>
+                  🌐 API-Imported & Profile Publications <span style={{ fontSize: '0.75rem', color: '#2563EB', fontWeight: 600 }}>({publicationsList.length} entries)</span>
+                </span>
+                <span style={{ fontSize: '0.72rem', background: '#DBEAFE', color: '#1E40AF', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                  ✏️ Editable
+                </span>
+              </div>
+
+              {publicationsList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>
+                  No API-imported publications found in your profile. You can sync via ORCID, Scopus, or Google Scholar using "Fetch Online Data" under Academic Identifiers, or click "+ Add Publication" above.
+                </span>
+              ) : (
+                publicationsList.map((pb, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{pb.title}</strong>
+                        <span style={{ background: '#DBEAFE', color: '#1E40AF', border: '1px solid #93C5FD', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          🌐 {pb.source || 'API Import'}
+                        </span>
+                        {pb.citationCount !== undefined && pb.citationCount !== '' && (
+                          <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                            ⭐ {pb.citationCount} Citations
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                        {pb.journalName} {pb.publisherName ? `(${pb.publisherName})` : ''} • <span style={{ color: '#0284C7' }}>{pb.publicationCategory || 'Journal Paper'}</span>
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                        Scope: {pb.scope || 'International'} | Indexing: {pb.indexing || 'Peer-Reviewed'} | Authors: {pb.authors || 'N/A'}
+                      </span>
+                      {(pb.volume || pb.pages || pb.doi || pb.year || pb.publicationDate) && (
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block', marginTop: '2px' }}>
+                          {pb.year ? `Year: ${pb.year}` : pb.publicationDate ? `Date: ${new Date(pb.publicationDate).toLocaleDateString()}` : ''} {pb.volume ? `| Vol: ${pb.volume}` : ''} {pb.pages ? `| Pages: ${pb.pages}` : ''} {pb.doi ? `| DOI: ${pb.doi}` : ''}
+                        </span>
+                      )}
+                      {(pb.paperLink || pb.url || (pb.doi && pb.doi.startsWith('http'))) && (
+                        <a href={(pb.paperLink || pb.url || pb.doi).startsWith('http') ? (pb.paperLink || pb.url || pb.doi) : `https://doi.org/${pb.doi}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#2563EB', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> Paper Link / DOI
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => { 
+                          setEditingPubIndex(i); 
+                          setPubForm({
+                            title: pb.title || '',
+                            publicationCategory: pb.publicationCategory || 'Journal Paper',
+                            articleType: pb.articleType || 'Original Research Article',
+                            scope: pb.scope || 'International',
+                            indexing: pb.indexing || 'SCI / SCIE',
+                            publisherSelect: pb.publisherSelect || '',
+                            publisherName: pb.publisherName || '',
+                            journalName: pb.journalName || pb.journal || '',
+                            authors: pb.authors || '',
+                            volume: pb.volume || '',
+                            issue: pb.issue || '',
+                            pages: pb.pages || '',
+                            issn: pb.issn || '',
+                            doi: pb.doi || '',
+                            publicationDate: pb.publicationDate ? pb.publicationDate.split('T')[0] : '',
+                            impactFactor: pb.impactFactor || '',
+                            citationCount: pb.citationCount || '',
+                            paperLink: pb.paperLink || pb.url || '',
+                            source: pb.source || 'Online API'
+                          }); 
+                          setShowPubForm(true); 
+                        }} 
+                        style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#1E293B', cursor: 'pointer', padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', fontWeight: 600 }}
+                        title="Edit publication details"
+                      >
+                        <Edit size={14} /> Edit
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => deleteApiPublication(i)} 
+                        style={{ background: '#FEE2E2', border: '1px solid #FECACA', color: '#EF4444', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+                        title="Remove from profile"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -13521,30 +14034,228 @@ const ProfileTab = () => {
 
           {/* 11. CONFERENCE PROCEEDINGS */}
           <div ref={sectionRefs.conferenceProceedings} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={20} style={{ color: '#133A26' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Conference Proceedings</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={20} style={{ color: '#133A26' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#133A26', margin: 0 }}>Conference Proceedings</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {conferenceProceedingsList.length > 0 && (
+                  <button type="button" onClick={clearAllApiConferences} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Clear API Entries
+                  </button>
+                )}
+                {!showConfForm && (
+                  <button type="button" onClick={() => { setShowConfForm(true); setEditingConfIndex(-1); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', fontSize: '0.8rem' }}>
+                    <Plus size={14} /> Add Conference
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
               <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #334155)', lineHeight: 1.4 }}>
-                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Conference Proceedings</strong> entries is disabled on this page. Please submit your conference entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
+                <strong>PhD Scholar Conference Guide:</strong> Institutional conference proceedings verified through your PhD lifecycle (Supervisor & HOD Approval) are officially audited and locked. Conference entries synced from APIs or added to your profile feature an <strong>Edit</strong> button.
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Conference Add / Edit Form */}
+            {showConfForm && (
+              <form onSubmit={saveApiConference} style={{ padding: '20px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: '700', margin: 0, color: '#133A26' }}>
+                    {editingConfIndex === -1 ? 'Add Conference Proceeding' : 'Edit Conference Proceeding'}
+                  </h4>
+                  <span style={{ fontSize: '0.75rem', background: '#DBEAFE', color: '#1E40AF', padding: '3px 8px', borderRadius: '4px', fontWeight: 600 }}>API / Profile Entry</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label">Paper Title *</label>
+                    <input type="text" className="form-input" value={confForm.title} onChange={e => setConfForm({ ...confForm, title: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Conference Name *</label>
+                    <input type="text" className="form-input" value={confForm.conferenceName} onChange={e => setConfForm({ ...confForm, conferenceName: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Scope *</label>
+                    <select className="form-input" value={confForm.scope} onChange={e => setConfForm({ ...confForm, scope: e.target.value })} required>
+                      <option value="International">International</option>
+                      <option value="National">National</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Indexing *</label>
+                    <select className="form-input" value={confForm.indexing} onChange={e => setConfForm({ ...confForm, indexing: e.target.value })} required>
+                      <option value="Scopus Indexed">Scopus Indexed</option>
+                      <option value="IEEE Xplore">IEEE Xplore</option>
+                      <option value="Springer Link">Springer Link</option>
+                      <option value="Web of Science">Web of Science</option>
+                      <option value="UGC CARE">UGC CARE</option>
+                      <option value="Peer-Reviewed">Peer-Reviewed</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Organizer Name</label>
+                    <input type="text" className="form-input" value={confForm.organizer} onChange={e => setConfForm({ ...confForm, organizer: e.target.value })} placeholder="e.g. IEEE India Council" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Venue / Location</label>
+                    <input type="text" className="form-input" value={confForm.venueLocation} onChange={e => setConfForm({ ...confForm, venueLocation: e.target.value })} placeholder="e.g. New Delhi, India" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Presentation Type</label>
+                    <select className="form-input" value={confForm.presentationType} onChange={e => setConfForm({ ...confForm, presentationType: e.target.value })}>
+                      <option value="Oral Presentation">Oral Presentation</option>
+                      <option value="Poster Presentation">Poster Presentation</option>
+                      <option value="Keynote / Invited Talk">Keynote / Invited Talk</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Proceedings Title</label>
+                    <input type="text" className="form-input" value={confForm.proceedingsTitle} onChange={e => setConfForm({ ...confForm, proceedingsTitle: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">ISBN / ISSN</label>
+                    <input type="text" className="form-input" value={confForm.isbn} onChange={e => setConfForm({ ...confForm, isbn: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">DOI / URL</label>
+                    <input type="text" className="form-input" value={confForm.doi} onChange={e => setConfForm({ ...confForm, doi: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Date</label>
+                    <input type="date" className="form-input" value={confForm.publicationDate} onChange={e => setConfForm({ ...confForm, publicationDate: e.target.value })} />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="form-label">Authors</label>
+                    <input type="text" className="form-input" value={confForm.authors} onChange={e => setConfForm({ ...confForm, authors: e.target.value })} placeholder="e.g. A. Sood, H. Negi" />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                  <button type="button" onClick={() => setShowConfForm(false)} style={{ background: '#6B7280', color: 'white', border: 'none', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600, borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary" style={{ padding: '6px 16px', fontSize: '0.82rem' }}>Save Conference</button>
+                </div>
+              </form>
+            )}
+
+            {/* Subsection 11.A: Verified Institutional Conferences (Locked) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '6px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#133A26' }}>
+                  🏛️ Verified Conference Proceedings <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>({verifiedConferences.length} cleared by Supervisor & HOD)</span>
+                </span>
+                <span style={{ fontSize: '0.72rem', background: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                  🔒 Read-Only Deliverables
+                </span>
+              </div>
+
               {loadingPubsAndIprs ? (
                 <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified conference entries...</span>
               ) : verifiedConferences.length === 0 ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified conference proceedings found. Submit entries on Research Outputs page.</span>
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified conference proceedings yet. Submit entries on Research Outputs page for formal clearance.</span>
               ) : (
                 verifiedConferences.map((c, i) => (
-                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                    <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{c.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>{c.conferenceName || c.journalName} ({c.presentationType || 'Oral'})</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {c.scope || 'National'} | Indexing: {c.indexing || 'Scopus'} | Organizer: {c.organizer || c.volume || 'N/A'}</span>
+                  <div key={i} style={{ border: '1px solid #CBD5E1', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: '#F8FAFC' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{c.title}</strong>
+                        <span style={{ background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          ✓ Supervisor & HOD Verified
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                        {c.conferenceName || c.journalName} ({c.presentationType || 'Oral'})
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                        Scope: {c.scope || 'National'} | Indexing: {c.indexing || 'Scopus'} | Organizer: {c.organizer || c.volume || 'N/A'}
+                      </span>
+                      {c.paperLink && (
+                        <a href={c.paperLink.startsWith('http') ? c.paperLink : `https://${c.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#133A26', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> View Proceeding / DOI
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Subsection 11.B: API-Imported & Profile Conferences (Editable) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '6px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1E40AF' }}>
+                  🌐 API-Imported & Profile Conferences <span style={{ fontSize: '0.75rem', color: '#2563EB', fontWeight: 600 }}>({conferenceProceedingsList.length} entries)</span>
+                </span>
+                <span style={{ fontSize: '0.72rem', background: '#DBEAFE', color: '#1E40AF', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                  ✏️ Editable
+                </span>
+              </div>
+
+              {conferenceProceedingsList.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>
+                  No API-imported conference proceedings in your profile yet.
+                </span>
+              ) : (
+                conferenceProceedingsList.map((cf, i) => (
+                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{cf.title}</strong>
+                        <span style={{ background: '#DBEAFE', color: '#1E40AF', border: '1px solid #93C5FD', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          🌐 {cf.source || 'API Import'}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#133A26', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                        {cf.conferenceName} ({cf.presentationType || 'Oral Presentation'})
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                        Scope: {cf.scope || 'International'} | Indexing: {cf.indexing || 'Scopus Indexed'} | Organizer: {cf.organizer || 'N/A'}
+                      </span>
+                      {(cf.doi || cf.paperLink || cf.url) && (
+                        <a href={(cf.paperLink || cf.url || cf.doi).startsWith('http') ? (cf.paperLink || cf.url || cf.doi) : `https://${cf.doi}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#2563EB', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> View Proceeding Link
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => { 
+                          setEditingConfIndex(i); 
+                          setConfForm({
+                            title: cf.title || '',
+                            conferenceName: cf.conferenceName || cf.journal || '',
+                            scope: cf.scope || 'International',
+                            indexing: cf.indexing || 'Scopus Indexed',
+                            organizer: cf.organizer || '',
+                            venueLocation: cf.venueLocation || '',
+                            presentationType: cf.presentationType || 'Oral Presentation',
+                            proceedingsTitle: cf.proceedingsTitle || '',
+                            isbn: cf.isbn || '',
+                            doi: cf.doi || '',
+                            publicationDate: cf.publicationDate ? cf.publicationDate.split('T')[0] : '',
+                            authors: cf.authors || '',
+                            paperLink: cf.paperLink || cf.url || '',
+                            source: cf.source || 'Online API'
+                          }); 
+                          setShowConfForm(true); 
+                        }} 
+                        style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#1E293B', cursor: 'pointer', padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', fontWeight: 600 }}
+                        title="Edit conference proceeding"
+                      >
+                        <Edit size={14} /> Edit
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => deleteApiConference(i)} 
+                        style={{ background: '#FEE2E2', border: '1px solid #FECACA', color: '#EF4444', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center' }}
+                        title="Remove from profile"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -14057,13 +14768,45 @@ const ProfileTab = () => {
 
               <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '12px 16px', borderRadius: '10px', fontSize: '0.82rem', color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.1rem' }}>💡</span>
-                <span><strong>PhD Candidate Profile Note</strong>: Citation Metrics, Work Experience ({syncResult.fetchedData?.experience?.length || 0}), and R&D Projects ({syncResult.fetchedData?.projects?.length || 0}) will be added to your profile. Publications are registered separately via your <strong>Research Outputs</strong> module.</span>
+                <span><strong>PhD Candidate Profile Note</strong>: Publications ({syncResult.fetchedData?.publications?.length || 0}) and Conferences ({syncResult.fetchedData?.conferenceProceedings?.length || 0}) will be imported to your profile with full <strong>Edit</strong> capabilities. Milestone deliverables verified by your Supervisor & HOD remain securely locked.</span>
               </div>
+
+              {syncResult.fetchedData?.publications?.length > 0 && (
+                <div>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#0284C7', fontWeight: 700 }}>
+                    2. Research Publications Found ({syncResult.fetchedData.publications.length})
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
+                    {syncResult.fetchedData.publications.map((pb, idx) => (
+                      <div key={idx} style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: '6px', fontSize: '0.82rem', border: '1px solid #E2E8F0' }}>
+                        <strong style={{ color: '#0F172A' }}>{pb.title}</strong>
+                        <span style={{ display: 'block', color: '#64748B', fontSize: '0.75rem', marginTop: '2px' }}>{pb.journal || 'Academic Journal'} ({pb.year || 'N/A'}) • {pb.source || 'API'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {syncResult.fetchedData?.conferenceProceedings?.length > 0 && (
+                <div>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#0284C7', fontWeight: 700 }}>
+                    3. Conference Proceedings Found ({syncResult.fetchedData.conferenceProceedings.length})
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '120px', overflowY: 'auto' }}>
+                    {syncResult.fetchedData.conferenceProceedings.map((cf, idx) => (
+                      <div key={idx} style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: '6px', fontSize: '0.82rem', border: '1px solid #E2E8F0' }}>
+                        <strong style={{ color: '#0F172A' }}>{cf.title}</strong>
+                        <span style={{ display: 'block', color: '#64748B', fontSize: '0.75rem', marginTop: '2px' }}>{cf.journal || cf.conferenceName || 'Conference'} • {cf.source || 'API'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {syncResult.fetchedData?.experience?.length > 0 && (
                 <div>
                   <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#0284C7', fontWeight: 700 }}>
-                    3. Work Experience Found ({syncResult.fetchedData.experience.length})
+                    4. Work Experience Found ({syncResult.fetchedData.experience.length})
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {syncResult.fetchedData.experience.map((exp, idx) => (

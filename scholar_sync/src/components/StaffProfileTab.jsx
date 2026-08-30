@@ -586,33 +586,56 @@ const StaffProfileTab = ({ thesis }) => {
         projects: mergedProj
       };
 
-      if (!isStudent) {
-        const existingPubs = profile.publications || [];
-        const newPubs = fetchedData.publications || [];
-        const mergedPubs = [...existingPubs];
-        newPubs.forEach(np => {
-          if (!mergedPubs.some(ep => ep.title?.toLowerCase() === np.title?.toLowerCase())) {
-            mergedPubs.push(np);
-          }
-        });
+      const existingPubs = profile.publications || [];
+      const newPubs = fetchedData.publications || [];
+      const mergedPubs = [...existingPubs];
+      newPubs.forEach(np => {
+        if (!mergedPubs.some(ep => ep.title?.toLowerCase() === np.title?.toLowerCase())) {
+          mergedPubs.push({
+            title: np.title || '',
+            journalName: np.journal || np.journalName || '',
+            publicationCategory: np.type === 'CONFERENCE' ? 'Conference Paper' : 'Journal Paper',
+            articleType: 'Original Research Article',
+            scope: 'International',
+            indexing: 'SCI / Scopus',
+            authors: np.authors || '',
+            year: np.year || '',
+            doi: np.doi || '',
+            paperLink: np.url || (np.doi ? `https://doi.org/${np.doi}` : ''),
+            citationCount: np.citationCount || 0,
+            isApiFetched: true,
+            source: np.source || syncResult.sourcesSynced?.join(', ') || 'Online API'
+          });
+        }
+      });
 
-        const existingConfs = profile.conferenceProceedings || [];
-        const newConfs = fetchedData.conferenceProceedings || [];
-        const mergedConfs = [...existingConfs];
-        newConfs.forEach(nc => {
-          if (!mergedConfs.some(ec => ec.title?.toLowerCase() === nc.title?.toLowerCase())) {
-            mergedConfs.push(nc);
-          }
-        });
+      const existingConfs = profile.conferenceProceedings || [];
+      const newConfs = fetchedData.conferenceProceedings || [];
+      const mergedConfs = [...existingConfs];
+      newConfs.forEach(nc => {
+        if (!mergedConfs.some(ec => ec.title?.toLowerCase() === nc.title?.toLowerCase())) {
+          mergedConfs.push({
+            title: nc.title || '',
+            conferenceName: nc.journal || nc.conferenceName || '',
+            scope: 'International',
+            indexing: 'Scopus Indexed',
+            presentationType: 'Oral Presentation',
+            year: nc.year || '',
+            doi: nc.doi || '',
+            paperLink: nc.url || (nc.doi ? `https://doi.org/${nc.doi}` : ''),
+            isApiFetched: true,
+            source: nc.source || syncResult.sourcesSynced?.join(', ') || 'Online API'
+          });
+        }
+      });
 
-        updatedPayload.publications = mergedPubs;
-        updatedPayload.conferenceProceedings = mergedConfs;
-      }
+      updatedPayload.publications = mergedPubs;
+      updatedPayload.conferenceProceedings = mergedConfs;
 
       await triggerProfileUpdate(updatedPayload, `Synced from ${sources.join(', ') || 'online sources'}: h-Index=${newHIndex || 'N/A'}, i10=${newI10Index || 'N/A'}`);
       if (typeof fetchMe === 'function') await fetchMe();
       setShowSyncModal(false);
-      toast.success(isStudent ? 'Profile updated with fetched Citation Metrics, Experience & R&D Projects!' : 'Profile updated with fetched Publications, Conferences, Experience & R&D Projects across all tabs!');
+      toast.success('Profile updated with fetched Publications, Conferences, Experience & Citation Metrics!');
     } catch (err) {
       console.error('Import error:', err);
       toast.error('Error saving imported data');
@@ -623,47 +646,159 @@ const StaffProfileTab = ({ thesis }) => {
 
   const [newExpertise, setNewExpertise] = useState('');
 
-  const [expForm, setExpForm] = useState({ designation: '', organization: '', startDate: '', endDate: '', isPresent: false, description: '' });
+  const [expForm, setExpForm] = useState({ 
+    designation: '', 
+    organization: '', 
+    department: '', 
+    employmentType: 'Regular / Permanent', 
+    payScale: '', 
+    startDate: '', 
+    endDate: '', 
+    isPresent: false, 
+    description: '' 
+  });
   const [editingExpIndex, setEditingExpIndex] = useState(-1);
   const [showExpForm, setShowExpForm] = useState(false);
 
-  const [awardForm, setAwardForm] = useState({ awardName: '', awardingBody: '', year: '', description: '' });
+  const [awardForm, setAwardForm] = useState({ 
+    awardName: '', 
+    awardingBody: '', 
+    scope: 'National', 
+    awardCategory: '', 
+    year: '', 
+    description: '' 
+  });
   const [editingAwardIndex, setEditingAwardIndex] = useState(-1);
   const [showAwardForm, setShowAwardForm] = useState(false);
 
-  const [thesisForm, setThesisForm] = useState({ scholarName: '', thesisTitle: '', yearOfAward: '', status: 'Ongoing' });
+  const [thesisForm, setThesisForm] = useState({ 
+    degreeLevel: 'Ph.D.', 
+    scholarName: '', 
+    thesisTitle: '', 
+    regYear: '', 
+    status: 'Ongoing / In-Progress', 
+    yearOfAward: '', 
+    coSupervisor: '' 
+  });
   const [editingThesisIndex, setEditingThesisIndex] = useState(-1);
   const [showThesisForm, setShowThesisForm] = useState(false);
 
-  const [memberForm, setMemberForm] = useState({ membershipName: '', organization: '', membershipType: 'Life Member', year: '' });
+  const [memberForm, setMemberForm] = useState({ 
+    membershipName: '', 
+    organization: '', 
+    membershipType: 'Life Member', 
+    membershipId: '', 
+    year: '' 
+  });
   const [editingMemberIndex, setEditingMemberIndex] = useState(-1);
   const [showMemberForm, setShowMemberForm] = useState(false);
 
-  const [committeeForm, setCommitteeForm] = useState({ committeeName: '', role: '', organization: '', duration: '' });
+  const [committeeForm, setCommitteeForm] = useState({ 
+    committeeName: '', 
+    role: 'Member', 
+    organization: '', 
+    duration: '', 
+    responsibilities: '' 
+  });
   const [editingCommitteeIndex, setEditingCommitteeIndex] = useState(-1);
   const [showCommitteeForm, setShowCommitteeForm] = useState(false);
 
-  const [projectForm, setProjectForm] = useState({ projectTitle: '', fundingAgency: '', amount: '', duration: '', role: 'Principal Investigator', status: 'Ongoing' });
+  const [projectForm, setProjectForm] = useState({ 
+    projectTitle: '', 
+    fundingAgency: '', 
+    projectType: 'Sponsored Research', 
+    sanctionId: '', 
+    amount: '', 
+    duration: '', 
+    role: 'Principal Investigator (PI)', 
+    status: 'Ongoing' 
+  });
   const [editingProjectIndex, setEditingProjectIndex] = useState(-1);
   const [showProjectForm, setShowProjectForm] = useState(false);
 
-  const [pubForm, setPubForm] = useState({ title: '', publicationCategory: 'Journal Paper', scope: 'International', indexing: 'SCI / SCIE', journalName: '', authors: '', volume: '', issue: '', pages: '', issn: '', doi: '', publicationDate: '', impactFactor: '', citationCount: '', paperLink: '' });
+  const [pubForm, setPubForm] = useState({ 
+    title: '', 
+    publicationCategory: 'Journal Paper', 
+    articleType: 'Original Research Article', 
+    scope: 'International', 
+    itemStatus: 'Published', 
+    indexing: 'SCI / SCIE', 
+    publisherSelect: '', 
+    publisherName: '', 
+    journalName: '', 
+    authors: '', 
+    volume: '', 
+    issue: '', 
+    pages: '', 
+    issn: '', 
+    doi: '', 
+    publicationDate: '', 
+    impactFactor: '', 
+    citationCount: '', 
+    paperLink: '' 
+  });
   const [editingPubIndex, setEditingPubIndex] = useState(-1);
   const [showPubForm, setShowPubForm] = useState(false);
   
-  const [confForm, setConfForm] = useState({ title: '', conferenceName: '', scope: 'International', indexing: 'Scopus Indexed', organizer: '', venueLocation: '', presentationType: 'Oral Presentation', proceedingsTitle: '', isbn: '', doi: '', publicationDate: '', authors: '', paperLink: '' });
+  const [confForm, setConfForm] = useState({ 
+    title: '', 
+    conferenceName: '', 
+    scope: 'International', 
+    indexing: 'Scopus Indexed', 
+    presentationType: 'Oral Presentation', 
+    organizer: '', 
+    venueLocation: '', 
+    proceedingsTitle: '', 
+    isbn: '', 
+    doi: '', 
+    publicationDate: '', 
+    authors: '', 
+    paperLink: '' 
+  });
   const [editingConfIndex, setEditingConfIndex] = useState(-1);
   const [showConfForm, setShowConfForm] = useState(false);
 
-  const [workshopForm, setWorkshopForm] = useState({ title: '', role: 'Attended / Participant', scope: 'National', organizer: '', mode: 'Offline / In-Person', duration: '', startDate: '', endDate: '', venueLocation: '', paperLink: '' });
+  const [workshopForm, setWorkshopForm] = useState({ 
+    title: '', 
+    role: 'Attended / Participant', 
+    scope: 'National', 
+    mode: 'In-Person (Offline)', 
+    organizer: '', 
+    duration: '', 
+    startDate: '', 
+    endDate: '', 
+    venueLocation: '', 
+    paperLink: '' 
+  });
   const [editingWorkshopIndex, setEditingWorkshopIndex] = useState(-1);
   const [showWorkshopForm, setShowWorkshopForm] = useState(false);
 
-  const [symposiumForm, setSymposiumForm] = useState({ title: '', role: 'Attended / Participant', scope: 'National', organizer: '', mode: 'Offline / In-Person', startDate: '', endDate: '', venueLocation: '', paperLink: '' });
+  const [symposiumForm, setSymposiumForm] = useState({ 
+    title: '', 
+    role: 'Paper / Poster Presenter', 
+    scope: 'National', 
+    mode: 'In-Person (Offline)', 
+    organizer: '', 
+    startDate: '', 
+    endDate: '', 
+    venueLocation: '', 
+    paperLink: '' 
+  });
   const [editingSymposiumIndex, setEditingSymposiumIndex] = useState(-1);
   const [showSymposiumForm, setShowSymposiumForm] = useState(false);
 
-  const [trainingForm, setTrainingForm] = useState({ title: '', trainingType: 'Faculty Development Program (FDP)', role: 'Trainee / Participant', scope: 'National (e.g. NPTEL / AICTE)', organizer: '', duration: '', startDate: '', endDate: '', paperLink: '' });
+  const [trainingForm, setTrainingForm] = useState({ 
+    title: '', 
+    trainingType: 'Faculty Development Program (FDP)', 
+    role: 'Trainee / Participant', 
+    scope: 'National (e.g. NPTEL / AICTE)', 
+    organizer: '', 
+    duration: '', 
+    startDate: '', 
+    endDate: '', 
+    venueLocation: '', 
+    paperLink: '' 
+  });
   const [editingTrainingIndex, setEditingTrainingIndex] = useState(-1);
   const [showTrainingForm, setShowTrainingForm] = useState(false);
 
@@ -702,14 +837,14 @@ const StaffProfileTab = ({ thesis }) => {
   };
 
   const [iprForm, setIprForm] = useState({
-    iprType: '',
-    itemStatus: '',
+    iprType: 'Patent',
+    itemStatus: 'Filed / Application Submitted',
     title: '',
     journalName: '',
     volume: '',
     issn: '',
     issue: '',
-    pages: '',
+    pages: 'India',
     publicationDate: '',
     doiUrl: '',
     paperLink: ''
@@ -786,23 +921,24 @@ const StaffProfileTab = ({ thesis }) => {
 
   const renderStudentDocBadge = (certUrl) => {
     if (certUrl) {
+      const fullUrl = certUrl.startsWith('http') ? certUrl : `${API_BASE_URL}${certUrl}`;
       return (
         <a 
-          href={`${API_BASE_URL}${certUrl}`} 
+          href={fullUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
           style={{ 
             fontSize: '0.75rem', 
-            color: '#2563EB', 
+            color: '#1A5A3B', 
             fontWeight: 600, 
             textDecoration: 'none', 
             display: 'inline-flex', 
             alignItems: 'center', 
             gap: '4px',
-            background: '#EFF6FF',
+            background: 'rgba(26, 90, 59, 0.08)',
             padding: '4px 8px',
             borderRadius: '6px',
-            border: '1px solid #BFDBFE'
+            border: '1px solid rgba(26, 90, 59, 0.2)'
           }}
         >
           <FileText size={12} /> View File
@@ -1141,7 +1277,17 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ experience: updated }, 'Experience details saved');
     setShowExpForm(false);
     setEditingExpIndex(-1);
-    setExpForm({ designation: '', organization: '', startDate: '', endDate: '', isPresent: false, description: '' });
+    setExpForm({ 
+      designation: '', 
+      organization: '', 
+      department: '', 
+      employmentType: 'Regular / Permanent', 
+      payScale: '', 
+      startDate: '', 
+      endDate: '', 
+      isPresent: false, 
+      description: '' 
+    });
   };
 
   const deleteExperience = async (index) => {
@@ -1166,7 +1312,14 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ awards: updated }, 'Award entry saved');
     setShowAwardForm(false);
     setEditingAwardIndex(-1);
-    setAwardForm({ awardName: '', awardingBody: '', year: '', description: '' });
+    setAwardForm({ 
+      awardName: '', 
+      awardingBody: '', 
+      scope: 'National', 
+      awardCategory: '', 
+      year: '', 
+      description: '' 
+    });
   };
 
   const deleteAward = async (index) => {
@@ -1191,7 +1344,15 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ thesesSupervised: updated }, 'Thesis record saved');
     setShowThesisForm(false);
     setEditingThesisIndex(-1);
-    setThesisForm({ scholarName: '', thesisTitle: '', yearOfAward: '', status: 'Ongoing' });
+    setThesisForm({ 
+      degreeLevel: 'Ph.D.', 
+      scholarName: '', 
+      thesisTitle: '', 
+      regYear: '', 
+      status: 'Ongoing / In-Progress', 
+      yearOfAward: '', 
+      coSupervisor: '' 
+    });
   };
 
   const deleteThesis = async (index) => {
@@ -1216,7 +1377,13 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ professionalBodies: updated }, 'Membership record saved');
     setShowMemberForm(false);
     setEditingMemberIndex(-1);
-    setMemberForm({ membershipName: '', organization: '', membershipType: 'Life Member', year: '' });
+    setMemberForm({ 
+      membershipName: '', 
+      organization: '', 
+      membershipType: 'Life Member', 
+      membershipId: '', 
+      year: '' 
+    });
   };
 
   const deleteMember = async (index) => {
@@ -1241,7 +1408,13 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ committees: updated }, 'Committee details saved');
     setShowCommitteeForm(false);
     setEditingCommitteeIndex(-1);
-    setCommitteeForm({ committeeName: '', role: '', organization: '', duration: '' });
+    setCommitteeForm({ 
+      committeeName: '', 
+      role: 'Member', 
+      organization: '', 
+      duration: '', 
+      responsibilities: '' 
+    });
   };
 
   const deleteCommittee = async (index) => {
@@ -1266,7 +1439,16 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ projects: updated }, 'Project details saved');
     setShowProjectForm(false);
     setEditingProjectIndex(-1);
-    setProjectForm({ projectTitle: '', fundingAgency: '', amount: '', duration: '', role: 'Principal Investigator', status: 'Ongoing' });
+    setProjectForm({ 
+      projectTitle: '', 
+      fundingAgency: '', 
+      projectType: 'Sponsored Research', 
+      sanctionId: '', 
+      amount: '', 
+      duration: '', 
+      role: 'Principal Investigator (PI)', 
+      status: 'Ongoing' 
+    });
   };
 
   const deleteProject = async (index) => {
@@ -1291,7 +1473,27 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ publications: updated }, 'Publication details saved');
     setShowPubForm(false);
     setEditingPubIndex(-1);
-    setPubForm({ title: '', publicationCategory: 'Journal Paper', scope: 'International', indexing: 'SCI / SCIE', journalName: '', authors: '', volume: '', issue: '', pages: '', issn: '', doi: '', publicationDate: '', impactFactor: '', citationCount: '', paperLink: '' });
+    setPubForm({ 
+      title: '', 
+      publicationCategory: 'Journal Paper', 
+      articleType: 'Original Research Article', 
+      scope: 'International', 
+      itemStatus: 'Published', 
+      indexing: 'SCI / SCIE', 
+      publisherSelect: '', 
+      publisherName: '', 
+      journalName: '', 
+      authors: '', 
+      volume: '', 
+      issue: '', 
+      pages: '', 
+      issn: '', 
+      doi: '', 
+      publicationDate: '', 
+      impactFactor: '', 
+      citationCount: '', 
+      paperLink: '' 
+    });
   };
 
   const deletePub = async (index) => {
@@ -1316,7 +1518,21 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ conferenceProceedings: updated }, 'Conference Proceeding details saved');
     setShowConfForm(false);
     setEditingConfIndex(-1);
-    setConfForm({ title: '', conferenceName: '', scope: 'International', indexing: 'Scopus Indexed', organizer: '', venueLocation: '', presentationType: 'Oral Presentation', proceedingsTitle: '', isbn: '', doi: '', publicationDate: '', authors: '', paperLink: '' });
+    setConfForm({ 
+      title: '', 
+      conferenceName: '', 
+      scope: 'International', 
+      indexing: 'Scopus Indexed', 
+      presentationType: 'Oral Presentation', 
+      organizer: '', 
+      venueLocation: '', 
+      proceedingsTitle: '', 
+      isbn: '', 
+      doi: '', 
+      publicationDate: '', 
+      authors: '', 
+      paperLink: '' 
+    });
   };
 
   const deleteConf = async (index) => {
@@ -1341,7 +1557,18 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ workshops: updated }, 'Workshop details saved');
     setShowWorkshopForm(false);
     setEditingWorkshopIndex(-1);
-    setWorkshopForm({ title: '', role: 'Attended / Participant', scope: 'National', organizer: '', mode: 'Offline / In-Person', duration: '', startDate: '', endDate: '', venueLocation: '', paperLink: '' });
+    setWorkshopForm({ 
+      title: '', 
+      role: 'Attended / Participant', 
+      scope: 'National', 
+      mode: 'In-Person (Offline)', 
+      organizer: '', 
+      duration: '', 
+      startDate: '', 
+      endDate: '', 
+      venueLocation: '', 
+      paperLink: '' 
+    });
   };
 
   const deleteWorkshop = async (index) => {
@@ -1366,7 +1593,17 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ symposiums: updated }, 'Symposium details saved');
     setShowSymposiumForm(false);
     setEditingSymposiumIndex(-1);
-    setSymposiumForm({ title: '', role: 'Attended / Participant', scope: 'National', organizer: '', mode: 'Offline / In-Person', startDate: '', endDate: '', venueLocation: '', paperLink: '' });
+    setSymposiumForm({ 
+      title: '', 
+      role: 'Paper / Poster Presenter', 
+      scope: 'National', 
+      mode: 'In-Person (Offline)', 
+      organizer: '', 
+      startDate: '', 
+      endDate: '', 
+      venueLocation: '', 
+      paperLink: '' 
+    });
   };
 
   const deleteSymposium = async (index) => {
@@ -1391,7 +1628,18 @@ const StaffProfileTab = ({ thesis }) => {
     await triggerProfileUpdate({ training: updated }, 'Training details saved');
     setShowTrainingForm(false);
     setEditingTrainingIndex(-1);
-    setTrainingForm({ title: '', trainingType: 'Faculty Development Program (FDP)', role: 'Trainee / Participant', scope: 'National (e.g. NPTEL / AICTE)', organizer: '', duration: '', startDate: '', endDate: '', paperLink: '' });
+    setTrainingForm({ 
+      title: '', 
+      trainingType: 'Faculty Development Program (FDP)', 
+      role: 'Trainee / Participant', 
+      scope: 'National (e.g. NPTEL / AICTE)', 
+      organizer: '', 
+      duration: '', 
+      startDate: '', 
+      endDate: '', 
+      venueLocation: '', 
+      paperLink: '' 
+    });
   };
 
   const deleteTraining = async (index) => {
@@ -1417,14 +1665,14 @@ const StaffProfileTab = ({ thesis }) => {
     setShowIprForm(false);
     setEditingIprIndex(-1);
     setIprForm({
-      iprType: '',
-      itemStatus: '',
+      iprType: 'Patent',
+      itemStatus: 'Filed / Application Submitted',
       title: '',
       journalName: '',
       volume: '',
       issn: '',
       issue: '',
-      pages: '',
+      pages: 'India',
       publicationDate: '',
       doiUrl: '',
       paperLink: ''
@@ -2485,28 +2733,47 @@ const StaffProfileTab = ({ thesis }) => {
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingExpIndex === -1 ? 'Add Experience' : 'Edit Experience'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label">Designation / Role</label>
-                  <input type="text" className="form-input" value={expForm.designation} onChange={e => setExpForm({ ...expForm, designation: e.target.value })} required />
+                  <label className="form-label">Designation / Role *</label>
+                  <input type="text" className="form-input" value={expForm.designation} onChange={e => setExpForm({ ...expForm, designation: e.target.value })} placeholder="e.g. Assistant Professor" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Organization / University</label>
-                  <input type="text" className="form-input" value={expForm.organization} onChange={e => setExpForm({ ...expForm, organization: e.target.value })} required />
+                  <label className="form-label">Organization / University *</label>
+                  <input type="text" className="form-input" value={expForm.organization} onChange={e => setExpForm({ ...expForm, organization: e.target.value })} placeholder="e.g. Himachal Pradesh University" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Start Date</label>
+                  <label className="form-label">Department / School / Center</label>
+                  <input type="text" className="form-input" value={expForm.department} onChange={e => setExpForm({ ...expForm, department: e.target.value })} placeholder="e.g. Dept. of Computer Science" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Employment Type *</label>
+                  <select className="form-input" value={expForm.employmentType} onChange={e => setExpForm({ ...expForm, employmentType: e.target.value })} required>
+                    <option value="Regular / Permanent">Regular / Permanent</option>
+                    <option value="Contract / Ad-hoc">Contract / Ad-hoc</option>
+                    <option value="Guest Faculty">Guest Faculty</option>
+                    <option value="Visiting / Adjunct">Visiting / Adjunct</option>
+                    <option value="Post-Doctoral Fellow">Post-Doctoral Fellow</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Pay Level / Band (Optional)</label>
+                  <input type="text" className="form-input" value={expForm.payScale} onChange={e => setExpForm({ ...expForm, payScale: e.target.value })} placeholder="e.g. Level 10 / AGP 6000" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Start Date *</label>
                   <input type="date" className="form-input" value={expForm.startDate} onChange={e => setExpForm({ ...expForm, startDate: e.target.value })} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">End Date</label>
                   <input type="date" className="form-input" value={expForm.endDate} onChange={e => setExpForm({ ...expForm, endDate: e.target.value })} disabled={expForm.isPresent} required={!expForm.isPresent} />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '0.8rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '0.8rem', cursor: 'pointer' }}>
                     <input type="checkbox" checked={expForm.isPresent} onChange={e => setExpForm({ ...expForm, isPresent: e.target.checked, endDate: e.target.checked ? '' : expForm.endDate })} /> Currently working here
                   </label>
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Description / Core Roles</label>
-                <textarea className="form-input" style={{ height: '60px', resize: 'vertical' }} value={expForm.description} onChange={e => setExpForm({ ...expForm, description: e.target.value })} />
+                <label className="form-label">Description / Core Roles & Responsibilities</label>
+                <textarea className="form-input" style={{ height: '60px', resize: 'vertical' }} value={expForm.description} onChange={e => setExpForm({ ...expForm, description: e.target.value })} placeholder="Key teaching, research, and administrative assignments..." />
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowExpForm(false)} style={btnSecondaryStyle}>Cancel</button>
@@ -2523,8 +2790,22 @@ const StaffProfileTab = ({ thesis }) => {
               experienceList.map((exp, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{exp.designation}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{exp.organization}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{exp.designation}</strong>
+                      {exp.employmentType && (
+                        <span style={{ background: '#E0E7FF', color: '#3730A3', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          {exp.employmentType}
+                        </span>
+                      )}
+                      {exp.payScale && (
+                        <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>
+                          {exp.payScale}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                      {exp.organization} {exp.department ? `• ${exp.department}` : ''}
+                    </span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
                       {new Date(exp.startDate).toLocaleDateString()} – {exp.isPresent ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'N/A'}
                     </span>
@@ -3156,21 +3437,34 @@ const StaffProfileTab = ({ thesis }) => {
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingAwardIndex === -1 ? 'Add Award' : 'Edit Award'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label">Award Name</label>
-                  <input type="text" className="form-input" value={awardForm.awardName} onChange={e => setAwardForm({ ...awardForm, awardName: e.target.value })} required />
+                  <label className="form-label">Award / Honour Title *</label>
+                  <input type="text" className="form-input" value={awardForm.awardName} onChange={e => setAwardForm({ ...awardForm, awardName: e.target.value })} placeholder="e.g. Best Researcher Award" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Awarding Body / Institution</label>
-                  <input type="text" className="form-input" value={awardForm.awardingBody} onChange={e => setAwardForm({ ...awardForm, awardingBody: e.target.value })} required />
+                  <label className="form-label">Awarding Body / Academy *</label>
+                  <input type="text" className="form-input" value={awardForm.awardingBody} onChange={e => setAwardForm({ ...awardForm, awardingBody: e.target.value })} placeholder="e.g. Indian National Science Academy" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Year of Award</label>
-                  <input type="text" className="form-input" value={awardForm.year} onChange={e => setAwardForm({ ...awardForm, year: e.target.value })} placeholder="e.g. 2021" required />
+                  <label className="form-label">Level / Scope *</label>
+                  <select className="form-input" value={awardForm.scope} onChange={e => setAwardForm({ ...awardForm, scope: e.target.value })} required>
+                    <option value="National">National</option>
+                    <option value="International">International</option>
+                    <option value="State / University Level">State / University Level</option>
+                    <option value="Institutional">Institutional</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Discipline / Category (Optional)</label>
+                  <input type="text" className="form-input" value={awardForm.awardCategory} onChange={e => setAwardForm({ ...awardForm, awardCategory: e.target.value })} placeholder="e.g. Science & Technology" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Year of Award *</label>
+                  <input type="text" className="form-input" value={awardForm.year} onChange={e => setAwardForm({ ...awardForm, year: e.target.value })} placeholder="e.g. 2024" required />
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Description / Brief Notes</label>
-                <textarea className="form-input" style={{ height: '60px', resize: 'vertical' }} value={awardForm.description} onChange={e => setAwardForm({ ...awardForm, description: e.target.value })} />
+                <label className="form-label">Description / Citation</label>
+                <textarea className="form-input" style={{ height: '60px', resize: 'vertical' }} value={awardForm.description} onChange={e => setAwardForm({ ...awardForm, description: e.target.value })} placeholder="Citation, significance, or awarding event details..." />
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowAwardForm(false)} style={btnSecondaryStyle}>Cancel</button>
@@ -3187,7 +3481,19 @@ const StaffProfileTab = ({ thesis }) => {
               awardsList.map((aw, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{aw.awardName}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{aw.awardName}</strong>
+                      {aw.scope && (
+                        <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          {aw.scope}
+                        </span>
+                      )}
+                      {aw.awardCategory && (
+                        <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>
+                          {aw.awardCategory}
+                        </span>
+                      )}
+                    </div>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{aw.awardingBody}</span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Year: {aw.year}</span>
                     {aw.description && <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '8px 0 0 0', lineHeight: 1.4 }}>{aw.description}</p>}
@@ -3216,13 +3522,13 @@ const StaffProfileTab = ({ thesis }) => {
           </div>
         </section>
 
-        {/* 6. DOCTORAL THESES */}
+        {/* 6. DOCTORAL & MASTER'S THESES SUPERVISED */}
         {user?.role !== 'STUDENT' && (
           <section ref={sectionRefs.theses} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FileText size={20} style={{ color: '#1A5A3B' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Doctoral Theses Supervised</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Theses Supervised (Ph.D. / M.Phil / Master's)</h3>
             </div>
             <div className="section-header-buttons">
               {thesesList.length > 0 && (
@@ -3244,23 +3550,40 @@ const StaffProfileTab = ({ thesis }) => {
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingThesisIndex === -1 ? 'Add Thesis Record' : 'Edit Thesis Record'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label">Scholar Name</label>
-                  <input type="text" className="form-input" value={thesisForm.scholarName} onChange={e => setThesisForm({ ...thesisForm, scholarName: e.target.value })} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Thesis Title</label>
-                  <input type="text" className="form-input" value={thesisForm.thesisTitle} onChange={e => setThesisForm({ ...thesisForm, thesisTitle: e.target.value })} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select className="form-input" value={thesisForm.status} onChange={e => setThesisForm({ ...thesisForm, status: e.target.value })} required>
-                    <option value="Ongoing">Ongoing</option>
-                    <option value="Completed">Completed</option>
+                  <label className="form-label">Degree Level *</label>
+                  <select className="form-input" value={thesisForm.degreeLevel} onChange={e => setThesisForm({ ...thesisForm, degreeLevel: e.target.value })} required>
+                    <option value="Ph.D.">Ph.D.</option>
+                    <option value="M.Phil">M.Phil</option>
+                    <option value="Master's (M.Tech / M.Sc / MCA)">Master's (M.Tech / M.Sc / MCA)</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Year of Award / Registration</label>
-                  <input type="text" className="form-input" value={thesisForm.yearOfAward} onChange={e => setThesisForm({ ...thesisForm, yearOfAward: e.target.value })} placeholder="e.g. 2023" required />
+                  <label className="form-label">Candidate / Scholar Name *</label>
+                  <input type="text" className="form-input" value={thesisForm.scholarName} onChange={e => setThesisForm({ ...thesisForm, scholarName: e.target.value })} placeholder="e.g. Ramesh Kumar" required />
+                </div>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Thesis / Dissertation Title *</label>
+                  <input type="text" className="form-input" value={thesisForm.thesisTitle} onChange={e => setThesisForm({ ...thesisForm, thesisTitle: e.target.value })} placeholder="e.g. Quantum Computing Algorithms in Post-Quantum Cryptography" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Guidance Status *</label>
+                  <select className="form-input" value={thesisForm.status} onChange={e => setThesisForm({ ...thesisForm, status: e.target.value })} required>
+                    <option value="Ongoing / In-Progress">Ongoing / In-Progress</option>
+                    <option value="Completed / Awarded">Completed / Awarded</option>
+                    <option value="Submitted (Under Evaluation)">Submitted (Under Evaluation)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Registration / Enrollment Year</label>
+                  <input type="text" className="form-input" value={thesisForm.regYear} onChange={e => setThesisForm({ ...thesisForm, regYear: e.target.value })} placeholder="e.g. 2021" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Year of Award / Submission</label>
+                  <input type="text" className="form-input" value={thesisForm.yearOfAward} onChange={e => setThesisForm({ ...thesisForm, yearOfAward: e.target.value })} placeholder="e.g. 2025" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Co-Supervisor(s) (Optional)</label>
+                  <input type="text" className="form-input" value={thesisForm.coSupervisor} onChange={e => setThesisForm({ ...thesisForm, coSupervisor: e.target.value })} placeholder="e.g. Prof. Arvind Sharma" />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -3278,11 +3601,25 @@ const StaffProfileTab = ({ thesis }) => {
               thesesList.map((th, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{th.thesisTitle}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Scholar: {th.scholarName}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{th.thesisTitle}</strong>
+                      <span style={{ background: '#DBEAFE', color: '#1E40AF', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>
+                        {th.degreeLevel || 'Ph.D.'}
+                      </span>
+                      <span style={{ 
+                        background: th.status === 'Completed / Awarded' ? '#DCFCE7' : th.status === 'Submitted (Under Evaluation)' ? '#FEF3C7' : '#EFF6FF', 
+                        color: th.status === 'Completed / Awarded' ? '#166534' : th.status === 'Submitted (Under Evaluation)' ? '#92400E' : '#1E40AF',
+                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 
+                      }}>
+                        {th.status}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                      Scholar: {th.scholarName} {th.coSupervisor ? `• Co-Supervisor: ${th.coSupervisor}` : ''}
+                    </span>
                     <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
-                      <span>Year: {th.yearOfAward}</span>
-                      <span className="badge badge-neutral" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{th.status}</span>
+                      {th.regYear && <span>Enrolled: {th.regYear}</span>}
+                      {th.yearOfAward && <span>Award / Sub: {th.yearOfAward}</span>}
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
@@ -3315,7 +3652,7 @@ const StaffProfileTab = ({ thesis }) => {
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Users size={20} style={{ color: '#1A5A3B' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Professional Bodies</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Professional Society Memberships</h3>
             </div>
             <div className="section-header-buttons">
               {membershipsList.length > 0 && (
@@ -3337,25 +3674,31 @@ const StaffProfileTab = ({ thesis }) => {
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingMemberIndex === -1 ? 'Add Membership' : 'Edit Membership'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label">Membership Title</label>
-                  <input type="text" className="form-input" value={memberForm.membershipName} onChange={e => setMemberForm({ ...memberForm, membershipName: e.target.value })} required />
+                  <label className="form-label">Professional Body / Society Name *</label>
+                  <input type="text" className="form-input" value={memberForm.membershipName} onChange={e => setMemberForm({ ...memberForm, membershipName: e.target.value })} placeholder="e.g. IEEE / ACM / CSI / INSA" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Organization Name</label>
-                  <input type="text" className="form-input" value={memberForm.organization} onChange={e => setMemberForm({ ...memberForm, organization: e.target.value })} required />
+                  <label className="form-label">Chapter / Organization Name *</label>
+                  <input type="text" className="form-input" value={memberForm.organization} onChange={e => setMemberForm({ ...memberForm, organization: e.target.value })} placeholder="e.g. IEEE Computer Society India Council" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Membership Type</label>
+                  <label className="form-label">Membership Type *</label>
                   <select className="form-input" value={memberForm.membershipType} onChange={e => setMemberForm({ ...memberForm, membershipType: e.target.value })} required>
                     <option value="Life Member">Life Member</option>
-                    <option value="Annual Member">Annual Member</option>
+                    <option value="Senior Member">Senior Member</option>
                     <option value="Fellow">Fellow</option>
+                    <option value="Annual Member">Annual Member</option>
+                    <option value="Student Member">Student Member</option>
                     <option value="Executive Board Member">Executive Board Member</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Year of Joining</label>
-                  <input type="text" className="form-input" value={memberForm.year} onChange={e => setMemberForm({ ...memberForm, year: e.target.value })} placeholder="e.g. 2019" required />
+                  <label className="form-label">Membership ID / Number (Optional)</label>
+                  <input type="text" className="form-input" value={memberForm.membershipId} onChange={e => setMemberForm({ ...memberForm, membershipId: e.target.value })} placeholder="e.g. IEEE-9482014" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Year of Joining / Validity *</label>
+                  <input type="text" className="form-input" value={memberForm.year} onChange={e => setMemberForm({ ...memberForm, year: e.target.value })} placeholder="e.g. 2019 / Lifetime" required />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -3373,12 +3716,19 @@ const StaffProfileTab = ({ thesis }) => {
               membershipsList.map((mb, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{mb.membershipName}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{mb.membershipName}</strong>
+                      <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>
+                        {mb.membershipType}
+                      </span>
+                      {mb.membershipId && (
+                        <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>
+                          ID: {mb.membershipId}
+                        </span>
+                      )}
+                    </div>
                     <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{mb.organization}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
-                      <span>Joined: {mb.year}</span>
-                      <span className="badge badge-neutral" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{mb.membershipType}</span>
-                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Joined / Validity: {mb.year}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                     <button 
@@ -3404,12 +3754,12 @@ const StaffProfileTab = ({ thesis }) => {
           </div>
         </section>
 
-        {/* 8. MEMBERSHIP IN COMMITTEE */}
+        {/* 8. MEMBERSHIP IN COMMITTEES */}
         <section ref={sectionRefs.committees} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Bookmark size={20} style={{ color: '#1A5A3B' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Membership in Committee</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Academic & Administrative Committees</h3>
             </div>
             <div className="section-header-buttons">
               {committeesList.length > 0 && (
@@ -3431,21 +3781,25 @@ const StaffProfileTab = ({ thesis }) => {
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingCommitteeIndex === -1 ? 'Add Committee Seat' : 'Edit Committee Seat'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label">Committee Name</label>
-                  <input type="text" className="form-input" value={committeeForm.committeeName} onChange={e => setCommitteeForm({ ...committeeForm, committeeName: e.target.value })} required />
+                  <label className="form-label">Committee Name *</label>
+                  <input type="text" className="form-input" value={committeeForm.committeeName} onChange={e => setCommitteeForm({ ...committeeForm, committeeName: e.target.value })} placeholder="e.g. Board of Studies (BOS) / DRC / IQAC" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Role in Committee</label>
-                  <input type="text" className="form-input" value={committeeForm.role} onChange={e => setCommitteeForm({ ...committeeForm, role: e.target.value })} placeholder="e.g. Chairman, Board Member" required />
+                  <label className="form-label">Role in Committee *</label>
+                  <input type="text" className="form-input" value={committeeForm.role} onChange={e => setCommitteeForm({ ...committeeForm, role: e.target.value })} placeholder="e.g. Chairperson / Convener / Member Secretary" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Organization Name</label>
-                  <input type="text" className="form-input" value={committeeForm.organization} onChange={e => setCommitteeForm({ ...committeeForm, organization: e.target.value })} required />
+                  <label className="form-label">Institution / Level *</label>
+                  <input type="text" className="form-input" value={committeeForm.organization} onChange={e => setCommitteeForm({ ...committeeForm, organization: e.target.value })} placeholder="e.g. Himachal Pradesh University" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Duration / Dates</label>
-                  <input type="text" className="form-input" value={committeeForm.duration} onChange={e => setCommitteeForm({ ...committeeForm, duration: e.target.value })} placeholder="e.g. 2021 – Present" required />
+                  <label className="form-label">Tenure / Duration *</label>
+                  <input type="text" className="form-input" value={committeeForm.duration} onChange={e => setCommitteeForm({ ...committeeForm, duration: e.target.value })} placeholder="e.g. 2022 – Present" required />
                 </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Key Contribution / Responsibilities (Optional)</label>
+                <textarea className="form-input" style={{ height: '60px', resize: 'vertical' }} value={committeeForm.responsibilities} onChange={e => setCommitteeForm({ ...committeeForm, responsibilities: e.target.value })} placeholder="Core decisions, syllabus reforms, or quality audit contributions..." />
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowCommitteeForm(false)} style={btnSecondaryStyle}>Cancel</button>
@@ -3462,9 +3816,15 @@ const StaffProfileTab = ({ thesis }) => {
               committeesList.map((ct, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{ct.committeeName}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Role: {ct.role} ({ct.organization})</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {ct.duration}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{ct.committeeName}</strong>
+                      <span style={{ background: '#F3E8FF', color: '#7E22CE', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>
+                        {ct.role}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ct.organization}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Tenure: {ct.duration}</span>
+                    {ct.responsibilities && <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '8px 0 0 0', lineHeight: 1.4 }}>{ct.responsibilities}</p>}
                   </div>
                   <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                     <button 
@@ -3490,12 +3850,12 @@ const StaffProfileTab = ({ thesis }) => {
           </div>
         </section>
 
-        {/* 9. RESEARCH PROJECTS */}
+        {/* 9. RESEARCH & CONSULTANCY PROJECTS */}
         <section ref={sectionRefs.projects} className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="section-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Folder size={20} style={{ color: '#1A5A3B' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>R&D Projects</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Sponsored Research & Consultancy Projects</h3>
             </div>
             <div className="section-header-buttons">
               {projectsList.length > 0 && (
@@ -3516,35 +3876,50 @@ const StaffProfileTab = ({ thesis }) => {
             <form onSubmit={saveProject} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingProjectIndex === -1 ? 'Add Project' : 'Edit Project'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                <div className="form-group">
-                  <label className="form-label">Project Title</label>
-                  <input type="text" className="form-input" value={projectForm.projectTitle} onChange={e => setProjectForm({ ...projectForm, projectTitle: e.target.value })} required />
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Project Title *</label>
+                  <input type="text" className="form-input" value={projectForm.projectTitle} onChange={e => setProjectForm({ ...projectForm, projectTitle: e.target.value })} placeholder="e.g. AI-driven Threat Intelligence Framework" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Funding Agency</label>
-                  <input type="text" className="form-input" value={projectForm.fundingAgency} onChange={e => setProjectForm({ ...projectForm, fundingAgency: e.target.value })} required />
+                  <label className="form-label">Funding Agency / Sponsor *</label>
+                  <input type="text" className="form-input" value={projectForm.fundingAgency} onChange={e => setProjectForm({ ...projectForm, fundingAgency: e.target.value })} placeholder="e.g. SERB / DST / AICTE / Industry" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Grant Amount (INR)</label>
-                  <input type="text" className="form-input" value={projectForm.amount} onChange={e => setProjectForm({ ...projectForm, amount: e.target.value })} placeholder="e.g. 5,00,000" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Duration / Year</label>
-                  <input type="text" className="form-input" value={projectForm.duration} onChange={e => setProjectForm({ ...projectForm, duration: e.target.value })} placeholder="e.g. 2022 – 2024" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Role</label>
-                  <select className="form-input" value={projectForm.role} onChange={e => setProjectForm({ ...projectForm, role: e.target.value })} required>
-                    <option value="Principal Investigator">Principal Investigator</option>
-                    <option value="Co-Principal Investigator">Co-Principal Investigator</option>
-                    <option value="Co-Investigator">Co-Investigator</option>
+                  <label className="form-label">Project Type *</label>
+                  <select className="form-input" value={projectForm.projectType} onChange={e => setProjectForm({ ...projectForm, projectType: e.target.value })} required>
+                    <option value="Sponsored Research">Sponsored Research</option>
+                    <option value="Consultancy Project">Consultancy Project</option>
+                    <option value="Industrial Grant">Industrial Grant</option>
+                    <option value="Institutional Grant">Institutional Grant</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Status</label>
+                  <label className="form-label">Sanction / Grant Order No.</label>
+                  <input type="text" className="form-input" value={projectForm.sanctionId} onChange={e => setProjectForm({ ...projectForm, sanctionId: e.target.value })} placeholder="e.g. CRG/2023/001452" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Grant Amount (INR) *</label>
+                  <input type="text" className="form-input" value={projectForm.amount} onChange={e => setProjectForm({ ...projectForm, amount: e.target.value })} placeholder="e.g. 25,00,000" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Duration / Tenure *</label>
+                  <input type="text" className="form-input" value={projectForm.duration} onChange={e => setProjectForm({ ...projectForm, duration: e.target.value })} placeholder="e.g. 2023 – 2026 (3 Years)" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Investigator Role *</label>
+                  <select className="form-input" value={projectForm.role} onChange={e => setProjectForm({ ...projectForm, role: e.target.value })} required>
+                    <option value="Principal Investigator (PI)">Principal Investigator (PI)</option>
+                    <option value="Co-Principal Investigator (Co-PI)">Co-Principal Investigator (Co-PI)</option>
+                    <option value="Project Coordinator">Project Coordinator</option>
+                    <option value="Consultant">Consultant</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Project Status *</label>
                   <select className="form-input" value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} required>
                     <option value="Ongoing">Ongoing</option>
                     <option value="Completed">Completed</option>
+                    <option value="Sanctioned">Sanctioned</option>
                   </select>
                 </div>
               </div>
@@ -3563,12 +3938,27 @@ const StaffProfileTab = ({ thesis }) => {
               projectsList.map((pr, i) => (
                 <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                   <div>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{pr.projectTitle}</strong>
-                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Agency: {pr.fundingAgency} | Grant: ₹{pr.amount}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'inline-flex', gap: '12px' }}>
-                      <span>Duration: {pr.duration}</span>
-                      <span className="badge badge-neutral" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{pr.role}</span>
-                      <span className="badge badge-present" style={{ fontSize: '0.65rem', padding: '2px 6px', background: pr.status === 'Completed' ? '#E8F5E9' : '#FFF3E0', color: pr.status === 'Completed' ? '#2E7D32' : '#E65100' }}>{pr.status}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{pr.projectTitle}</strong>
+                      <span style={{ background: '#E0E7FF', color: '#3730A3', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>
+                        {pr.projectType || 'Sponsored Research'}
+                      </span>
+                      <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>
+                        {pr.role}
+                      </span>
+                      <span style={{ 
+                        background: pr.status === 'Completed' ? '#DCFCE7' : pr.status === 'Ongoing' ? '#EFF6FF' : '#FEF3C7', 
+                        color: pr.status === 'Completed' ? '#166534' : pr.status === 'Ongoing' ? '#1E40AF' : '#92400E',
+                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 
+                      }}>
+                        {pr.status}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                      Agency: {pr.fundingAgency} • Grant: ₹{pr.amount} {pr.sanctionId ? `(Sanction ID: ${pr.sanctionId})` : ''}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                      Duration: {pr.duration}
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
@@ -3602,33 +3992,31 @@ const StaffProfileTab = ({ thesis }) => {
               <BookOpen size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Research Publications</h3>
             </div>
-            {user?.role !== 'STUDENT' && (
-              <div className="section-header-buttons">
-                {publicationsList.length > 0 && (
-                  <button onClick={clearAllPublications} style={btnDangerStyle}>
-                    <Trash2 size={14} /> Clear All
-                  </button>
-                )}
-                {!showPubForm && (
-                  <button onClick={() => { setShowPubForm(true); setEditingPubIndex(-1); }} style={btnPrimaryStyle}>
-                    <Plus size={14} /> Add Entry
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="section-header-buttons">
+              {publicationsList.length > 0 && (
+                <button onClick={clearAllPublications} style={btnDangerStyle}>
+                  <Trash2 size={14} /> Clear All
+                </button>
+              )}
+              {!showPubForm && (
+                <button onClick={() => { setShowPubForm(true); setEditingPubIndex(-1); }} style={btnPrimaryStyle}>
+                  <Plus size={14} /> Add Entry
+                </button>
+              )}
+            </div>
           </div>
 
           {user?.role === 'STUDENT' && (
             <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
               <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #334155)', lineHeight: 1.4 }}>
-                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Research Publications</strong> entries is disabled on this page. Please submit your publication entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
+                <strong>PhD Scholar Publication Guide:</strong> Institutional research outputs verified through your PhD lifecycle (Supervisor & HOD Approval) are officially audited and locked. Publications synced from academic APIs (ORCID, Scopus, Google Scholar, OpenAlex) appear below with an <strong>Edit</strong> button.
               </div>
             </div>
           )}
 
-          {/* Form for Faculty/HOD */}
-          {showPubForm && user?.role !== 'STUDENT' && (
+          {/* Form */}
+          {showPubForm && (
             <form onSubmit={savePub} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingPubIndex === -1 ? 'Add Publication' : 'Edit Publication'}</h4>
               
@@ -3661,6 +4049,14 @@ const StaffProfileTab = ({ thesis }) => {
                   <select className="form-input" value={pubForm.scope} onChange={e => setPubForm({ ...pubForm, scope: e.target.value })} required>
                     <option value="International">International</option>
                     <option value="National">National</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Publication Status *</label>
+                  <select className="form-input" value={pubForm.itemStatus || 'Published'} onChange={e => setPubForm({ ...pubForm, itemStatus: e.target.value })} required>
+                    <option value="Published">Published</option>
+                    <option value="Accepted (In Press)">Accepted (In Press)</option>
+                    <option value="Under Review">Under Review</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -3735,6 +4131,10 @@ const StaffProfileTab = ({ thesis }) => {
                   <input type="text" className="form-input" value={pubForm.doi} onChange={e => setPubForm({ ...pubForm, doi: e.target.value })} placeholder="e.g. https://doi.org/10..." />
                 </div>
                 <div className="form-group">
+                  <label className="form-label">Paper Link / Full Text URL</label>
+                  <input type="text" className="form-input" value={pubForm.paperLink} onChange={e => setPubForm({ ...pubForm, paperLink: e.target.value })} placeholder="e.g. https://ieeexplore.ieee.org/..." />
+                </div>
+                <div className="form-group">
                   <label className="form-label">Publication Date</label>
                   <input type="date" className="form-input" value={pubForm.publicationDate} onChange={e => setPubForm({ ...pubForm, publicationDate: e.target.value })} />
                 </div>
@@ -3752,54 +4152,80 @@ const StaffProfileTab = ({ thesis }) => {
 
           {/* List items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {user?.role === 'STUDENT' ? (
-              loadingPubsAndIprs ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified publication entries...</span>
-              ) : verifiedPubs.length === 0 ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified publications found. Submit entries on Research Outputs page.</span>
-              ) : (
-                verifiedPubs.map((p, i) => (
-                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                    <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{p.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
-                        {p.journalName} {p.publisherName ? `(${p.publisherName})` : ''} • <span style={{ color: '#0284c7' }}>{p.articleType || 'Original Research Article'}</span>
-                      </span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
-                        Scope: {p.scope || 'N/A'} | Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Pages: {p.pages || 'N/A'}
-                      </span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block', marginTop: '2px' }}>
-                        Publication Date: {p.publicationDate ? new Date(p.publicationDate).toLocaleDateString() : 'N/A'}
-                      </span>
-                      {p.paperLink && (
-                        <a href={p.paperLink.startsWith('http') ? p.paperLink : `https://${p.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
-                          <ExternalLink size={12} /> Paper Link / DOI
-                        </a>
+            {user?.role === 'STUDENT' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1A5A3B' }}>
+                  🏛️ Verified Research Outputs ({verifiedPubs.length})
+                </span>
+                {loadingPubsAndIprs ? (
+                  <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified publication entries...</span>
+                ) : verifiedPubs.length === 0 ? (
+                  <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified publications found. Submit entries on Research Outputs page.</span>
+                ) : (
+                  verifiedPubs.map((p, i) => (
+                    <div key={i} style={{ border: '1px solid #CBD5E1', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: '#F8FAFC' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{p.title}</strong>
+                          <span style={{ background: '#DCFCE7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>✓ Verified</span>
+                          {p.itemStatus && (
+                            <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{p.itemStatus}</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                          {p.journalName} {p.publisherName ? `(${p.publisherName})` : ''} • <span style={{ color: '#0284c7' }}>{p.articleType || 'Original Research Article'}</span>
+                        </span>
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>
+                          Scope: {p.scope || 'N/A'} | Indexing: {p.indexing || 'N/A'} | Vol: {p.volume || 'N/A'} | Pages: {p.pages || 'N/A'}
+                        </span>
+                        {(p.paperLink || p.doi) && (
+                          <a href={(p.paperLink || p.doi).startsWith('http') ? (p.paperLink || p.doi) : `https://${p.paperLink || p.doi}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                            <ExternalLink size={12} /> Paper Link / DOI
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div style={{ borderBottom: '1px solid #E2E8F0', marginTop: '8px' }} />
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E40AF', marginTop: '4px' }}>
+                  🌐 API-Imported & Profile Publications ({publicationsList.length})
+                </span>
+              </div>
+            )}
+
+            {publicationsList.length === 0 ? (
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No profile publications logged yet.</span>
+            ) : (
+              publicationsList.map((pb, i) => (
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{pb.title}</strong>
+                      <span style={{ background: '#DBEAFE', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>🌐 {pb.source || 'Profile'}</span>
+                      {pb.itemStatus && (
+                        <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{pb.itemStatus}</span>
+                      )}
+                      {pb.indexing && (
+                        <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{pb.indexing}</span>
                       )}
                     </div>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                      {pb.journalName} {pb.publisherName ? `(${pb.publisherName})` : ''} • <span style={{ color: '#0284c7' }}>{pb.articleType || 'Original Research Article'}</span>
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {pb.scope || 'National'} | Authors: {pb.authors || 'N/A'} {pb.volume ? `| Vol: ${pb.volume}` : ''} {pb.pages ? `| pp: ${pb.pages}` : ''}</span>
+                    {(pb.paperLink || pb.doi) && (
+                      <a href={(pb.paperLink || pb.doi).startsWith('http') ? (pb.paperLink || pb.doi) : `https://${pb.paperLink || pb.doi}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                        <ExternalLink size={12} /> Paper Link / DOI
+                      </a>
+                    )}
                   </div>
-                ))
-              )
-            ) : (
-              publicationsList.length === 0 ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No publications logged yet.</span>
-              ) : (
-                publicationsList.map((pb, i) => (
-                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                    <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{pb.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>
-                        {pb.journalName} {pb.publisherName ? `(${pb.publisherName})` : ''} • <span style={{ color: '#0284c7' }}>{pb.articleType || 'Original Research Article'}</span>
-                      </span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {pb.scope || 'National'} | Indexing: {pb.indexing || 'Peer-Reviewed'} | Authors: {pb.authors || 'N/A'}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
-                      <button onClick={() => { setEditingPubIndex(i); setPubForm(pb); setShowPubForm(true); }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}><Edit size={14} /></button>
-                      <button onClick={() => deletePub(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={14} /></button>
-                    </div>
+                  <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                    <button onClick={() => { setEditingPubIndex(i); setPubForm(pb); setShowPubForm(true); }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}><Edit size={14} /></button>
+                    <button onClick={() => deletePub(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={14} /></button>
                   </div>
-                ))
-              )
+                </div>
+              ))
             )}
           </div>
         </section>
@@ -3811,32 +4237,30 @@ const StaffProfileTab = ({ thesis }) => {
               <FileText size={20} style={{ color: '#1A5A3B' }} />
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Conference Proceedings</h3>
             </div>
-            {user?.role !== 'STUDENT' && (
-              <div className="section-header-buttons">
-                {conferenceProceedingsList.length > 0 && (
-                  <button onClick={clearAllConferences} style={btnDangerStyle}>
-                    <Trash2 size={14} /> Clear All
-                  </button>
-                )}
-                {!showConfForm && (
-                  <button onClick={() => { setShowConfForm(true); setEditingConfIndex(-1); }} style={btnPrimaryStyle}>
-                    <Plus size={14} /> Add Entry
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="section-header-buttons">
+              {conferenceProceedingsList.length > 0 && (
+                <button onClick={clearAllConferences} style={btnDangerStyle}>
+                  <Trash2 size={14} /> Clear All
+                </button>
+              )}
+              {!showConfForm && (
+                <button onClick={() => { setShowConfForm(true); setEditingConfIndex(-1); }} style={btnPrimaryStyle}>
+                  <Plus size={14} /> Add Entry
+                </button>
+              )}
+            </div>
           </div>
 
           {user?.role === 'STUDENT' && (
             <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
               <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #334155)', lineHeight: 1.4 }}>
-                <strong>Notice for PhD Scholars:</strong> Direct creation and editing of <strong>Conference Proceedings</strong> entries is disabled on this page. Please submit your conference entries from the <strong>Research Outputs</strong> page for supervisor & HOD verification. Only verified entries appear below.
+                <strong>Notice for PhD Scholars:</strong> Institutional conference proceedings verified through your PhD lifecycle (Supervisor & HOD Approval) are officially audited and locked. Conference entries synced from APIs or added to your profile feature an <strong>Edit</strong> button.
               </div>
             </div>
           )}
 
-          {showConfForm && user?.role !== 'STUDENT' && (
+          {showConfForm && (
             <form onSubmit={saveConf} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-bg)' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', margin: 0 }}>{editingConfIndex === -1 ? 'Add Conference Proceeding' : 'Edit Conference Proceeding'}</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
@@ -3910,40 +4334,74 @@ const StaffProfileTab = ({ thesis }) => {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {user?.role === 'STUDENT' ? (
-              loadingPubsAndIprs ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified conference entries...</span>
-              ) : verifiedConferences.length === 0 ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified conference proceedings found. Submit entries on Research Outputs page.</span>
-              ) : (
-                verifiedConferences.map((c, i) => (
-                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                    <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{c.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{c.conferenceName || c.journalName} ({c.presentationType || 'Oral'})</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {c.scope || 'National'} | Indexing: {c.indexing || 'Scopus'} | Organizer: {c.organizer || c.volume || 'N/A'}</span>
+            {user?.role === 'STUDENT' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1A5A3B' }}>
+                  🏛️ Verified Conference Proceedings ({verifiedConferences.length})
+                </span>
+                {loadingPubsAndIprs ? (
+                  <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>Loading verified conference entries...</span>
+                ) : verifiedConferences.length === 0 ? (
+                  <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No verified conference proceedings found. Submit entries on Research Outputs page.</span>
+                ) : (
+                  verifiedConferences.map((c, i) => (
+                    <div key={i} style={{ border: '1px solid #CBD5E1', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: '#F8FAFC' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{c.title}</strong>
+                          <span style={{ background: '#DCFCE7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>✓ Verified</span>
+                          {c.presentationType && (
+                            <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{c.presentationType}</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{c.conferenceName || c.journalName}</span>
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {c.scope || 'National'} | Indexing: {c.indexing || 'Scopus'} | Host: {c.organizer || c.volume || 'N/A'} {c.venueLocation ? `| Venue: ${c.venueLocation}` : ''}</span>
+                        {(c.paperLink || c.doi) && (
+                          <a href={(c.paperLink || c.doi).startsWith('http') ? (c.paperLink || c.doi) : `https://${c.paperLink || c.doi}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                            <ExternalLink size={12} /> Paper / Proceedings Link
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
-              )
+                  ))
+                )}
+                <div style={{ borderBottom: '1px solid #E2E8F0', marginTop: '8px' }} />
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E40AF', marginTop: '4px' }}>
+                  🌐 API-Imported & Profile Conferences ({conferenceProceedingsList.length})
+                </span>
+              </div>
+            )}
+
+            {conferenceProceedingsList.length === 0 ? (
+              <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No conference proceedings logged yet.</span>
             ) : (
-              conferenceProceedingsList.length === 0 ? (
-                <span style={{ fontSize: '0.82rem', color: '#64748B', fontStyle: 'italic' }}>No conference proceedings logged yet.</span>
-              ) : (
-                conferenceProceedingsList.map((cf, i) => (
-                  <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
-                    <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{cf.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{cf.conferenceName} ({cf.scope})</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Type: {cf.presentationType || 'Oral'} | Indexing: {cf.indexing || 'Scopus'}</span>
+              conferenceProceedingsList.map((cb, i) => (
+                <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{cb.title}</strong>
+                      <span style={{ background: '#DBEAFE', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>🌐 {cb.source || 'Profile'}</span>
+                      {cb.presentationType && (
+                        <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{cb.presentationType}</span>
+                      )}
+                      {cb.indexing && (
+                        <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{cb.indexing}</span>
+                      )}
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
-                      <button onClick={() => { setEditingConfIndex(i); setConfForm(cf); setShowConfForm(true); }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}><Edit size={14} /></button>
-                      <button onClick={() => deleteConf(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={14} /></button>
-                    </div>
+                    <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{cb.conferenceName}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Scope: {cb.scope || 'National'} | Host: {cb.organizer || 'N/A'} {cb.venueLocation ? `| Venue: ${cb.venueLocation}` : ''} {cb.publicationDate ? `| Date: ${new Date(cb.publicationDate).toLocaleDateString()}` : ''}</span>
+                    {(cb.paperLink || cb.doi) && (
+                      <a href={(cb.paperLink || cb.doi).startsWith('http') ? (cb.paperLink || cb.doi) : `https://${cb.paperLink || cb.doi}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                        <ExternalLink size={12} /> Paper / Proceedings Link
+                      </a>
+                    )}
                   </div>
-                ))
-              )
+                  <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
+                    <button onClick={() => { setEditingConfIndex(i); setConfForm(cb); setShowConfForm(true); }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}><Edit size={14} /></button>
+                    <button onClick={() => deleteConf(i)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </section>
@@ -4055,9 +4513,23 @@ const StaffProfileTab = ({ thesis }) => {
                 verifiedWorkshops.map((w, i) => (
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{w.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Role: {w.role || 'Participant'} | Scope: {w.scope || 'National'}</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Organizer: {w.organizer || w.journalName || 'N/A'} | Mode: {w.mode || 'In-Person'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{w.title}</strong>
+                        <span style={{ background: '#DCFCE7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>✓ Verified</span>
+                        {w.role && (
+                          <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{w.role}</span>
+                        )}
+                        {w.scope && (
+                          <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{w.scope}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Organized by: {w.organizer || w.journalName || 'N/A'} {w.mode ? `(${w.mode})` : ''}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {w.duration || 'N/A'} {w.venueLocation ? `| Venue: ${w.venueLocation}` : ''}</span>
+                      {w.paperLink && (
+                        <a href={w.paperLink.startsWith('http') ? w.paperLink : `https://${w.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> Certificate / Proof Link
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))
@@ -4069,9 +4541,25 @@ const StaffProfileTab = ({ thesis }) => {
                 workshopsList.map((ws, i) => (
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{ws.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{ws.role} | {ws.scope}</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Organized by: {ws.organizer} ({ws.duration || 'N/A'})</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{ws.title}</strong>
+                        {ws.role && (
+                          <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{ws.role}</span>
+                        )}
+                        {ws.scope && (
+                          <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{ws.scope}</span>
+                        )}
+                        {ws.mode && (
+                          <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{ws.mode}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Organized by: {ws.organizer}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {ws.duration || 'N/A'} {ws.venueLocation ? `| Venue: ${ws.venueLocation}` : ''} {ws.startDate ? `| Dates: ${new Date(ws.startDate).toLocaleDateString()} ${ws.endDate ? `- ${new Date(ws.endDate).toLocaleDateString()}` : ''}` : ''}</span>
+                      {ws.paperLink && (
+                        <a href={ws.paperLink.startsWith('http') ? ws.paperLink : `https://${ws.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> Certificate / Proof Link
+                        </a>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                       <button onClick={() => { setEditingWorkshopIndex(i); setWorkshopForm(ws); setShowWorkshopForm(true); }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}><Edit size={14} /></button>
@@ -4187,9 +4675,22 @@ const StaffProfileTab = ({ thesis }) => {
                 verifiedSymposiums.map((s, i) => (
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{s.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Role: {s.role || 'Presenter'} | Scope: {s.scope || 'National'}</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Organizer: {s.organizer || s.journalName || 'N/A'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{s.title}</strong>
+                        <span style={{ background: '#DCFCE7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>✓ Verified</span>
+                        {s.role && (
+                          <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{s.role}</span>
+                        )}
+                        {s.scope && (
+                          <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{s.scope}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Organizer: {s.organizer || s.journalName || 'N/A'}</span>
+                      {s.paperLink && (
+                        <a href={s.paperLink.startsWith('http') ? s.paperLink : `https://${s.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> Certificate / Presentation Link
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))
@@ -4201,9 +4702,25 @@ const StaffProfileTab = ({ thesis }) => {
                 symposiumsList.map((sym, i) => (
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{sym.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{sym.role} | {sym.scope}</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Organized by: {sym.organizer}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{sym.title}</strong>
+                        {sym.role && (
+                          <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{sym.role}</span>
+                        )}
+                        {sym.scope && (
+                          <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{sym.scope}</span>
+                        )}
+                        {sym.mode && (
+                          <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{sym.mode}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Organized by: {sym.organizer}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>{sym.venueLocation ? `Venue: ${sym.venueLocation}` : ''} {sym.startDate ? `| Dates: ${new Date(sym.startDate).toLocaleDateString()} ${sym.endDate ? `- ${new Date(sym.endDate).toLocaleDateString()}` : ''}` : ''}</span>
+                      {sym.paperLink && (
+                        <a href={sym.paperLink.startsWith('http') ? sym.paperLink : `https://${sym.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> Certificate / Presentation Link
+                        </a>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                       <button onClick={() => { setEditingSymposiumIndex(i); setSymposiumForm(sym); setShowSymposiumForm(true); }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}><Edit size={14} /></button>
@@ -4320,9 +4837,23 @@ const StaffProfileTab = ({ thesis }) => {
                 verifiedTrainings.map((t, i) => (
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{t.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{t.trainingType || 'FDP'} ({t.role || 'Trainee'})</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Organized by: {t.organizer || t.journalName || 'N/A'} | Duration: {t.duration || 'N/A'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{t.title}</strong>
+                        <span style={{ background: '#DCFCE7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>✓ Verified</span>
+                        {t.trainingType && (
+                          <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{t.trainingType}</span>
+                        )}
+                        {t.role && (
+                          <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{t.role}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Organized by: {t.organizer || t.journalName || 'N/A'}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {t.duration || 'N/A'}</span>
+                      {t.paperLink && (
+                        <a href={t.paperLink.startsWith('http') ? t.paperLink : `https://${t.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> Certificate Link
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))
@@ -4334,9 +4865,25 @@ const StaffProfileTab = ({ thesis }) => {
                 trainingList.map((tr, i) => (
                   <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', gap: '16px', background: 'rgba(255,255,255,0.01)' }}>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)', display: 'block' }}>{tr.title}</strong>
-                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>{tr.trainingType} ({tr.role})</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Organizer: {tr.organizer} | Duration: {tr.duration}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--color-text-primary)' }}>{tr.title}</strong>
+                        {tr.trainingType && (
+                          <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{tr.trainingType}</span>
+                        )}
+                        {tr.role && (
+                          <span style={{ background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{tr.role}</span>
+                        )}
+                        {tr.scope && (
+                          <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{tr.scope}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.82rem', color: '#1A5A3B', fontWeight: 600, display: 'block', margin: '2px 0' }}>Organized by: {tr.organizer}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration: {tr.duration || 'N/A'} {tr.startDate ? `| Dates: ${new Date(tr.startDate).toLocaleDateString()} ${tr.endDate ? `- ${new Date(tr.endDate).toLocaleDateString()}` : ''}` : ''}</span>
+                      {tr.paperLink && (
+                        <a href={tr.paperLink.startsWith('http') ? tr.paperLink : `https://${tr.paperLink}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#1A5A3B', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px', textDecoration: 'none', fontWeight: 600 }}>
+                          <ExternalLink size={12} /> Certificate Link
+                        </a>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: '6px', height: 'fit-content' }}>
                       <button onClick={() => { setEditingTrainingIndex(i); setTrainingForm(tr); setShowTrainingForm(true); }} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}><Edit size={14} /></button>

@@ -117,7 +117,7 @@ const login = async (req, res) => {
 
 // POST /api/auth/register
 const register = async (req, res) => {
-  const { name, username, password, role, department, phoneNumber, academicSession, degreeType, degreeName, degreeTypeId, degreeTypeName, degreeNameId, degreeNameLabel, gender, category } = req.body;
+  const { name, username, password, role, department, phoneNumber, designation, academicSession, degreeType, degreeName, degreeTypeId, degreeTypeName, degreeNameId, degreeNameLabel, gender, category } = req.body;
   try {
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -159,6 +159,11 @@ const register = async (req, res) => {
       });
     }
 
+    // Validate designation for Faculty/HOD
+    if ((role === 'FACULTY' || role === 'HOD') && (!designation || typeof designation !== 'string' || !designation.trim())) {
+      return res.status(400).json({ message: 'Designation is required for Faculty and HOD accounts.' });
+    }
+
     // Constraint: Only one HOD can exist per department
     if (role === 'HOD') {
       const activeHod = await User.findOne({ role: 'HOD', department, isActive: true });
@@ -169,7 +174,10 @@ const register = async (req, res) => {
       }
     }
 
-     const profileData = { phoneNumber: formattedPhone };
+    const profileData = { phoneNumber: formattedPhone };
+    if (role === 'FACULTY' || role === 'HOD') {
+      if (designation) profileData.designation = designation.trim();
+    }
     if (role === 'STUDENT') {
       if (academicSession) profileData.academicSession = academicSession;
       if (degreeType) profileData.degreeType = degreeType;
@@ -267,6 +275,25 @@ const updateProfile = async (req, res) => {
       profileData.yearsOfService = 0;
     } else if (profileData.yearsOfService !== undefined && profileData.yearsOfService !== null) {
       profileData.yearsOfService = Number(profileData.yearsOfService) || 0;
+    }
+
+    // Protect high-impact fields from being mutated by students on established profiles
+    if (user.role === 'STUDENT') {
+      const protectedStudentFields = [
+        'academicSession', 'degreeType', 'degreeTypeId', 'degreeName', 'degreeNameId', 'degreeTypeName',
+        'department', 'shNo', 'enrollmentNumber', 'erpAdmissionNo', 'admissionDate',
+        'phdMode', 'gender', 'category'
+      ];
+      const isEstablishedProfile = Boolean(user.profileCompleted || user.isVerified || user.profile?.dob || user.profile?.shNo);
+      if (isEstablishedProfile) {
+        protectedStudentFields.forEach(field => {
+          if (user.profile && user.profile[field] !== undefined && user.profile[field] !== '') {
+            profileData[field] = user.profile[field];
+          } else {
+            delete profileData[field];
+          }
+        });
+      }
     }
 
     Object.keys(profileData).forEach(key => {

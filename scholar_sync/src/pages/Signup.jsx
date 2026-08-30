@@ -33,8 +33,21 @@ const Signup = () => {
     }
   }, [navigate, toast]);
 
+  const DESIGNATION_OPTIONS = [
+    'Assistant Professor',
+    'Associate Professor',
+    'Professor',
+    'Assistant Professor (Contract / Guest Faculty)',
+    'Librarian',
+    'Assistant Librarian',
+    'Deputy Librarian',
+    'Dean',
+    'Director'
+  ];
+
   const [role, setRole] = useState('');
   const [name, setName] = useState('');
+  const [designation, setDesignation] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -241,8 +254,13 @@ const Signup = () => {
     }
 
     // Faculty/HOD validations
-    if ((role === 'FACULTY' || role === 'HOD') && !name) {
-      newErrors.name = 'Please enter your full name.';
+    if (role === 'FACULTY' || role === 'HOD') {
+      if (!name) {
+        newErrors.name = 'Please enter your full name.';
+      }
+      if (!designation) {
+        newErrors.designation = 'Please select your designation.';
+      }
     }
 
     const cleanedPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
@@ -279,6 +297,7 @@ const Signup = () => {
       userData.category = category;
     } else {
       userData.name = name;
+      userData.designation = designation;
     }
 
     const result = await register(userData);
@@ -346,6 +365,7 @@ const Signup = () => {
                   setGender('');
                   setCategory('');
                   setName('');
+                  setDesignation('');
                 }}
                 required
                 style={{
@@ -891,6 +911,42 @@ const Signup = () => {
                   {fieldErrors.name && (
                     <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
                       ⚠ {fieldErrors.name}
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Designation <span style={{ color: '#EF4444' }}>*</span></label>
+                  <select
+                    className="form-input"
+                    value={designation}
+                    onChange={e => {
+                      setDesignation(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, designation: null }));
+                    }}
+                    required
+                    style={{
+                      backgroundColor: theme.inputBg,
+                      color: designation ? theme.inputText : theme.inputPlaceholder,
+                      borderColor: theme.inputBorder,
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23${theme.isDark ? '88898b' : '6B7280'}' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '14px',
+                      paddingRight: '36px',
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>-- Select Designation --</option>
+                    {DESIGNATION_OPTIONS.map(opt => (
+                      <option key={opt} value={opt} style={{ backgroundColor: theme.dropdownBg, color: theme.textPrimary }}>{opt}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.designation && (
+                    <span style={{ color: '#EF4444', fontSize: '0.82rem', marginTop: '4px', display: 'block', fontWeight: 500 }}>
+                      ⚠ {fieldErrors.designation}
                     </span>
                   )}
                 </div>

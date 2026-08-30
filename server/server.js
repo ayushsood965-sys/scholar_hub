@@ -73,8 +73,35 @@ connectDB().then(async () => {
     } else {
       console.log('👑 Super Admin user already exists.');
     }
+
+    // Backfill designation for existing HODs
+    await User.updateMany(
+      {
+        $or: [{ role: 'HOD' }, { subRole: 'HOD' }],
+        $or: [
+          { 'profile.designation': { $exists: false } },
+          { 'profile.designation': null },
+          { 'profile.designation': '' }
+        ]
+      },
+      { $set: { 'profile.designation': 'Professor' } }
+    );
+
+    // Backfill designation for existing Faculty / Supervisors
+    await User.updateMany(
+      {
+        role: 'FACULTY',
+        subRole: { $ne: 'HOD' },
+        $or: [
+          { 'profile.designation': { $exists: false } },
+          { 'profile.designation': null },
+          { 'profile.designation': '' }
+        ]
+      },
+      { $set: { 'profile.designation': 'Assistant Professor' } }
+    );
   } catch (err) {
-    console.error('❌ Error during auto-seeding:', err);
+    console.error('❌ Error during auto-seeding or designation backfill:', err);
   }
 });
 
