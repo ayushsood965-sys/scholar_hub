@@ -76,7 +76,7 @@ jobs:
         run: |
           base_url="${{ secrets.COOLIFY_BASE_URL }}"
           base_url="${base_url%/}"
-          curl -s --fail --connect-timeout 15 --max-time 30 -X GET \
+          curl -s --fail --connect-timeout 15 --max-time 30 -X POST \
             "$base_url/api/v1/deploy?uuid=${{ matrix.uuid }}" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
             -H "Content-Type: application/json"
