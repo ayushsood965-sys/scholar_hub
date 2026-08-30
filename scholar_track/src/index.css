@@ -2294,7 +2294,11 @@ img {
   }
 
   .main-content {
-    margin-left: 0;
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
 
   /* Header */
@@ -2332,7 +2336,11 @@ img {
 
   /* Dashboard area - added bottom padding for bottom nav */
   .dashboard-area {
-    padding: calc(56px + 16px) 12px 80px 12px !important;
+    padding: calc(56px + 12px) 12px 80px 12px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
 
   /* Landing page */

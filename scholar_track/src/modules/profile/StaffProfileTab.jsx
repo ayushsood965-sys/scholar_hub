@@ -396,18 +396,31 @@ const StaffProfileTab = ({ thesis }) => {
     }
 
     @media (max-width: 768px) {
+      .profile-tab-wrapper-container,
       .profile-layout-container {
         flex-direction: column !important;
         gap: 16px !important;
-        padding: 8px !important;
+        padding: 4px 0 !important;
+        margin: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
+        overflow-x: hidden !important;
       }
       
       .timeline-sidebar-panel {
         display: none !important;
+      }
+
+      .profile-details-column {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        gap: 16px !important;
+        padding: 0 !important;
       }
 
       .mobile-milestones-bar {
@@ -416,57 +429,98 @@ const StaffProfileTab = ({ thesis }) => {
         max-width: 100% !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin: 4px 0 12px 0 !important;
+        padding: 8px 10px !important;
+        scrollbar-width: none !important;
       }
 
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
-        top: var(--header-height, 64px) !important;
+        top: var(--header-height, 56px) !important;
         left: 0 !important;
+        right: 0 !important;
         width: 100% !important;
-        height: 50px !important;
+        max-width: 100% !important;
+        height: 52px !important;
         border-radius: 0 !important;
         border-left: none !important;
         border-right: none !important;
         border-top: none !important;
         margin: 0 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
-        background: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: blur(10px) !important;
         z-index: 999 !important;
       }
       
       .clay-card, .card {
-        padding: 16px !important;
+        padding: 16px 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        word-break: break-word !important;
       }
 
       .personal-info-header {
         flex-direction: column !important;
         align-items: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        gap: 16px !important;
+      }
+
+      .personal-info-header > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
       }
 
       .avatar-wrapper {
         width: 100% !important;
+        max-width: 100% !important;
       }
 
       .section-header {
         flex-direction: column !important;
         align-items: flex-start !important;
         gap: 10px !important;
+        width: 100% !important;
       }
 
       .section-header-buttons {
         width: 100% !important;
         justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
       }
 
       .edu-card-header {
         flex-direction: column !important;
         align-items: flex-start !important;
         gap: 8px !important;
+        width: 100% !important;
       }
       
       .verification-banner {
         flex-direction: column !important;
         align-items: flex-start !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        gap: 12px !important;
+      }
+
+      .verification-banner > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
       
       .verification-banner button {
@@ -475,9 +529,12 @@ const StaffProfileTab = ({ thesis }) => {
 
       .responsive-two-col-grid {
         grid-template-columns: 1fr !important;
+        width: 100% !important;
       }
       .responsive-two-col-grid > div {
         grid-column: span 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
       }
 
       .student-profile-header-card {
@@ -485,6 +542,9 @@ const StaffProfileTab = ({ thesis }) => {
         align-items: center !important;
         text-align: center !important;
         gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
     }
   `;
@@ -977,10 +1037,8 @@ const StaffProfileTab = ({ thesis }) => {
     return <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '12px', background: '#F3F4F6', color: 'var(--color-text-muted)', fontWeight: 600 }}>Pending Upload</span>;
   };
 
-  // Dynamic Scroll Sentinel & Snap Scroll Hook
+  // Dynamic Scroll Sentinel & Sticky Milestone Bar Hook
   useEffect(() => {
-    let touchStartY = 0;
-
     const checkSticky = () => {
       if (milestonePlaceholderRef.current) {
         const rect = milestonePlaceholderRef.current.getBoundingClientRect();
@@ -988,145 +1046,34 @@ const StaffProfileTab = ({ thesis }) => {
       }
     };
 
-    const handleKeyDown = (e) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && (
-        activeEl.tagName === 'INPUT' || 
-        activeEl.tagName === 'TEXTAREA' || 
-        activeEl.isContentEditable
-      );
-      if (isInput) return;
-
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const keys = Object.keys(sectionRefs);
-        const currentIndex = keys.indexOf(activeSection);
-        
-        let nextIndex = currentIndex;
-        if (e.key === 'ArrowDown') {
-          nextIndex = Math.min(currentIndex + 1, keys.length - 1);
-        } else if (e.key === 'ArrowUp') {
-          nextIndex = Math.max(currentIndex - 1, 0);
-        }
-        
-        if (nextIndex !== currentIndex) {
-          const nextKey = keys[nextIndex];
-          scrollToSection(nextKey);
-        }
-      }
-    };
-
-    const handleWheel = (e) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && (
-        activeEl.tagName === 'INPUT' || 
-        activeEl.tagName === 'TEXTAREA' || 
-        activeEl.isContentEditable
-      );
-      if (isInput) return;
-
-      const now = Date.now();
-      if (now - lastWheelTimeRef.current < 900) {
-        e.preventDefault();
-        return;
-      }
-
-      const keys = Object.keys(sectionRefs);
-      const currentIndex = keys.indexOf(activeSection);
-      
-      let nextIndex = currentIndex;
-      if (e.deltaY > 0) {
-        nextIndex = Math.min(currentIndex + 1, keys.length - 1);
-      } else if (e.deltaY < 0) {
-        nextIndex = Math.max(currentIndex - 1, 0);
-      }
-      
-      if (nextIndex !== currentIndex) {
-        e.preventDefault();
-        lastWheelTimeRef.current = now;
-        const nextKey = keys[nextIndex];
-        scrollToSection(nextKey);
-      }
-    };
-
-    const handleTouchStart = (e) => {
-      touchStartY = e.touches[0].clientY;
-    };
-
-    const handleTouchEnd = (e) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && (
-        activeEl.tagName === 'INPUT' || 
-        activeEl.tagName === 'TEXTAREA' || 
-        activeEl.isContentEditable
-      );
-      if (isInput) return;
-
-      const touchEndY = e.changedTouches[0].clientY;
-      const diffY = touchStartY - touchEndY;
-      
-      const now = Date.now();
-      if (now - lastWheelTimeRef.current < 900) {
-        return;
-      }
-      
-      if (Math.abs(diffY) > 50) {
-        const keys = Object.keys(sectionRefs);
-        const currentIndex = keys.indexOf(activeSection);
-        
-        let nextIndex = currentIndex;
-        if (diffY > 0) {
-          nextIndex = Math.min(currentIndex + 1, keys.length - 1);
-        } else {
-          nextIndex = Math.max(currentIndex - 1, 0);
-        }
-        
-        if (nextIndex !== currentIndex) {
-          lastWheelTimeRef.current = now;
-          const nextKey = keys[nextIndex];
-          scrollToSection(nextKey);
-        }
-      }
-    };
-
-    checkSticky();
-
     const dashboardArea = document.querySelector('.dashboard-area');
     if (dashboardArea) {
-      dashboardArea.addEventListener('scroll', checkSticky);
-      dashboardArea.addEventListener('wheel', handleWheel, { passive: false });
-      dashboardArea.addEventListener('touchstart', handleTouchStart, { passive: true });
-      dashboardArea.addEventListener('touchend', handleTouchEnd, { passive: true });
+      dashboardArea.addEventListener('scroll', checkSticky, { passive: true });
     }
-    window.addEventListener('scroll', checkSticky);
-    window.addEventListener('resize', checkSticky);
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('scroll', checkSticky, { passive: true });
+    window.addEventListener('resize', checkSticky, { passive: true });
+
+    checkSticky();
 
     return () => {
       if (dashboardArea) {
         dashboardArea.removeEventListener('scroll', checkSticky);
-        dashboardArea.removeEventListener('wheel', handleWheel);
-        dashboardArea.removeEventListener('touchstart', handleTouchStart);
-        dashboardArea.removeEventListener('touchend', handleTouchEnd);
       }
       window.removeEventListener('scroll', checkSticky);
       window.removeEventListener('resize', checkSticky);
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSection, headerHeight]);
+  }, [headerHeight]);
 
-  // Premium micro-interaction: Auto-scroll mobile milestones navigation row to keep active tab centered
+  // Premium micro-interaction: Auto-scroll mobile milestones navigation row (strictly inside its own container!)
   useEffect(() => {
     if (activeSection && mobileBarRef.current) {
       const activeEl = mobileBarRef.current.querySelector(`.mobile-milestone-link[data-key="${activeSection}"]`);
       if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        const bar = mobileBarRef.current;
+        const barRect = bar.getBoundingClientRect();
+        const elRect = activeEl.getBoundingClientRect();
+        const targetLeft = bar.scrollLeft + (elRect.left - barRect.left) - (barRect.width / 2) + (elRect.width / 2);
+        bar.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
       }
     }
   }, [activeSection]);
@@ -1167,7 +1114,18 @@ const StaffProfileTab = ({ thesis }) => {
   const scrollToSection = (key) => {
     setActiveSection(key);
     isAutoScrollingRef.current = true;
-    sectionRefs[key].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = sectionRefs[key]?.current;
+    if (el) {
+      const dashboardArea = document.querySelector('.dashboard-area');
+      if (dashboardArea) {
+        const containerRect = dashboardArea.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetScrollTop = dashboardArea.scrollTop + (elRect.top - containerRect.top) - (headerHeight + 60);
+        dashboardArea.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      }
+    }
     setTimeout(() => {
       isAutoScrollingRef.current = false;
     }, 850);

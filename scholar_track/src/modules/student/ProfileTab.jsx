@@ -1748,46 +1748,58 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }
 
     @media (max-width: 1024px) {
-      .profile-tab-wrapper-container {
-        padding: 8px !important;
+      .profile-tab-wrapper-container,
+      .profile-layout-container {
+        flex-direction: column !important;
+        gap: 16px !important;
+        padding: 4px 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
       }
 
       .timeline-sidebar-panel {
         display: none !important;
       }
-      
-      .profile-layout-container {
-        flex-direction: column !important;
-        gap: 16px !important;
-        padding: 8px !important;
+
+      .profile-details-column {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        gap: 16px !important;
+        padding: 0 !important;
       }
 
       .mobile-milestones-bar {
         display: flex !important;
         position: sticky !important;
-        top: var(--header-height, 68px) !important;
+        top: var(--header-height, 56px) !important;
         background: #ffffff !important;
         border-bottom: 1px solid #e5e7eb !important;
-        padding: 0 16px !important;
-        gap: 16px !important;
+        padding: 8px 10px !important;
+        gap: 12px !important;
         overflow-x: auto !important;
+        white-space: nowrap !important;
+        flex-wrap: nowrap !important;
         z-index: 100 !important;
-        margin: -12px -12px 16px -12px !important;
+        margin: 4px 0 12px 0 !important;
         scroll-behavior: smooth !important;
         -webkit-overflow-scrolling: touch !important;
-        width: calc(100% + 24px) !important;
-        max-width: calc(100% + 24px) !important;
+        width: 100% !important;
+        max-width: 100% !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
+        scrollbar-width: none !important;
       }
 
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
-        top: var(--header-height, 68px) !important;
+        top: var(--header-height, 56px) !important;
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
@@ -1797,44 +1809,67 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
         border-left: none !important;
         border-right: none !important;
         border-top: none !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.06) !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: blur(10px) !important;
+        z-index: 999 !important;
+      }
+
+      .clay-card, .card {
+        padding: 16px 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        word-break: break-word !important;
       }
     }
 
     @media (max-width: 768px) {
       .responsive-two-col-grid {
         grid-template-columns: 1fr !important;
+        width: 100% !important;
       }
       .responsive-two-col-grid > div {
         grid-column: span 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
       }
 
       .responsive-three-col-grid {
         grid-template-columns: 1fr !important;
         gap: 12px !important;
+        width: 100% !important;
       }
       .responsive-three-col-grid > div {
         grid-column: span 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
       }
 
       .responsive-four-col-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-columns: 1fr !important;
         gap: 10px !important;
+        width: 100% !important;
       }
 
       .responsive-six-col-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-columns: 1fr !important;
         gap: 10px !important;
+        width: 100% !important;
       }
 
       .responsive-thesis-params-grid {
         grid-template-columns: 1fr !important;
         gap: 12px !important;
+        width: 100% !important;
       }
 
       .responsive-abstract-keywords-grid {
         grid-template-columns: 1fr !important;
         gap: 12px !important;
+        width: 100% !important;
       }
     }
   `;
@@ -1850,10 +1885,10 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
 
     const dashboardArea = document.querySelector('.dashboard-area');
     if (dashboardArea) {
-      dashboardArea.addEventListener('scroll', checkSticky);
+      dashboardArea.addEventListener('scroll', checkSticky, { passive: true });
     }
-    window.addEventListener('scroll', checkSticky);
-    window.addEventListener('resize', checkSticky);
+    window.addEventListener('scroll', checkSticky, { passive: true });
+    window.addEventListener('resize', checkSticky, { passive: true });
 
     checkSticky();
 
@@ -1866,12 +1901,16 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     };
   }, [headerHeight]);
 
-  // Auto-scroll mobile milestones navigation row to keep active tab centered
+  // Auto-scroll mobile milestones navigation row (strictly inside its own container!)
   useEffect(() => {
     if (activeSection && mobileBarRef.current) {
       const activeEl = mobileBarRef.current.querySelector(`.mobile-milestone-link[data-key="${activeSection}"]`);
       if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        const bar = mobileBarRef.current;
+        const barRect = bar.getBoundingClientRect();
+        const elRect = activeEl.getBoundingClientRect();
+        const targetLeft = bar.scrollLeft + (elRect.left - barRect.left) - (barRect.width / 2) + (elRect.width / 2);
+        bar.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
       }
     }
   }, [activeSection]);
@@ -1922,7 +1961,18 @@ const ProfileTab = ({ thesis, onRefreshThesis }) => {
     }
     setActiveSection(key);
     isAutoScrollingRef.current = true;
-    sectionRefs[key].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = sectionRefs[key]?.current;
+    if (el) {
+      const dashboardArea = document.querySelector('.dashboard-area');
+      if (dashboardArea) {
+        const containerRect = dashboardArea.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetScrollTop = dashboardArea.scrollTop + (elRect.top - containerRect.top) - (headerHeight + 60);
+        dashboardArea.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      }
+    }
     setTimeout(() => {
       isAutoScrollingRef.current = false;
     }, 850);

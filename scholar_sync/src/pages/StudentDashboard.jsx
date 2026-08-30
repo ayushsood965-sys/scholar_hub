@@ -8867,36 +8867,75 @@ const ProfileTab = () => {
     }
     @media (max-width: 768px) {
       .profile-tab-wrapper {
-        padding: 8px 0 !important;
+        padding: 4px 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
       }
       .profile-layout-container {
-        flex-direction: column;
-        gap: 16px;
-        padding: 8px 0 !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+        padding: 4px 0 !important;
+        margin: 0 !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         box-sizing: border-box !important;
+        overflow-x: hidden !important;
       }
       .timeline-sidebar-panel {
         display: none !important;
       }
+      .profile-details-column {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        gap: 16px !important;
+        padding: 0 !important;
+      }
       .mobile-milestones-bar {
         display: flex !important;
-        margin: 8px 4px 16px 4px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin: 4px 0 12px 0 !important;
+        padding: 8px 10px !important;
+        scrollbar-width: none !important;
       }
       .mobile-milestones-bar.is-stuck {
         position: fixed !important;
         top: var(--header-height, 64px) !important;
         left: 0 !important;
+        right: 0 !important;
         width: 100% !important;
-        height: 50px !important;
+        max-width: 100% !important;
+        height: 52px !important;
         border-radius: 0 !important;
         border-left: none !important;
         border-right: none !important;
         border-top: none !important;
         margin: 0 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
-        background: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: blur(10px) !important;
         z-index: 999 !important;
+      }
+      .clay-card, .card {
+        padding: 16px 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        word-break: break-word !important;
       }
     }
   `;
@@ -8912,7 +8951,18 @@ const ProfileTab = () => {
     }
     setActiveSection(key);
     isAutoScrollingRef.current = true;
-    sectionRefs[key].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = sectionRefs[key]?.current;
+    if (el) {
+      const dashboardArea = document.querySelector('.dashboard-area');
+      if (dashboardArea) {
+        const containerRect = dashboardArea.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetScrollTop = dashboardArea.scrollTop + (elRect.top - containerRect.top) - (headerHeight + 60);
+        dashboardArea.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      }
+    }
     setTimeout(() => { isAutoScrollingRef.current = false; }, 850);
   };
 
@@ -8929,10 +8979,10 @@ const ProfileTab = () => {
 
     const dashboardArea = document.querySelector('.dashboard-area');
     if (dashboardArea) {
-      dashboardArea.addEventListener('scroll', checkSticky);
+      dashboardArea.addEventListener('scroll', checkSticky, { passive: true });
     }
-    window.addEventListener('scroll', checkSticky);
-    window.addEventListener('resize', checkSticky);
+    window.addEventListener('scroll', checkSticky, { passive: true });
+    window.addEventListener('resize', checkSticky, { passive: true });
 
     return () => {
       if (dashboardArea) {
@@ -8969,11 +9019,17 @@ const ProfileTab = () => {
     return () => listeners.forEach(({ el, h }) => el.removeEventListener('click', h));
   }, [isPersonalInfoSavedState, guideUnlocked]);
 
-  // Auto-scroll mobile bar
+  // Auto-scroll mobile bar (strictly inside its own container!)
   useEffect(() => {
-    if (mobileBarRef.current) {
+    if (mobileBarRef.current && activeSection) {
       const el = mobileBarRef.current.querySelector(`.mobile-milestone-link[data-key="${activeSection}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      if (el) {
+        const bar = mobileBarRef.current;
+        const barRect = bar.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetLeft = bar.scrollLeft + (elRect.left - barRect.left) - (barRect.width / 2) + (elRect.width / 2);
+        bar.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+      }
     }
   }, [activeSection]);
   useEffect(() => {
