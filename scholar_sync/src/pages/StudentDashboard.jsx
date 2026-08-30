@@ -8747,6 +8747,58 @@ const ProfileTab = () => {
   }
 
   const profileLayoutCSS = `
+    /* Desktop Profile Rightmost Scrollbar - Twice as thick with double min-height */
+    @media (min-width: 769px) {
+      .dashboard-area::-webkit-scrollbar,
+      .main-content::-webkit-scrollbar,
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar {
+        width: 16px !important;
+        height: 16px !important;
+      }
+      .dashboard-area::-webkit-scrollbar-track,
+      .main-content::-webkit-scrollbar-track,
+      html::-webkit-scrollbar-track,
+      body::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.02) !important;
+      }
+      .dashboard-area::-webkit-scrollbar-thumb,
+      .main-content::-webkit-scrollbar-thumb,
+      html::-webkit-scrollbar-thumb,
+      body::-webkit-scrollbar-thumb {
+        background: rgba(19, 58, 38, 0.35) !important;
+        border-radius: 12px !important;
+        border: 3px solid transparent !important;
+        background-clip: padding-box !important;
+        min-height: 140px !important;
+      }
+      .dashboard-area::-webkit-scrollbar-thumb:hover,
+      .main-content::-webkit-scrollbar-thumb:hover,
+      html::-webkit-scrollbar-thumb:hover,
+      body::-webkit-scrollbar-thumb:hover {
+        background: rgba(19, 58, 38, 0.6) !important;
+        border: 3px solid transparent !important;
+        background-clip: padding-box !important;
+      }
+      [data-theme='dark'] .dashboard-area::-webkit-scrollbar-thumb,
+      [data-theme='dark'] .main-content::-webkit-scrollbar-thumb,
+      [data-theme='dark'] html::-webkit-scrollbar-thumb,
+      [data-theme='dark'] body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3) !important;
+        border: 3px solid transparent !important;
+        background-clip: padding-box !important;
+        min-height: 140px !important;
+      }
+      [data-theme='dark'] .dashboard-area::-webkit-scrollbar-thumb:hover,
+      [data-theme='dark'] .main-content::-webkit-scrollbar-thumb:hover,
+      [data-theme='dark'] html::-webkit-scrollbar-thumb:hover,
+      [data-theme='dark'] body::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.55) !important;
+        border: 3px solid transparent !important;
+        background-clip: padding-box !important;
+      }
+    }
+
     .profile-tab-wrapper { padding: 24px; }
     .profile-layout-container { display:flex; align-items:flex-start; gap:28px; max-width:1280px; margin:0 auto; padding:12px; position:relative; }
     .card.active-card { border-color:#133A26 !important; box-shadow:0 6px 20px rgba(19,58,38,0.12) !important; }

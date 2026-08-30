@@ -59,7 +59,7 @@ const StudentMappingDetailsTab = () => {
     },
     {
       key: 'student',
-      header: 'Student Name',
+      header: isPhD ? 'Ph.D. Scholar Name' : 'Student Name',
       accessor: (row) => row.studentName || '',
       render: (row) => (
         <div>
@@ -75,28 +75,48 @@ const StudentMappingDetailsTab = () => {
     },
     {
       key: 'mappedSubjects',
-      header: 'Mapped Subjects',
+      header: isPhD ? 'Attendance Mode' : 'Mapped Subjects',
       sortable: false,
       render: (row) => (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {(row.mappedSubjects || []).map((sub, sIdx) => (
+          {isPhD ? (
             <span
-              key={sub.timetableSlotId?._id || sub.timetableSlotId || sIdx}
-              className="badge badge-subject"
+              className="badge"
               style={{
-                background: 'rgba(99, 102, 241, 0.1)',
-                color: '#6366F1',
-                fontSize: '0.7rem',
-                padding: '4px 10px',
+                background: 'rgba(16, 185, 129, 0.1)',
+                color: '#059669',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                fontSize: '0.75rem',
+                padding: '4px 12px',
                 borderRadius: '20px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                fontWeight: 600
               }}
             >
-              {sub.subjectName || sub.subjectCode || 'Unknown'}
+              ✓ Ph.D. Daily Research Attendance
             </span>
-          ))}
+          ) : (
+            (row.mappedSubjects || []).map((sub, sIdx) => (
+              <span
+                key={sub.timetableSlotId?._id || sub.timetableSlotId || sIdx}
+                className="badge badge-subject"
+                style={{
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  color: '#6366F1',
+                  fontSize: '0.7rem',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {sub.subjectName || sub.subjectCode || 'Unknown'}
+              </span>
+            ))
+          )}
         </div>
       )
     },
@@ -121,7 +141,7 @@ const StudentMappingDetailsTab = () => {
           onClick={() => handleDeleteClick(row)}
           disabled={deletingId === row._id}
         >
-          <Trash2 size={14} /> Delete
+          <Trash2 size={14} /> {isPhD ? 'Unmap' : 'Delete'}
         </button>
       )
     }
@@ -266,9 +286,11 @@ const StudentMappingDetailsTab = () => {
           <History size={14} />
           MAPPING DETAILS
         </div>
-        <h2 className="welcome-title">Student Semester & Subject Mapping Details</h2>
+        <h2 className="welcome-title">{isPhD ? 'Ph.D. Scholar Session Mapping Details' : 'Student Semester & Subject Mapping Details'}</h2>
         <p className="welcome-subtitle">
-          View and manage students already mapped to subjects and semesters.
+          {isPhD 
+            ? 'View and manage Ph.D. scholars mapped to this session for daily attendance.' 
+            : 'View and manage students already mapped to subjects and semesters.'}
         </p>
       </div>
 
@@ -298,7 +320,7 @@ const StudentMappingDetailsTab = () => {
               </select>
             </div>
           </div>
-          <div className="grid-3 mb-sm" style={{ alignItems: 'end' }}>
+          <div className={isPhD ? "flex justify-end" : "grid-3 mb-sm"} style={{ alignItems: 'end' }}>
             {!isPhD && (
               <div className="form-group mb-sm">
                 <label className="form-label">Semester</label>
@@ -308,10 +330,9 @@ const StudentMappingDetailsTab = () => {
                 </select>
               </div>
             )}
-            {isPhD && <div />}
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button type="submit" className="btn btn-primary w-full" style={{ height: '46px' }}>
-                <Search size={16} /> Search
+            <div style={{ display: 'flex', alignItems: 'flex-end', width: isPhD ? 'auto' : '100%' }}>
+              <button type="submit" className="btn btn-primary" style={{ height: '46px', minWidth: isPhD ? '180px' : '100%' }}>
+                <Search size={16} /> Search Mapped {isPhD ? 'Scholars' : 'Students'}
               </button>
             </div>
           </div>
@@ -342,13 +363,13 @@ const StudentMappingDetailsTab = () => {
                 <AlertTriangle size={22} color="#DC2626" />
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
-                {deleteConfirm.type === 'subject' ? 'Remove Subject Mapping' : 'Delete Mapping Record'}
+                {deleteConfirm.type === 'subject' ? 'Remove Subject Mapping' : isPhD ? 'Unmap Ph.D. Scholar' : 'Delete Mapping Record'}
               </h3>
             </div>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: 20 }}>
               {deleteConfirm.type === 'subject'
                 ? `Are you sure you want to remove this subject mapping from "${findStudentName(deleteConfirm.id)}"? The student can be re-mapped to this subject later.`
-                : `Are you sure you want to delete the entire mapping record for "${findStudentName(deleteConfirm.id)}"? All subject mappings for this student will be removed, and they can be re-mapped later.`
+                : `Are you sure you want to ${isPhD ? 'unmap' : 'delete the entire mapping record for'} "${findStudentName(deleteConfirm.id)}"? ${isPhD ? 'The Ph.D. scholar can be re-mapped to this session anytime.' : 'All subject mappings for this student will be removed, and they can be re-mapped later.'}`
               }
             </p>
             <div className="flex gap-sm" style={{ justifyContent: 'flex-end' }}>
@@ -362,7 +383,7 @@ const StudentMappingDetailsTab = () => {
                 onClick={confirmDelete}
                 disabled={deletingId === deleteConfirm.id}
               >
-                {deletingId === deleteConfirm.id ? 'Deleting...' : deleteConfirm.type === 'subject' ? 'Remove Subject' : 'Delete Record'}
+                {deletingId === deleteConfirm.id ? 'Processing...' : deleteConfirm.type === 'subject' ? 'Remove Subject' : isPhD ? 'Unmap Scholar' : 'Delete Record'}
               </button>
             </div>
           </div>
@@ -380,26 +401,30 @@ const StudentMappingDetailsTab = () => {
             <div className="flex justify-between items-center flex-wrap gap-md">
               <div className="flex items-center gap-sm" style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
                 <Users size={18} style={{ color: 'var(--color-primary)' }} />
-                Total Mapped Students: <strong style={{ color: 'var(--color-text-primary)' }}>{records.length}</strong>
+                {isPhD ? 'Total Mapped Ph.D. Scholars:' : 'Total Mapped Students:'} <strong style={{ color: 'var(--color-text-primary)' }}>{records.length}</strong>
               </div>
-              <div className="flex items-center gap-sm" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                <BookOpen size={16} />
-                Total Subjects: {subjects.length}
-              </div>
-              <div className="flex items-center gap-sm">
-                <label style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Sort by Subject:</label>
-                <select
-                  className="form-input"
-                  value={sortBySubject}
-                  onChange={e => setSortBySubject(e.target.value)}
-                  style={{ width: 'auto', minWidth: '180px', padding: '6px 12px', fontSize: '0.82rem' }}
-                >
-                  <option value="">All Subjects (Default)</option>
-                  {subjects.map(s => (
-                    <option key={s._id} value={s._id}>{s.subjectName} ({s.subjectCode})</option>
-                  ))}
-                </select>
-              </div>
+              {!isPhD && (
+                <div className="flex items-center gap-sm" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                  <BookOpen size={16} />
+                  Total Subjects: {subjects.length}
+                </div>
+              )}
+              {!isPhD && (
+                <div className="flex items-center gap-sm">
+                  <label style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Sort by Subject:</label>
+                  <select
+                    className="form-input"
+                    value={sortBySubject}
+                    onChange={e => setSortBySubject(e.target.value)}
+                    style={{ width: 'auto', minWidth: '180px', padding: '6px 12px', fontSize: '0.82rem' }}
+                  >
+                    <option value="">All Subjects (Default)</option>
+                    {subjects.map(s => (
+                      <option key={s._id} value={s._id}>{s.subjectName} ({s.subjectCode})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 

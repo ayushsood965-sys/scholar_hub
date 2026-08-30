@@ -431,9 +431,11 @@ const StudentSubjectMappingTab = () => {
           <BookOpen size={14} />
           MAPPING
         </div>
-        <h2 className="welcome-title">Student Semester & Subject Mapping</h2>
+        <h2 className="welcome-title">{isPhD ? 'Ph.D. Scholar Session Mapping' : 'Student Semester & Subject Mapping'}</h2>
         <p className="welcome-subtitle">
-          Map students to subjects and semesters. Select criteria, choose subjects, pick students, and save.
+          {isPhD 
+            ? 'Map Ph.D. scholars to their academic session and degree for daily attendance check-in.' 
+            : 'Map students to subjects and semesters. Select criteria, choose subjects, pick students, and save.'}
         </p>
       </div>
 
@@ -463,7 +465,7 @@ const StudentSubjectMappingTab = () => {
               </select>
             </div>
           </div>
-          <div className="grid-3 mb-sm" style={{ alignItems: 'end' }}>
+          <div className={isPhD ? "flex justify-end" : "grid-3 mb-sm"} style={{ alignItems: 'end' }}>
             {!isPhD && (
               <div className="form-group mb-sm">
                 <label className="form-label">Semester</label>
@@ -473,18 +475,17 @@ const StudentSubjectMappingTab = () => {
                 </select>
               </div>
             )}
-            {isPhD && <div />}
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button type="submit" className="btn btn-primary w-full" style={{ height: '46px' }}>
-                <Search size={16} /> Search
+            <div style={{ display: 'flex', alignItems: 'flex-end', width: isPhD ? 'auto' : '100%' }}>
+              <button type="submit" className="btn btn-primary" style={{ height: '46px', minWidth: isPhD ? '180px' : '100%' }}>
+                <Search size={16} /> Search Candidates
               </button>
             </div>
           </div>
         </form>
       </div>
 
-      {/* ── No Timetable Error Banner ── */}
-      {searchError && (
+      {/* ── No Timetable Error Banner (UG/PG only) ── */}
+      {searchError && !isPhD && (
         <div className="glass-panel p-lg mb-lg" style={{ borderLeft: '4px solid #EF4444' }}>
           <div className="flex items-center gap-md">
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -512,8 +513,27 @@ const StudentSubjectMappingTab = () => {
         previewData && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}>
             
-            {/* ── Internal Subject Clash Banner ── */}
-            {internalSubjectClashes.length > 0 && (
+            {/* ── Ph.D. Session Banner ── */}
+            {isPhD && (
+              <div className="glass-panel p-lg mb-lg" style={{ borderLeft: '4px solid var(--color-primary)', background: 'rgba(26, 90, 59, 0.04)' }}>
+                <div className="flex items-center gap-md">
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(26, 90, 59, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <BookOpen size={20} style={{ color: 'var(--color-primary)' }} />
+                  </div>
+                  <div>
+                    <span className="font-semibold" style={{ color: 'var(--color-text-primary)', fontSize: '0.95rem' }}>
+                      Ph.D. Session & Daily Research Attendance Mapping
+                    </span>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                      Ph.D. scholars are mapped at the session and degree level. Once mapped, their daily research attendance can be marked directly without semester or class timetable constraints.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Internal Subject Clash Banner (UG/PG only) ── */}
+            {!isPhD && internalSubjectClashes.length > 0 && (
               <div className="glass-panel p-lg mb-lg" style={{ borderLeft: '4px solid #EF4444', background: 'rgba(239, 68, 68, 0.05)' }}>
                 <div className="flex items-center gap-md">
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -531,8 +551,8 @@ const StudentSubjectMappingTab = () => {
               </div>
             )}
 
-            {/* ── Info Banner when partial mappings exist ── */}
-            {hasPartiallyMappedSubjects && internalSubjectClashes.length === 0 && (
+            {/* ── Info Banner when partial mappings exist (UG/PG only) ── */}
+            {!isPhD && hasPartiallyMappedSubjects && internalSubjectClashes.length === 0 && (
               <div className="glass-panel p-lg mb-lg" style={{ borderLeft: '4px solid var(--status-warning)' }}>
                 <div className="flex items-center gap-md">
                   <AlertTriangle size={20} style={{ color: '#D97706', flexShrink: 0 }} />
@@ -548,8 +568,8 @@ const StudentSubjectMappingTab = () => {
               </div>
             )}
 
-            {/* ── Subject Selection ── */}
-            {subjects.length > 0 && (
+            {/* ── Subject Selection (UG/PG only) ── */}
+            {!isPhD && subjects.length > 0 && (
               <div className="glass-panel p-xl mb-lg">
                 <div className="flex justify-between items-center mb-lg">
                   <h3 className="flex items-center gap-sm" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
@@ -826,7 +846,9 @@ const StudentSubjectMappingTab = () => {
                         ? 'Timetable Clash Between Selected Subjects (Blocked)'
                         : selectedStudentCount === 0
                           ? 'Select Eligible Students to Save'
-                          : `Save Mapping (${selectedStudentCount} Students)`
+                          : isPhD
+                            ? `Map Selected Ph.D. Scholars (${selectedStudentCount})`
+                            : `Save Mapping (${selectedStudentCount} Students)`
                   }
                 </button>
               </div>

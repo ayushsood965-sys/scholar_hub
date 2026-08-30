@@ -78,11 +78,63 @@ exports.getPreview = async (req, res) => {
     const departmentId = req.user.departmentId;
     const facultyId = req.user._id;
 
-    if (!sessionId || !degreeTypeId || !degreeNameId || !semesterId) {
-      return res.status(400).json({ message: 'Please select all filter criteria.' });
+    if (!sessionId || !degreeTypeId || !degreeNameId) {
+      return res.status(400).json({ message: 'Please select all required filter criteria.' });
     }
 
-    // 1. Get subjects mapped in TimetableMaster (restrict by facultyId only for regular faculty)
+    const degreeTypeObj = await DegreeTypeMaster.findById(degreeTypeId);
+    const isPhD = degreeTypeObj && degreeTypeObj.code?.toUpperCase() === 'PHD';
+
+    if (!isPhD && !semesterId) {
+      return res.status(400).json({ message: 'Please select semester for UG/PG courses.' });
+    }
+
+    // 1. Ph.D. Mapping Preview (Session & Degree level without timetable or semester)
+    if (isPhD) {
+      const allStudents = await User.find({
+        role: 'STUDENT',
+        department: req.user.department,
+        isActive: true,
+        isVerified: true,
+        'profile.degreeTypeId': degreeTypeId,
+        'profile.degreeNameId': degreeNameId
+      }).select('name username profile');
+
+      const studentIds = allStudents.map(s => s._id);
+
+      const existingMappings = await StudentSemesterMapping.find({
+        studentId: { $in: studentIds },
+        sessionId,
+        degreeTypeId,
+        degreeNameId
+      });
+
+      const mappedStudentIds = new Set(existingMappings.map(m => m.studentId.toString()));
+
+      const phdSubject = [{
+        _id: 'PHD_DAILY_ATTENDANCE',
+        subjectCode: 'DAILY',
+        subjectName: 'Ph.D. Research & Daily Attendance',
+        startTime: '09:00',
+        endTime: '17:00',
+        dayOfWeek: 'Monday - Friday',
+        facultyId: { _id: facultyId, name: req.user.name },
+        isPartiallyMapped: mappedStudentIds.size > 0 && mappedStudentIds.size < allStudents.length,
+        isFullyMapped: mappedStudentIds.size >= allStudents.length && allStudents.length > 0,
+        mappedStudentCount: mappedStudentIds.size,
+        mappedStudentIds: [...mappedStudentIds]
+      }];
+
+      return res.status(200).json({
+        isPhD: true,
+        subjects: phdSubject,
+        students: allStudents,
+        existingMappingsCount: existingMappings.length,
+        studentClashes: {}
+      });
+    }
+
+    // 2. UG/PG: Get subjects mapped in TimetableMaster (restrict by facultyId only for regular faculty)
     const subjectQuery = {
       sessionId,
       degreeTypeId,
@@ -96,7 +148,7 @@ exports.getPreview = async (req, res) => {
     }
     const subjects = await TimetableMaster.find(subjectQuery).populate('facultyId', 'name');
 
-    // 1a. Validate timetable exists for these criteria
+    // Validate timetable exists for these criteria
     if (!subjects || subjects.length === 0) {
       return res.status(404).json({
         message: 'No timetable entries found for the selected criteria (Session + Degree Type + Degree Name + Semester). Please ensure the HOD has created the timetable for this combination before mapping students.',
@@ -104,7 +156,7 @@ exports.getPreview = async (req, res) => {
       });
     }
 
-    // 2. Get all students matching the criteria
+    // Get all students matching the criteria
     const allStudents = await User.find({
       role: 'STUDENT',
       department: req.user.department,
@@ -112,12 +164,11 @@ exports.getPreview = async (req, res) => {
       isVerified: true,
       'profile.degreeTypeId': degreeTypeId,
       'profile.degreeNameId': degreeNameId,
-      // Note: semesterId not on student profile yet - that's what we're mapping!
     }).select('name username profile');
 
     const studentIds = allStudents.map(s => s._id);
 
-    // 3. Get existing mappings for these students in this session (across all degrees/semesters)
+    // Get existing mappings for these students in this session (across all degrees/semesters)
     const allSessionStudentMappings = await StudentSemesterMapping.find({
       studentId: { $in: studentIds },
       sessionId
@@ -131,7 +182,7 @@ exports.getPreview = async (req, res) => {
       (!departmentId || !m.departmentId || m.departmentId.toString() === departmentId.toString())
     );
 
-    // 4. Build map of which subjects are already assigned to which students
+    // Build map of which subjects are already assigned to which students
     const existingSubjectsMap = {};
     const studentsWithMapping = new Set();
     
@@ -168,7 +219,7 @@ exports.getPreview = async (req, res) => {
       });
     });
 
-    // 5. Determine which subjects are already partially/fully mapped
+    // Determine which subjects are already partially/fully mapped
     const totalStudentCount = allStudents.length;
     const subjectsWithMappingInfo = subjects.map(sub => {
       const slotId = sub._id.toString();
@@ -188,19 +239,16 @@ exports.getPreview = async (req, res) => {
       };
     });
 
-    // 6. Compute timetable schedule clashes for each student against candidate subjects
-    // studentClashes: { [studentId]: { [candidateSlotId]: { clashingSubjectName, clashingSubjectCode, dayOfWeek, startTime, endTime } } }
+    // Compute timetable schedule clashes for each student against candidate subjects
     const studentClashes = {};
     allStudents.forEach(st => {
       const stId = st._id.toString();
       const existingSlots = studentSlotsMap[stId] || [];
       subjects.forEach(candSub => {
         const candId = candSub._id.toString();
-        // If student is already mapped to this exact candidate slot, not a clash
         const alreadyMapped = existingSlots.some(es => es._id === candId);
         if (alreadyMapped) return;
 
-        // Check if student has another mapped slot on same day with overlapping time interval
         const clashingSlot = existingSlots.find(es =>
           es._id !== candId &&
           es.dayOfWeek === candSub.dayOfWeek &&
@@ -221,6 +269,7 @@ exports.getPreview = async (req, res) => {
     });
 
     res.status(200).json({
+      isPhD: false,
       subjects: subjectsWithMappingInfo,
       students: allStudents,
       existingMappingsCount: existingMappings.length,
@@ -241,14 +290,89 @@ exports.saveMapping = async (req, res) => {
     const departmentId = req.user.departmentId;
 
     // Validate required fields
-    if (!sessionId || !degreeTypeId || !degreeNameId || !semesterId) {
+    if (!sessionId || !degreeTypeId || !degreeNameId) {
       return res.status(400).json({ message: 'Missing required filter criteria.' });
-    }
-    if (!subjectIds || !Array.isArray(subjectIds) || subjectIds.length === 0) {
-      return res.status(400).json({ message: 'Please select at least one subject to map.' });
     }
     if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({ message: 'Please select at least one student to map.' });
+    }
+
+    const degreeTypeObj = await DegreeTypeMaster.findById(degreeTypeId);
+    const isPhD = degreeTypeObj && degreeTypeObj.code?.toUpperCase() === 'PHD';
+
+    if (!isPhD && !semesterId) {
+      return res.status(400).json({ message: 'Missing required semester for UG/PG courses.' });
+    }
+
+    // Ph.D. Session Mapping execution
+    if (isPhD) {
+      const invalidStudents = await User.find({
+        _id: { $in: studentIds },
+        $or: [
+          { 'profile.degreeTypeId': { $ne: degreeTypeId.toString() } },
+          { 'profile.degreeNameId': { $ne: degreeNameId.toString() } },
+          { isVerified: { $ne: true } }
+        ]
+      });
+
+      if (invalidStudents.length > 0) {
+        return res.status(400).json({
+          message: 'Validation failed: Some selected Ph.D. scholars are not verified or do not belong to the selected degree type/name.'
+        });
+      }
+
+      const phdSubjectData = [{
+        timetableSlotId: null,
+        subjectCode: 'DAILY',
+        subjectName: 'Ph.D. Research & Daily Attendance'
+      }];
+
+      const operations = studentIds.map(studentId => ({
+        updateOne: {
+          filter: {
+            studentId,
+            sessionId,
+            degreeTypeId,
+            degreeNameId
+          },
+          update: {
+            $set: {
+              facultyId,
+              departmentId,
+              semesterId: null,
+              mappedSubjects: phdSubjectData,
+              mappedBy: facultyId,
+              mappedAt: new Date()
+            }
+          },
+          upsert: true
+        }
+      }));
+
+      await StudentSemesterMapping.bulkWrite(operations);
+
+      const { createNotification } = require('./notificationController');
+      for (const studentId of studentIds) {
+        await createNotification({
+          recipient: studentId,
+          title: '📚 Ph.D. Session Mapping Update',
+          message: 'You have been mapped to your academic session for daily research attendance tracking.',
+          type: 'MAPPING_UPDATE',
+          link: 'profile',
+          source: 'SCHOLAR_TRACK'
+        });
+      }
+
+      return res.status(200).json({
+        message: `Successfully mapped ${studentIds.length} Ph.D. scholar(s) to this academic session.`,
+        mappedCount: studentIds.length,
+        skippedCount: 0
+      });
+    }
+
+    // UG/PG Subject Selection Validation
+    if (!subjectIds || !Array.isArray(subjectIds) || subjectIds.length === 0) {
+      return res.status(400).json({ message: 'Please select at least one subject to map.' });
     }
 
     // Get the timetable subjects for validation
@@ -374,7 +498,7 @@ exports.saveMapping = async (req, res) => {
 
       for (const newSub of subjects) {
         for (const existingSlot of existingSlots) {
-          if (existingSlot._id.toString() === newSub._id.toString()) continue; // already mapped, handled above
+          if (existingSlot._id.toString() === newSub._id.toString()) continue;
           if (
             existingSlot.dayOfWeek === newSub.dayOfWeek &&
             isTimeslotOverlapping(existingSlot.startTime, existingSlot.endTime, newSub.startTime, newSub.endTime)
@@ -454,11 +578,56 @@ exports.getMappedRecords = async (req, res) => {
     const departmentId = req.user.departmentId;
     const facultyId = req.user._id;
 
-    if (!sessionId || !degreeTypeId || !degreeNameId || !semesterId) {
+    if (!sessionId || !degreeTypeId || !degreeNameId) {
       return res.status(400).json({ message: 'Please select all filter criteria.' });
     }
 
-    // 1. Get subjects mapped in TimetableMaster (restrict by facultyId only for regular faculty)
+    const degreeTypeObj = await DegreeTypeMaster.findById(degreeTypeId);
+    const isPhD = degreeTypeObj && degreeTypeObj.code?.toUpperCase() === 'PHD';
+
+    if (!isPhD && !semesterId) {
+      return res.status(400).json({ message: 'Please select semester for UG/PG courses.' });
+    }
+
+    // Ph.D. mapped records (Session + Degree level)
+    if (isPhD) {
+      const mappingQuery = {
+        sessionId,
+        degreeTypeId,
+        degreeNameId
+      };
+      if (departmentId) mappingQuery.departmentId = departmentId;
+
+      const mappings = await StudentSemesterMapping.find(mappingQuery).populate('studentId', 'name username profile');
+
+      const records = mappings.map(mapping => ({
+        _id: mapping._id,
+        studentId: mapping.studentId,
+        studentName: mapping.studentId?.name || 'Unknown',
+        studentUsername: mapping.studentId?.username || '',
+        shNo: mapping.studentId?.profile?.shNo || 'N/A',
+        fatherName: mapping.studentId?.profile?.fatherName || '—',
+        mappedSubjects: mapping.mappedSubjects && mapping.mappedSubjects.length > 0 
+          ? mapping.mappedSubjects 
+          : [{ subjectCode: 'DAILY', subjectName: 'Ph.D. Research & Daily Attendance' }],
+        mappedAt: mapping.mappedAt
+      }));
+
+      const phdSubject = [{
+        _id: 'PHD_DAILY_ATTENDANCE',
+        subjectCode: 'DAILY',
+        subjectName: 'Ph.D. Research & Daily Attendance',
+        facultyId: { name: req.user.name }
+      }];
+
+      return res.status(200).json({
+        isPhD: true,
+        subjects: phdSubject,
+        records
+      });
+    }
+
+    // 1. UG/PG: Get subjects mapped in TimetableMaster (restrict by facultyId only for regular faculty)
     const timetableQuery = {
       sessionId, degreeTypeId, degreeNameId, semesterId,
       departmentId, isActive: true

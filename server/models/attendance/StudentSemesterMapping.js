@@ -31,7 +31,7 @@ const studentSemesterMappingSchema = new mongoose.Schema(
     semesterId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'SemesterMaster',
-      required: true
+      default: null
     },
     departmentId: {
       type: mongoose.Schema.Types.ObjectId,
