@@ -126,9 +126,9 @@ export const ParticleCanvas = () => {
   }, []);
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      className="dev-particle-canvas" 
+    <canvas
+      ref={canvasRef}
+      className="dev-particle-canvas"
       style={{
         position: 'fixed',
         top: 0,
@@ -137,7 +137,7 @@ export const ParticleCanvas = () => {
         height: '100vh',
         pointerEvents: 'none',
         zIndex: 0
-      }} 
+      }}
     />
   );
 };

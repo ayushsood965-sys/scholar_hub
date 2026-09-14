@@ -8,5 +8,8 @@
     "dev:sync": "cd scholar_sync && npm run dev",
     "dev:track": "cd scholar_track && npm run dev",
     "dev:server": "cd server && npm run dev"
+  },
+  "devDependencies": {
+    "docx": "^9.7.1"
   }
 }

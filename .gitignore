@@ -23,6 +23,7 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+~$*
 
 # Backup folders
 sh_backup/
