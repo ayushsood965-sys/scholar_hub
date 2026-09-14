@@ -63,7 +63,7 @@ const EventsPage = () => {
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1 className="page-title" style={{ fontSize: '2.8rem', fontWeight: 800, color: '#133A26', marginBottom: '12px' }}>Events & Defenses</h1>
             <p className="page-desc" style={{ maxWidth: '650px', margin: '0 auto 30px', fontSize: '1.05rem', color: 'var(--color-text-secondary)' }}>
-              Track PhD defense presentations, seminars, DRC sessions, and expert research talks scheduled across departments.
+              Track PhD defense presentations, seminars, RDC sessions, and expert research talks scheduled across departments.
             </p>
 
             {/* Sub-tabs */}

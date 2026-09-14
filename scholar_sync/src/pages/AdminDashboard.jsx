@@ -233,8 +233,8 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
       }
       return { text: 'Synopsis Submitted (Under Review)', color: '#2563EB', bg: '#DBEAFE' };
     }
-    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & DRC Pending', color: '#D97706', bg: '#FFFBEB' };
-    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (DRC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
+    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & RDC Pending', color: '#D97706', bg: '#FFFBEB' };
+    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (RDC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
     if (synopsisStatus === 'REVISION_REQUIRED') return { text: 'Synopsis Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
     return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
   }
@@ -547,7 +547,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
     setLoading(true);
     try {
       await axios.post(`${API}/lifecycle/drc/schedule`, { thesisId, ...drcForm }, getAuthHeader());
-      toast.success('DRC meeting scheduled successfully!');
+      toast.success('RDC meeting scheduled successfully!');
       setShowDrcSchedule(false);
       setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '' });
       fetchDrcMeetings();
@@ -555,7 +555,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
       setData(r.data);
       if (onAction) onAction(thesisId, 'refresh_list');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to schedule DRC meeting');
+      toast.error(err.response?.data?.message || 'Failed to schedule RDC meeting');
     } finally {
       setLoading(false);
     }
@@ -567,7 +567,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
     setLoading(true);
     try {
       await axios.put(`${API}/lifecycle/drc/${selectedDrc._id}/result`, drcResultForm, getAuthHeader());
-      toast.success(`DRC meeting successfully marked as ${drcResultForm.status}!`);
+      toast.success(`RDC meeting successfully marked as ${drcResultForm.status}!`);
       setShowDrcResult(false);
       setSelectedDrc(null);
       setDrcResultForm({ status: 'APPROVED', remarks: '' });
@@ -576,7 +576,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
       setData(r.data);
       if (onAction) onAction(thesisId, 'refresh_list');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to record DRC result');
+      toast.error(err.response?.data?.message || 'Failed to record RDC result');
     } finally {
       setLoading(false);
     }
@@ -1585,37 +1585,37 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                 })()}
               </div>
 
-              {/* Row 3: Department Research Committee (DRC) controls for Synopsis phase */}
+              {/* Row 3: Research Degree Committee (RDC) controls for Synopsis phase */}
               {thesis.status === 'SYNOPSIS_PENDING' && (() => {
                 const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', marginTop: 4 }}>
                     {synopsisMilestone?.status !== 'APPROVED' ? (
                       <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', padding: '12px 16px', borderRadius: 10, fontSize: '0.8rem', fontWeight: 700 }}>
-                        ⚠️ <strong>DRC Scheduling Locked:</strong> Scholar's supervisor must review and digitally approve the Research Synopsis document copy before HOD committee scheduling is enabled.
+                        ⚠️ <strong>RDC Scheduling Locked:</strong> Scholar's supervisor must review and digitally approve the Research Synopsis document copy before HOD committee scheduling is enabled.
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
                         <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#15803D', padding: '10px 14px', borderRadius: 10, fontSize: '0.82rem', fontWeight: 700 }}>
-                          ✅ Synopsis Approved by Supervisor! Departmental Research Committee (DRC) review is unlocked.
+                          ✅ Synopsis Approved by Supervisor! Research Degree Committee (RDC) review is unlocked.
                         </div>
 
                         {/* DRC Meetings Table */}
                         <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12 }}>
                           <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span>📆 DRC Meetings Status Desk</span>
+                            <span>📆 RDC Meetings Status Desk</span>
                             {!drcMeetings.some(m => m.status === 'SCHEDULED') && !showDrcSchedule && (
                               <button type="button" className="btn-primary" onClick={() => setShowDrcSchedule(true)} style={{ padding: '5px 12px', fontSize: '0.75rem', background: '#3B82F6' }}>+ Schedule Meeting</button>
                             )}
                           </div>
 
                           {drcMeetings.length === 0 ? (
-                            <div style={{ fontSize: '0.8rem', color: '#64748B', fontStyle: 'italic' }}>No Departmental Research Committee scheduled for synopsis yet.</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748B', fontStyle: 'italic' }}>No Research Degree Committee scheduled for synopsis yet.</div>
                           ) : (
                             drcMeetings.map((drc, idx) => (
                               <div key={drc._id} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px solid #E2E8F0' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 12 : 0, paddingTop: idx > 0 ? 12 : 0 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>DRC Assessment Panel</span>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>RDC Assessment Panel</span>
                                   <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#D97706' }}>
                                     {drc.status}
                                   </span>
@@ -1630,7 +1630,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                                 </div>
 
                                 {drc.status === 'SCHEDULED' && !showDrcResult && (
-                                  <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record DRC Outcome</button>
+                                  <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record RDC Outcome</button>
                                 )}
                               </div>
                             ))
@@ -1640,7 +1640,7 @@ const ScholarDetail = ({ thesisId, onClose, onAction }) => {
                         {/* DRC Schedule Form */}
                         {showDrcSchedule && (
                           <form onSubmit={handleDrcScheduleSubmit} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1E293B', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>Schedule DRC Panel Meeting</div>
+                            <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1E293B', borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>Schedule RDC Panel Meeting</div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                               <div>
                                 <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Date</label>
@@ -1951,7 +1951,7 @@ const OverviewPage = ({ theses, onSelectThesis, user, setActiveTab }) => {
                   )}
                   {awaitingDRC > 0 && (
                     <div style={{ background: '#EFF6FF', borderLeft: '4px solid #3B82F6', padding: '10px 12px', borderRadius: '6px', fontSize: '0.8rem', color: '#1E40AF' }}>
-                      <strong>DRC Meeting Scheduling:</strong> {awaitingDRC} scholar(s) have supervisor synopsis approvals and are ready for official committee evaluation.
+                      <strong>RDC Meeting Scheduling:</strong> {awaitingDRC} scholar(s) have supervisor synopsis approvals and are ready for official committee evaluation.
                     </div>
                   )}
                   {counts.pending === 0 && awaitingDRC === 0 && (
@@ -1998,7 +1998,7 @@ const resolvePendingAction = (t, subRole) => {
         return { text: 'Approve Synopsis', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
       }
       if (t.synopsisStatus === 'APPROVED') {
-        return { text: 'Conduct DRC Evaluation', color: '#6D28D9', bg: '#EDE9FE', border: '#D8B4FE' };
+        return { text: 'Conduct RDC Evaluation', color: '#6D28D9', bg: '#EDE9FE', border: '#D8B4FE' };
       }
     }
     if (t.status === 'PRE_SUBMISSION') {
@@ -4072,7 +4072,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: 20 }}>
       <div className="card" style={{ maxWidth: 640, width: '100%', padding: '28px 32px', borderRadius: 20, background: 'var(--color-surface, #ffffff)', color: 'var(--color-text, #1f2937)', display: 'flex', flexDirection: 'column', gap: 20, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border, #E2E8F0)', paddingBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Evaluate RAC-{rac.racNumber} Meeting Progress</h3>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Evaluate RDC-{rac.racNumber} Meeting Progress</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)' }}>×</button>
         </div>
 
@@ -4187,7 +4187,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Proposed Next RAC Session Date</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Proposed Next RDC Session Date</label>
               <input type="date" className="form-input" value={nextMeetingDate} onChange={e => setNextMeetingDate(e.target.value)} />
             </div>
             <div>
@@ -4248,19 +4248,19 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
     if (!schedForm.thesisId || !schedForm.scheduledDate) return toast.warning('Please complete the scheduling form.');
     try {
       await axios.post(`${API}/lifecycle/rac/schedule`, schedForm, getAuthHeader());
-      toast.success('RAC review meeting scheduled successfully!');
+      toast.success('RDC review meeting scheduled successfully!');
       setShowScheduleForm(false);
       setSchedForm({ thesisId: '', racNumber: 1, scheduledDate: '', committeeMembers: '' });
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to schedule RAC.');
+      toast.error(err.response?.data?.message || 'Failed to schedule RDC.');
     }
   };
 
   const handleRACGrade = async (racId, payload) => {
     try {
       await axios.put(`${API}/lifecycle/rac/${racId}/result`, payload, getAuthHeader());
-      toast.success(`RAC progress successfully graded as ${payload.status}!`);
+      toast.success(`RDC progress successfully graded as ${payload.status}!`);
       fetchData();
     } catch (err) {
       toast.error('Failed to submit grade.');
@@ -4283,15 +4283,15 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h4 style={{ margin: 0, color: 'var(--color-text, #0F172A)' }}>Doctoral Committee & Periodic RAC Reviews</h4>
+        <h4 style={{ margin: 0, color: 'var(--color-text, #0F172A)' }}>Doctoral Committee & Periodic RDC Reviews</h4>
         <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-primary" style={{ background: '#059669', display: 'flex', gap: 6, alignItems: 'center' }}>
-          <Plus size={16} /> Schedule RAC Review
+          <Plus size={16} /> Schedule RDC Review
         </button>
       </div>
 
       {showScheduleForm && (
         <form onSubmit={handleScheduleSubmit} style={{ background: 'var(--color-bg, #F8FAFC)', padding: 20, borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h4 style={{ margin: 0 }}>Schedule Research Advisory Committee (RAC) Session</h4>
+          <h4 style={{ margin: 0 }}>Schedule Research Degree Committee (RDC) Session</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Select Scholar</label>
@@ -4301,9 +4301,9 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>RAC Session Number</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>RDC Session Number</label>
               <select className="form-input" value={schedForm.racNumber} onChange={e => setSchedForm({ ...schedForm, racNumber: parseInt(e.target.value) })}>
-                {[1,2,3,4,5,6].map(n => <option key={n} value={n}>RAC - {n}</option>)}
+                {[1,2,3,4,5,6].map(n => <option key={n} value={n}>RDC - {n}</option>)}
               </select>
             </div>
           </div>
@@ -4373,9 +4373,9 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
           <div style={{ flex: 2.2, textAlign: 'center' }}>Grading Actions</div>
         </div>
         {racs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary, #64748B)' }}>No scheduled RAC review meetings found.</div>
+          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary, #64748B)' }}>No scheduled RDC review meetings found.</div>
         ) : paginatedData.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary, #64748B)' }}>No RAC records match the selected status filter or search query.</div>
+          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--color-text-secondary, #64748B)' }}>No RDC records match the selected status filter or search query.</div>
         ) : (
           paginatedData.map((r, idx) => (
             <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
@@ -4387,7 +4387,7 @@ const PhDLifecycleConsole = ({ theses, fetchAllTheses }) => {
                   <div style={{ fontWeight: 700 }}>{r.scholar?.name || 'Academic Scholar'}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
                 </div>
-                <div style={{ flex: 0.8, fontWeight: 600, color: '#1E3A8A' }}>RAC-{r.racNumber}</div>
+                <div style={{ flex: 0.8, fontWeight: 600, color: '#1E3A8A' }}>RDC-{r.racNumber}</div>
                 <div style={{ flex: 1.2, fontSize: '0.85rem' }}>{new Date(r.scheduledDate).toLocaleDateString()}</div>
                 <div style={{ flex: 1.5 }}>
                   {r.progressReportUrl ? (
@@ -5903,7 +5903,7 @@ const AdminDashboard = () => {
     scholars: 'Manage Scholars', 
     global_transfers: 'Global Candidate Transfers',
     requests: 'Student Change Requests Desk', 
-    lifecycle: 'RAC Reviews', 
+    lifecycle: 'RDC (6-Month Reviews)', 
     documents: 'Document Review Manager', 
     meetings: 'Guidance Consultations & Meetings',
     users: 'Manage Department Users', 

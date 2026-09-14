@@ -69,11 +69,15 @@ const generateMilestonesIfNeeded = async (thesisId) => {
     const verifiedConferences = await Publication.countDocuments({ thesisId: thesis._id, type: 'CONFERENCE', status: 'VERIFIED' });
     const publicationsApproved = verifiedJournals >= 2 && verifiedConferences >= 2;
 
-    // 4. Research Synopsis must be officially cleared/approved
+    // 4. Research Synopsis and mandatory Research Degree Committee (RDC) must be officially cleared/approved
     const synopsisMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'SYNOPSIS' });
     const synopsisApproved = synopsisMilestone?.status === 'APPROVED';
 
-    if (hasThreeYearsPassed && allReportsApproved && publicationsApproved && synopsisApproved) {
+    const DRCMeeting = require('../models/DRCMeeting');
+    const defaultRdcApproved = await DRCMeeting.findOne({ thesisId: thesis._id, status: 'APPROVED' });
+    const rdcApproved = !!defaultRdcApproved;
+
+    if (hasThreeYearsPassed && allReportsApproved && publicationsApproved && synopsisApproved && rdcApproved) {
       const preExists = await Milestone.findOne({ thesisId: thesis._id, type: 'PRE_SUBMISSION' });
       if (!preExists) {
         await Milestone.create({
@@ -440,7 +444,7 @@ const reviewMilestone = async (req, res) => {
           recipient: thesis.scholarId,
           title: isSynopsis ? '🎉 Synopsis Approved!' : isPreSubmission ? '🎉 Pre-Submission Draft Approved!' : '🎉 Milestone Approved!',
           message: isSynopsis 
-            ? `Your synopsis document has been officially approved by the department. HOD can now schedule the DRC meeting.`
+            ? `Your synopsis document has been officially approved by the department. HOD can now schedule the Research Degree Committee (RDC) meeting.`
             : isPreSubmission
             ? `Your pre-submission thesis draft and plagiarism package have been officially APPROVED by the department. HOD will schedule your Pre-Submission Seminar shortly.`
             : `Your supervisor "${req.user.name}" has APPROVED your submission for milestone "${milestone.title}".`,

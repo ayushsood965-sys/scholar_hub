@@ -590,8 +590,8 @@ const resolveDetailedStatus = (status, synopsisStatus, finalSubStatus, subRole, 
       }
       return { text: 'Synopsis Submitted (Under Review)', color: '#2563EB', bg: '#DBEAFE' };
     }
-    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & DRC Pending', color: '#D97706', bg: '#FFFBEB' };
-    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (DRC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
+    if (synopsisStatus === 'PENDING_HOD') return { text: 'Pending HOD Approval & RDC Pending', color: '#D97706', bg: '#FFFBEB' };
+    if (synopsisStatus === 'APPROVED') return { text: 'Synopsis Approved (RDC Pending at HOD)', color: '#059669', bg: '#D1FAE5' };
     if (synopsisStatus === 'REVISION_REQUIRED') return { text: 'Synopsis Correction Needed', color: '#DC2626', bg: '#FEE2E2' };
     return { text: 'Synopsis Pending Upload', color: '#7C3AED', bg: '#EDE9FE' };
   }
@@ -1086,13 +1086,13 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
     setLoading(true);
     try {
       await axios.post(`${API}/lifecycle/drc/schedule`, { thesisId: thesis._id, ...drcForm }, getAuthHeader());
-      toast.success('DRC meeting scheduled successfully!');
+      toast.success('RDC meeting scheduled successfully!');
       setShowDrcSchedule(false);
       setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to schedule DRC meeting');
+      toast.error(err.response?.data?.message || 'Failed to schedule RDC meeting');
     } finally {
       setLoading(false);
     }
@@ -1116,13 +1116,13 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
           committeeMembers: drcResultForm.committeeMembers,
           remarks: drcResultForm.remarks
         }, getAuthHeader());
-        toast.success('DRC meeting rescheduled successfully!');
+        toast.success('RDC meeting rescheduled successfully!');
       } else {
         await axios.put(`${API}/lifecycle/drc/${selectedDrc._id}/result`, {
           status: drcResultForm.status,
           remarks: drcResultForm.remarks
         }, getAuthHeader());
-        toast.success(`DRC meeting successfully marked as ${drcResultForm.status}!`);
+        toast.success(`RDC meeting successfully marked as ${drcResultForm.status}!`);
       }
       setShowDrcResult(false);
       setSelectedDrc(null);
@@ -1130,7 +1130,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
       fetchDrcMeetings();
       if (onDRC) await onDRC();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to process DRC request');
+      toast.error(err.response?.data?.message || 'Failed to process RDC request');
     } finally {
       setLoading(false);
     }
@@ -1152,13 +1152,13 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
         status: offlineDrcForm.status,
         isSynopsisApproval: offlineDrcForm.isSynopsisApproval
       }, getAuthHeader());
-      toast.success(`Offline DRC Outcome successfully recorded as ${offlineDrcForm.status}!`);
+      toast.success(`Offline RDC Outcome successfully recorded as ${offlineDrcForm.status}!`);
       setShowOfflineDrc(false);
       setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to record offline DRC');
+      toast.error(err.response?.data?.message || 'Failed to record offline RDC');
     } finally {
       setLoading(false);
     }
@@ -1651,18 +1651,18 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                                 status: 'APPROVED',
                                 isSynopsisApproval: showSynopsisApprovalOption
                               });
-                            }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline DRC</button>
+                            }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline RDC</button>
                           </div>
                         )}
                       </div>
 
                       {drcMeetings.length === 0 ? (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748b)', fontStyle: 'italic' }}>No DRC meeting scheduled yet.</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #64748b)', fontStyle: 'italic' }}>No RDC meeting scheduled yet.</div>
                       ) : (
                         drcMeetings.map((drc, idx) => (
                           <div key={drc._id} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px solid var(--color-border, #E2E8F0)' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 10 : 0, paddingTop: idx > 0 ? 10 : 0 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text, #0F172A)' }}>{drc.title || 'DRC Session'}</span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text, #0F172A)' }}>{drc.title || 'RDC Session'}</span>
                               <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>
                                 {drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : drc.status}
                               </span>
@@ -1677,7 +1677,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                             </div>
 
                             {subRole === 'HOD' && drc.status === 'SCHEDULED' && !showDrcResult && (
-                              <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record DRC Outcome</button>
+                              <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record RDC Outcome</button>
                             )}
                           </div>
                         ))
@@ -1687,7 +1687,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                     {/* DRC Schedule Form */}
                     {showDrcSchedule && (
                       <form onSubmit={handleDrcScheduleSubmit} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B' }}>Schedule DRC Meeting</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B' }}>Schedule RDC Meeting</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           <div>
                             <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Meeting Date</label>
@@ -1706,7 +1706,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                           <div>
                             <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Purpose</label>
                             <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                              <option value="General">General DRC</option>
+                              <option value="General">General RDC</option>
                               {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
                             </select>
                           </div>
@@ -1729,7 +1729,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                     {/* Offline DRC Form */}
                     {showOfflineDrc && (
                       <form onSubmit={handleOfflineDrcSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record Offline Conducted DRC Outcome</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record Offline Conducted RDC Outcome</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           <div>
                             <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Date Conducted</label>
@@ -1751,7 +1751,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                           <div>
                             <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Purpose</label>
                             <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setOfflineDrcForm({...offlineDrcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                              <option value="General">General DRC</option>
+                              <option value="General">General RDC</option>
                               {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
                             </select>
                           </div>
@@ -1774,7 +1774,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                     {/* DRC Result Grading Form */}
                     {showDrcResult && selectedDrc && (
                       <form onSubmit={handleDrcResultSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record DRC Meeting Outcome</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record RDC Meeting Outcome</div>
                         <div>
                           <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Committee Decision</label>
                           <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})} required>
@@ -2098,7 +2098,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                   transition: 'all 0.2s ease-in-out'
                 }}
               >
-                DRC Meetings
+                RDC Meetings
               </button>
               <button
                 type="button"
@@ -2431,7 +2431,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                   {/* DRC Meetings List */}
                   <div style={{ background: 'var(--color-bg, #f8fafc)', border: '1px solid var(--color-border, #e2e8f0)', padding: 14, borderRadius: 10, width: '100%' }}>
                     <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text, #334155)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>📆 Departmental Research Committee (DRC) Meetings</span>
+                      <span>📆 Research Degree Committee (RDC) Meetings</span>
                       {subRole === 'HOD' && !showDrcSchedule && !showOfflineDrc && !showDrcResult && (
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button type="button" className="btn-primary" onClick={() => {
@@ -2457,19 +2457,19 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                               status: 'APPROVED',
                               isSynopsisApproval: showSynopsisApprovalOption
                             });
-                          }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline DRC</button>
+                          }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}>+ Record Offline RDC</button>
                         </div>
                       )}
                     </div>
 
                     {drcMeetings.length === 0 ? (
-                      <div style={{ padding: 24, textAlign: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted, #64748b)', fontStyle: 'italic' }}>No subsequent DRC meetings scheduled yet.</div>
+                      <div style={{ padding: 24, textAlign: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted, #64748b)', fontStyle: 'italic' }}>No subsequent RDC meetings scheduled yet.</div>
                     ) : (
                       drcMeetings.map((drc, idx) => (
                         <div key={drc._id} style={{ borderBottom: idx < drcMeetings.length - 1 ? '1px solid var(--color-border, #E2E8F0)' : 'none', paddingBottom: idx < drcMeetings.length - 1 ? 12 : 0, paddingTop: idx > 0 ? 12 : 0 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text, #0F172A)' }}>
-                              {drc.title || 'DRC Meeting'}
+                              {drc.title || 'RDC Meeting'}
                             </span>
                             <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>
                               {drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : drc.status}
@@ -2485,7 +2485,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                           </div>
 
                           {subRole === 'HOD' && drc.status === 'SCHEDULED' && !showDrcResult && (
-                            <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record DRC Outcome</button>
+                            <button type="button" className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record RDC Outcome</button>
                           )}
                         </div>
                       ))
@@ -2496,7 +2496,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                   {showDrcSchedule && (
                     <form onSubmit={handleDrcScheduleSubmit} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                       <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E293B', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>Schedule DRC Meeting</span>
+                        <span>Schedule RDC Meeting</span>
                         <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#64748B' }} onClick={() => setShowDrcSchedule(false)}>✕</button>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -2517,7 +2517,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                         <div>
                           <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Purpose</label>
                           <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                            <option value="General">General DRC</option>
+                            <option value="General">General RDC</option>
                             {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
                           </select>
                         </div>
@@ -2541,7 +2541,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                   {showOfflineDrc && (
                     <form onSubmit={handleOfflineDrcSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                       <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>Record Offline Conducted DRC Outcome</span>
+                        <span>Record Offline Conducted RDC Outcome</span>
                         <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#047857' }} onClick={() => setShowOfflineDrc(false)}>✕</button>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -2565,7 +2565,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                         <div>
                           <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#047857', display: 'block', marginBottom: 4 }}>Purpose</label>
                           <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setOfflineDrcForm({...offlineDrcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                            <option value="General">General DRC</option>
+                            <option value="General">General RDC</option>
                             {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
                           </select>
                         </div>
@@ -2589,7 +2589,7 @@ const ThesisReviewPanel = ({ thesis, milestones, onReview, onDRC, onSeminar, onC
                   {showDrcResult && selectedDrc && (
                     <form onSubmit={handleDrcResultSubmit} style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                       <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>Record DRC Meeting Outcome ({selectedDrc.title})</span>
+                        <span>Record RDC Meeting Outcome ({selectedDrc.title})</span>
                         <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#047857' }} onClick={() => { setShowDrcResult(false); setSelectedDrc(null); }}>✕</button>
                       </div>
                       <div>
@@ -2791,7 +2791,7 @@ const resolvePendingAction = (t, subRole) => {
         return { text: 'Approve Synopsis', color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' };
       }
       if (t.synopsisStatus === 'APPROVED') {
-        return { text: 'Conduct DRC Evaluation', color: '#6D28D9', bg: '#EDE9FE', border: '#D8B4FE' };
+        return { text: 'Conduct RDC Evaluation', color: '#6D28D9', bg: '#EDE9FE', border: '#D8B4FE' };
       }
     }
     if (t.status === 'PRE_SUBMISSION') {
@@ -3184,7 +3184,7 @@ const DRCPage = ({ theses, onSelect }) => {
       <div className="card" style={{ marginBottom: 16, background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
         <h3 style={{ color: '#059669', marginBottom: 8 }}>HOD Actions</h3>
         <p style={{ color: '#065F46', fontSize: '0.9rem' }}>
-          <strong>DRC Approval:</strong> Click "Review" on a scholar with SYNOPSIS_PENDING status to approve after DRC meeting.<br />
+          <strong>RDC Approval:</strong> Click "Review" on a scholar with SYNOPSIS_PENDING status to approve after Research Degree Committee (RDC) meeting.<br />
           <strong>Seminar Clearance:</strong> Click "Review" on a scholar with ACTIVE_RESEARCH status to clear their pre-submission seminar.
         </p>
       </div>
@@ -3837,7 +3837,7 @@ const OverviewPage = ({ theses, user, onSelect, setActiveTab }) => {
                   )}
                   {awaitingDRC > 0 && (
                     <div style={{ background: '#EFF6FF', borderLeft: '4px solid #3B82F6', padding: '10px 12px', borderRadius: '6px', fontSize: '0.8rem', color: '#1E40AF' }}>
-                      <strong>DRC Meeting Scheduling:</strong> {awaitingDRC} scholar(s) have supervisor synopsis approvals and are ready for official committee evaluation.
+                      <strong>RDC Meeting Scheduling:</strong> {awaitingDRC} scholar(s) have supervisor synopsis approvals and are ready for official committee evaluation.
                     </div>
                   )}
                   {awaitingReg === 0 && awaitingDRC === 0 && (
@@ -3897,7 +3897,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: 20 }}>
       <div className="card" style={{ maxWidth: 640, width: '100%', padding: '28px 32px', borderRadius: 20, background: 'var(--color-surface, #ffffff)', color: 'var(--color-text, #1f2937)', display: 'flex', flexDirection: 'column', gap: 20, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border, #E2E8F0)', paddingBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Evaluate RAC-{rac.racNumber} Meeting Progress</h3>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Evaluate RDC-{rac.racNumber} Meeting Progress</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)' }}>×</button>
         </div>
 
@@ -4012,7 +4012,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Proposed Next RAC Session Date</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Proposed Next RDC Session Date</label>
               <input type="date" className="form-input" value={nextMeetingDate} onChange={e => setNextMeetingDate(e.target.value)} />
             </div>
             <div>
@@ -4066,19 +4066,19 @@ const SupervisorRACConsole = ({ theses }) => {
     if (!schedForm.thesisId || !schedForm.scheduledDate) return toast.warning('Please complete the scheduling form.');
     try {
       await axios.post(`${API}/lifecycle/rac/schedule`, schedForm, getAuthHeader());
-      toast.success('RAC review meeting scheduled successfully!');
+      toast.success('RDC review meeting scheduled successfully!');
       setShowScheduleForm(false);
       setSchedForm({ thesisId: '', racNumber: 1, scheduledDate: '', committeeMembers: '' });
       fetchRacs();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to schedule RAC.');
+      toast.error(err.response?.data?.message || 'Failed to schedule RDC.');
     }
   };
 
   const handleRACGrade = async (racId, payload) => {
     try {
       await axios.put(`${API}/lifecycle/rac/${racId}/result`, payload, getAuthHeader());
-      toast.success(`RAC progress successfully graded as ${payload.status}!`);
+      toast.success(`RDC progress successfully graded as ${payload.status}!`);
       fetchRacs();
     } catch (err) {
       toast.error('Failed to submit grade.');
@@ -4102,19 +4102,19 @@ const SupervisorRACConsole = ({ theses }) => {
     <div className="card" style={{ padding: 24, borderRadius: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <h3 className="card-title" style={{ margin: 0 }}>Research Advisory Committee (RAC) Schedule & Clearance</h3>
+          <h3 className="card-title" style={{ margin: 0 }}>Research Degree Committee (RDC) Schedule & Clearance</h3>
           <p style={{ color: '#64748B', fontSize: '0.85rem', marginTop: 4 }}>
             Schedule and manage periodic doctoral committee milestones and add your supervisor evaluation remarks for your active assigned PhD scholars.
           </p>
         </div>
         <button onClick={() => setShowScheduleForm(!showScheduleForm)} className="btn-primary" style={{ background: '#059669', display: 'flex', gap: 6, alignItems: 'center', padding: '8px 16px', fontSize: '0.85rem' }}>
-          <Plus size={16} /> Schedule RAC Review
+          <Plus size={16} /> Schedule RDC Review
         </button>
       </div>
 
       {showScheduleForm && (
         <form onSubmit={handleScheduleSubmit} style={{ background: 'var(--color-bg, #F8FAFC)', padding: 20, borderRadius: 12, border: '1px solid var(--color-border, #E2E8F0)', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h4 style={{ margin: 0 }}>Schedule Research Advisory Committee (RAC) Session</h4>
+          <h4 style={{ margin: 0 }}>Schedule Research Degree Committee (RDC) Session</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Select Scholar</label>
@@ -4124,9 +4124,9 @@ const SupervisorRACConsole = ({ theses }) => {
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>RAC Session Number</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>RDC Session Number</label>
               <select className="form-input" value={schedForm.racNumber} onChange={e => setSchedForm({ ...schedForm, racNumber: parseInt(e.target.value) })}>
-                {[1,2,3,4,5,6].map(n => <option key={n} value={n}>RAC - {n}</option>)}
+                {[1,2,3,4,5,6].map(n => <option key={n} value={n}>RDC - {n}</option>)}
               </select>
             </div>
           </div>
@@ -4188,15 +4188,15 @@ const SupervisorRACConsole = ({ theses }) => {
       {loading ? (
         <div className="premium-preloader-container" style={{ padding: '20px' }}>
           <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
-          <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading RAC records...</div>
+          <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading RDC records...</div>
         </div>
       ) : racs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: 'var(--color-bg)', borderRadius: 8 }}>
-          No scheduled RAC review meetings found for your active scholars.
+          No scheduled RDC review meetings found for your active scholars.
         </div>
       ) : paginatedData.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: 'var(--color-bg)', borderRadius: 8 }}>
-          No RAC records match the selected status filter or search query.
+          No RDC records match the selected status filter or search query.
         </div>
       ) : (
         <div className="file-list">
@@ -4219,7 +4219,7 @@ const SupervisorRACConsole = ({ theses }) => {
                   <div style={{ fontWeight: 700 }}>{r.scholar?.name || 'Scholar'}</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748B', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
                 </div>
-                <div style={{ flex: 1, fontWeight: 600, color: '#1E3A8A' }}>RAC-{r.racNumber}</div>
+                <div style={{ flex: 1, fontWeight: 600, color: '#1E3A8A' }}>RDC-{r.racNumber}</div>
                 <div style={{ flex: 1.5, fontSize: '0.85rem' }}>{new Date(r.scheduledDate).toLocaleDateString()}</div>
                 <div style={{ flex: 1.8 }}>
                   {r.progressReportUrl ? (

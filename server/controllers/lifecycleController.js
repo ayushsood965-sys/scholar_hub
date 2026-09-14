@@ -402,14 +402,14 @@ const generateCertificate = async (req, res) => {
         extraTable = `<div style="text-align:center; padding:20px; color:#64748b; font-style:italic;">No verified publications logged yet.</div>`;
       }
     } else if (type === 'RAC') {
-      titleText = 'Research Progress & RAC Verification';
+      titleText = 'Research Progress & RDC Verification';
       const racs = await RACReview.find({ thesisId, status: 'SATISFACTORY', milestoneId: null });
-      bodyText = `This is to certify that the Research Advisory Committee (RAC) has reviewed the ongoing doctoral work of <strong>${scholar?.name || 'Academic Scholar'}</strong>. The candidate has presented satisfactory progress reports across the required assessment sessions.`;
+      bodyText = `This is to certify that the Research Degree Committee (RDC) has reviewed the ongoing doctoral work of <strong>${scholar?.name || 'Academic Scholar'}</strong>. The candidate has presented satisfactory progress reports across the required assessment sessions.`;
       if (racs.length > 0) {
         extraTable = `
           <div style="margin-top:20px; font-weight:600; color:#0f172a; text-align:center;">
-            Verified RAC Clearances: 
-            ${racs.map(r => `<span style="display:inline-block; background:#d1fae5; color:#065f46; padding:4px 12px; margin:4px; border-radius:12px; font-size:0.8rem;">RAC-${r.racNumber} Satisfactory</span>`).join('')}
+            Verified RDC Clearances: 
+            ${racs.map(r => `<span style="display:inline-block; background:#d1fae5; color:#065f46; padding:4px 12px; margin:4px; border-radius:12px; font-size:0.8rem;">RDC-${r.racNumber} Satisfactory</span>`).join('')}
           </div>
         `;
       }
@@ -640,7 +640,7 @@ const scheduleDRC = async (req, res) => {
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
     const isSynopsisApproval = bodyIsSynopsisApproval !== undefined ? (bodyIsSynopsisApproval === true || bodyIsSynopsisApproval === 'true') : (thesis.status === 'SYNOPSIS_PENDING');
-    const dynamicTitle = isSynopsisApproval ? 'DRC for Synopsis Approval' : 'DRC Meeting';
+    const dynamicTitle = isSynopsisApproval ? 'RDC for Synopsis Approval' : 'Research Degree Committee (RDC) Meeting';
 
     const newDRC = new DRCMeeting({
       scholarId: thesis.scholarId,
@@ -649,7 +649,7 @@ const scheduleDRC = async (req, res) => {
       scheduledTime,
       venue,
       committeeMembers,
-      agenda: isSynopsisApproval ? (agenda || 'DRC for Synopsis Approval') : agenda,
+      agenda: isSynopsisApproval ? (agenda || 'Research Degree Committee (RDC) for Synopsis Approval') : agenda,
       title: dynamicTitle,
       isSynopsisApproval,
       status: 'SCHEDULED'
@@ -659,8 +659,8 @@ const scheduleDRC = async (req, res) => {
 
     // Log to thesis audit
     thesis.auditLog.push({
-      action: 'DRC_SCHEDULED',
-      note: `${dynamicTitle} scheduled for ${new Date(scheduledDate).toDateString()} at ${scheduledTime} in ${venue}`
+      action: 'RDC_SCHEDULED',
+      note: `${dynamicTitle} scheduled by HOD for ${new Date(scheduledDate).toDateString()} at ${scheduledTime} in ${venue}`
     });
     await thesis.save();
 
@@ -670,7 +670,7 @@ const scheduleDRC = async (req, res) => {
       recipient: thesis.scholarId,
       title: `📆 ${dynamicTitle} Scheduled!`,
       message: isSynopsisApproval
-        ? `HOD has scheduled your Departmental Research Committee (DRC) synopsis evaluation meeting on ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`
+        ? `HOD has scheduled your Research Degree Committee (RDC) synopsis evaluation meeting on ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`
         : `HOD has scheduled a ${dynamicTitle} on ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}. Agenda: ${agenda || 'None'}.`,
       type: 'INFO',
       link: 'overview'
@@ -680,7 +680,7 @@ const scheduleDRC = async (req, res) => {
       await createNotification({
         recipient: thesis.supervisorId,
         title: `📆 ${dynamicTitle} Scheduled!`,
-        message: `HOD has scheduled the Departmental Research Committee (DRC) synopsis evaluation meeting for your scholar "${scholar?.name || 'Scholar'}" on ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`,
+        message: `HOD has scheduled the Research Degree Committee (RDC) synopsis evaluation meeting for your scholar "${scholar?.name || 'Scholar'}" on ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`,
         type: 'INFO',
         link: 'overview'
       });
@@ -721,7 +721,7 @@ const submitDRCResult = async (req, res) => {
 
         thesis.auditLog.push({
           action: 'DRC_APPROVED',
-          note: `${drc.title || 'DRC'} approved. Remarks: ${remarks}`
+          note: `${drc.title || 'RDC'} approved. Remarks: ${remarks}`
         });
         await thesis.save();
       } else {
@@ -736,7 +736,7 @@ const submitDRCResult = async (req, res) => {
 
         thesis.auditLog.push({
           action: 'DRC_REVISION_REQUIRED',
-          note: `${drc.title || 'DRC'} marked Revision Required. Remarks: ${remarks}`
+          note: `${drc.title || 'RDC'} marked Revision Required. Remarks: ${remarks}`
         });
         await thesis.save();
       }
@@ -745,10 +745,10 @@ const submitDRCResult = async (req, res) => {
     if (status === 'APPROVED') {
       await createNotification({
         recipient: drc.scholarId,
-        title: `🎉 ${drc.title || 'DRC'} Approved!`,
+        title: `🎉 ${drc.title || 'RDC'} Approved!`,
         message: drc.isSynopsisApproval 
-          ? `Congratulations! The DRC panel has officially APPROVED your research synopsis. You are now in the ACTIVE_RESEARCH phase.`
-          : `Your DRC meeting has been APPROVED. Remarks: "${remarks}".`,
+          ? `Congratulations! The Research Degree Committee (RDC) panel has officially APPROVED your research synopsis. You are now in the ACTIVE_RESEARCH phase.`
+          : `Your Research Degree Committee (RDC) meeting has been APPROVED. Remarks: "${remarks}".`,
         type: 'SUCCESSFUL_ACTION',
         link: 'overview'
       });
@@ -757,10 +757,10 @@ const submitDRCResult = async (req, res) => {
         const scholar = await User.findById(drc.scholarId);
         await createNotification({
           recipient: thesis.supervisorId,
-          title: `🎉 ${drc.title || 'DRC'} Approved!`,
+          title: `🎉 ${drc.title || 'RDC'} Approved!`,
           message: drc.isSynopsisApproval
-            ? `The DRC panel has APPROVED the research synopsis for your scholar "${scholar?.name || 'Scholar'}".`
-            : `The DRC meeting for your scholar "${scholar?.name || 'Scholar'}" has been APPROVED.`,
+            ? `The Research Degree Committee (RDC) panel has APPROVED the research synopsis for your scholar "${scholar?.name || 'Scholar'}".`
+            : `The Research Degree Committee (RDC) meeting for your scholar "${scholar?.name || 'Scholar'}" has been APPROVED.`,
           type: 'SUCCESSFUL_ACTION',
           link: 'overview'
         });
@@ -768,10 +768,10 @@ const submitDRCResult = async (req, res) => {
     } else {
       await createNotification({
         recipient: drc.scholarId,
-        title: `⚠️ ${drc.title || 'DRC'} Revision Required`,
+        title: `⚠️ ${drc.title || 'RDC'} Revision Required`,
         message: drc.isSynopsisApproval
-          ? `The DRC panel has requested revisions for your synopsis. Remarks: "${remarks}". Please revise and re-upload your document.`
-          : `The DRC panel has requested revisions/actions. Remarks: "${remarks}".`,
+          ? `The Research Degree Committee (RDC) panel has requested revisions for your synopsis. Remarks: "${remarks}". Please revise and re-upload your document.`
+          : `The Research Degree Committee (RDC) panel has requested revisions/actions. Remarks: "${remarks}".`,
         type: 'PENDING_ACTION',
         link: drc.isSynopsisApproval ? 'thesis' : 'overview'
       });
@@ -780,10 +780,10 @@ const submitDRCResult = async (req, res) => {
         const scholar = await User.findById(drc.scholarId);
         await createNotification({
           recipient: thesis.supervisorId,
-          title: `⚠️ ${drc.title || 'DRC'} Revision Required`,
+          title: `⚠️ ${drc.title || 'RDC'} Revision Required`,
           message: drc.isSynopsisApproval
-            ? `The DRC panel has requested revisions for the research synopsis of your scholar "${scholar?.name || 'Scholar'}". Remarks: "${remarks}".`
-            : `The DRC panel has requested revisions/actions for your scholar "${scholar?.name || 'Scholar'}". Remarks: "${remarks}".`,
+            ? `The Research Degree Committee (RDC) panel has requested revisions for the research synopsis of your scholar "${scholar?.name || 'Scholar'}". Remarks: "${remarks}".`
+            : `The Research Degree Committee (RDC) panel has requested revisions/actions for your scholar "${scholar?.name || 'Scholar'}". Remarks: "${remarks}".`,
           type: 'PENDING_ACTION',
           link: 'overview'
         });
@@ -813,7 +813,7 @@ const recordOfflineDRC = async (req, res) => {
     if (!thesis) return res.status(404).json({ message: 'Thesis not found' });
 
     const isSynopsisApproval = bodyIsSynopsisApproval !== undefined ? (bodyIsSynopsisApproval === true || bodyIsSynopsisApproval === 'true') : (thesis.status === 'SYNOPSIS_PENDING');
-    const dynamicTitle = isSynopsisApproval ? 'DRC for Synopsis Approval' : 'DRC Meeting';
+    const dynamicTitle = isSynopsisApproval ? 'RDC for Synopsis Approval' : 'Research Degree Committee (RDC) Meeting';
 
     const newDRC = new DRCMeeting({
       scholarId: thesis.scholarId,
@@ -854,8 +854,8 @@ const recordOfflineDRC = async (req, res) => {
         recipient: newDRC.scholarId,
         title: `🎉 ${dynamicTitle} Approved!`,
         message: isSynopsisApproval
-          ? `Congratulations! The DRC panel has officially APPROVED your research synopsis offline. You are now in the ACTIVE_RESEARCH phase.`
-          : `Your DRC meeting has been APPROVED offline. Remarks: "${remarks}".`,
+          ? `Congratulations! The Research Degree Committee (RDC) panel has officially APPROVED your research synopsis offline. You are now in the ACTIVE_RESEARCH phase.`
+          : `Your Research Degree Committee (RDC) meeting has been APPROVED offline. Remarks: "${remarks}".`,
         type: 'SUCCESSFUL_ACTION',
         link: 'overview'
       });
@@ -878,8 +878,8 @@ const recordOfflineDRC = async (req, res) => {
         recipient: newDRC.scholarId,
         title: `⚠️ ${dynamicTitle} Revision Required`,
         message: isSynopsisApproval
-          ? `The DRC panel has requested revisions for your synopsis offline. Remarks: "${remarks}". Please revise and re-upload your document.`
-          : `The DRC panel has requested revisions/actions offline. Remarks: "${remarks}".`,
+          ? `The Research Degree Committee (RDC) panel has requested revisions for your synopsis offline. Remarks: "${remarks}". Please revise and re-upload your document.`
+          : `The Research Degree Committee (RDC) panel has requested revisions/actions offline. Remarks: "${remarks}".`,
         type: 'PENDING_ACTION',
         link: isSynopsisApproval ? 'thesis' : 'overview'
       });
@@ -909,15 +909,15 @@ const rescheduleDRC = async (req, res) => {
     const thesis = await Thesis.findById(drc.thesisId);
     if (thesis) {
       thesis.auditLog.push({
-        action: 'DRC_RESCHEDULED',
-        note: `DRC rescheduled for ${new Date(scheduledDate).toDateString()} at ${scheduledTime} in ${venue}. Reason/Remarks: ${remarks || 'None'}`
+        action: 'RDC_RESCHEDULED',
+        note: `Research Degree Committee (RDC) meeting rescheduled for ${new Date(scheduledDate).toDateString()} at ${scheduledTime} in ${venue}. Reason/Remarks: ${remarks || 'None'}`
       });
       await thesis.save();
 
       await createNotification({
         recipient: drc.scholarId,
-        title: '📆 DRC Meeting Rescheduled!',
-        message: `HOD has rescheduled your Departmental Research Committee (DRC) synopsis evaluation meeting to ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`,
+        title: '📆 RDC Meeting Rescheduled!',
+        message: `HOD has rescheduled your Research Degree Committee (RDC) synopsis evaluation meeting to ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime} in ${venue}.`,
         type: 'INFO',
         link: 'overview'
       });

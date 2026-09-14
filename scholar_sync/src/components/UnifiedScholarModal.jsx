@@ -991,7 +991,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: 20 }}>
       <div className="card" style={{ maxWidth: 640, width: '100%', padding: '28px 32px', borderRadius: 20, background: 'var(--color-surface, #ffffff)', color: 'var(--color-text, #1f2937)', display: 'flex', flexDirection: 'column', gap: 20, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border, #E2E8F0)', paddingBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Evaluate RAC-{rac.racNumber} Meeting</h3>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Evaluate RDC-{rac.racNumber} Meeting Progress</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)' }}>×</button>
         </div>
           <div><span style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>Scheduled:</span><div style={{ fontWeight: 700, marginTop: 2 }}>{new Date(rac.scheduledDate).toLocaleDateString()}</div></div>
@@ -1065,7 +1065,7 @@ const RACReviewModal = ({ rac, onClose, onSave }) => {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Next RAC Date</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 4 }}>Next RDC Date</label>
               <input type="date" className="form-input" value={nextMeetingDate} onChange={e => setNextMeetingDate(e.target.value)} />
             </div>
             <div>
@@ -1720,18 +1720,19 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     }
   };
 
-  // ── DRC handlers ──
+  // ── RDC handlers ──
   const handleDrcSchedule = async (e) => {
     e.preventDefault();
     if (!drcForm.scheduledDate || !drcForm.scheduledTime || !drcForm.venue) return toast.warning('Fill Date, Time, Venue');
     setLoading(true);
     try {
       await axios.post(`${API}/lifecycle/drc/schedule`, { thesisId: thesis._id, ...drcForm }, getAuthHeader());
-      toast.success('DRC meeting scheduled!');
+      toast.success('Research Degree Committee (RDC) meeting scheduled!');
       setShowDrcSchedule(false);
       setDrcForm({ scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '', agenda: '', isSynopsisApproval: false });
       fetchDrcMeetings();
       if (onDRC) await onDRC();
+      if (onRefresh) await onRefresh();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
     finally { setLoading(false); }
   };
@@ -1744,10 +1745,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       if (drcResultForm.status === 'RESCHEDULE') {
         if (!drcResultForm.scheduledDate || !drcResultForm.scheduledTime || !drcResultForm.venue) { toast.warning('Fill Date, Time, Venue'); setLoading(false); return; }
         await axios.put(`${API}/lifecycle/drc/${selectedDrc._id}/reschedule`, { scheduledDate: drcResultForm.scheduledDate, scheduledTime: drcResultForm.scheduledTime, venue: drcResultForm.venue, committeeMembers: drcResultForm.committeeMembers, remarks: drcResultForm.remarks }, getAuthHeader());
-        toast.success('DRC rescheduled!');
+        toast.success('RDC meeting rescheduled!');
       } else {
         await axios.put(`${API}/lifecycle/drc/${selectedDrc._id}/result`, { status: drcResultForm.status, remarks: drcResultForm.remarks }, getAuthHeader());
-        toast.success(`DRC marked ${drcResultForm.status}!`);
+        toast.success(`RDC marked ${drcResultForm.status}!`);
       }
       setShowDrcResult(false); setSelectedDrc(null);
       setDrcResultForm({ status: 'APPROVED', remarks: '', scheduledDate: '', scheduledTime: '', venue: '', committeeMembers: '' });
@@ -1764,7 +1765,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     setLoading(true);
     try {
       await axios.post(`${API}/lifecycle/drc/offline`, { thesisId: thesis._id, conductedDate: offlineDrcForm.conductedDate || new Date(), venue: offlineDrcForm.venue || 'Offline', committeeMembers: offlineDrcForm.committeeMembers || 'Department Board', remarks: offlineDrcForm.remarks, status: offlineDrcForm.status, isSynopsisApproval: offlineDrcForm.isSynopsisApproval }, getAuthHeader());
-      toast.success(`Offline DRC recorded as ${offlineDrcForm.status}!`);
+      toast.success(`Offline RDC recorded as ${offlineDrcForm.status}!`);
       setShowOfflineDrc(false);
       setOfflineDrcForm({ conductedDate: '', venue: '', committeeMembers: '', remarks: '', status: 'APPROVED', isSynopsisApproval: false });
       fetchDrcMeetings();
@@ -1774,14 +1775,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     finally { setLoading(false); }
   };
 
-  // ── RAC handlers ──
+  // ── Periodic RDC handlers ──
   const handleRacSchedule = async (e) => {
     e.preventDefault();
     if (!racForm.scheduledDate) return toast.warning('Select a date');
     setLoading(true);
     try {
       await axios.post(`${API}/lifecycle/rac/schedule`, { thesisId: thesis._id, ...racForm }, getAuthHeader());
-      toast.success('RAC meeting scheduled!');
+      toast.success('RDC review meeting scheduled!');
       setShowRacSchedule(false);
       setRacForm({ racNumber: 1, scheduledDate: '', committeeMembers: '' });
       fetchRacReviews();
@@ -1792,9 +1793,9 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const handleRacGrade = async (racId, payload) => {
     try {
       await axios.put(`${API}/lifecycle/rac/${racId}/result`, payload, getAuthHeader());
-      toast.success(`RAC graded as ${payload.status}!`);
+      toast.success(`RDC review graded as ${payload.status}!`);
       fetchRacReviews();
-    } catch (err) { toast.error('Failed to grade RAC.'); }
+    } catch (err) { toast.error('Failed to grade RDC review.'); }
   };
 
   // ── Report assignment ──
@@ -2218,8 +2219,8 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
     { key: 'profile', label: 'Profile', icon: '👤' },
     { key: 'coursework', label: 'Coursework', icon: '📚', show: thesis.status === 'COURSEWORK' || thesis.courseworkCompleted || (thesis.courseworkDetails && ((thesis.courseworkDetails.researchEthics && thesis.courseworkDetails.researchEthics.length > 0) || (thesis.courseworkDetails.researchMethodology && thesis.courseworkDetails.researchMethodology.length > 0) || (thesis.courseworkDetails.elective && thesis.courseworkDetails.elective.length > 0) || (thesis.courseworkDetails.others && thesis.courseworkDetails.others.length > 0))) },
     { key: 'synopsis', label: 'Synopsis', icon: '📝', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) || milestones.some(m => m.type === 'SYNOPSIS') },
-    { key: 'drc', label: 'DRC', icon: '🏛️', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
-    { key: 'rac', label: 'RAC', icon: '📋', badge: scheduledRacs || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'drc', label: 'RDC (Synopsis)', icon: '🏛️', show: ['SYNOPSIS_PENDING', 'ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
+    { key: 'rac', label: 'RDC (6-Month)', icon: '📋', badge: scheduledRacs || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'reports', label: 'Reports', icon: '📑', badge: pendingReportsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'chapters', label: 'Chapters', icon: '📖', badge: pendingChaptersCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
     { key: 'publications', label: 'Research Outputs', icon: '🏆', badge: pendingOutputsCount || null, show: ['ACTIVE_RESEARCH', 'PRE_SUBMISSION', 'THESIS_SUBMITTED', 'SUBMITTED', 'AWARDED'].includes(thesis.status) },
@@ -2233,11 +2234,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
   const handleSynopsisHodApprove = async (milestoneId) => {
     if (!synDrcDate || !synDrcTime || !synDrcVenue) {
-      return toast.warning('Please fill out Date, Time, and Venue for the synopsis DRC meeting.');
+      return toast.warning('Please fill out Date, Time, and Venue for the synopsis RDC meeting.');
     }
     setLoading(true);
     try {
-      // 1. Schedule DRC
+      // 1. Schedule RDC
       const drcPayload = {
         thesisId: thesis._id,
         scheduledDate: synDrcDate,
@@ -2252,10 +2253,10 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       // 2. Review/approve milestone
       await onReview(milestoneId, 'APPROVE', remarks[milestoneId]);
       
-      toast.success('Synopsis approved and DRC scheduled successfully.');
+      toast.success('Synopsis approved and Research Degree Committee (RDC) meeting scheduled successfully.');
       if (onRefresh) await onRefresh();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to approve synopsis and schedule DRC');
+      toast.error(err.response?.data?.message || 'Failed to approve synopsis and schedule RDC');
     } finally {
       setLoading(false);
     }
@@ -2387,7 +2388,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
         {thesis.synopsisProvisionallyCleared && synopsisMilestone.status !== 'APPROVED' && (
           <div style={{ background: '#FFFBEB', borderLeft: '4px solid #D97706', color: '#B45309', padding: '12px 16px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>
-            ⚠️ This candidate's synopsis requirement has been provisionally cleared to unlock Active Research. The candidate must submit the finalized synopsis online for official DRC approval before beginning the pre-submission colloquium phase.
+            ⚠️ This candidate's synopsis requirement has been provisionally cleared to unlock Active Research. The candidate must submit the finalized synopsis online for official Research Degree Committee (RDC) approval before beginning the pre-submission colloquium phase.
           </div>
         )}
 
@@ -2593,7 +2594,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               }
               return (
                 <div className="usm-card" style={{ padding: 16, background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic', textAlign: 'center' }}>
-                  ⏳ DRC meeting has not been scheduled yet.
+                  ⏳ Research Degree Committee (RDC) meeting has not been scheduled yet.
                 </div>
               );
             })()}
@@ -2607,7 +2608,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
               <span>⚠️</span> Provisional Synopsis Fast-Track Clearance
             </h4>
             <p style={{ fontSize: '0.8rem', color: '#7C2D12', marginBottom: 16, lineHeight: '1.4' }}>
-              Bypass the strict synopsis defense phase. This transitions the scholar directly to **Active Research** to begin periodic progress reporting. The candidate remains obligated to upload and clear their final synopsis before launching pre-submission colloquiums.
+              Bypass the strict synopsis defense phase. This transitions the scholar directly to **Active Research** to begin periodic progress reporting. The candidate remains obligated to upload and clear their final synopsis and Research Degree Committee (RDC) evaluation before launching pre-submission colloquiums.
             </p>
             <button 
               className="btn-primary" 
@@ -3805,21 +3806,21 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       let bg = '#FFF5F5';
       let border = '#FEB2B2';
       let color = '#C53030';
-      let text = "⚠️ Synopsis upload is currently pending at the candidate's end. DRC scheduling is locked.";
+      let text = "⚠️ Synopsis upload is currently pending at the candidate's end. Research Degree Committee (RDC) scheduling is locked.";
 
       if (mStatus === 'SUBMITTED') {
         if (subRole === 'HOD') {
-          text = "⚠️ Synopsis upload is currently pending at the candidate's end. DRC scheduling is locked.";
+          text = "⚠️ Synopsis upload is currently pending at the candidate's end. Research Degree Committee (RDC) scheduling is locked.";
         } else {
-          text = '⚠️ Synopsis has been submitted by candidate. Awaiting supervisor provisional approval. DRC scheduling is locked.';
+          text = '⚠️ Synopsis has been submitted by candidate. Awaiting supervisor provisional approval. Research Degree Committee (RDC) scheduling is locked.';
         }
       } else if (mStatus === 'PENDING_HOD') {
         bg = '#FFFBEB';
         border = '#FDE68A';
         color = '#B45309';
-        text = '⏳ Synopsis has been provisionally approved by supervisor. Awaiting HOD final approval. DRC scheduling is locked.';
+        text = '⏳ Synopsis has been provisionally approved by supervisor. Awaiting HOD final approval. Research Degree Committee (RDC) scheduling is locked.';
       } else if (mStatus === 'REVISION_REQUIRED') {
-        text = '⚠️ Synopsis revision required. Awaiting updated draft from candidate. DRC scheduling is locked.';
+        text = '⚠️ Synopsis revision required. Awaiting updated draft from candidate. Research Degree Committee (RDC) scheduling is locked.';
       }
 
       return (
@@ -3833,7 +3834,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div className="usm-section-title">🏛️ Departmental Research Committee (DRC)</div>
+        <div className="usm-section-title">🏛️ Research Degree Committee (RDC) — Synopsis Approval</div>
 
         {!synopsisApproved && thesis.status === 'SYNOPSIS_PENDING' && drcLockNotice()}
 
@@ -3856,7 +3857,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     agenda: '',
                     isSynopsisApproval: showSynopsisApprovalOption
                   });
-                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#3B82F6' }}>+ Schedule DRC</button>
+                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#3B82F6' }}>+ Schedule RDC</button>
                 <button className="btn-primary" onClick={() => {
                   setShowOfflineDrc(true);
                   setShowDrcSchedule(false);
@@ -3868,17 +3869,17 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                     status: 'APPROVED',
                     isSynopsisApproval: showSynopsisApprovalOption
                   });
-                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#059669' }}>+ Record Offline DRC</button>
+                }} style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#059669' }}>+ Record Offline RDC</button>
               </div>
             )}
 
             {/* DRC List */}
             {drcMeetings.length === 0 ? (
-              <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic' }}>No DRC meetings recorded yet.</div>
+              <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic' }}>No Research Degree Committee (RDC) meetings recorded yet.</div>
             ) : drcMeetings.map((drc, idx) => (
               <div key={drc._id} className="usm-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{drc.title || 'DRC Session'}</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{drc.title || 'RDC Session'}</span>
                   <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>{drc.status === 'APPROVED' ? 'Satisfactory' : drc.status === 'REVISION_REQUIRED' ? 'Unsatisfactory' : drc.status}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)' }}>
@@ -3892,14 +3893,14 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <button className="btn-primary" onClick={() => { setSelectedDrc(drc); setShowDrcResult(true); }} style={{ marginTop: 10, padding: '5px 12px', fontSize: '0.75rem', background: '#059669' }}>📝 Record Outcome</button>
                 )}
                 {/* Timeline & History Logs */}
-                {renderEvaluationTimelineGeneric(drc, thesis, 'DRC Meeting Schedule', getDrcMeetingVirtualHistory(drc))}
+                {renderEvaluationTimelineGeneric(drc, thesis, 'RDC Meeting Schedule', getDrcMeetingVirtualHistory(drc))}
               </div>
             ))}
 
             {/* DRC Schedule Form */}
             {showDrcSchedule && (
               <form onSubmit={handleDrcSchedule} className="usm-card" style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#F0F9FF', borderColor: '#BAE6FD' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0369A1' }}>Schedule DRC Meeting</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0369A1' }}>Schedule RDC Meeting</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.scheduledDate} onChange={e => setDrcForm({...drcForm, scheduledDate: e.target.value})} required /></div>
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Time</label><input type="text" className="form-input" style={{ width: '100%', padding: '6px' }} placeholder="e.g. 11:00 AM" value={drcForm.scheduledTime} onChange={e => setDrcForm({...drcForm, scheduledTime: e.target.value})} required /></div>
@@ -3909,7 +3910,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <div>
                     <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Purpose</label>
                     <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setDrcForm({...drcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                      <option value="General">General DRC</option>
+                      <option value="General">General RDC</option>
                       {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
                     </select>
                   </div>
@@ -3926,7 +3927,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             {/* Offline DRC Form */}
             {showOfflineDrc && (
               <form onSubmit={handleOfflineDrc} className="usm-card" style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#ECFDF5', borderColor: '#A7F3D0' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record Offline DRC Outcome</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record Offline RDC Outcome</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date Conducted</label><input type="date" className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.conductedDate} onChange={e => setOfflineDrcForm({...offlineDrcForm, conductedDate: e.target.value})} required /></div>
                   <div>
@@ -3942,7 +3943,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                   <div>
                     <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Purpose</label>
                     <select className="form-input" style={{ width: '100%', padding: '6px' }} value={offlineDrcForm.isSynopsisApproval ? "Synopsis" : "General"} onChange={e => setOfflineDrcForm({...offlineDrcForm, isSynopsisApproval: e.target.value === "Synopsis"})}>
-                      <option value="General">General DRC</option>
+                      <option value="General">General RDC</option>
                       {showSynopsisApprovalOption && <option value="Synopsis">Synopsis approval</option>}
                     </select>
                   </div>
@@ -3958,7 +3959,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             {/* DRC Result Form */}
             {showDrcResult && selectedDrc && (
               <form onSubmit={handleDrcResult} className="usm-card" style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#ECFDF5', borderColor: '#A7F3D0' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record DRC Outcome</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#065F46' }}>Record RDC Outcome</div>
                 <div>
                   <label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Decision</label>
                   <select className="form-input" style={{ width: '100%', padding: '6px' }} value={drcResultForm.status} onChange={e => setDrcResultForm({...drcResultForm, status: e.target.value})}>
@@ -3992,20 +3993,18 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
   const renderRAC = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="usm-section-title" style={{ marginBottom: 0 }}>📋 Research Advisory Committee (RAC)</div>
+        <div className="usm-section-title" style={{ marginBottom: 0 }}>📋 Research Degree Committee (RDC) — Periodic Progress Reviews</div>
         {!isReadOnly && (
-          <button onClick={() => setShowRacSchedule(!showRacSchedule)} className="btn-primary" style={{ background: '#059669', padding: '6px 14px', fontSize: '0.78rem', display: 'flex', gap: 4, alignItems: 'center' }}><Plus size={14} /> Schedule RAC</button>
+          <button onClick={() => setShowRacSchedule(!showRacSchedule)} className="btn-primary" style={{ background: '#059669', padding: '6px 14px', fontSize: '0.78rem', display: 'flex', gap: 4, alignItems: 'center' }}><Plus size={14} /> Schedule RDC Review</button>
         )}
       </div>
-
-
 
       {/* RAC Schedule Form */}
       {showRacSchedule && (
         <form onSubmit={handleRacSchedule} className="usm-card" style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#F0F9FF', borderColor: '#BAE6FD' }}>
-          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0369A1' }}>Schedule RAC Session</div>
+          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0369A1' }}>Schedule Periodic RDC Session</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>RAC Number</label><select className="form-input" value={racForm.racNumber} onChange={e => setRacForm({...racForm, racNumber: parseInt(e.target.value)})}>{[1,2,3,4,5,6].map(n => <option key={n} value={n}>RAC-{n}</option>)}</select></div>
+            <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>RDC Review Number</label><select className="form-input" value={racForm.racNumber} onChange={e => setRacForm({...racForm, racNumber: parseInt(e.target.value)})}>{[1,2,3,4,5,6].map(n => <option key={n} value={n}>RDC-{n}</option>)}</select></div>
             <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date</label><input type="date" className="form-input" required value={racForm.scheduledDate} onChange={e => setRacForm({...racForm, scheduledDate: e.target.value})} /></div>
           </div>
           <div><label style={{ fontSize: '0.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Committee Members</label><input type="text" className="form-input" placeholder="e.g. Dr. Verma, Prof. Sen" value={racForm.committeeMembers} onChange={e => setRacForm({...racForm, committeeMembers: e.target.value})} /></div>
@@ -4018,11 +4017,11 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
 
       {/* RAC List */}
       {racReviews.length === 0 ? (
-        <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic' }}>No RAC sessions scheduled yet.</div>
+        <div className="usm-card" style={{ textAlign: 'center', color: '#64748B', fontSize: '0.82rem', fontStyle: 'italic' }}>No periodic Research Degree Committee (RDC) review sessions scheduled yet.</div>
       ) : racReviews.map(r => (
         <div key={r._id} className="usm-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1E3A8A' }}>RAC-{r.racNumber}</span>
+            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1E3A8A' }}>RDC-{r.racNumber}</span>
             <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700, background: r.status === 'SATISFACTORY' ? '#D1FAE5' : r.status === 'UNSATISFACTORY' ? '#FEE2E2' : '#FEF3C7', color: r.status === 'SATISFACTORY' ? '#065F46' : r.status === 'UNSATISFACTORY' ? '#991B1B' : '#D97706' }}>{r.status === 'SATISFACTORY' ? 'CLEARED' : r.status === 'UNSATISFACTORY' ? 'REJECTED' : r.status}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)' }}>
@@ -4096,7 +4095,7 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
             </button>
           )}
           {/* Timeline */}
-          {renderEvaluationTimelineGeneric(r, thesis, `RAC-${r.racNumber}`)}
+          {renderEvaluationTimelineGeneric(r, thesis, `RDC-${r.racNumber}`)}
         </div>
       ))}
     </div>

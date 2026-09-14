@@ -189,6 +189,7 @@ const EvaluationTimelineWrapper = ({ milestone, thesis, titlePrefix, history }) 
     titleUpper.includes('CHANGE') || 
     titleUpper.includes('DOCUMENT') || 
     titleUpper.includes('DRC') || 
+    titleUpper.includes('RDC') || 
     titleUpper.startsWith('RAC');
 
   const renderContent = () => {
@@ -206,7 +207,7 @@ const EvaluationTimelineWrapper = ({ milestone, thesis, titlePrefix, history }) 
       let reviewerLabel = 'Review & Evaluation';
       let reviewerDescription = 'Awaiting review from the assigned authority.';
 
-      if (titleUpper.includes('MEETING') || titleUpper.includes('DRC') || titleUpper.startsWith('RAC')) {
+      if (titleUpper.includes('MEETING') || titleUpper.includes('DRC') || titleUpper.includes('RDC') || titleUpper.startsWith('RAC')) {
         initiatorLabel = 'Session Scheduled';
         reviewerLabel = 'Meeting Outcome Recorded';
         reviewerDescription = 'Outcome details and recommendations from the committee.';
@@ -674,14 +675,14 @@ const getDrcMeetingVirtualHistory = (m) => {
       action: 'SUBMITTED',
       actorName: 'HOD',
       actorRole: 'HOD',
-      remarks: `Scheduled DRC Meeting. Agenda: "${m.agenda || 'N/A'}"`,
+      remarks: `Scheduled RDC Meeting. Agenda: "${m.agenda || 'N/A'}"`,
       timestamp: m.createdAt
     }
   ];
   if (m.status === 'APPROVED') {
     list.push({
       action: 'HOD_APPROVED',
-      actorName: 'DRC Committee',
+      actorName: 'Research Degree Committee (RDC)',
       actorRole: 'HOD',
       remarks: m.remarks || 'Approved.',
       timestamp: m.updatedAt
@@ -689,7 +690,7 @@ const getDrcMeetingVirtualHistory = (m) => {
   } else if (m.status === 'REVISION_REQUIRED') {
     list.push({
       action: 'HOD_REJECTED',
-      actorName: 'DRC Committee',
+      actorName: 'Research Degree Committee (RDC)',
       actorRole: 'HOD',
       remarks: m.remarks || 'Revision Required.',
       timestamp: m.updatedAt
@@ -933,8 +934,8 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
   const PHASES = [
     { key: 'REGISTRATION_PENDING', label: 'Registration', desc: 'Awaiting Verification' },
     { key: 'COURSEWORK', label: 'Coursework', desc: 'Clearing Exams' },
-    { key: 'SYNOPSIS_PENDING', label: 'Synopsis Approval', desc: 'DRC Evaluation' },
-    { key: 'ACTIVE_RESEARCH', label: 'Active Research', desc: 'RAC & Progress' },
+    { key: 'SYNOPSIS_PENDING', label: 'Synopsis Approval', desc: 'RDC Synopsis Evaluation' },
+    { key: 'ACTIVE_RESEARCH', label: 'Active Research', desc: 'RDC 6-Month Progress' },
     { key: 'PRE_SUBMISSION', label: 'Pre-Submission', desc: 'Colloquium & Seminars' },
     { key: 'SUBMITTED', label: 'Thesis Submission', desc: 'Evaluation Board' },
     { key: 'AWARDED', label: 'Degree Awarded', desc: 'Convocation' }
@@ -1055,25 +1056,25 @@ const MilestoneTimeline = ({ thesis, milestones = [] }) => {
           status: (step2Approved || step2PendingHOD) ? 'SUCCESS' : step2Revision ? 'DANGER' : step2Submitted ? 'WARNING' : 'PENDING'
         },
         {
-          label: 'DRC Meeting Scheduling',
+          label: 'RDC Meeting Scheduling',
           desc: drcApproved || drcRevision
-            ? 'DRC evaluation session successfully concluded.'
+            ? 'RDC evaluation session successfully concluded.'
             : activeDrc 
             ? `Scheduled: ${new Date(activeDrc.scheduledDate).toLocaleDateString()} at ${activeDrc.scheduledTime} in ${activeDrc.venue}.` 
             : step3AwaitingSchedule 
-            ? 'Supervisor approved! HOD will schedule the DRC evaluation board shortly.' 
+            ? 'Supervisor approved! HOD will schedule the RDC evaluation board shortly.' 
             : 'Awaiting supervisor approval before committee scheduling.',
           status: (drcApproved || drcRevision || activeDrc) ? 'SUCCESS' : step3AwaitingSchedule ? 'WARNING' : 'PENDING'
         },
         {
-          label: 'DRC Panel Evaluation',
+          label: 'RDC Panel Evaluation',
           desc: drcApproved 
-            ? 'Synopsis officially approved by the Departmental Research Committee!' 
+            ? 'Synopsis officially approved by the Research Degree Committee (RDC)!' 
             : drcRevision 
             ? `Panel revisions required: "${drcMeetings.find(m => m.status === 'REVISION_REQUIRED')?.remarks || 'Check feedback'}"`
             : activeDrc 
             ? 'Awaiting presentation defense and grading outcome.' 
-            : 'DRC evaluation panel will convene after scheduling.',
+            : 'RDC evaluation panel will convene after scheduling.',
           status: drcApproved ? 'SUCCESS' : drcRevision ? 'DANGER' : activeDrc ? 'WARNING' : 'PENDING'
         }
       ];
@@ -1421,7 +1422,7 @@ const studentNavItems = [
   { key: 'synopsis', label: 'Synopsis', Icon: ClipboardList },
 
   { kind: 'section', label: '🔬 Research & Progress' },
-  { key: 'rac', label: 'RAC Progress', Icon: Layers },
+  { key: 'rac', label: 'RDC (6-Month)', Icon: Layers },
   { key: 'sixMonthReports', label: '6-Month Reports', Icon: Calendar },
   { key: 'chapterDrafts', label: 'Chapter Drafts', Icon: FileText },
   { key: 'publications', label: 'Research Outputs', Icon: Award },
@@ -2950,7 +2951,7 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
             </div>
           </div>
           
-          {/* Step 3: HOD Final Sign-off & DRC Scheduling */}
+          {/* Step 3: HOD Final Sign-off & RDC Scheduling */}
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ 
@@ -2970,7 +2971,7 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>HOD Final Sign-off & DRC Scheduling</span>
+                <span>HOD Final Sign-off & RDC Scheduling</span>
                 <span style={{ 
                   fontSize: '0.7rem', 
                   padding: '2px 8px', 
@@ -2984,7 +2985,7 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
               </div>
               <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
                 {hodStatus === 'APPROVED' 
-                  ? 'HOD has approved the synopsis. DRC evaluation meeting will be scheduled.' 
+                  ? 'HOD has approved the synopsis. RDC evaluation meeting will be scheduled.' 
                   : (hodStatus === 'REJECTED' ? 'HOD requested revisions.' : (hodStatus === 'LOCKED' ? 'Awaiting Supervisor verification first.' : 'Awaiting final clearance from Head of Department.'))}
               </div>
             </div>
@@ -3079,13 +3080,13 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
             bg = '#FFFBEB';
             border = '#FDE68A';
             color = '#D97706';
-            label = 'Pending HOD Approval & DRC Pending';
+            label = 'Pending HOD Approval & RDC Pending';
           } else if (synopsisMilestone.status === 'APPROVED') {
             if (thesis.status === 'SYNOPSIS_PENDING') {
               bg = '#FFFBEB';
               border = '#FDE68A';
               color = '#D97706';
-              label = 'Synopsis Approved (DRC Pending at HOD)';
+              label = 'Synopsis Approved (RDC Pending at HOD)';
             } else {
               bg = '#ECFDF5';
               border = '#A7F3D0';
@@ -3100,7 +3101,7 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
             bg = '#FEF2F2';
             border = '#FCA5A5';
             color = '#DC2626';
-            label = isDrcUnsatisfactory ? 'DRC Outcome Unsatisfactory' : 'Correction Needed';
+            label = isDrcUnsatisfactory ? 'RDC Outcome Unsatisfactory' : 'Correction Needed';
           }
 
           return (
@@ -3113,7 +3114,7 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
               </div>
               {thesis.synopsisProvisionallyCleared && synopsisMilestone.status !== 'APPROVED' && (
                 <div style={{ marginTop: 10, fontSize: '0.8rem', color: '#B45309', borderTop: '1px dashed #F59E0B', paddingTop: 8 }}>
-                  ⚠️ Your department has provisionally bypassed the synopsis defense phase to place you into Active Research. However, you are strictly required to upload your synopsis document, finalize your research abstract, and obtain official supervisor and HOD/DRC clearance before you can unlock your Pre-Submission Colloquium phase.
+                  ⚠️ Your department has provisionally bypassed the synopsis defense phase to place you into Active Research. However, you are strictly required to upload your synopsis document, finalize your research abstract, and obtain official supervisor and HOD/RDC clearance before you can unlock your Pre-Submission Colloquium phase.
                 </div>
               )}
               {(() => {
@@ -3122,7 +3123,7 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
                 if (lastSynDrc && lastSynDrc.status === 'REVISION_REQUIRED') {
                   return (
                     <div style={{ marginTop: 12, padding: 12, background: 'rgba(255, 255, 255, 0.8)', borderRadius: 6, borderLeft: '4px solid #DC2626' }}>
-                      <div style={{ fontWeight: 700, color: '#991B1B', marginBottom: 4 }}>⚠️ DRC Outcome: Unsatisfactory</div>
+                      <div style={{ fontWeight: 700, color: '#991B1B', marginBottom: 4 }}>⚠️ RDC Outcome: Unsatisfactory</div>
                       <div style={{ fontSize: '0.85rem', color: '#7F1D1D', fontStyle: 'italic' }}>
                         Remarks: "{lastSynDrc.remarks || 'No remarks provided'}"
                       </div>
@@ -3220,18 +3221,18 @@ const SynopsisPhase = ({ thesis, milestones, onSubmit }) => {
             {synopsisMilestone.status === 'APPROVED' && (
               <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: 16, borderRadius: 10 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E293B', marginBottom: 8 }}>
-                  📆 Departmental Research Committee (DRC) Review
+                  📆 Research Degree Committee (RDC) Review
                 </div>
                 {drcMeetings.length === 0 ? (
                   <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span style={{ fontSize: '1.1rem' }}>⏳</span>
-                    <span>Synopsis approved by your supervisor! HOD will schedule the official DRC meeting for final evaluation shortly.</span>
+                    <span>Synopsis approved by your supervisor! HOD will schedule the official Research Degree Committee (RDC) meeting for final evaluation shortly.</span>
                   </div>
                 ) : (
                   drcMeetings.map(drc => (
                     <div key={drc._id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>DRC Session Schedule</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text-primary)' }}>RDC Session Schedule</span>
                         <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: drc.status === 'APPROVED' ? '#D1FAE5' : drc.status === 'REVISION_REQUIRED' ? '#FEE2E2' : '#FEF3C7', color: drc.status === 'APPROVED' ? '#065F46' : drc.status === 'REVISION_REQUIRED' ? '#991B1B' : '#92400E' }}>
                           {drc.status}
                         </span>
@@ -3456,13 +3457,20 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
 
   // States for pre-submission eligibility checklist
   const [pubs, setPubs] = useState([]);
+  const [preDrcMeetings, setPreDrcMeetings] = useState([]);
   const [fetchingChecklist, setFetchingChecklist] = useState(false);
 
   useEffect(() => {
     if (!preMilestone && thesis?._id) {
       setFetchingChecklist(true);
-      axios.get(`${API}/publications/thesis/${thesis._id}`, getAuthHeader())
-        .then(res => setPubs(res.data))
+      Promise.all([
+        axios.get(`${API}/publications/thesis/${thesis._id}`, getAuthHeader()),
+        axios.get(`${API}/lifecycle/drc/thesis/${thesis._id}`, getAuthHeader()).catch(() => ({ data: [] }))
+      ])
+        .then(([pubRes, drcRes]) => {
+          setPubs(pubRes.data || []);
+          setPreDrcMeetings(drcRes.data || []);
+        })
         .catch(() => {})
         .finally(() => setFetchingChecklist(false));
     }
@@ -3704,7 +3712,9 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
   const pubsCleared = journals >= 2 && conferences >= 2;
 
   const synopsisMilestone = milestones.find(m => m.type === 'SYNOPSIS');
-  const synopsisCleared = synopsisMilestone?.status === 'APPROVED';
+  const synopsisApproved = synopsisMilestone?.status === 'APPROVED';
+  const defaultRdcApproved = preDrcMeetings.some(d => d.status === 'APPROVED');
+  const synopsisCleared = synopsisApproved && defaultRdcApproved;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -3786,11 +3796,17 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: pubsCleared ? '#059669' : '#DC2626' }}>{pubsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
               </div>
 
-              {/* Research Synopsis Clearance */}
+              {/* Research Synopsis & RDC Clearance */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: synopsisCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
                 <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: synopsisCleared ? '#065F46' : '#991B1B' }}>Research Synopsis Clearance</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Status: {synopsisCleared ? 'Official DRC Approval Cleared' : 'Pending official DRC synopsis verification'}</div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: synopsisCleared ? '#065F46' : '#991B1B' }}>Research Degree Committee (RDC) Synopsis Clearance</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                    Status: {synopsisCleared 
+                      ? 'Official RDC Synopsis Approval Cleared' 
+                      : (synopsisApproved 
+                          ? 'Awaiting Official RDC Meeting Approval' 
+                          : 'Pending Synopsis Document & Official RDC Approval')}
+                  </div>
                 </div>
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: synopsisCleared ? '#059669' : '#DC2626' }}>{synopsisCleared ? '✓ Cleared' : '⏳ Pending'}</span>
               </div>
@@ -4909,7 +4925,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
       progress: 40,
       nextAction: 'Upload your research synopsis proposal PDF. Ensure similarity indexing is within permissible limits.'
     },
-    ACTIVE_RESEARCH: { label: 'Active Research', color: '#059669', bg: '#D1FAE5', progress: 65, nextAction: 'Submit periodic 6-month progress reports to your Research Advisory Committee (RAC) and publish research papers.' },
+    ACTIVE_RESEARCH: { label: 'Active Research', color: '#059669', bg: '#D1FAE5', progress: 65, nextAction: 'Submit periodic 6-month progress reports to your Research Degree Committee (RDC) and publish research papers.' },
     PRE_SUBMISSION: isPreSubmissionRevision ? {
       label: 'Thesis Revision Required',
       color: '#DC2626',
@@ -4957,7 +4973,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, color: '#92400E', fontSize: '0.9rem' }}>⚠️ Upcoming Meeting: {activeDrc.title || 'DRC Meeting'} Scheduled!</div>
+            <div style={{ fontWeight: 700, color: '#92400E', fontSize: '0.9rem' }}>⚠️ Upcoming Meeting: {activeDrc.title || 'RDC Meeting'} Scheduled!</div>
             <div style={{ fontSize: '0.8rem', color: '#B45309', marginTop: '4px' }}>
               <strong>Date:</strong> {new Date(activeDrc.scheduledDate).toLocaleDateString()} | <strong>Time:</strong> {activeDrc.scheduledTime} | <strong>Venue:</strong> {activeDrc.venue}
             </div>
@@ -5119,7 +5135,7 @@ const OverviewPage = ({ thesis, milestones, setActiveTab, user }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
                 { key: 'sixMonthReports', label: '📄 Submit 6-Month Progress Report' },
-                { key: 'rac', label: '📆 Submit RAC Progress Report' },
+                { key: 'rac', label: '📆 Submit RDC Progress Report' },
                 { key: 'publications', label: '🏆 Log Research Output' },
                 { key: 'profile', label: '👤 Complete/Edit Profile Details' }
               ].map(({ key, label }) => {
@@ -5204,28 +5220,35 @@ const RACProgressTab = ({ thesis }) => {
 
   const fetchRACs = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${API}/lifecycle/rac/thesis/${thesis._id}`, getAuthHeader());
       setRacs(res.data);
-    } catch (err) {}
-    setLoading(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load RAC reviews.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchRACs(); }, []);
+  useEffect(() => {
+    if (thesis?._id) fetchRACs();
+  }, [thesis?._id]);
 
   const handleReportUpload = async (racId) => {
     try {
       const formData = new FormData();
-      if (attachedFile) {
-        formData.append('document', attachedFile);
-      }
       formData.append('studentRemarks', studentRemarks);
+      if (attachedFile) {
+        formData.append('report', attachedFile);
+      }
 
       await axios.put(`${API}/lifecycle/rac/${racId}/report`, formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      toast.success('RAC progress remarks & document updated successfully!');
+      toast.success('RDC progress remarks & document updated successfully!');
       setUploadingId(null);
       setStudentRemarks('');
       setAttachedFile(null);
@@ -5238,9 +5261,9 @@ const RACProgressTab = ({ thesis }) => {
 
   return (
     <div className="card">
-      <h3 className="card-title">Research Advisory Committee (RAC) Progress</h3>
+      <h3 className="card-title">Research Degree Committee (RDC) Progress</h3>
       <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
-        Track scheduled RAC reviews, upload mandatory periodic progress reports, and view evaluation remarks from the doctoral committee.
+        Track scheduled RDC reviews, upload mandatory periodic progress reports, and view evaluation remarks from the doctoral committee.
       </p>
       {loading ? (
         <div className="premium-preloader-container" style={{ padding: '20px' }}>
@@ -5249,7 +5272,7 @@ const RACProgressTab = ({ thesis }) => {
         </div>
       ) : racs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '36px', color: '#64748B', background: 'var(--color-bg)', borderRadius: 8 }}>
-          No RAC sessions have been scheduled by your HOD yet.
+          No RDC sessions have been scheduled by your HOD yet.
         </div>
       ) : (
         <div className="file-list">
@@ -5264,7 +5287,7 @@ const RACProgressTab = ({ thesis }) => {
           {racs.map(r => (
             <div key={r._id} className="file-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <div style={{ flex: 1, fontWeight: 700, color: '#1E3A8A' }}>RAC-{r.racNumber}</div>
+                <div style={{ flex: 1, fontWeight: 700, color: '#1E3A8A' }}>RDC-{r.racNumber}</div>
                 <div style={{ flex: 2, fontSize: '0.9rem' }}>{new Date(r.scheduledDate).toLocaleDateString()}</div>
                 <div style={{ flex: 2, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{r.committeeMembers || 'Pending Formation'}</div>
                 <div style={{ flex: 1.5 }}>
@@ -6858,7 +6881,7 @@ const MeetingsTab = ({ thesis }) => {
             transition: 'all 0.2s ease-in-out'
           }}
         >
-          DRC Meetings
+          RDC Meetings
         </button>
       </div>
 
@@ -7009,7 +7032,7 @@ const MeetingsTab = ({ thesis }) => {
       ) : (
         <div className="card">
           <div style={{ marginBottom: 20 }}>
-            <h3 className="card-title" style={{ margin: 0 }}>Departmental Research Committee (DRC) Meetings</h3>
+            <h3 className="card-title" style={{ margin: 0 }}>Research Degree Committee (RDC) Meetings</h3>
             <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', marginTop: 4 }}>
               View evaluation sessions and formal presentations scheduled by the department Head (HOD) for synopsis and periodic research milestones.
             </p>
@@ -7018,13 +7041,13 @@ const MeetingsTab = ({ thesis }) => {
           {drcLoading ? (
             <div className="premium-preloader-container" style={{ padding: '32px 20px' }}>
               <div className="premium-preloader-spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '12px' }}></div>
-              <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading DRC schedules...</div>
+              <div className="premium-preloader-text" style={{ fontSize: '0.85rem' }}>Loading RDC schedules...</div>
             </div>
           ) : drcMeetings.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-muted)' }}>
               <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-              <p style={{ margin: 0, fontWeight: 600 }}>No DRC meetings scheduled yet</p>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When the HOD schedules a DRC evaluation session, it will be displayed here.</p>
+              <p style={{ margin: 0, fontWeight: 600 }}>No RDC meetings scheduled yet</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>When the HOD schedules an RDC evaluation session, it will be displayed here.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -7062,7 +7085,7 @@ const MeetingsTab = ({ thesis }) => {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, color: 'var(--color-text, #0F172A)' }}>
-                            {drc.title || 'DRC Meeting'}
+                            {drc.title || 'RDC Meeting'}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)' }}>
                             Time: {drc.scheduledTime} | Venue: {drc.venue}
@@ -7108,7 +7131,7 @@ const MeetingsTab = ({ thesis }) => {
                         </div>
                       )}
                       {/* Timeline & History Logs */}
-                      {renderEvaluationTimelineGeneric(drc, thesis, 'DRC Meeting Schedule', getDrcMeetingVirtualHistory(drc))}
+                      {renderEvaluationTimelineGeneric(drc, thesis, 'RDC Meeting Schedule', getDrcMeetingVirtualHistory(drc))}
                     </div>
                   );
               })}
@@ -14982,8 +15005,8 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
   const PHASES = [
     { key: 'REGISTRATION_PENDING', label: 'Registration & Enrollment', desc: 'Admission details, tentative topic and guide preference verification.' },
     { key: 'COURSEWORK', label: 'Doctoral Coursework Clearance', desc: 'Mandatory exams in Research Methodology, Research Analysis, and Electives.' },
-    { key: 'SYNOPSIS_PENDING', label: 'Research Synopsis & DRC Approval', desc: 'Presentation and approval of synopsis before the Departmental Research Committee.' },
-    { key: 'ACTIVE_RESEARCH', label: 'Active Research & Progress Reviews', desc: 'Periodic progress reports and RAC evaluation panels.' },
+    { key: 'SYNOPSIS_PENDING', label: 'Research Synopsis & RDC Approval', desc: 'Presentation and approval of synopsis before the Research Degree Committee (RDC).' },
+    { key: 'ACTIVE_RESEARCH', label: 'Active Research & Progress Reviews', desc: 'Periodic progress reports and RDC evaluation panels.' },
     { key: 'PRE_SUBMISSION', label: 'Pre-Submission Colloquium', desc: 'Expert panel defense, plagiarism similarity clearance and rough draft review.' },
     { key: 'SUBMITTED', label: 'Thesis Evaluation & Viva-Voce', desc: 'External examiner review process and final oral defense.' },
     { key: 'AWARDED', label: 'Degree Conferral', desc: 'Final audit clearance and official Ph.D. degree award resolution.' }
@@ -15454,7 +15477,7 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           )}
                         </div>
 
-                        {/* DRC evaluation details */}
+                        {/* RDC evaluation details */}
                         <div style={{ 
                           background: 'rgba(245, 158, 11, 0.05)', 
                           border: '1px solid rgba(245, 158, 11, 0.2)', 
@@ -15462,11 +15485,11 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                           padding: 18 
                         }}>
                           <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: '#B45309', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span>📆</span> Departmental Research Committee (DRC) Evaluation
+                            <span>📆</span> Research Degree Committee (RDC) Synopsis Evaluation
                           </h5>
                           {drcMeetings.length === 0 ? (
                             <div style={{ fontSize: '0.83rem', color: '#B45309', fontStyle: 'italic' }}>
-                              No DRC evaluation sessions scheduled yet.
+                              No RDC evaluation sessions scheduled yet.
                             </div>
                           ) : (
                             drcMeetings.map((drc, idx) => (
@@ -15500,7 +15523,7 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                                       padding: 10, 
                                       borderRadius: 8, 
                                       borderLeft: '4px solid #D97706', 
-                                      border: '1px solid var(--color-border, #E2E8F0)',
+                                      border: '1px solid var(--color-border, #E2E8F0)', 
                                       marginTop: 6,
                                       color: 'var(--color-text-primary, #1E293B)' 
                                     }}>
@@ -15521,18 +15544,18 @@ const AllMilestonesRecords = ({ thesis, milestones = [], user }) => {
                         {/* RAC Sessions */}
                         <div style={{ background: 'var(--color-surface, #FFFFFF)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                           <h5 style={{ margin: '0 0 12px 0', fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-primary, #1E293B)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span>📊</span> Research Advisory Committee (RAC) Progress Reviews
+                            <span>📊</span> Research Degree Committee (RDC) 6-Month Progress Reviews
                           </h5>
                           {racSessions.length === 0 ? (
                             <div style={{ fontSize: '0.83rem', color: 'var(--color-text-secondary, #64748B)', fontStyle: 'italic' }}>
-                              No RAC progress reviews recorded yet. Reviews occur at 6-month intervals.
+                              No RDC progress reviews recorded yet. Reviews occur at 6-month intervals.
                             </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                               {racSessions.map((rac, idx) => (
                                 <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--color-bg, #F8FAFC)', border: '1px solid var(--color-border, #E2E8F0)', borderRadius: 8 }}>
                                   <div>
-                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-primary, #334155)' }}>RAC Session #{idx + 1}</span>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-primary, #334155)' }}>RDC Review #{idx + 1}</span>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #64748B)', marginTop: 2 }}>
                                       Date: {new Date(rac.scheduledDate).toLocaleDateString()} | Committee: {rac.committeeMembers || 'Guide & Panel'}
                                     </div>
@@ -15732,7 +15755,7 @@ const StudentDashboard = () => {
     workspace: 'Workspace', 
     coursework: 'Coursework Milestone',
     synopsis: 'Research Synopsis',
-    rac: 'RAC Progress', 
+    rac: 'RDC (6-Month Progress)', 
     publications: 'Research Outputs', 
     funding: 'My Funding & Lab',
     sixMonthReports: '6-Month Progress Reports',

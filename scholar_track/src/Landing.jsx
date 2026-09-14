@@ -28,7 +28,7 @@ const roleFeatures = {
     { text: 'Safe Absence Calculator', desc: 'Know exactly how many classes you can still miss before falling below the 75% threshold.', icon: Shield },
     { text: 'Leave Applications', desc: 'Apply for Medical, Casual, Duty, or On-Duty leave with multi-tier approval tracking.', icon: CalendarRange },
     { text: 'Correction Appeals', desc: 'Challenge wrongly marked absences within a 7-day window. Attach supporting documents.', icon: FileText },
-    { text: 'PhD Research Tracker', desc: 'Track months elapsed since DRC synopsis approval, 36-month residency progress, and thesis status.', icon: Clock },
+    { text: 'PhD Research Tracker', desc: 'Track months elapsed since Research Degree Committee (RDC) synopsis approval, 36-month residency progress, and thesis status.', icon: Clock },
     { text: 'Academic Standing', desc: 'Instant Good / Warning / Defaulter status indicator with actionable recovery guidance.', icon: AlertTriangle },
   ],
   faculty: [

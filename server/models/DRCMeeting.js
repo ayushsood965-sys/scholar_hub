@@ -7,7 +7,7 @@ const DRCMeetingSchema = new mongoose.Schema({
   scheduledTime: { type: String, required: true },
   venue: { type: String, required: true },
   committeeMembers: { type: String, default: '' },
-  title: { type: String, default: 'DRC Meeting' },
+  title: { type: String, default: 'Research Degree Committee (RDC) Meeting' },
   isSynopsisApproval: { type: Boolean, default: false },
   agenda: { type: String, default: '' },
   status: { type: String, enum: ['SCHEDULED', 'APPROVED', 'REVISION_REQUIRED'], default: 'SCHEDULED' },

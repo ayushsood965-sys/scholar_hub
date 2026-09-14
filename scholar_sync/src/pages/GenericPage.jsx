@@ -534,7 +534,7 @@ const GenericPage = ({ title, description }) => {
                   { title: "Stage 1: Thesis Registration", desc: "Scholar submits detailed research title, scope, and initial proposal. Reviewed and approved by Department HOD." },
                   { title: "Stage 2: Supervisor Assignment", desc: "HOD delegates a certified Faculty Supervisor matching the scholar's research area of interest." },
                   { title: "Stage 3: Coursework Phase", desc: "Scholar undertakes mandatory doctoral course credits, evaluated by the supervisor upon successful completion." },
-                  { title: "Stage 4: Active Research & DRC Approval", desc: "Departmental Research Committee (DRC) approves the primary research synopsis, unlocking full dissertation creation." },
+                  { title: "Stage 4: Active Research & RDC Approval", desc: "Research Degree Committee (RDC) approves the primary research synopsis, unlocking full dissertation creation." },
                   { title: "Stage 5: Pre-Submission Seminar", desc: "Scholar defends preliminary thesis findings in a public university-wide pre-submission presentation." },
                   { title: "Stage 6: External Thesis Evaluation", desc: "Completed dissertation is securely dispatched to high-profile external subject matter expert examiners." },
                   { title: "Stage 7: Degree Awarded!", desc: "Upon receiving satisfactory external review reports, the final Viva-Voce defense is cleared, and the doctorate degree is officially awarded." }
@@ -552,8 +552,8 @@ const GenericPage = ({ title, description }) => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
               {[
                 { title: 'Absolute Transparency', desc: 'Real-time timeline progression charts accessible by supervisors, scholars, and department heads alike.' },
-                { title: 'Secure Audited Files', desc: 'Secure repository for uploading coursework sheets, RAC review slides, synopsis documents, and external reviews.' },
-                { title: 'Automated Reminders', desc: 'Dynamic alert systems to keep candidates informed about upcoming milestones, vivas, and DRC deadlines.' }
+                { title: 'Secure Audited Files', desc: 'Secure repository for uploading coursework sheets, RDC review slides, synopsis documents, and external reviews.' },
+                { title: 'Automated Reminders', desc: 'Dynamic alert systems to keep candidates informed about upcoming milestones, vivas, and RDC deadlines.' }
               ].map((feat, idx) => (
                 <div key={idx} className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.85)', borderRadius: '12px' }}>
                   <div style={{ color: '#133A26', display: 'flex', alignItems: 'center', gap: '8px' }}>

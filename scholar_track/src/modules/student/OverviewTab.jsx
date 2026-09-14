@@ -255,7 +255,7 @@ const OverviewTab = ({ thesis }) => {
               </div>
 
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                {researchStats?.hasSynopsisApproved ? 'DRC Synopsis Approval:' : 'Admission Date:'} <strong>{researchStats?.startDate || 'Awaiting Registration'}</strong>
+                {researchStats?.hasSynopsisApproved ? 'Research Degree Committee (RDC) Approval:' : 'Admission Date:'} <strong>{researchStats?.startDate || 'Awaiting Registration'}</strong>
               </div>
             </motion.div>
 
@@ -287,7 +287,7 @@ const OverviewTab = ({ thesis }) => {
                       ? 'Standard Residency Completed' 
                       : `${researchStats?.monthsLeft || 0} Months Left`
                   ) : (
-                    'DRC Approval Pending'
+                    'RDC Approval Pending'
                   )}
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
@@ -296,7 +296,7 @@ const OverviewTab = ({ thesis }) => {
                       ? 'You have completed the standard 3-year (36 months) research residency period and are currently in the thesis compilation/extension phase.'
                       : `You have completed ${researchStats?.monthsPassed || 0} months of your active research since synopsis approval. The remaining period to meet the standard 3-year minimum active research timeline is ${researchStats?.monthsLeft || 0} months (${researchStats?.daysLeft || 0} days).`
                   ) : (
-                    `Your synopsis is awaiting DRC approval. Once approved, your active research period will commence. Currently, ${researchStats?.monthsPassed || 0} months have elapsed since your admission on ${user?.profile?.admissionDate ? new Date(user.profile.admissionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}.`
+                    `Your synopsis is awaiting Research Degree Committee (RDC) approval. Once approved, your active research period will commence. Currently, ${researchStats?.monthsPassed || 0} months have elapsed since your admission on ${user?.profile?.admissionDate ? new Date(user.profile.admissionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}.`
                   )}
                 </p>
               </div>

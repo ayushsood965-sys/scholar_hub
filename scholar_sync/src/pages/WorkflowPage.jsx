@@ -57,19 +57,19 @@ const STUDENT_SCENES = [
     icon: '📚', color: '#8b5cf6',
   },
   {
-    id: 's7', phase: 'Synopsis & DRC',
-    title: 'Step 7 — Synopsis Submission & DRC Approval',
-    narrative: 'Student uploads the synopsis document + plagiarism report. The supervisor reviews it — approves or requests revision. Once approved, the HOD schedules a DRC (Departmental Research Committee) meeting with date, time, venue. The DRC panel evaluates and approves the synopsis.',
+    id: 's7', phase: 'Synopsis & RDC',
+    title: 'Step 7 — Synopsis Submission & RDC Approval',
+    narrative: 'Student uploads the synopsis document + plagiarism report. The supervisor reviews it — approves or requests revision. Once approved, the HOD schedules a Research Degree Committee (RDC) meeting with date, time, venue. The RDC panel evaluates and approves the synopsis.',
     mockUI: 'synopsis',
-    highlight: 'On DRC approval → Status moves to ACTIVE RESEARCH. 6-Month Report #1 auto-created.',
+    highlight: 'On RDC approval → Status moves to ACTIVE RESEARCH. 6-Month Report #1 auto-created.',
     icon: '📝', color: '#06b6d4',
   },
   {
     id: 's8', phase: 'Active Research',
-    title: 'Step 8 — Active Research & RAC Reviews',
-    narrative: 'The core research phase lasting 3+ years. Every 6 months, a progress report milestone is auto-generated. The student uploads reports, the supervisor reviews. Students also submit research publications (journals, conferences, Intellectual Property Rights (IPRs)). The HOD conducts periodic RAC (Research Advisory Committee) reviews.',
+    title: 'Step 8 — Active Research & RDC Periodic Reviews',
+    narrative: 'The core research phase lasting 3+ years. Every 6 months, a progress report milestone is auto-generated. The student uploads reports, the supervisor reviews. Students also submit research publications (journals, conferences, Intellectual Property Rights (IPRs)). The HOD conducts periodic Research Degree Committee (RDC) reviews.',
     mockUI: 'active_research',
-    highlight: 'Tabs unlocked: RAC Progress, 6-Month Reports, Research Outputs, Meetings, Documents, Changes.',
+    highlight: 'Tabs unlocked: RDC Progress, 6-Month Reports, Research Outputs, Meetings, Documents, Changes.',
     icon: '🔬', color: '#10b981',
   },
   {
@@ -129,8 +129,8 @@ const FACULTY_DASHBOARD_FEATURES = [
 
 const HOD_EXCLUSIVE_FEATURES = [
   { icon: '✅', title: 'Registration Verification', desc: 'Review and verify new scholar registrations. View complete profiles with academic credentials and certificates. Assign faculty supervisors.' },
-  { icon: '📋', title: 'DRC Scheduling & Results', desc: 'Schedule DRC meetings (date, time, venue, panel). Record DRC outcomes — Approved, Revision Required, or Reschedule. Also supports recording offline DRC outcomes.' },
-  { icon: '🏛️', title: 'RAC Session Management', desc: 'Schedule and manage periodic RAC (Research Advisory Committee) evaluation sessions. Record outcomes as Satisfactory or Unsatisfactory.' },
+  { icon: '📋', title: 'RDC Scheduling & Results', desc: 'Schedule RDC meetings for synopsis approval (date, time, venue, panel). Record RDC outcomes — Approved, Revision Required, or Reschedule. Also supports recording offline RDC outcomes.' },
+  { icon: '🏛️', title: 'RDC Periodic Progress Reviews', desc: 'Schedule and manage periodic Research Degree Committee (RDC) 6-month evaluation sessions. Record outcomes as Satisfactory or Unsatisfactory.' },
   { icon: '📤', title: 'Pre-Submission Seminar', desc: 'Schedule seminar defense. Clear or revise pre-submission packages. System enforces publication prerequisites (2 Journals + 2 Conferences).' },
   { icon: '📬', title: 'Thesis Dispatch & Viva', desc: 'Log dispatch to external examiners. Schedule Viva-Voce (date, time, venue, panel). Record viva outcome. Award PhD degree.' },
   { icon: '🔀', title: 'Scholar Transfer', desc: 'Transfer supervision of any scholar to another verified faculty within the department. System notifies all parties automatically.' },
@@ -144,7 +144,7 @@ const PUBLIC_PORTAL_POINTS = [
   { icon: '📈', title: 'University Research Dashboard', desc: 'Real-time analytics of the university\'s overall research output — total scholars, active researchers, publications count, department-wise distribution, completion rates.', color: '#10b981' },
   { icon: '🏛️', title: 'Departmental Research Labs', desc: 'Each department\'s research labs, areas of expertise, and ongoing projects are showcased publicly. Attracts external funding and partnerships.', color: '#06b6d4' },
   { icon: '📄', title: 'Publication Archive', desc: 'A searchable repository of all verified publications — journals, conferences, Intellectual Property Rights (IPRs) — linked to scholars and supervisors. Builds the university\'s academic reputation.', color: '#f97316' },
-  { icon: '🔔', title: 'Research Events & Seminars', desc: 'Upcoming DRC meetings, RAC sessions, pre-submission seminars, and viva defenses can be listed publicly for transparency and institutional accountability.', color: '#ef4444' },
+  { icon: '🔔', title: 'Research Events & Seminars', desc: 'Upcoming RDC meetings, periodic reviews, pre-submission seminars, and viva defenses can be listed publicly for transparency and institutional accountability.', color: '#ef4444' },
   { icon: '💰', title: 'Funding & Grants Portal', desc: 'Centralized hub for research funding opportunities, grant applications, and sponsored project management.', color: '#eab308' },
   { icon: '🔒', title: 'Proper Monitoring & Compliance', desc: 'Authorities can monitor all ongoing research in real-time — track defaulters, ensure timely progress, enforce publication requirements, and maintain UGC/regulatory compliance.', color: '#a855f7' },
 ];
@@ -283,7 +283,7 @@ const SceneMockUI = ({ mockUI, isActive }) => {
     { icon: '👤', label: 'Profile', frozen: false },
     { icon: '📖', label: 'My Thesis', frozen: true },
     { icon: '🏁', label: 'Milestones', frozen: true },
-    { icon: '📊', label: 'RAC Progress', frozen: true },
+    { icon: '📊', label: 'RDC Progress', frozen: true },
     { icon: '📅', label: '6-Month Reports', frozen: true },
     { icon: '📄', label: 'Chapter Drafts', frozen: true },
     { icon: '🏆', label: 'Research Outputs', frozen: true },
@@ -395,7 +395,7 @@ const SceneMockUI = ({ mockUI, isActive }) => {
             { icon: '👤', label: 'Profile', frozen: false },
             { icon: '📖', label: 'My Thesis', frozen: false },
             { icon: '🏁', label: 'Milestones', frozen: false },
-            { icon: '📊', label: 'RAC Progress', frozen: true },
+            { icon: '📊', label: 'RDC Progress', frozen: true },
             { icon: '📅', label: '6-Month Reports', frozen: true },
             { icon: '📄', label: 'Chapter Drafts', frozen: true },
             { icon: '🏆', label: 'Research Outputs', frozen: true },
@@ -432,10 +432,10 @@ const SceneMockUI = ({ mockUI, isActive }) => {
       return (
         <div className="pres-mock-scene pres-mock-scene-split">
           <MockSidebar items={sidebarItems.map((s, i) => ({ ...s, frozen: i > 3 }))} activeIndex={3} />
-          <MockDashboardFrame title="Synopsis & DRC Approval" statusBadge={{ text: 'SYNOPSIS PENDING', bg: '#EDE9FE', color: '#7C3AED' }}>
+          <MockDashboardFrame title="Synopsis & RDC Approval" statusBadge={{ text: 'SYNOPSIS PENDING', bg: '#EDE9FE', color: '#7C3AED' }}>
             <MockMilestoneTimeline activeStep={2} />
             <div className="pres-mock-synopsis-flow">
-              {['📝 Upload Synopsis', '👨‍🏫 Supervisor Review', '📅 DRC Scheduled', '✅ DRC Approved'].map((s, i) => (
+              {['📝 Upload Synopsis', '👨‍🏫 Supervisor Review', '📅 RDC Scheduled', '✅ RDC Approved'].map((s, i) => (
                 <div key={i} className="pres-mock-sub-step" style={{ animationDelay: `${i * 0.3}s` }}>
                   <div className={`pres-mock-sub-dot ${i < 3 ? 'pres-mock-sub-done' : 'pres-mock-sub-active'}`} />
                   <span>{s}</span>
@@ -455,7 +455,7 @@ const SceneMockUI = ({ mockUI, isActive }) => {
             <div className="pres-mock-research-grid">
               <div className="pres-mock-research-card"><span>📊</span><span>6-Month Reports</span><span className="pres-mock-count">4/6</span></div>
               <div className="pres-mock-research-card"><span>📄</span><span>Publications</span><span className="pres-mock-count">3</span></div>
-              <div className="pres-mock-research-card"><span>🏛️</span><span>RAC Reviews</span><span className="pres-mock-count">2</span></div>
+              <div className="pres-mock-research-card"><span>🏛️</span><span>RDC Reviews</span><span className="pres-mock-count">2</span></div>
               <div className="pres-mock-research-card"><span>📅</span><span>Meetings</span><span className="pres-mock-count">5</span></div>
             </div>
           </MockDashboardFrame>

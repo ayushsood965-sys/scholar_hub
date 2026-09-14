@@ -493,10 +493,10 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
   }
 
   // ==========================================
-  // PAGE 3: SYNOPSIS LIFECYCLE & DRC MINUTES RECORD
+  // PAGE 3: SYNOPSIS LIFECYCLE & RDC MINUTES RECORD
   // ==========================================
   doc.addPage();
-  drawPageHeader('Synopsis & DRC Reviews');
+  drawPageHeader('Synopsis & RDC Reviews');
 
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
   doc.text('Research Synopsis Lifecycle Assessment', 15, currentY);
@@ -545,12 +545,12 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
 
   // DRC Meetings Outcomes table
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
-  doc.text('Departmental Research Committee (DRC) Scheduled Meetings & Directives', 15, currentY);
+  doc.text('Research Degree Committee (RDC) Scheduled Meetings & Directives', 15, currentY);
   currentY += 4;
 
   doc.setFillColor(...c.primary); doc.rect(15, currentY, 180, 8, 'F');
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...c.white);
-  doc.text('DRC DATE', 18, currentY + 5.5);
+  doc.text('RDC DATE', 18, currentY + 5.5);
   doc.text('VENUE / TIME', 45, currentY + 5.5);
   doc.text('MEETING AGENDA TITLE', 80, currentY + 5.5);
   doc.text('COMMITTEE OUTCOME', 135, currentY + 5.5);
@@ -560,14 +560,14 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
 
   if (drcMeetings.length === 0) {
     doc.setFont('Helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(...c.textMuted);
-    doc.text('No formal DRC review sessions registered in scholar history.', 18, currentY + 6);
+    doc.text('No formal RDC review sessions registered in scholar history.', 18, currentY + 6);
     currentY += 12;
   } else {
     drcMeetings.forEach(drc => {
       doc.setFont('Helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...c.textDark);
       doc.text(drc.scheduledDate ? new Date(drc.scheduledDate).toLocaleDateString() : 'N/A', 18, currentY + 5);
       doc.text(safeText(`${drc.venue} / ${drc.scheduledTime}`, 18), 45, currentY + 5);
-      doc.text(safeText(drc.title || drc.agenda || 'DRC Review Meeting', 28), 80, currentY + 5);
+      doc.text(safeText(drc.title || drc.agenda || 'RDC Review Meeting', 28), 80, currentY + 5);
       
       doc.setFont('Helvetica', 'bold');
       if (drc.status === 'APPROVED') {
@@ -651,7 +651,7 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
     doc.text('⚠️ REGULATORY COMPLIANCE WARNING: REGISTRATION CRITERIA BYPASS LOGGED', 23, currentY + 6);
     
     doc.setFont('Helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(154, 52, 18);
-    const bypassNote = `HOD ${thesis.activeResearchBypassMetadata?.bypassedBy || 'Head'} (${thesis.activeResearchBypassMetadata?.designation || 'Head of Department'}) bypassed Active Research eligibility thresholds on ${new Date(thesis.activeResearchBypassMetadata?.timestamp).toLocaleString()}. Justification: "${thesis.activeResearchBypassMetadata?.justification || 'DRC Special approval'}"`;
+    const bypassNote = `HOD ${thesis.activeResearchBypassMetadata?.bypassedBy || 'Head'} (${thesis.activeResearchBypassMetadata?.designation || 'Head of Department'}) bypassed Active Research eligibility thresholds on ${new Date(thesis.activeResearchBypassMetadata?.timestamp).toLocaleString()}. Justification: "${thesis.activeResearchBypassMetadata?.justification || 'RDC Special approval'}"`;
     const wrappedBypass = doc.splitTextToSize(bypassNote, 168);
     doc.text(wrappedBypass, 23, currentY + 11);
     
@@ -678,7 +678,7 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
     { name: '3. Progress reports submitted (min. 6)', met: milestones.filter(m => m.type === '6_MONTH_REPORT' && m.status === 'VERIFIED').length >= 6 },
     { name: '4. Verified Journal Publications (min. 2)', met: journalCount >= 2 },
     { name: '5. Verified Conference Papers (min. 2)', met: conferenceCount >= 2 },
-    { name: '6. Broad DRC Thesis pre-evaluation', met: milestones.find(m => m.type === 'PRE_SUBMISSION')?.status === 'APPROVED' },
+    { name: '6. Broad RDC Thesis pre-evaluation', met: milestones.find(m => m.type === 'PRE_SUBMISSION')?.status === 'APPROVED' },
   ];
 
   let rrY = currentY + 18;
@@ -790,15 +790,15 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
   }
 
   // ==========================================
-  // PAGE 6: COMMITTEE EVALUATIONS (RAC LOGS)
+  // PAGE 6: COMMITTEE EVALUATIONS (RDC PERIODIC LOGS)
   // ==========================================
   doc.addPage();
-  drawPageHeader('RAC Progress Evaluations');
+  drawPageHeader('RDC Periodic Progress Evaluations');
 
   // Render Grade Progression Line Graph
   drawCardBorder(15, currentY, 180, 78);
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...c.primary);
-  doc.text('Research Advisory Committee (RAC) Grade Progression', 20, currentY + 8);
+  doc.text('Research Degree Committee (RDC) Grade Progression', 20, currentY + 8);
   
   // Format RAC reviews values
   const lineChartData = racSessions.map((r, index) => ({
@@ -813,7 +813,7 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
 
   // RAC Grade Details Table
   doc.setFont('Helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...c.primary);
-  doc.text('RAC Progress Grading Evaluations', 15, currentY);
+  doc.text('Research Degree Committee (RDC) Progress Grading Evaluations', 15, currentY);
   currentY += 4;
 
   // Table header
@@ -828,7 +828,7 @@ export const generatePremiumPDF = async (doc, data, logoBase64) => {
 
   if (racSessions.length === 0) {
     doc.setFont('Helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(...c.textMuted);
-    doc.text('No periodic RAC evaluations found in database logs.', 18, currentY + 5);
+    doc.text('No periodic RDC evaluations found in database logs.', 18, currentY + 5);
     currentY += 10;
   } else {
     racSessions.forEach((rac) => {

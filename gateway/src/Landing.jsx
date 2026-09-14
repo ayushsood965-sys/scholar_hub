@@ -175,8 +175,8 @@ const Landing = () => {
   const scholarSyncStages = [
     { num: 1, title: 'Registration & Enrollment', desc: 'Initial intake, guide assignment, and unique 9-digit ScholarHub No. generation.' },
     { num: 2, title: 'Coursework Clearance', desc: 'PG coursework validation with supervisor and HOD digital sign-off.' },
-    { num: 3, title: 'Synopsis & DRC Approval', desc: 'Doctoral Research Committee defense and verification of thesis synopsis.' },
-    { num: 4, title: 'RAC Periodic Evaluations', desc: 'Active research stage. Research Advisory Committee monitors audits periodically.' },
+    { num: 3, title: 'Synopsis & RDC Approval', desc: 'Research Degree Committee (RDC) defense and verification of thesis synopsis.' },
+    { num: 4, title: 'RDC Periodic Evaluations', desc: 'Active research stage. Research Degree Committee (RDC) monitors audits periodically every 6 months.' },
     { num: 5, title: 'Colloquium Defense', desc: 'Pre-Submission seminar presentation to the department faculty panel.' },
     { num: 6, title: 'Thesis Submission', desc: 'Formatting compliance verification and dissertation document uploading.' },
     { num: 7, title: 'Supervisor & HOD Sign-off', desc: 'Plagiarism check verification and final endorsement of research.' },
@@ -195,12 +195,12 @@ const Landing = () => {
     supervisor: [
       { text: 'Scholar Workspace Management', desc: 'Monitor and guide progress boards of all assigned scholars.' },
       { text: 'Coursework & Draft Reviews', desc: 'Approve coursework completions and review uploaded drafts.' },
-      { text: 'RAC Audit Logging', desc: 'Submit mandatory progress review evaluation logs.' },
+      { text: 'RDC Audit Logging', desc: 'Submit mandatory periodic progress review evaluation logs.' },
       { text: 'Request Review Dashboard', desc: 'Authorize scholar supervisor allocations and change requests.' }
     ],
     hod_admin: [
       { text: 'Enrollment & Guides Allocation', desc: 'Onboard new scholars and assign supervisors across departments.' },
-      { text: 'DRC & Viva Scheduling', desc: 'Plan DRC proposal defences and schedule external Viva-Voce exams.' },
+      { text: 'RDC & Viva Scheduling', desc: 'Plan Research Degree Committee (RDC) defences and schedule external Viva-Voce exams.' },
       { text: 'Cross-Department Auditing', desc: 'Verify scholar records and handle departmental transfers.' },
       { text: 'Comprehensive Reporting', desc: 'Pull statistics, check program timeline violations, and compile reports.' }
     ]
@@ -503,7 +503,7 @@ const Landing = () => {
             </div>
             <div className="project-tags">
               <span className="project-tag">9-Stage Milestones</span>
-              <span className="project-tag">DRC & RAC Audits</span>
+              <span className="project-tag">Research Degree Committee (RDC) Audits</span>
               <span className="project-tag">Publications Directory</span>
               <span className="project-tag">Research Labs</span>
             </div>

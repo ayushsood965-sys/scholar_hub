@@ -469,7 +469,7 @@ const awardDegree = async (req, res) => {
       courseworkCleared: thesis.courseworkCompleted === true,
       enrollmentVerified: thesis.enrollmentVerified === true,
       synopsisApproved: synopsisMilestone?.status === 'APPROVED',
-      drcCleared: !!drcApproved,
+      rdcCleared: !!drcApproved,
       reportsCleared: approvedReportsCount >= requiredReportsCount,
       publicationsCleared: verifiedJournals >= 2 && verifiedConferences >= 2,
       preSubmissionCleared: thesis.preSubmissionSeminar?.status === 'CLEARED',
@@ -482,7 +482,7 @@ const awardDegree = async (req, res) => {
     if (!checks.courseworkCleared) failed.push('Coursework must be cleared');
     if (!checks.enrollmentVerified) failed.push('Scholar enrollment must be verified');
     if (!checks.synopsisApproved) failed.push('Synopsis must be approved');
-    if (!checks.drcCleared) failed.push('DRC evaluation must be approved');
+    if (!checks.rdcCleared) failed.push('Research Degree Committee (RDC) synopsis clearance must be approved');
     if (!checks.reportsCleared) failed.push(`At least ${requiredReportsCount} progress reports must be approved`);
     if (!checks.publicationsCleared) failed.push('At least 2 journals and 2 conferences must be verified');
     if (!checks.preSubmissionCleared) failed.push('Pre-submission seminar must be cleared');
@@ -606,7 +606,7 @@ const getEligibilityDetails = async (req, res) => {
       { name: 'Scholar Enrollment Verified', status: enrollmentVerified, details: enrollmentVerified ? 'Verified' : 'Enrollment registration must be verified by HOD' },
       { name: 'Doctoral Coursework Cleared', status: courseworkCleared, details: courseworkCleared ? 'Verified' : 'Coursework must be cleared by department' },
       { name: 'Research Synopsis Approved', status: synopsisApproved, details: synopsisApproved ? 'Approved' : 'Synopsis document review must be approved' },
-      { name: 'DRC Evaluation Cleared', status: drcCleared, details: drcCleared ? 'Approved' : 'Department Research Committee must approve synopsis' },
+      { name: 'Research Degree Committee (RDC) Synopsis Clearance', status: drcCleared, details: drcCleared ? 'Approved' : 'Research Degree Committee (RDC) must approve synopsis' },
       { name: `Active Research Duration (Min ${requiredMonths} Months)`, status: durationCleared, details: `${activeMonths} months completed (Required: ${requiredMonths} months for ${hasMphil ? 'M.Phil holder' : 'regular Ph.D.'})` },
       { name: `6-Month Progress Reports Approved (Min ${requiredReportsCount})`, status: reportsCleared, details: `${approvedReportsCount} / ${requiredReportsCount} reports cleared` },
       { name: 'Mandatory Research Publications Verified', status: publicationsCleared, details: `Journals: ${verifiedJournals}/2, Conferences: ${verifiedConferences}/2` },
@@ -704,13 +704,13 @@ const drcApprove = async (req, res) => {
 
     thesis.status = 'ACTIVE_RESEARCH';
     thesis.startDate = new Date();
-    thesis.auditLog.push({ action: 'DRC_APPROVED', note: `DRC approved by HOD ${req.user.name}` });
+    thesis.auditLog.push({ action: 'RDC_APPROVED', note: `Research Degree Committee (RDC) approved by HOD ${req.user.name}` });
     await thesis.save();
 
     await createNotification({
       recipient: thesis.scholarId,
-      title: '✅ DRC Synopsis Approved!',
-      message: `Congratulations! The Departmental Research Committee (DRC) has approved your research synopsis. You are now in the ACTIVE_RESEARCH phase.`,
+      title: '✅ RDC Synopsis Approved!',
+      message: `Congratulations! The Research Degree Committee (RDC) has approved your research synopsis. You are now in the ACTIVE_RESEARCH phase.`,
       type: 'SUCCESSFUL_ACTION',
       link: 'overview'
     });
@@ -1981,6 +1981,16 @@ const schedulePreSubmissionSeminar = async (req, res) => {
       return res.status(400).json({ message: 'Pre-Submission Thesis Draft package must be approved by Supervisor and HOD before scheduling the seminar.' });
     }
 
+    // Ensure mandatory Research Degree Committee (RDC) synopsis clearance has been completed and approved
+    const synopsisMilestone = await Milestone.findOne({ thesisId: thesis._id, type: 'SYNOPSIS' });
+    const DRCMeeting = require('../models/DRCMeeting');
+    const defaultRdcApproved = await DRCMeeting.findOne({ thesisId: thesis._id, status: 'APPROVED' });
+    if (synopsisMilestone?.status !== 'APPROVED' || !defaultRdcApproved) {
+      return res.status(400).json({ 
+        message: 'Pre-Submission Seminar cannot be scheduled. Mandatory Research Degree Committee (RDC) synopsis evaluation and approval must be completed first.' 
+      });
+    }
+
     const { scheduledDate, scheduledTime, venue, committeeMembers, remarks } = req.body;
     if (!scheduledDate || !scheduledTime || !venue) {
       return res.status(400).json({ message: 'Please specify Scheduled Date, Time, and Venue.' });
@@ -2171,7 +2181,7 @@ const provisionalSynopsisClear = async (req, res) => {
     thesis.startDate = new Date();
     thesis.auditLog.push({ 
       action: 'SYNOPSIS_PROVISIONALLY_CLEARED', 
-      note: `Synopsis provisionally cleared by HOD ${req.user.name}. Scholar fast-tracked to Active Research phase.` 
+      note: `Synopsis provisionally cleared by HOD ${req.user.name}. Default Research Degree Committee (RDC) requirement bypassed for fast-tracking to Active Research.` 
     });
     await thesis.save();
 
@@ -2182,7 +2192,7 @@ const provisionalSynopsisClear = async (req, res) => {
     await createNotification({
       recipient: thesis.scholarId,
       title: '⚠️ Synopsis Provisionally Cleared',
-      message: `Your research synopsis requirement has been provisionally cleared by the HOD. You are transitioned to the ACTIVE_RESEARCH phase, but you must upload and officially verify your synopsis before final pre-submission.`,
+      message: `Your research synopsis and default Research Degree Committee (RDC) requirement have been provisionally cleared by the HOD. You are transitioned to the ACTIVE_RESEARCH phase, but you must upload and officially clear your synopsis and RDC evaluation before pre-submission.`,
       type: 'INFO',
       link: 'overview'
     });
