@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Home, Users, FileText, BarChart2, Settings, LogOut, Bell, CheckCircle2, User, GraduationCap, ShieldCheck, Clock, XCircle, Layers, Award, Edit, File, Plus, Calendar, Search, BookOpen, UserCheck, Briefcase, Trash2 } from 'lucide-react';
+import { Home, Users, FileText, BarChart2, Settings, LogOut, Bell, CheckCircle2, User, GraduationCap, ShieldCheck, Clock, XCircle, Layers, Award, Edit, File, Plus, Calendar, Search, BookOpen, UserCheck, Briefcase, Trash2, Coins } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -15,6 +15,7 @@ import NotificationPanel from '../components/NotificationPanel';
 import ThemeToggle from '../components/ThemeToggle';
 import UnifiedScholarModal from '../components/UnifiedScholarModal';
 import PublicConfigTab from '../components/PublicConfigTab';
+import FundingManagementTab from '../components/FundingManagementTab';
 import DetailedReportsTab from '../components/DetailedReportsTab';
 import ScholarSearchTab from '../components/ScholarSearchTab';
 import { useGridControl } from '../hooks/useGridControl';
@@ -5479,6 +5480,8 @@ const adminNavItems = [
   { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
   { key: 'requests', label: 'Change Requests', Icon: Edit },
   { key: 'evaluation', label: 'External Evaluation', Icon: FileText },
+  { kind: 'section', label: '💰 Fellowships & Grants' },
+  { key: 'funding_management', label: 'Research Fellowships & Ledger', Icon: Coins },
   { kind: 'section', label: '⚙️ User & Portal Settings' },
   { key: 'users', label: 'Manage Department Users', Icon: Users },
   { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
@@ -5495,6 +5498,8 @@ const adminHODNavItems = [
   { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
   { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
   { key: 'defaulters', label: 'Defaulter Tracking', Icon: Clock },
+  { kind: 'section', label: '💰 Fellowships & Grants' },
+  { key: 'funding_management', label: 'Research Fellowships & Ledger', Icon: Coins },
   { kind: 'section', label: '⚖️ Requests' },
   { key: 'requests', label: 'Change Requests', Icon: Edit },
   { kind: 'section', label: '⚙️ User & Portal Settings' },
@@ -5912,6 +5917,7 @@ const AdminDashboard = () => {
     defaulters: 'Progress Report Defaulter Tracking',
     scholar_search: 'Search Scholar Details',
     detailed_reports: 'Detailed Academic Reports',
+    funding_management: 'Research Fellowships & Ledger',
     public_config: 'Public Portal Config'
   };
 
@@ -5964,6 +5970,7 @@ const AdminDashboard = () => {
       case 'evaluation': return <ExternalEvaluation theses={allTheses} onAuditLog={(id, action, note) => handleAction(id, 'audit', { action, note })} />;
       case 'scholar_search': return <ScholarSearchTab user={user} />;
       case 'detailed_reports': return <DetailedReportsTab user={user} />;
+      case 'funding_management': return <FundingManagementTab user={user} />;
       case 'public_config': return <PublicConfigTab user={user} />;
       default: return <div className="card"><h3 className="card-title">{titles[activeTab]}</h3><p style={{ color: 'var(--color-text-muted)', marginTop: 8 }}>Content coming soon.</p></div>;
     }

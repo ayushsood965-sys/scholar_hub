@@ -30,6 +30,7 @@ import {
   Mail,
   Globe,
   ChevronDown,
+  Award,
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { NotificationContext } from "../context/NotificationContext";
@@ -110,6 +111,9 @@ const roleNavConfig = {
     { key: "degreeNames", icon: Settings, label: "Degree Names" },
     { key: "semesters", icon: Settings, label: "Semesters" },
     { key: "semesterDegreeMap", icon: Shield, label: "Semester-Degree Map" },
+
+    { kind: "section", label: "💰 RESEARCH & FUNDING" },
+    { key: "funding", icon: Award, label: "University Funding Schemes" },
 
     { kind: "section", label: "⚖️ POLICY & LEAVE CONFIG" },
     { key: "policies", icon: Shield, label: "Policy Configuration" },

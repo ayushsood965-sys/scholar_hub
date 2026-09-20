@@ -7,6 +7,7 @@ const CollaborationCall = require('../models/CollaborationCall');
 const FundingAward = require('../models/FundingAward');
 const Partnership = require('../models/Partnership');
 const User = require('../models/User');
+const cacheManager = require('../utils/cacheManager');
 
 // ==========================================
 // RESEARCH LABS CRUD
@@ -171,24 +172,36 @@ const updateInquiry = async (req, res) => {
 
 const createFunding = async (req, res) => {
   try {
+    if (req.user && !['SUPER_ADMIN', 'ADMIN'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only University Super Administrators or Central Administrators can create master funding schemes.' });
+    }
+
     const {
-      title, agency, amount, duration, scope, status,
+      title, agency, amount, monthlyStipend, duration, scope, status,
       type, eligibilityDepartments, eligibilityCriteria,
       deadline, applicationUrl, contactEmail, documentsRequired,
-      fundingBody, recurrence
+      fundingBody, customFundingBody, recurrence
     } = req.body;
 
     if (!title || !agency || !amount || !duration || !scope) {
       return res.status(400).json({ message: 'All grant details are required' });
     }
 
+    const resolvedFundingBody = (fundingBody === 'Other' && customFundingBody && customFundingBody.trim())
+      ? customFundingBody.trim()
+      : (fundingBody || 'Other');
+
+    const resolvedStatus = status === 'Inactive' ? 'Inactive' : 'Active';
+    const resolvedStipend = monthlyStipend || (amount && amount.includes('/ Month') ? amount.split('+')[0].trim() : '');
+
     const funding = new FundingOpportunity({
       title,
       agency,
       amount,
+      monthlyStipend: resolvedStipend,
       duration,
       scope,
-      status: status || 'Applications Open',
+      status: resolvedStatus,
       type: type || 'Fellowship',
       eligibilityDepartments: eligibilityDepartments || [],
       eligibilityCriteria: eligibilityCriteria || '',
@@ -196,12 +209,15 @@ const createFunding = async (req, res) => {
       applicationUrl: applicationUrl || '',
       contactEmail: contactEmail || '',
       documentsRequired: documentsRequired || [],
-      fundingBody: fundingBody || 'Other',
+      fundingBody: resolvedFundingBody,
       recurrence: recurrence || 'One-time',
       createdBy: req.user ? req.user._id : null
     });
 
     await funding.save();
+    cacheManager.del('public:funding');
+    cacheManager.del('public:funding:all');
+    cacheManager.del('public:funding:active');
     res.status(201).json(funding);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -210,11 +226,15 @@ const createFunding = async (req, res) => {
 
 const updateFunding = async (req, res) => {
   try {
+    if (req.user && !['SUPER_ADMIN', 'ADMIN'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only University Super Administrators or Central Administrators can update master funding schemes.' });
+    }
+
     const {
-      title, agency, amount, duration, scope, status,
+      title, agency, amount, monthlyStipend, duration, scope, status,
       type, eligibilityDepartments, eligibilityCriteria,
       deadline, applicationUrl, contactEmail, documentsRequired,
-      fundingBody, recurrence
+      fundingBody, customFundingBody, recurrence
     } = req.body;
 
     const funding = await FundingOpportunity.findById(req.params.id);
@@ -223,9 +243,12 @@ const updateFunding = async (req, res) => {
     if (title) funding.title = title;
     if (agency) funding.agency = agency;
     if (amount) funding.amount = amount;
+    if (monthlyStipend !== undefined) funding.monthlyStipend = monthlyStipend;
     if (duration) funding.duration = duration;
     if (scope) funding.scope = scope;
-    if (status) funding.status = status;
+    if (status !== undefined) {
+      funding.status = status === 'Inactive' ? 'Inactive' : 'Active';
+    }
     if (type) funding.type = type;
     if (eligibilityDepartments !== undefined) funding.eligibilityDepartments = eligibilityDepartments;
     if (eligibilityCriteria !== undefined) funding.eligibilityCriteria = eligibilityCriteria;
@@ -233,10 +256,17 @@ const updateFunding = async (req, res) => {
     if (applicationUrl !== undefined) funding.applicationUrl = applicationUrl;
     if (contactEmail !== undefined) funding.contactEmail = contactEmail;
     if (documentsRequired !== undefined) funding.documentsRequired = documentsRequired;
-    if (fundingBody) funding.fundingBody = fundingBody;
+    if (fundingBody !== undefined) {
+      funding.fundingBody = (fundingBody === 'Other' && customFundingBody && customFundingBody.trim())
+        ? customFundingBody.trim()
+        : fundingBody;
+    }
     if (recurrence) funding.recurrence = recurrence;
 
     await funding.save();
+    cacheManager.del('public:funding');
+    cacheManager.del('public:funding:all');
+    cacheManager.del('public:funding:active');
     res.status(200).json(funding);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -245,8 +275,15 @@ const updateFunding = async (req, res) => {
 
 const deleteFunding = async (req, res) => {
   try {
+    if (req.user && !['SUPER_ADMIN', 'ADMIN'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only University Super Administrators or Central Administrators can delete master funding schemes.' });
+    }
+
     const funding = await FundingOpportunity.findByIdAndDelete(req.params.id);
     if (!funding) return res.status(404).json({ message: 'Funding opportunity not found' });
+    cacheManager.del('public:funding');
+    cacheManager.del('public:funding:all');
+    cacheManager.del('public:funding:active');
     res.status(200).json({ message: 'Funding opportunity deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -451,7 +488,7 @@ const deleteCollaborationCall = async (req, res) => {
 
 const createFundingAward = async (req, res) => {
   try {
-    const { scholarId, thesisId, fundingOpportunityId, awardTitle, amountSanctioned, amountDisbursed, startDate, endDate, status, renewalDate, remarks } = req.body;
+    const { scholarId, thesisId, fundingOpportunityId, awardTitle, monthlyStipend, amountSanctioned, amountDisbursed, startDate, endDate, status, renewalDate, remarks } = req.body;
     if (!scholarId || !awardTitle) {
       return res.status(400).json({ message: 'Scholar and Award Title are required' });
     }
@@ -463,6 +500,7 @@ const createFundingAward = async (req, res) => {
       thesisId: thesisId || null,
       fundingOpportunityId: fundingOpportunityId || null,
       awardTitle,
+      monthlyStipend: monthlyStipend || '',
       amountSanctioned: amountSanctioned || '',
       amountDisbursed: amountDisbursed || '',
       startDate: startDate || null,
@@ -509,7 +547,7 @@ const getFundingAwards = async (req, res) => {
 
 const updateFundingAward = async (req, res) => {
   try {
-    const { awardTitle, amountSanctioned, amountDisbursed, startDate, endDate, status, renewalDate, remarks, thesisId } = req.body;
+    const { awardTitle, monthlyStipend, amountSanctioned, amountDisbursed, startDate, endDate, status, renewalDate, remarks, thesisId } = req.body;
     const award = await FundingAward.findById(req.params.id);
     if (!award) return res.status(404).json({ message: 'Funding award not found' });
 
@@ -521,6 +559,7 @@ const updateFundingAward = async (req, res) => {
         await Thesis.findByIdAndUpdate(award.thesisId, { fundingSource: awardTitle });
       }
     }
+    if (monthlyStipend !== undefined) award.monthlyStipend = monthlyStipend;
     if (amountSanctioned !== undefined) award.amountSanctioned = amountSanctioned;
     if (amountDisbursed !== undefined) award.amountDisbursed = amountDisbursed;
     if (startDate !== undefined) award.startDate = startDate;
@@ -550,6 +589,203 @@ const deleteFundingAward = async (req, res) => {
     }
 
     res.status(200).json({ message: 'Funding award deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ==========================================
+// DISBURSEMENT LEDGER OPERATIONS
+// ==========================================
+
+const recalculateAwardDisbursed = (award) => {
+  if (!award.disbursementLedger || award.disbursementLedger.length === 0) {
+    award.amountDisbursed = '₹0 (0 Months)';
+    return;
+  }
+  const disbursedEntries = award.disbursementLedger.filter(e => e.status === 'DISBURSED');
+  const total = disbursedEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const count = disbursedEntries.length;
+  award.amountDisbursed = `₹${total.toLocaleString('en-IN')}${count > 0 ? ` (${count} Month${count > 1 ? 's' : ''})` : ''}`;
+};
+
+const addFundingDisbursement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { monthYear, amount, referenceNo, remarks, status, disbursedAt } = req.body;
+
+    if (!monthYear) {
+      return res.status(400).json({ message: 'Month & Year is required (e.g. "September 2026")' });
+    }
+
+    const award = await FundingAward.findById(id);
+    if (!award) return res.status(404).json({ message: 'Funding award not found' });
+
+    // Enforce scheme-level uniqueness: Same month cannot be disbursed multiple times in the same scheme
+    const normalizedMonth = monthYear.trim().toLowerCase();
+    const existingEntry = (award.disbursementLedger || []).find(
+      e => e.monthYear && e.monthYear.trim().toLowerCase() === normalizedMonth && e.status !== 'CANCELLED'
+    );
+
+    if (existingEntry) {
+      return res.status(400).json({
+        message: `Disbursement for "${monthYear}" already exists in this scheme (${award.awardTitle}). You cannot disburse to the same month multiple times within the same scheme.`
+      });
+    }
+
+    // Sanitize amount
+    let numAmount = typeof amount === 'number' ? amount : parseInt(String(amount || award.monthlyStipend).replace(/[^\d]/g, ''), 10);
+    if (!numAmount || isNaN(numAmount)) numAmount = 37000;
+
+    const newEntry = {
+      monthYear: monthYear.trim(),
+      amount: numAmount,
+      amountFormatted: `₹${numAmount.toLocaleString('en-IN')}`,
+      status: status || 'DISBURSED',
+      disbursedAt: disbursedAt ? new Date(disbursedAt) : new Date(),
+      referenceNo: referenceNo || '',
+      remarks: remarks || '',
+      disbursedBy: req.user ? req.user._id : null
+    };
+
+    if (!award.disbursementLedger) award.disbursementLedger = [];
+    award.disbursementLedger.unshift(newEntry); // newest on top
+
+    recalculateAwardDisbursed(award);
+    await award.save();
+
+    const populatedAward = await FundingAward.findById(id)
+      .populate('scholarId', 'name department profile')
+      .populate('thesisId', 'title')
+      .populate('fundingOpportunityId', 'title agency');
+
+    res.status(201).json(populatedAward);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const updateFundingDisbursement = async (req, res) => {
+  try {
+    const { id, disbursementId } = req.params;
+    const { monthYear, amount, referenceNo, remarks, status, disbursedAt } = req.body;
+
+    const award = await FundingAward.findById(id);
+    if (!award) return res.status(404).json({ message: 'Funding award not found' });
+
+    const entry = award.disbursementLedger.id(disbursementId);
+    if (!entry) return res.status(404).json({ message: 'Disbursement ledger entry not found' });
+
+    if (monthYear) {
+      const normalizedMonth = monthYear.trim().toLowerCase();
+      const duplicate = (award.disbursementLedger || []).find(
+        e => e._id.toString() !== String(disbursementId) && e.monthYear && e.monthYear.trim().toLowerCase() === normalizedMonth && e.status !== 'CANCELLED'
+      );
+      if (duplicate) {
+        return res.status(400).json({
+          message: `Another disbursement entry for "${monthYear}" already exists in this scheme (${award.awardTitle}).`
+        });
+      }
+      entry.monthYear = monthYear.trim();
+    }
+    if (amount !== undefined) {
+      const numAmount = typeof amount === 'number' ? amount : parseInt(String(amount).replace(/[^\d]/g, ''), 10);
+      entry.amount = numAmount;
+      entry.amountFormatted = `₹${numAmount.toLocaleString('en-IN')}`;
+    }
+    if (referenceNo !== undefined) entry.referenceNo = referenceNo;
+    if (remarks !== undefined) entry.remarks = remarks;
+    if (status) entry.status = status;
+    if (disbursedAt) entry.disbursedAt = new Date(disbursedAt);
+
+    recalculateAwardDisbursed(award);
+    await award.save();
+
+    const populatedAward = await FundingAward.findById(id)
+      .populate('scholarId', 'name department profile')
+      .populate('thesisId', 'title')
+      .populate('fundingOpportunityId', 'title agency');
+
+    res.status(200).json(populatedAward);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const deleteFundingDisbursement = async (req, res) => {
+  try {
+    const { id, disbursementId } = req.params;
+    const award = await FundingAward.findById(id);
+    if (!award) return res.status(404).json({ message: 'Funding award not found' });
+
+    award.disbursementLedger.pull({ _id: disbursementId });
+    recalculateAwardDisbursed(award);
+    await award.save();
+
+    const populatedAward = await FundingAward.findById(id)
+      .populate('scholarId', 'name department profile')
+      .populate('thesisId', 'title')
+      .populate('fundingOpportunityId', 'title agency');
+
+    res.status(200).json(populatedAward);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const batchDisburseMonth = async (req, res) => {
+  try {
+    const { monthYear, referenceNoPrefix, remarks } = req.body;
+    if (!monthYear) return res.status(400).json({ message: 'Month & Year is required' });
+
+    let filter = { status: 'ACTIVE' };
+    if (req.user && req.user.role === 'HOD' && req.user.department) {
+      const User = require('../models/User');
+      const deptScholars = await User.find({ department: req.user.department, role: 'STUDENT' }).select('_id');
+      filter.scholarId = { $in: deptScholars.map(s => s._id) };
+    }
+
+    const awards = await FundingAward.find(filter);
+    let updatedCount = 0;
+    let skippedCount = 0;
+    const normalizedMonth = monthYear.trim().toLowerCase();
+
+    for (const award of awards) {
+      if (!award.disbursementLedger) award.disbursementLedger = [];
+      const alreadyHasMonth = award.disbursementLedger.some(
+        e => e.monthYear && e.monthYear.trim().toLowerCase() === normalizedMonth && e.status !== 'CANCELLED'
+      );
+
+      if (!alreadyHasMonth) {
+        let numAmount = parseInt(String(award.monthlyStipend || '37000').replace(/[^\d]/g, ''), 10) || 37000;
+        const refNo = referenceNoPrefix ? `${referenceNoPrefix}-${Math.floor(1000 + Math.random() * 9000)}` : `DISB-${Math.floor(100000 + Math.random() * 900000)}`;
+
+        award.disbursementLedger.unshift({
+          monthYear: monthYear.trim(),
+          amount: numAmount,
+          amountFormatted: `₹${numAmount.toLocaleString('en-IN')}`,
+          status: 'DISBURSED',
+          disbursedAt: new Date(),
+          referenceNo: refNo,
+          remarks: remarks || `Disbursed for ${monthYear.trim()}`,
+          disbursedBy: req.user ? req.user._id : null
+        });
+
+        recalculateAwardDisbursed(award);
+        await award.save();
+        updatedCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+
+    res.status(200).json({
+      message: updatedCount > 0
+        ? `Successfully recorded disbursement for ${updatedCount} scholar(s) for ${monthYear}${skippedCount > 0 ? ` (${skippedCount} already disbursed in their scheme)` : ''}`
+        : `All active scholar(s) already have a disbursement recorded for ${monthYear} in their scheme. No duplicate entries were created.`,
+      updatedCount,
+      skippedCount
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -698,6 +934,10 @@ module.exports = {
   getFundingAwards,
   updateFundingAward,
   deleteFundingAward,
+  addFundingDisbursement,
+  updateFundingDisbursement,
+  deleteFundingDisbursement,
+  batchDisburseMonth,
   createPartnership,
   updatePartnership,
   deletePartnership,

@@ -32,6 +32,7 @@ const GenericPage = ({ title, description }) => {
   const [labs, setLabs] = useState([]);
   const [publications, setPublications] = useState([]);
   const [funding, setFunding] = useState([]);
+  const [fundingStats, setFundingStats] = useState({ totalOpportunities: 0, activeFellowshipsCount: 0, totalActivePool: '₹0' });
   const [events, setEvents] = useState([]);
   const [collabCalls, setCollabCalls] = useState([]);
   const [stats, setStats] = useState({ scholars: 0, guides: 0, publications: 0, awardedDegrees: 0, departments: 0 });
@@ -55,8 +56,12 @@ const GenericPage = ({ title, description }) => {
           setPublications(res.data);
         }
         if (title === 'Funding' || title === 'Search Results') {
-          const res = await axios.get(`${API_URL}/public/funding`);
-          setFunding(res.data);
+          const [fRes, fsRes] = await Promise.all([
+            axios.get(`${API_URL}/public/funding`),
+            axios.get(`${API_URL}/public/funding/stats`).catch(() => ({ data: null }))
+          ]);
+          setFunding(fRes.data || []);
+          if (fsRes?.data) setFundingStats(fsRes.data);
         }
         if (title === 'Events' || title === 'Search Results') {
           const res = await axios.get(`${API_URL}/public/events`);
@@ -410,19 +415,19 @@ const GenericPage = ({ title, description }) => {
       case "Funding":
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-            {/* Static Metrics Cards Row */}
+            {/* Dynamic Metrics Cards Row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
               <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>₹5.2 Crores</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>{fundingStats.totalActivePool || '₹0'}</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Active Funding Pool</div>
               </div>
               <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>18 Scholars</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Active Grants Supported</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>{fundingStats.activeFellowshipsCount ?? 0} Scholars</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Active Fellowships Supported</div>
               </div>
               <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>8 Partners</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Corporate Sponsors</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>{fundingStats.totalOpportunities ?? 0} Schemes</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', textAlign: 'center', fontWeight: 600 }}>Seeded Funding Paths</div>
               </div>
             </div>
 

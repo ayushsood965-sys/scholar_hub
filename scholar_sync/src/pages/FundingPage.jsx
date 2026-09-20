@@ -13,7 +13,7 @@ const FundingPage = () => {
   const [stats, setStats] = useState({
     totalOpportunities: 0,
     activeFellowshipsCount: 0,
-    totalActivePool: '₹5.2 Crores',
+    totalActivePool: '₹0',
     activeAwardsCount: 0
   });
   const [loading, setLoading] = useState(true);
@@ -95,15 +95,15 @@ const FundingPage = () => {
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', maxWidth: '900px', margin: '0 auto' }}>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>{stats.totalActivePool || '₹5.2 Crores'}</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#133A26' }}>{stats.totalActivePool || '₹0'}</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600 }}>Active Funding Pool</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>{stats.activeFellowshipsCount || 18} Scholars</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669' }}>{stats.activeFellowshipsCount ?? 0} Scholars</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600 }}>Active Fellowships Supported</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(19,58,38,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>{stats.totalOpportunities || 6} Schemes</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB' }}>{stats.totalOpportunities ?? 0} Schemes</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600 }}>Seeded Funding Paths</div>
               </div>
             </div>
@@ -163,11 +163,18 @@ const FundingPage = () => {
                   <div key={grant._id} className="card hover-trigger" style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.85)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setSelectedGrant(grant)}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.72rem', background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '12px', fontWeight: 600 }}>
-                        {grant.status || 'OPEN'}
+                        {grant.status === 'Active' ? 'Active Scheme' : grant.status}
                       </span>
-                      <span style={{ fontSize: '1rem', fontWeight: 800, color: '#133A26', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Coins size={16} /> {grant.amount}
-                      </span>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 800, color: '#133A26', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                          <Coins size={16} /> {grant.amount}
+                        </span>
+                        {grant.monthlyStipend && grant.monthlyStipend !== grant.amount && (
+                          <span style={{ fontSize: '0.74rem', color: '#0369A1', fontWeight: 600, display: 'block', marginTop: '2px' }}>
+                            Stipend: {grant.monthlyStipend}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div>
@@ -210,7 +217,9 @@ const FundingPage = () => {
           <div style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <span style={{ fontSize: '0.7rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '8px', fontWeight: 600 }}>{selectedGrant.status}</span>
+                <span style={{ fontSize: '0.7rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '8px', fontWeight: 600 }}>
+                  {selectedGrant.status === 'Active' ? 'Active Scheme' : selectedGrant.status}
+                </span>
                 <span style={{ fontSize: '0.7rem', background: '#F3F4F6', color: '#374151', padding: '2px 8px', borderRadius: '8px', marginLeft: '6px' }}>{selectedGrant.type}</span>
                 <h3 style={{ marginTop: '8px', marginBottom: 4, fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>{selectedGrant.title}</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>Agency: {selectedGrant.agency} ({selectedGrant.fundingBody})</p>
@@ -219,11 +228,17 @@ const FundingPage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: selectedGrant.monthlyStipend ? '1fr 1fr 1fr' : '1fr 1fr', gap: '12px', background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                 <div>
                   <strong style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Stipend/Amount Pool</strong>
                   <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#133A26' }}>{selectedGrant.amount}</span>
                 </div>
+                {selectedGrant.monthlyStipend && (
+                  <div>
+                    <strong style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Monthly Stipend Rate</strong>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0369A1' }}>{selectedGrant.monthlyStipend}</span>
+                  </div>
+                )}
                 <div>
                   <strong style={{ fontSize: '0.78rem', color: '#64748B', display: 'block' }}>Duration</strong>
                   <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#133A26' }}>{selectedGrant.duration} ({selectedGrant.recurrence || 'One-time'})</span>
@@ -277,11 +292,11 @@ const FundingPage = () => {
                 <button onClick={() => setSelectedGrant(null)} className="btn-outline" style={{ flex: 1 }}>Close Details</button>
                 {selectedGrant.applicationUrl ? (
                   <a href={selectedGrant.applicationUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ flex: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none', color: 'white' }}>
-                    Apply Online <ExternalLink size={16} />
+                    Official Portal & Guidelines <ExternalLink size={16} />
                   </a>
                 ) : (
-                  <a href={`mailto:${selectedGrant.contactEmail || 'grants@hpu.ac.in'}?subject=Application Inquiry: ${selectedGrant.title}`} className="btn-primary" style={{ flex: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none', color: 'white' }}>
-                    Email Inquiry <Mail size={16} />
+                  <a href={`mailto:${selectedGrant.contactEmail || 'deanstudies@hpu.ac.in'}?subject=Statutory Scheme Inquiry: ${selectedGrant.title}`} className="btn-primary" style={{ flex: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none', color: 'white' }}>
+                    Nodal Office Inquiry <Mail size={16} />
                   </a>
                 )}
               </div>

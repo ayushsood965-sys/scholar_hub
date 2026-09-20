@@ -22,6 +22,7 @@ import UniversityFacultiesTab from "../modules/admin/UniversityFacultiesTab";
 import SearchEditStudentTab from "../modules/admin/SearchEditStudentTab";
 import AppInstallLogsTab from "../modules/admin/AppInstallLogsTab";
 import EmailLogsTab from "../modules/admin/EmailLogsTab";
+import FundingMasterTab from "../modules/admin/FundingMasterTab";
 
 const SuperAdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -42,6 +43,7 @@ const SuperAdminDashboard = () => {
     degreeNames: "Degree Names",
     semesterDegreeMap: "Semester-Degree Mapping",
     semesters: "Semesters",
+    funding: "University Research Funding Schemes & Fellowships",
     holidays: "Holiday Calendar",
     departments: "Department Master",
     univFaculties: "University Faculty Master",
@@ -73,6 +75,7 @@ const SuperAdminDashboard = () => {
       {activeTab === "degreeNames" && <DegreeNameMasterTab />}
       {activeTab === "semesterDegreeMap" && <SemesterDegreeMappingTab />}
       {activeTab === "semesters" && <SemesterMasterTab />}
+      {activeTab === "funding" && <FundingMasterTab />}
       {activeTab === "holidays" && <HolidayCalendarTab />}
       {activeTab === "departments" && <DepartmentsTab />}
       {activeTab === "univFaculties" && <UniversityFacultiesTab />}

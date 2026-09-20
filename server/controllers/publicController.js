@@ -91,11 +91,13 @@ const getPublications = async (req, res) => {
 // GET /api/public/funding
 const getFunding = async (req, res) => {
   try {
-    const cacheKey = 'public:funding';
+    const includeInactive = req.query.includeInactive === 'true';
+    const cacheKey = includeInactive ? 'public:funding:all' : 'public:funding:active';
     const cached = cacheManager.get(cacheKey);
     if (cached) return res.status(200).json(cached);
 
-    const opportunities = await FundingOpportunity.find({}).sort('-createdAt').lean();
+    const filter = includeInactive ? {} : { status: 'Active' };
+    const opportunities = await FundingOpportunity.find(filter).sort('-createdAt').lean();
     cacheManager.set(cacheKey, opportunities, 180);
     res.status(200).json(opportunities);
   } catch (err) {
@@ -255,16 +257,112 @@ const getLabById = async (req, res) => {
   }
 };
 
+// Helper to parse currency/amount strings into numerical rupees
+const parseAmountToRupees = (amountStr, durationStr = '') => {
+  if (!amountStr || typeof amountStr !== 'string') return 0;
+  const cleanStr = amountStr.trim().toLowerCase();
+
+  // 1. Check for Crores / Cr (e.g. "₹5.2 Crores", "1.5 Cr")
+  const croreMatch = cleanStr.match(/([\d,.]+)\s*(?:cr|crore|crores)/i);
+  if (croreMatch) {
+    const val = parseFloat(croreMatch[1].replace(/,/g, ''));
+    if (!isNaN(val)) return Math.round(val * 10000000);
+  }
+
+  // 2. Check for Lakhs / Lacs (e.g. "₹45 Lakhs", "₹8 Lacs")
+  const lakhMatch = cleanStr.match(/([\d,.]+)\s*(?:lakh|lakhs|lac|lacs)/i);
+  if (lakhMatch) {
+    const val = parseFloat(lakhMatch[1].replace(/,/g, ''));
+    if (!isNaN(val)) return Math.round(val * 100000);
+  }
+
+  // 3. Check if recurring monthly (e.g. "₹37,000 / Month", "₹20,000/month")
+  const isMonthly = cleanStr.includes('/month') || cleanStr.includes('/ month') || cleanStr.includes('per month') || cleanStr.includes('p.m.');
+
+  // Extract primary digits
+  const numMatch = cleanStr.replace(/₹/g, '').replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+  if (!numMatch) return 0;
+  let baseValue = parseFloat(numMatch[0]);
+  if (isNaN(baseValue)) return 0;
+
+  if (isMonthly) {
+    let months = 12; // default 1 year
+    if (durationStr) {
+      const durClean = durationStr.toLowerCase();
+      const yearsMatch = durClean.match(/(\d+)\s*(?:year|years|yr|yrs)/);
+      const monthsMatch = durClean.match(/(\d+)\s*(?:month|months|mo)/);
+      if (yearsMatch) {
+        months = parseInt(yearsMatch[1], 10) * 12;
+      } else if (monthsMatch) {
+        months = parseInt(monthsMatch[1], 10);
+      }
+    }
+    return Math.round(baseValue * months);
+  }
+
+  return Math.round(baseValue);
+};
+
+// Helper to format numerical rupees to standard Indian denomination string
+const formatRupees = (amount) => {
+  if (!amount || amount <= 0) return '₹0';
+  if (amount >= 10000000) {
+    const cr = amount / 10000000;
+    return '₹' + (cr % 1 === 0 ? cr.toFixed(0) : cr.toFixed(2)) + ' Crores';
+  }
+  if (amount >= 100000) {
+    const lakhs = amount / 100000;
+    return '₹' + (lakhs % 1 === 0 ? lakhs.toFixed(0) : lakhs.toFixed(2)) + ' Lakhs';
+  }
+  return '₹' + amount.toLocaleString('en-IN');
+};
+
 const getFundingStats = async (req, res) => {
   try {
-    const opportunities = await FundingOpportunity.find({});
+    // Only Active schemes are considered for active university operational stats
+    const opportunities = await FundingOpportunity.find({ status: 'Active' });
     const activeAwards = await FundingAward.find({ status: 'ACTIVE' });
-    const activeScholarsCount = new Set(activeAwards.map(a => a.scholarId.toString())).size;
+    
+    // 1. Seeded Funding Paths = Total active schemes created at university
+    const totalOpportunities = opportunities.length;
+
+    // 2. Active Fellowship Supported = Distinct scholars enrolled in any scheme or award
+    const activeScholarsSet = new Set();
+    activeAwards.forEach(a => {
+      if (a.scholarId) activeScholarsSet.add(a.scholarId.toString());
+    });
+
+    const fundedTheses = await Thesis.find({ fundingSource: { $exists: true, $nin: ['', null] } }).select('scholarId').lean();
+    fundedTheses.forEach(t => {
+      if (t.scholarId) activeScholarsSet.add(t.scholarId.toString());
+    });
+    const activeFellowshipsCount = activeScholarsSet.size;
+
+    // 3. Active Funding Pool = Total financial pool across active schemes + direct sanctioned awards
+    let totalPoolRupees = 0;
+    opportunities.forEach(opp => {
+      totalPoolRupees += parseAmountToRupees(opp.amount, opp.duration);
+    });
+
+    // Also include any direct awards that are not tied to an existing scheme
+    activeAwards.forEach(award => {
+      if (!award.fundingOpportunityId && award.amountSanctioned) {
+        totalPoolRupees += parseAmountToRupees(award.amountSanctioned);
+      }
+    });
+
+    // If no schemes exist but active awards exist, use sum of sanctioned awards
+    if (totalPoolRupees === 0 && activeAwards.length > 0) {
+      activeAwards.forEach(award => {
+        totalPoolRupees += parseAmountToRupees(award.amountSanctioned);
+      });
+    }
 
     res.status(200).json({
-      totalOpportunities: opportunities.length,
-      activeFellowshipsCount: activeScholarsCount,
-      totalActivePool: "₹5.2 Crores",
+      totalOpportunities,
+      activeFellowshipsCount,
+      totalActivePool: formatRupees(totalPoolRupees),
+      totalActivePoolRaw: totalPoolRupees,
       activeAwardsCount: activeAwards.length
     });
   } catch (err) {

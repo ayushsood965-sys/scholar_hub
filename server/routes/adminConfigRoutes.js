@@ -23,6 +23,10 @@ const {
   getFundingAwards,
   updateFundingAward,
   deleteFundingAward,
+  addFundingDisbursement,
+  updateFundingDisbursement,
+  deleteFundingDisbursement,
+  batchDisburseMonth,
   createPartnership,
   updatePartnership,
   deletePartnership,
@@ -45,16 +49,20 @@ router.put('/inquiries/:id', updateInquiry);
 router.put('/inquiries/:id/assign', assignInquiry);
 router.put('/inquiries/:id/notes', addInquiryNote);
 
-// Funding
-router.post('/funding', createFunding);
-router.put('/funding/:id', updateFunding);
-router.delete('/funding/:id', deleteFunding);
+// Funding Schemes (Central University Master Schemes governed by Super Admin / Central Admin)
+router.post('/funding', authorize('SUPER_ADMIN', 'ADMIN'), createFunding);
+router.put('/funding/:id', authorize('SUPER_ADMIN', 'ADMIN'), updateFunding);
+router.delete('/funding/:id', authorize('SUPER_ADMIN', 'ADMIN'), deleteFunding);
 
-// Funding Awards
-router.post('/funding-awards', createFundingAward);
+// Funding Awards (HODs, Central Admins, and Super Admins can assign awards to scholars)
+router.post('/funding-awards', authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), createFundingAward);
 router.get('/funding-awards', getFundingAwards);
-router.put('/funding-awards/:id', updateFundingAward);
-router.delete('/funding-awards/:id', deleteFundingAward);
+router.put('/funding-awards/:id', authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), updateFundingAward);
+router.delete('/funding-awards/:id', authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), deleteFundingAward);
+router.post('/funding-awards/:id/disbursements', authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), addFundingDisbursement);
+router.put('/funding-awards/:id/disbursements/:disbursementId', authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), updateFundingDisbursement);
+router.delete('/funding-awards/:id/disbursements/:disbursementId', authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), deleteFundingDisbursement);
+router.post('/funding-awards/batch-disburse', authorize('SUPER_ADMIN', 'ADMIN', 'HOD'), batchDisburseMonth);
 
 // Partnerships
 router.post('/partnerships', createPartnership);

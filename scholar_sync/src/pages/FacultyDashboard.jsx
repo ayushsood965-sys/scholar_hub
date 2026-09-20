@@ -29,8 +29,11 @@ const supervisorNavItems = [
   { key: 'profile', label: 'Profile', Icon: User },
   { kind: 'section', label: '🎓 Scholar Management' },
   { key: 'scholars', label: 'My Scholars', Icon: Users },
-  { key: 'my_lab_funding', label: 'My Lab & Funding', Icon: Coins },
   { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+  { kind: 'section', label: '💰 Fellowships & Grants' },
+  { key: 'faculty_funding', label: 'Scholar Fellowships & Ledger', Icon: Coins },
+  { kind: 'section', label: '🏛️ Research Facility' },
+  { key: 'my_lab', label: 'Research Lab Center', Icon: Globe },
   { kind: 'section', label: '📅 Academic Activities' },
   { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
   { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
@@ -45,9 +48,12 @@ const hodNavItems = [
   { key: 'profile', label: 'Profile', Icon: User },
   { kind: 'section', label: '🎓 Scholar Management' },
   { key: 'dept', label: 'Department Scholars', Icon: Users },
-  { key: 'my_lab_funding', label: 'My Lab & Funding', Icon: Coins },
   { key: 'registrations', label: 'Registration Requests', Icon: ShieldCheck },
   { key: 'scholar_search', label: 'Search Scholars', Icon: Search },
+  { kind: 'section', label: '💰 Fellowships & Grants' },
+  { key: 'faculty_funding', label: 'Scholar Fellowships & Ledger', Icon: Coins },
+  { kind: 'section', label: '🏛️ Research Facility' },
+  { key: 'my_lab', label: 'Research Lab Center', Icon: Globe },
   { kind: 'section', label: '📅 Academic Activities' },
   { key: 'meetings', label: 'Guidance Meetings', Icon: Calendar },
   { key: 'detailed_reports', label: 'Detailed Reports', Icon: FileText },
@@ -58,11 +64,179 @@ const hodNavItems = [
   { key: 'public_config', label: 'Public Portal Config', Icon: Settings },
 ];
 
-const FacultyLabAndFundingTab = () => {
+const FacultyFundingTab = () => {
+  const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(true);
+  const [scholarAwards, setScholarAwards] = useState([]);
+  const [selectedAwardForLedger, setSelectedAwardForLedger] = useState(null);
+
+  const loadFunding = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/public/dashboard/faculty/funding`, getAuthHeader());
+      setScholarAwards(res.data || []);
+    } catch (err) {
+      console.error('Error fetching faculty scholars funding:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFunding();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="premium-preloader-container" style={{ padding: '40px 0' }}>
+        <div className="premium-preloader-spinner"></div>
+        <div className="premium-preloader-text">Loading Scholar Fellowships & Ledger...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)', borderRadius: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
+              <Coins size={22} /> Supervised Scholars Fellowships & Monthly Ledger
+            </h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--color-text-secondary)' }}>
+              Stipend rates, active tenure, and month-by-month disbursement ledger of your registered Ph.D. scholars.
+            </p>
+          </div>
+          <button onClick={loadFunding} className="btn-outline-small" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+            Refresh
+          </button>
+        </div>
+
+        {scholarAwards.length === 0 ? (
+          <div style={{ padding: '24px', background: 'var(--color-bg)', borderRadius: '12px', color: 'var(--color-text-muted)', fontSize: '0.88rem', textAlign: 'center' }}>
+            No active fellowship/stipend awards mapped to scholars under your guidance.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg)', textAlign: 'left' }}>
+                  <th style={{ padding: '12px 10px' }}>Scholar Name</th>
+                  <th style={{ padding: '12px 10px' }}>Award Scheme</th>
+                  <th style={{ padding: '12px 10px' }}>Monthly Stipend</th>
+                  <th style={{ padding: '12px 10px' }}>Total Sanctioned</th>
+                  <th style={{ padding: '12px 10px' }}>Disbursed So Far</th>
+                  <th style={{ padding: '12px 10px' }}>Status</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'right' }}>Monthly Ledger</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scholarAwards.map(award => (
+                  <tr key={award._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <td style={{ padding: '12px 10px', fontWeight: 700 }}>{award.scholarId?.name || 'N/A'}</td>
+                    <td style={{ padding: '12px 10px' }}>{award.awardTitle}</td>
+                    <td style={{ padding: '12px 10px', color: '#0369A1', fontWeight: 700 }}>
+                      {award.monthlyStipend || (award.amountSanctioned?.includes('/ Month') ? award.amountSanctioned : '₹37,000 / Month')}
+                    </td>
+                    <td style={{ padding: '12px 10px' }}>{award.amountSanctioned}</td>
+                    <td style={{ padding: '12px 10px', fontWeight: 600, color: '#166534' }}>{award.amountDisbursed || '₹0'}</td>
+                    <td style={{ padding: '12px 10px' }}>
+                      <span style={{ 
+                        fontSize: '0.7rem', 
+                        background: award.status === 'ACTIVE' ? '#D1FAE5' : award.status === 'PENDING_RENEWAL' ? '#FEF3C7' : '#F3F4F6',
+                        color: award.status === 'ACTIVE' ? '#065F46' : award.status === 'PENDING_RENEWAL' ? '#D97706' : '#374151',
+                        padding: '2px 8px', 
+                        borderRadius: '8px', 
+                        fontWeight: 700 
+                      }}>{award.status}</span>
+                    </td>
+                    <td style={{ padding: '12px 10px', textAlign: 'right' }}>
+                      <button
+                        onClick={() => setSelectedAwardForLedger(award)}
+                        className="btn-outline-small"
+                        style={{ fontSize: '0.75rem', padding: '5px 10px', borderColor: '#10B981', color: '#047857', background: '#ECFDF5', fontWeight: 600 }}
+                      >
+                        View Ledger ({award.disbursementLedger?.length || 0})
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Modal for Faculty to view Scholar Ledger */}
+      {selectedAwardForLedger && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '720px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.7rem', background: '#D1FAE5', color: '#065F46', padding: '3px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                  MONTHLY FELLOWSHIP PAYOUT RECORD
+                </span>
+                <h3 style={{ margin: '6px 0 2px', fontSize: '1.25rem', fontWeight: 800 }}>
+                  {selectedAwardForLedger.scholarId?.name}
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                  Scheme: <strong>{selectedAwardForLedger.awardTitle}</strong> | Monthly Rate: <strong>{selectedAwardForLedger.monthlyStipend}</strong>
+                </p>
+              </div>
+              <button onClick={() => setSelectedAwardForLedger(null)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', color: '#94A3B8', cursor: 'pointer' }}>&times;</button>
+            </div>
+
+            {(!selectedAwardForLedger.disbursementLedger || selectedAwardForLedger.disbursementLedger.length === 0) ? (
+              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
+                No disbursement entries recorded for this scholar yet.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--color-border)', background: 'var(--color-bg)', textAlign: 'left' }}>
+                      <th style={{ padding: '8px 10px' }}>Month & Year</th>
+                      <th style={{ padding: '8px 10px' }}>Amount</th>
+                      <th style={{ padding: '8px 10px' }}>Status</th>
+                      <th style={{ padding: '8px 10px' }}>Disbursed Date</th>
+                      <th style={{ padding: '8px 10px' }}>Reference / UTR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedAwardForLedger.disbursementLedger.map((entry, idx) => (
+                      <tr key={entry._id || idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td style={{ padding: '8px 10px', fontWeight: 700 }}>{entry.monthYear}</td>
+                        <td style={{ padding: '8px 10px', fontWeight: 700, color: '#166534' }}>
+                          {entry.amountFormatted || `₹${(entry.amount || 37000).toLocaleString('en-IN')}`}
+                        </td>
+                        <td style={{ padding: '8px 10px' }}>
+                          <span style={{ fontSize: '0.65rem', background: entry.status === 'DISBURSED' ? '#D1FAE5' : '#FEF3C7', color: entry.status === 'DISBURSED' ? '#065F46' : '#92400E', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>
+                            {entry.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 10px', color: 'var(--color-text-secondary)' }}>
+                          {entry.disbursedAt ? new Date(entry.disbursedAt).toLocaleDateString('en-IN') : 'N/A'}
+                        </td>
+                        <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: '#0369A1' }}>
+                          {entry.referenceNo || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FacultyLabTab = () => {
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
   const [lab, setLab] = useState(null);
-  const [scholarAwards, setScholarAwards] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [noteForm, setNoteForm] = useState({ inquiryId: '', text: '' });
   const [actionLoading, setActionLoading] = useState(false);
@@ -70,22 +244,19 @@ const FacultyLabAndFundingTab = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [labsRes, awardsRes, inquiriesRes] = await Promise.all([
+      const [labsRes, inquiriesRes] = await Promise.all([
         axios.get(`${API_URL}/public/labs`, getAuthHeader()),
-        axios.get(`${API_URL}/public/dashboard/faculty/funding`, getAuthHeader()),
         axios.get(`${API_URL}/public/dashboard/faculty/inquiries`, getAuthHeader())
       ]);
 
-      setScholarAwards(awardsRes.data || []);
       setInquiries(inquiriesRes.data || []);
-
       const myLab = labsRes.data.find(l => (l.leadId?._id || l.leadId) === user._id);
       if (myLab) {
         const detailRes = await axios.get(`${API_URL}/public/labs/${myLab._id}`);
         setLab(detailRes.data);
       }
     } catch (err) {
-      console.error('Error fetching faculty lab & funding data:', err);
+      console.error('Error fetching faculty lab data:', err);
     } finally {
       setLoading(false);
     }
@@ -116,14 +287,13 @@ const FacultyLabAndFundingTab = () => {
     return (
       <div className="premium-preloader-container" style={{ padding: '40px 0' }}>
         <div className="premium-preloader-spinner"></div>
-        <div className="premium-preloader-text">Loading Lab and Funding Desk...</div>
+        <div className="premium-preloader-text">Loading Research Lab Center...</div>
       </div>
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      
       {/* Lab Allocation */}
       <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
         <h3 className="card-title" style={{ marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
@@ -187,53 +357,6 @@ const FacultyLabAndFundingTab = () => {
                 )}
               </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Scholars Funding */}
-      <div className="card" style={{ padding: '24px', background: 'var(--color-surface)' }}>
-        <h3 className="card-title" style={{ marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#133A26' }}>
-          <Coins size={20} /> Supervised Scholars Fellowships
-        </h3>
-
-        {scholarAwards.length === 0 ? (
-          <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-            No active fellowship/stipend awards mapped to scholars under your guidance.
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Scholar Name</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Award Scheme</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Sanctioned Stipend</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Disbursed So Far</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scholarAwards.map(award => (
-                  <tr key={award._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '10px', fontWeight: 600 }}>{award.scholarId?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px' }}>{award.awardTitle}</td>
-                    <td style={{ padding: '10px' }}>{award.amountSanctioned}</td>
-                    <td style={{ padding: '10px' }}>{award.amountDisbursed || '₹0'}</td>
-                    <td style={{ padding: '10px' }}>
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        background: award.status === 'ACTIVE' ? '#D1FAE5' : award.status === 'PENDING_RENEWAL' ? '#FEF3C7' : '#F3F4F6',
-                        color: award.status === 'ACTIVE' ? '#065F46' : award.status === 'PENDING_RENEWAL' ? '#D97706' : '#374151',
-                        padding: '2px 8px', 
-                        borderRadius: '8px', 
-                        fontWeight: 700 
-                      }}>{award.status}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
       </div>
@@ -5064,7 +5187,7 @@ const FacultyDashboard = () => {
     if (subRole === 'HOD') fetchDeptTheses(); else fetchAssignedTheses();
   };
 
-  const titles = { overview: 'Faculty Dashboard', registrations: 'Registration Requests', coursework_approvals: 'Coursework Approvals', scholars: 'My Scholars', my_lab_funding: 'My Lab & Funding', reviews: 'Pending Reviews', dept: 'Department Scholars', meetings: 'Guidance Consultations & Meetings', requests: 'Student Change Requests Desk', profile: 'My Profile', defaulters: 'Progress Report Defaulters', scholar_search: 'Search Scholar Details', detailed_reports: 'Detailed Academic Reports', public_config: 'Public Portal Config' };
+  const titles = { overview: 'Faculty Dashboard', registrations: 'Registration Requests', coursework_approvals: 'Coursework Approvals', scholars: 'My Scholars', faculty_funding: 'Scholar Fellowships & Ledger', my_lab: 'Research Lab Center', my_lab_funding: 'My Lab & Funding', reviews: 'Pending Reviews', dept: 'Department Scholars', meetings: 'Guidance Consultations & Meetings', requests: 'Student Change Requests Desk', profile: 'My Profile', defaulters: 'Progress Report Defaulters', scholar_search: 'Search Scholar Details', detailed_reports: 'Detailed Academic Reports', public_config: 'Public Portal Config' };
 
   const renderContent = () => {
     if (activeTab === 'profile') {
@@ -5117,7 +5240,9 @@ const FacultyDashboard = () => {
         return <ScholarList theses={pendingTheses} onSelect={handleSelectThesis} title="Scholars Awaiting Coursework Approval" subRole={subRole} />;
       }
       case 'scholars': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="My Assigned Scholars" subRole={subRole} />;
-      case 'my_lab_funding': return <FacultyLabAndFundingTab />;
+      case 'faculty_funding': return <FacultyFundingTab />;
+      case 'my_lab': return <FacultyLabTab />;
+      case 'my_lab_funding': return <FacultyFundingTab />;
       case 'dept': return <ScholarList theses={allTheses} onSelect={handleSelectThesis} title="All Department Scholars" subRole={subRole} />;
       case 'meetings': return <MeetingsTab user={user} />;
       case 'reviews': return <PendingReviewsQueue theses={allTheses} user={user} />;

@@ -4,9 +4,14 @@ const FundingOpportunitySchema = new mongoose.Schema({
   title: { type: String, required: true },
   agency: { type: String, required: true },
   amount: { type: String, required: true },
+  monthlyStipend: { type: String, default: '' },
   duration: { type: String, required: true },
   scope: { type: String, required: true },
-  status: { type: String, default: 'Applications Open' },
+  status: { 
+    type: String, 
+    enum: ['Active', 'Inactive'], 
+    default: 'Active' 
+  },
   type: {
     type: String,
     enum: ['Fellowship', 'Project Grant', 'Travel Grant', 'Infrastructure', 'State Scholarship', 'Industry Sponsorship'],
@@ -20,7 +25,6 @@ const FundingOpportunitySchema = new mongoose.Schema({
   documentsRequired: [{ type: String }],
   fundingBody: {
     type: String,
-    enum: ['UGC', 'CSIR', 'DST', 'DBT', 'ICSSR', 'ICHR', 'DRDO', 'HIMCOSTE', 'HP State Govt', 'SERB', 'RUSA', 'Industry', 'University', 'Other'],
     default: 'Other'
   },
   recurrence: {

@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users, Lightbulb, Briefcase, Bookmark, Folder, Copyright, Eye, EyeOff, Shield, Globe, GraduationCap, ExternalLink } from 'lucide-react';
+import { Home, Book, Flag, FileText, Calendar, User, LogOut, Bell, ClipboardList, CheckCircle2, Clock, Upload, Lock, Award, Edit, File, Layers, Plus, AlertCircle, BookOpen, X, Trash2, UserCheck, Coins, Settings, Users, Lightbulb, Briefcase, Bookmark, Folder, Copyright, Eye, EyeOff, Shield, Globe, GraduationCap, ExternalLink, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { NotificationContext } from '../context/NotificationContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -1902,10 +1902,72 @@ const MyFundingAndLabTab = ({ thesis }) => {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '14px', fontSize: '0.82rem', color: 'var(--color-text-secondary)', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-                  <div>💰 <strong>Monthly Stipend / Amount:</strong> {award.amountSanctioned}</div>
-                  <div>💰 <strong>Total Disbursed:</strong> {award.amountDisbursed || '₹0'}</div>
-                  <div>📅 <strong>Start Date:</strong> {award.startDate ? new Date(award.startDate).toLocaleDateString() : 'N/A'}</div>
-                  <div>📅 <strong>End Date:</strong> {award.endDate ? new Date(award.endDate).toLocaleDateString() : 'N/A'}</div>
+                  <div>💰 <strong>Monthly Stipend:</strong> <span style={{ color: '#0369A1', fontWeight: 700 }}>{award.monthlyStipend || (award.amountSanctioned?.includes('/ Month') ? award.amountSanctioned : '₹37,000 / Month')}</span></div>
+                  <div>📊 <strong>Total Sanctioned:</strong> {award.amountSanctioned || 'N/A'}</div>
+                  <div>💵 <strong>Disbursed So Far:</strong> {award.amountDisbursed || '₹0'}</div>
+                  <div>📅 <strong>Tenure:</strong> {award.startDate ? new Date(award.startDate).toLocaleDateString() : 'N/A'} – {award.endDate ? new Date(award.endDate).toLocaleDateString() : 'N/A'}</div>
+                </div>
+
+                {/* Monthly Disbursement Ledger Table */}
+                <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h5 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={15} /> Monthly Fellowship Disbursement Ledger
+                    </h5>
+                    <span style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 700, background: '#DCFCE7', padding: '2px 8px', borderRadius: '8px' }}>
+                      {award.disbursementLedger?.length || 0} Months Logged
+                    </span>
+                  </div>
+
+                  {(!award.disbursementLedger || award.disbursementLedger.length === 0) ? (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '8px 0' }}>
+                      No monthly disbursement records logged yet. Your department office will record monthly payouts.
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto', background: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)', textAlign: 'left' }}>
+                            <th style={{ padding: '8px 12px' }}>Month & Year</th>
+                            <th style={{ padding: '8px 12px' }}>Stipend Rate</th>
+                            <th style={{ padding: '8px 12px' }}>Payment Status</th>
+                            <th style={{ padding: '8px 12px' }}>Disbursal Date</th>
+                            <th style={{ padding: '8px 12px' }}>Voucher / UTR Reference</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {award.disbursementLedger.map((entry, idx) => (
+                            <tr key={entry._id || idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                                {entry.monthYear}
+                              </td>
+                              <td style={{ padding: '8px 12px', fontWeight: 700, color: '#166534' }}>
+                                {entry.amountFormatted || `₹${(entry.amount || 37000).toLocaleString('en-IN')}`}
+                              </td>
+                              <td style={{ padding: '8px 12px' }}>
+                                <span style={{
+                                  fontSize: '0.65rem',
+                                  background: entry.status === 'DISBURSED' ? '#D1FAE5' : '#FEF3C7',
+                                  color: entry.status === 'DISBURSED' ? '#065F46' : '#92400E',
+                                  padding: '2px 6px',
+                                  borderRadius: '6px',
+                                  fontWeight: 700
+                                }}>
+                                  {entry.status === 'DISBURSED' ? 'PAID / CREDITED' : entry.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>
+                                {entry.disbursedAt ? new Date(entry.disbursedAt).toLocaleDateString('en-IN') : 'N/A'}
+                              </td>
+                              <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: '#0369A1' }}>
+                                {entry.referenceNo || '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 {award.remarks && (
@@ -3461,10 +3523,10 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
   const [fetchingChecklist, setFetchingChecklist] = useState(false);
 
   useEffect(() => {
-    if (!preMilestone && thesis?._id) {
+    if (thesis?._id) {
       setFetchingChecklist(true);
       Promise.all([
-        axios.get(`${API}/publications/thesis/${thesis._id}`, getAuthHeader()),
+        axios.get(`${API}/publications/thesis/${thesis._id}`, getAuthHeader()).catch(() => ({ data: [] })),
         axios.get(`${API}/lifecycle/drc/thesis/${thesis._id}`, getAuthHeader()).catch(() => ({ data: [] }))
       ])
         .then(([pubRes, drcRes]) => {
@@ -3474,7 +3536,7 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
         .catch(() => {})
         .finally(() => setFetchingChecklist(false));
     }
-  }, [preMilestone, thesis?._id]);
+  }, [thesis?._id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -3755,65 +3817,75 @@ const PreSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
         </p>
       </div>
 
-      {/* 1. Prerequisites Check (If preMilestone not generated) */}
-      {!preMilestone && (
-        <div className="card" style={{ borderLeft: '4px solid #EF4444' }}>
-          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#DC2626' }}>
-            🔒 Pre-Submission Prerequisites Locked
-          </h3>
-          <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 16 }}>
-            You must satisfy the following research timeline, progress report, and publication criteria to unlock rough draft submission:
-          </p>
+      {/* 1. Prerequisites Check (Permanently visible so candidate can verify compliance) */}
+      {(() => {
+        const allPrereqsCleared = (timeCleared && reportsCleared && pubsCleared && synopsisCleared) || !!preMilestone;
 
-          {fetchingChecklist ? (
-            <div style={{ padding: 12, color: '#64748B', fontSize: '0.85rem' }}>⏳ Checking eligibility criteria...</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Research Duration */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: timeCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: timeCleared ? '#065F46' : '#991B1B' }}>Research Time Elapsed</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredMonths} months ({hasMphil ? 'M.Phil Holder' : 'Regular Ph.D.'}) | Current: {diffMonths.toFixed(1)} months</div>
-                </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: timeCleared ? '#059669' : '#DC2626' }}>{timeCleared ? '✓ Cleared' : '⏳ Pending'}</span>
-              </div>
+        return (
+          <div className="card" style={{ 
+            borderLeft: allPrereqsCleared ? '4px solid #10B981' : '4px solid #EF4444',
+            background: allPrereqsCleared ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(255, 255, 255, 0.8) 100%)' : 'var(--color-surface)',
+            borderRadius: 16
+          }}>
+            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: allPrereqsCleared ? '#059669' : '#DC2626', margin: '0 0 8px 0' }}>
+              {allPrereqsCleared ? '✅ Pre-Submission Institutional Prerequisites (Fulfilled & Verified)' : '🔒 Pre-Submission Prerequisites Locked'}
+            </h3>
+            <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', marginBottom: 16 }}>
+              {allPrereqsCleared 
+                ? 'All mandatory institutional research tenure, progress reports, peer-reviewed publications, and synopsis requirements have been fulfilled. Your rough draft submission form is active below:'
+                : 'You must satisfy the following research timeline, progress report, and publication criteria to unlock rough draft submission:'}
+            </p>
 
-              {/* Progress Reports */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: reportsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: reportsCleared ? '#065F46' : '#991B1B' }}>Approved Progress Reports</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredReportsCount} approved reports | Current: {approvedReports} approved</div>
-                </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: reportsCleared ? '#059669' : '#DC2626' }}>{reportsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
-              </div>
-
-              {/* Research Outputs */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: pubsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: pubsCleared ? '#065F46' : '#991B1B' }}>Research Publications</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: 2 verified journals & 2 verified conferences | Current: {journals} journals, {conferences} conferences</div>
-                </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: pubsCleared ? '#059669' : '#DC2626' }}>{pubsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
-              </div>
-
-              {/* Research Synopsis & RDC Clearance */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: synopsisCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: synopsisCleared ? '#065F46' : '#991B1B' }}>Research Degree Committee (RDC) Synopsis Clearance</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
-                    Status: {synopsisCleared 
-                      ? 'Official RDC Synopsis Approval Cleared' 
-                      : (synopsisApproved 
-                          ? 'Awaiting Official RDC Meeting Approval' 
-                          : 'Pending Synopsis Document & Official RDC Approval')}
+            {fetchingChecklist ? (
+              <div style={{ padding: 12, color: '#64748B', fontSize: '0.85rem' }}>⏳ Checking eligibility criteria...</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Research Duration */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: timeCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: timeCleared ? '#065F46' : '#991B1B' }}>Research Time Elapsed</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredMonths} months ({hasMphil ? 'M.Phil Holder' : 'Regular Ph.D.'}) | Current: {diffMonths.toFixed(1)} months</div>
                   </div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: timeCleared ? '#059669' : '#DC2626' }}>{timeCleared ? '✓ Cleared' : '⏳ Pending'}</span>
                 </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: synopsisCleared ? '#059669' : '#DC2626' }}>{synopsisCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+
+                {/* Progress Reports */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: reportsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: reportsCleared ? '#065F46' : '#991B1B' }}>Approved Progress Reports</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: {requiredReportsCount} approved reports | Current: {approvedReports} approved</div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: reportsCleared ? '#059669' : '#DC2626' }}>{reportsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+                </div>
+
+                {/* Research Outputs */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: pubsCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: pubsCleared ? '#065F46' : '#991B1B' }}>Research Publications</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>Required: 2 verified journals & 2 verified conferences | Current: {journals} journals, {conferences} conferences</div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: pubsCleared ? '#059669' : '#DC2626' }}>{pubsCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+                </div>
+
+                {/* Research Synopsis & RDC Clearance */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: synopsisCleared ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: synopsisCleared ? '#065F46' : '#991B1B' }}>Research Degree Committee (RDC) Synopsis Clearance</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                      Status: {synopsisCleared 
+                        ? 'Official RDC Synopsis Approval Cleared' 
+                        : (synopsisApproved 
+                            ? 'Awaiting Official RDC Meeting Approval' 
+                            : 'Pending Synopsis Document & Official RDC Approval')}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: synopsisCleared ? '#059669' : '#DC2626' }}>{synopsisCleared ? '✓ Cleared' : '⏳ Pending'}</span>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
 
       {/* 2. Draft submission form (Rough Thesis Draft + Plagiarism Certificate) */}
       {preMilestone && (isPending || isRevision) && (
@@ -4345,17 +4417,77 @@ const FinalSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
   const activeStep = getActiveStep();
 
   const stepperSteps = [
-    { num: 1, label: 'Student Upload' },
-    { num: 2, label: 'Supervisor Sign-off' },
-    { num: 3, label: 'HOD Sign-off' },
-    { num: 4, label: 'External Evaluation' },
-    { num: 5, label: 'Viva-Voce Defense' }
+    { num: 1, label: 'Student Upload', desc: 'Final Bound Thesis Submission' },
+    { num: 2, label: 'Supervisor Sign-off', desc: 'Faculty Guide Verification' },
+    { num: 3, label: 'HOD Sign-off', desc: 'Department Head Clearance' },
+    { num: 4, label: 'External Evaluation', desc: 'University Examiner Review' },
+    { num: 5, label: 'Viva-Voce Defense', desc: 'Oral Defense Colloquium' },
+    { num: 6, label: 'Degree Award', desc: 'Conferral & Notification' }
   ];
+
+  const [expandedSteps, setExpandedSteps] = useState({});
+
+  const isStepExpanded = (stepNum) => {
+    if (expandedSteps[stepNum] !== undefined) {
+      return expandedSteps[stepNum];
+    }
+    return stepNum === activeStep;
+  };
+
+  const toggleStep = (stepNum) => {
+    setExpandedSteps(prev => ({
+      ...prev,
+      [stepNum]: !isStepExpanded(stepNum)
+    }));
+  };
+
+  const handleStepperClick = (stepNum) => {
+    setExpandedSteps(prev => ({
+      ...prev,
+      [stepNum]: true
+    }));
+    const el = document.getElementById(`student-substep-${stepNum}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  const setAllExpanded = (expand) => {
+    setExpandedSteps({
+      1: expand,
+      2: expand,
+      3: expand,
+      4: expand,
+      5: expand,
+      6: expand
+    });
+  };
+
+  const getLastRejectionRemark = (m, th) => {
+    const hist = getMilestoneHistory(m, th);
+    const rev = [...hist].reverse().find(h => 
+      (h.action && (h.action.includes('REJECT') || h.action.includes('REVISION') || h.action.includes('CORRECTION') || h.action.includes('UNSATISFACTORY')))
+    );
+    if (rev && rev.remarks) return rev.remarks;
+    if (m?.comments && m.comments.length > 0) {
+      const revComment = [...m.comments].reverse().find(c => {
+        const txt = (c.text || '').toLowerCase();
+        return txt.includes('reject') || txt.includes('revision') || txt.includes('correct') || txt.includes('change') || txt.includes('modify');
+      });
+      if (revComment) return revComment.text;
+    }
+    return 'Revisions requested by supervisory committee.';
+  };
+
+  const allHist = getMilestoneHistory(finalMilestone, thesis) || [];
+  const supervisorEvents = allHist.filter(h => h.actorRole === 'SUPERVISOR' || (h.action && h.action.includes('SUPERVISOR')));
+  const hodEvents = allHist.filter(h => h.actorRole === 'HOD' || (h.action && h.action.includes('HOD')));
+  const studentUploadEvents = allHist.filter(h => h.actorRole === 'STUDENT' || (h.action && h.action.includes('SUBMIT')));
 
   const renderStepperHeader = () => (
     <div className="progress-stepper">
       {stepperSteps.map((s, idx) => {
-        const isCompleted = activeStep > s.num;
+        const isCompleted = activeStep > s.num || (s.num === 6 && (activeStep === 6 || thesis.status === 'AWARDED'));
         const isActive = activeStep === s.num;
         
         let circleBg = '#E2E8F0';
@@ -4379,7 +4511,12 @@ const FinalSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
 
         return (
           <React.Fragment key={s.num}>
-            <div className="progress-stepper-step">
+            <div 
+              className="progress-stepper-step" 
+              onClick={() => handleStepperClick(s.num)}
+              title={`Click to inspect ${s.label} milestone`}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="progress-stepper-step-circle" style={{
                 background: circleBg,
                 border: circleBorder,
@@ -4448,155 +4585,749 @@ const FinalSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
           📚 Final Submission and Defense
         </h4>
         <p style={{ color: 'var(--color-text-secondary, #475569)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-          This tab displays all activities related to your final bound thesis submission, supervisor and HOD sign-offs, external examiner reviews, and public viva-voce defense.
+          This tab displays all activities across the 6 sub-milestones of your final bound thesis submission, supervisor and HOD sign-offs, external examiner reviews, viva-voce defense, and degree award. Click on any sub-milestone card or stepper circle above to expand and review all historical actions and pending forms.
         </p>
       </div>
 
       {renderStepperHeader()}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Dynamic Active Step Action Panel */}
-        <div className="card" style={{ borderLeft: '4px solid #1E40AF', padding: 'var(--final-sub-padding, 18px)', background: 'var(--color-bg, #F8FAFC)' }}>
-          {activeStep === 1 && (
-            <div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 1: Student Final Thesis Upload</h4>
-              {(finalMilestone.status === 'PENDING' || finalMilestone.status === 'REVISION_REQUIRED') ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
-                  <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>
-                    Please compile and upload your absolute final, hard-bound equivalent Ph.D. thesis document here. Ensure that all corrections, suggestions, and feedback received from the expert panel during your offline defense colloquium are fully incorporated.
-                  </p>
-                  {finalMilestone.status === 'REVISION_REQUIRED' && (
-                    <div style={{ padding: 10, background: '#FEF2F2', borderLeft: '3px solid #EF4444', borderRadius: 6, fontSize: '0.8rem', color: '#991B1B' }}>
-                      <strong>Correction Required:</strong> {getLastRejectionRemark(finalMilestone, thesis)}
-                    </div>
-                  )}
-                  <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
-                        Final Hard-Bound Equivalent Thesis (PDF format only) *
-                      </label>
-                      <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileFinalThesis(e.target.files[0])} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                      <button type="submit" className="btn-primary" disabled={submittingFinal} style={{ background: '#EA580C', padding: '10px 24px', display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {submittingFinal ? 'Uploading Final Thesis...' : '🚀 Submit Final Thesis Package'}
-                      </button>
-                    </div>
-                  </form>
+      {/* Accordion Controls Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0', flexWrap: 'wrap', gap: 8 }}>
+        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)' }}>
+          📑 Sub-Milestones Breakdown ({stepperSteps.length} Stages)
+        </span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button 
+            type="button" 
+            onClick={() => setAllExpanded(true)}
+            className="btn-outline" 
+            style={{ padding: '4px 10px', fontSize: '0.74rem', borderRadius: 6 }}
+          >
+            Expand All
+          </button>
+          <button 
+            type="button" 
+            onClick={() => setAllExpanded(false)}
+            className="btn-outline" 
+            style={{ padding: '4px 10px', fontSize: '0.74rem', borderRadius: 6 }}
+          >
+            Collapse All
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* ── SUB-MILESTONE 1: Student Final Thesis Upload ── */}
+        {(() => {
+          const stepNum = 1;
+          const isExpanded = isStepExpanded(stepNum);
+          const isCompleted = activeStep > 1 || (finalMilestone.submittedAt && finalMilestone.status !== 'REVISION_REQUIRED' && finalMilestone.status !== 'PENDING');
+          const isRevision = finalMilestone.status === 'REVISION_REQUIRED';
+          const isActive = activeStep === 1;
+
+          return (
+            <div 
+              id={`student-substep-${stepNum}`}
+              className="card sub-milestone-accordion-card"
+              style={{
+                padding: 0,
+                borderLeft: `4px solid ${isCompleted ? '#10B981' : isRevision ? '#EF4444' : isActive ? '#3B82F6' : '#CBD5E1'}`,
+                border: `1px solid ${isActive ? '#93C5FD' : isCompleted ? '#A7F3D0' : 'var(--color-border, #E2E8F0)'}`,
+                background: 'var(--color-surface, #FFFFFF)'
+              }}
+            >
+              <div 
+                className="sub-milestone-accordion-header"
+                onClick={() => toggleStep(stepNum)}
+                style={{
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  background: isActive ? 'rgba(59, 130, 246, 0.05)' : isCompleted ? 'rgba(16, 185, 129, 0.03)' : 'var(--color-bg, #F8FAFC)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: isCompleted ? '#D1FAE5' : isActive ? '#DBEAFE' : '#E2E8F0',
+                    color: isCompleted ? '#059669' : isActive ? '#1D4ED8' : '#64748B',
+                    border: `2px solid ${isCompleted ? '#10B981' : isActive ? '#3B82F6' : '#CBD5E1'}`
+                  }}>
+                    {isCompleted ? '✓' : 1}
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text, #0F172A)' }}>
+                    Step 1: Student Final Thesis Upload
+                  </span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    background: isCompleted ? '#D1FAE5' : isRevision ? '#FEE2E2' : '#DBEAFE',
+                    color: isCompleted ? '#065F46' : isRevision ? '#991B1B' : '#1E40AF'
+                  }}>
+                    {isCompleted ? '✓ Uploaded & Verified' : isRevision ? '⚠️ Revision Required' : '⏳ Awaiting Upload'}
+                  </span>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem', marginTop: 8 }}>
-                  <div><strong>Uploaded On:</strong> {new Date(finalMilestone.submittedAt || finalMilestone.updatedAt).toLocaleString()}</div>
-                  {finalMilestone.documentUrl && (
-                    <div style={{ marginTop: 4 }}>
-                      <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: '0.75rem', color: '#EA580C', borderColor: '#FDBA74' }}>
-                        📄 View Submitted Final Bound Thesis PDF
-                      </a>
-                    </div>
-                  )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary, #64748B)', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 600 }}>{isExpanded ? 'Hide' : 'Details'}</span>
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </div>
-              )}
-            </div>
-          )}
-
-          {activeStep === 2 && (
-            <div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 2: Supervisor Digital Sign-off</h4>
-              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                Thesis submitted on {finalMilestone.submittedAt ? new Date(finalMilestone.submittedAt).toLocaleString() : 'N/A'}. Awaiting supervisor signature review and approval.
               </div>
-            </div>
-          )}
 
-          {activeStep === 3 && (
-            <div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 3: HOD Final Digital Sign-off</h4>
-              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                Supervisor has signed off the thesis. Awaiting HOD final verification and clearance.
-              </div>
-            </div>
-          )}
-
-          {activeStep === 4 && (
-            <div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 4: External Examiner Evaluation</h4>
-              <div style={{ fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {thesis.dispatchDate ? (
-                  <div style={{ background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 6 }}>📬 Dispatch Details</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'var(--final-sub-grid-cols, 1fr 1fr)', gap: 'var(--final-sub-gap, 12px)', marginBottom: 8 }}>
-                      <div><strong>Dispatch Date:</strong> {new Date(thesis.dispatchDate).toLocaleDateString()}</div>
-                      <div><strong>Method:</strong> {thesis.dispatchMethod}</div>
-                      <div><strong>Tracking Ref:</strong> {thesis.dispatchTrackingNumber || 'None'}</div>
-                      <div><strong>Sent to:</strong> {thesis.externalEvaluationSentTo || 'External Examiners'}</div>
-                    </div>
-                    <div style={{ borderTop: '1px dashed var(--color-border, #E2E8F0)', paddingTop: 8, marginTop: 4 }}>
-                      {thesis.externalEvaluationStatus !== 'PENDING' ? (
-                        <div>
-                          <div><strong>Logged On:</strong> {thesis.externalEvaluationLoggedAt ? new Date(thesis.externalEvaluationLoggedAt).toLocaleString() : 'N/A'}</div>
-                          <div style={{ marginTop: 4, background: 'var(--color-surface)', padding: 8, borderRadius: 6, border: '1px solid var(--color-border, #E2E8F0)', fontStyle: 'italic' }}>
-                            "{thesis.externalEvaluationRemarks}"
-                          </div>
+              <div 
+                className="sub-milestone-accordion-body"
+                style={{
+                  maxHeight: isExpanded ? '2000px' : '0px',
+                  opacity: isExpanded ? 1 : 0,
+                  overflow: 'hidden',
+                  pointerEvents: isExpanded ? 'auto' : 'none'
+                }}
+              >
+                <div style={{ padding: '16px 18px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+                  {(finalMilestone.status === 'PENDING' || finalMilestone.status === 'REVISION_REQUIRED') ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <p style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.84rem', lineHeight: 1.5, margin: 0 }}>
+                        Please compile and upload your absolute final, hard-bound equivalent Ph.D. thesis document here. Ensure that all corrections, suggestions, and feedback received from the expert panel during your offline defense colloquium are fully incorporated.
+                      </p>
+                      {finalMilestone.status === 'REVISION_REQUIRED' && (
+                        <div style={{ padding: 12, background: '#FEF2F2', borderLeft: '4px solid #EF4444', borderRadius: 8, fontSize: '0.82rem', color: '#991B1B' }}>
+                          <strong>⚠️ Correction Required:</strong> {getLastRejectionRemark(finalMilestone, thesis)}
                         </div>
-                      ) : (
-                        <div style={{ color: '#0284C7', fontWeight: 700 }}>
-                          ⏳ Thesis package is currently under external evaluation. Awaiting examiner reports.
+                      )}
+                      <form onSubmit={handleFinalSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 6 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text-secondary, #475569)', marginBottom: 6 }}>
+                            Final Hard-Bound Equivalent Thesis (PDF format only) *
+                          </label>
+                          <input type="file" required accept=".pdf" className="form-input" onChange={e => setFileFinalThesis(e.target.files[0])} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                          <button type="submit" className="btn-primary" disabled={submittingFinal} style={{ background: '#EA580C', padding: '9px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                            {submittingFinal ? 'Uploading Final Thesis...' : '🚀 Submit Final Thesis Package'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, background: 'var(--color-bg, #F8FAFC)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', fontSize: '0.82rem' }}>
+                        <div><strong>Uploaded On:</strong> {new Date(finalMilestone.submittedAt || finalMilestone.updatedAt).toLocaleString()}</div>
+                        <div><strong>Current Status:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{finalMilestone.status}</span></div>
+                      </div>
+                      {finalMilestone.documentUrl && (
+                        <div style={{ marginTop: 4 }}>
+                          <a href={`${API_BASE_URL}${finalMilestone.documentUrl}`} target="_blank" rel="noreferrer" className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', fontSize: '0.8rem', color: '#EA580C', borderColor: '#FDBA74', background: '#FFF7ED', borderRadius: 8, fontWeight: 600, textDecoration: 'none' }}>
+                            📄 View & Download Submitted Final Bound Thesis PDF
+                          </a>
                         </div>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  <div style={{ color: 'var(--color-text-secondary, #64748B)' }}>
-                    Awaiting HOD/Academic Branch to dispatch the thesis package to external university examiners.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+                  )}
 
-          {activeStep === 5 && (
-            <div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#1E40AF' }}>Step 5: Viva-Voce Oral Defense Colloquium</h4>
-              
-              {thesis.vivaStatus !== 'NOT_SCHEDULED' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'var(--final-sub-grid-cols, 1fr 1fr)', gap: 'var(--final-sub-gap, 12px)', fontSize: '0.82rem', marginBottom: 12, background: 'var(--color-surface)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
-                  <div><strong>Date:</strong> {thesis.vivaDate ? new Date(thesis.vivaDate).toLocaleDateString() : 'N/A'}</div>
-                  <div><strong>Time:</strong> {thesis.vivaTime}</div>
-                  <div><strong>Venue:</strong> {thesis.vivaVenue}</div>
-                  <div><strong>Board Panel:</strong> {thesis.vivaPanel || 'None'}</div>
-                  <div><strong>Coordinator / Convenor:</strong> {thesis.vivaCoordinator || 'None'}</div>
-                  <div><strong>Meeting Link (Hybrid/Virtual):</strong> {thesis.vivaMeetingLink ? <a href={thesis.vivaMeetingLink} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', textDecoration: 'underline' }}>Join Viva Meeting</a> : 'Physical Only'}</div>
-                  {thesis.vivaRemarks && (
-                    <div style={{ gridColumn: 'span var(--final-sub-grid-cols, 2)', background: 'var(--color-bg)', padding: 8, borderRadius: 6, border: '1px solid var(--color-border, #E2E8F0)', marginTop: 4, fontStyle: 'italic' }}>
-                      "{thesis.vivaRemarks}"
+                  {studentUploadEvents.length > 0 && (
+                    <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px dashed var(--color-border, #E2E8F0)' }}>
+                      <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)', marginBottom: 6 }}>Submission History:</div>
+                      {studentUploadEvents.map((evt, eIdx) => (
+                        <div key={eIdx} style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)', marginBottom: 4, display: 'flex', gap: 6 }}>
+                          <span>•</span>
+                          <span><strong>{new Date(evt.timestamp).toLocaleDateString()}:</strong> {evt.remarks || 'Final thesis package uploaded.'}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              )}
-
-              {thesis.vivaStatus === 'UNSUCCESSFUL' && (
-                <div style={{ padding: 12, background: '#FEF2F2', borderLeft: '4px solid #EF4444', color: '#991B1B', borderRadius: 6, fontSize: '0.8rem', margin: '10px 0' }}>
-                  <strong>⚠️ Oral Defense Outcome: UNCLEARED</strong>. Your viva has been recorded as unsatisfactory. Contact HOD to reschedule the viva voce.
-                </div>
-              )}
-
-              {thesis.vivaStatus === 'NOT_SCHEDULED' && (
-                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                  External evaluation completed successfully! Awaiting HOD to schedule the final Viva-Voce defense session.
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeStep === 6 && (
-            <div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 800, color: '#059669' }}>Step 6: Evaluation Process Completed</h4>
-              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #64748B)' }}>
-                🎉 Congratulations! Your final bound thesis evaluation has been cleared and approved. Ph.D. degree has been awarded.
               </div>
             </div>
-          )}
-        </div>
+          );
+        })()}
+
+        {/* ── SUB-MILESTONE 2: Supervisor Digital Sign-off ── */}
+        {(() => {
+          const stepNum = 2;
+          const isExpanded = isStepExpanded(stepNum);
+          const isCompleted = activeStep > 2;
+          const isActive = activeStep === 2;
+          const isLocked = activeStep < 2;
+
+          return (
+            <div 
+              id={`student-substep-${stepNum}`}
+              className="card sub-milestone-accordion-card"
+              style={{
+                padding: 0,
+                borderLeft: `4px solid ${isCompleted ? '#10B981' : isActive ? '#3B82F6' : '#CBD5E1'}`,
+                border: `1px solid ${isActive ? '#93C5FD' : isCompleted ? '#A7F3D0' : 'var(--color-border, #E2E8F0)'}`,
+                background: 'var(--color-surface, #FFFFFF)'
+              }}
+            >
+              <div 
+                className="sub-milestone-accordion-header"
+                onClick={() => toggleStep(stepNum)}
+                style={{
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  background: isActive ? 'rgba(59, 130, 246, 0.05)' : isCompleted ? 'rgba(16, 185, 129, 0.03)' : 'var(--color-bg, #F8FAFC)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: isCompleted ? '#D1FAE5' : isActive ? '#DBEAFE' : '#E2E8F0',
+                    color: isCompleted ? '#059669' : isActive ? '#1D4ED8' : '#64748B',
+                    border: `2px solid ${isCompleted ? '#10B981' : isActive ? '#3B82F6' : '#CBD5E1'}`
+                  }}>
+                    {isCompleted ? '✓' : 2}
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text, #0F172A)' }}>
+                    Step 2: Supervisor Digital Sign-off
+                  </span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    background: isCompleted ? '#D1FAE5' : isActive ? '#DBEAFE' : '#F1F5F9',
+                    color: isCompleted ? '#065F46' : isActive ? '#1E40AF' : '#64748B'
+                  }}>
+                    {isCompleted ? '✓ Signed Off' : isActive ? '⏳ Awaiting Review' : '🔒 Locked'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary, #64748B)', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 600 }}>{isExpanded ? 'Hide' : 'Details'}</span>
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </div>
+
+              <div 
+                className="sub-milestone-accordion-body"
+                style={{
+                  maxHeight: isExpanded ? '2000px' : '0px',
+                  opacity: isExpanded ? 1 : 0,
+                  overflow: 'hidden',
+                  pointerEvents: isExpanded ? 'auto' : 'none'
+                }}
+              >
+                <div style={{ padding: '16px 18px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, background: 'var(--color-bg, #F8FAFC)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', fontSize: '0.82rem', marginBottom: 12 }}>
+                    <div><strong>Faculty Supervisor:</strong> {thesis.supervisorId?.name || 'Assigned Research Supervisor'}</div>
+                    <div><strong>Supervisor Email:</strong> {thesis.supervisorId?.email || 'N/A'}</div>
+                    <div><strong>Department:</strong> {thesis.supervisorId?.department || thesis.department || 'N/A'}</div>
+                    <div><strong>Sign-off Status:</strong> {isCompleted ? <span style={{ color: '#059669', fontWeight: 700 }}>Approved & Signed Off</span> : isActive ? <span style={{ color: '#1E40AF', fontWeight: 700 }}>Under Review</span> : <span style={{ color: '#64748B' }}>Pending Thesis Upload</span>}</div>
+                  </div>
+
+                  {isCompleted ? (
+                    <div style={{ padding: 12, background: '#ECFDF5', borderLeft: '4px solid #10B981', borderRadius: 8, fontSize: '0.82rem', color: '#065F46' }}>
+                      ✓ <strong>Supervisor Digital Clearance Confirmed:</strong> Your supervisor has verified the final bound thesis and granted official digital clearance to forward the document to the Head of Department.
+                    </div>
+                  ) : isActive ? (
+                    <div style={{ padding: 12, background: '#EFF6FF', borderLeft: '4px solid #3B82F6', borderRadius: 8, fontSize: '0.82rem', color: '#1E40AF' }}>
+                      ⏳ Thesis was submitted on <strong>{finalMilestone.submittedAt ? new Date(finalMilestone.submittedAt).toLocaleString() : 'recently'}</strong>. It is currently in your supervisor's review queue.
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.82rem' }}>
+                      This step will activate automatically once you submit the final bound thesis package in Step 1.
+                    </div>
+                  )}
+
+                  {supervisorEvents.length > 0 && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--color-border, #E2E8F0)' }}>
+                      <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)', marginBottom: 6 }}>Supervisor Action Logs:</div>
+                      {supervisorEvents.map((evt, eIdx) => (
+                        <div key={eIdx} style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)', marginBottom: 4, display: 'flex', gap: 6 }}>
+                          <span>•</span>
+                          <span><strong>{new Date(evt.timestamp).toLocaleString()} - {evt.action}:</strong> "{evt.remarks || 'No remarks provided'}"</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SUB-MILESTONE 3: HOD Final Digital Sign-off ── */}
+        {(() => {
+          const stepNum = 3;
+          const isExpanded = isStepExpanded(stepNum);
+          const isCompleted = activeStep > 3;
+          const isActive = activeStep === 3;
+
+          return (
+            <div 
+              id={`student-substep-${stepNum}`}
+              className="card sub-milestone-accordion-card"
+              style={{
+                padding: 0,
+                borderLeft: `4px solid ${isCompleted ? '#10B981' : isActive ? '#3B82F6' : '#CBD5E1'}`,
+                border: `1px solid ${isActive ? '#93C5FD' : isCompleted ? '#A7F3D0' : 'var(--color-border, #E2E8F0)'}`,
+                background: 'var(--color-surface, #FFFFFF)'
+              }}
+            >
+              <div 
+                className="sub-milestone-accordion-header"
+                onClick={() => toggleStep(stepNum)}
+                style={{
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  background: isActive ? 'rgba(59, 130, 246, 0.05)' : isCompleted ? 'rgba(16, 185, 129, 0.03)' : 'var(--color-bg, #F8FAFC)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: isCompleted ? '#D1FAE5' : isActive ? '#DBEAFE' : '#E2E8F0',
+                    color: isCompleted ? '#059669' : isActive ? '#1D4ED8' : '#64748B',
+                    border: `2px solid ${isCompleted ? '#10B981' : isActive ? '#3B82F6' : '#CBD5E1'}`
+                  }}>
+                    {isCompleted ? '✓' : 3}
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text, #0F172A)' }}>
+                    Step 3: HOD Final Digital Sign-off
+                  </span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    background: isCompleted ? '#D1FAE5' : isActive ? '#DBEAFE' : '#F1F5F9',
+                    color: isCompleted ? '#065F46' : isActive ? '#1E40AF' : '#64748B'
+                  }}>
+                    {isCompleted ? '✓ Cleared by HOD' : isActive ? '⏳ Awaiting HOD Sign-off' : '🔒 Locked'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary, #64748B)', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 600 }}>{isExpanded ? 'Hide' : 'Details'}</span>
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </div>
+
+              <div 
+                className="sub-milestone-accordion-body"
+                style={{
+                  maxHeight: isExpanded ? '2000px' : '0px',
+                  opacity: isExpanded ? 1 : 0,
+                  overflow: 'hidden',
+                  pointerEvents: isExpanded ? 'auto' : 'none'
+                }}
+              >
+                <div style={{ padding: '16px 18px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, background: 'var(--color-bg, #F8FAFC)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', fontSize: '0.82rem', marginBottom: 12 }}>
+                    <div><strong>Authority:</strong> Head of Department (HOD)</div>
+                    <div><strong>Department:</strong> {thesis.department || 'Academic Department'}</div>
+                    <div><strong>HOD Clearance Status:</strong> {isCompleted ? <span style={{ color: '#059669', fontWeight: 700 }}>Cleared & Dispatched</span> : isActive ? <span style={{ color: '#1E40AF', fontWeight: 700 }}>Pending HOD Action</span> : <span style={{ color: '#64748B' }}>Awaiting Step 2</span>}</div>
+                  </div>
+
+                  {isCompleted ? (
+                    <div style={{ padding: 12, background: '#ECFDF5', borderLeft: '4px solid #10B981', borderRadius: 8, fontSize: '0.82rem', color: '#065F46' }}>
+                      ✓ <strong>Department Head Sign-off Cleared:</strong> HOD has verified the digital endorsement from your supervisor and formally cleared your thesis for external university evaluation dispatch.
+                    </div>
+                  ) : isActive ? (
+                    <div style={{ padding: 12, background: '#EFF6FF', borderLeft: '4px solid #3B82F6', borderRadius: 8, fontSize: '0.82rem', color: '#1E40AF' }}>
+                      ⏳ Supervisor has signed off your thesis package. The final submission is currently awaiting final clearance and dispatch sign-off by the Head of Department.
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.82rem' }}>
+                      This step will unlock after supervisor approval in Step 2.
+                    </div>
+                  )}
+
+                  {hodEvents.length > 0 && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--color-border, #E2E8F0)' }}>
+                      <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)', marginBottom: 6 }}>HOD Action Logs:</div>
+                      {hodEvents.map((evt, eIdx) => (
+                        <div key={eIdx} style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary, #475569)', marginBottom: 4, display: 'flex', gap: 6 }}>
+                          <span>•</span>
+                          <span><strong>{new Date(evt.timestamp).toLocaleString()} - {evt.action}:</strong> "{evt.remarks || 'Approved and forwarded.'}"</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SUB-MILESTONE 4: External Examiner Evaluation ── */}
+        {(() => {
+          const stepNum = 4;
+          const isExpanded = isStepExpanded(stepNum);
+          const isCompleted = activeStep > 4 || thesis.externalEvaluationStatus === 'SUCCESSFUL';
+          const isActive = activeStep === 4;
+          const isDispatched = !!thesis.dispatchDate;
+          const isFailed = thesis.externalEvaluationStatus === 'FAILED';
+
+          return (
+            <div 
+              id={`student-substep-${stepNum}`}
+              className="card sub-milestone-accordion-card"
+              style={{
+                padding: 0,
+                borderLeft: `4px solid ${isCompleted ? '#10B981' : isFailed ? '#EF4444' : isActive ? '#3B82F6' : '#CBD5E1'}`,
+                border: `1px solid ${isActive ? '#93C5FD' : isCompleted ? '#A7F3D0' : 'var(--color-border, #E2E8F0)'}`,
+                background: 'var(--color-surface, #FFFFFF)'
+              }}
+            >
+              <div 
+                className="sub-milestone-accordion-header"
+                onClick={() => toggleStep(stepNum)}
+                style={{
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  background: isActive ? 'rgba(59, 130, 246, 0.05)' : isCompleted ? 'rgba(16, 185, 129, 0.03)' : 'var(--color-bg, #F8FAFC)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: isCompleted ? '#D1FAE5' : isFailed ? '#FEE2E2' : isActive ? '#DBEAFE' : '#E2E8F0',
+                    color: isCompleted ? '#059669' : isFailed ? '#991B1B' : isActive ? '#1D4ED8' : '#64748B',
+                    border: `2px solid ${isCompleted ? '#10B981' : isFailed ? '#EF4444' : isActive ? '#3B82F6' : '#CBD5E1'}`
+                  }}>
+                    {isCompleted ? '✓' : 4}
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text, #0F172A)' }}>
+                    Step 4: External Examiner Evaluation
+                  </span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    background: isCompleted ? '#D1FAE5' : isFailed ? '#FEE2E2' : isDispatched ? '#DBEAFE' : '#FEF3C7',
+                    color: isCompleted ? '#065F46' : isFailed ? '#991B1B' : isDispatched ? '#1E40AF' : '#92400E'
+                  }}>
+                    {isCompleted ? '✓ Evaluation Cleared' : isFailed ? '❌ Revisions Required' : isDispatched ? '📬 Dispatched (Under Review)' : '⏳ Awaiting Dispatch'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary, #64748B)', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 600 }}>{isExpanded ? 'Hide' : 'Details'}</span>
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </div>
+
+              <div 
+                className="sub-milestone-accordion-body"
+                style={{
+                  maxHeight: isExpanded ? '2000px' : '0px',
+                  opacity: isExpanded ? 1 : 0,
+                  overflow: 'hidden',
+                  pointerEvents: isExpanded ? 'auto' : 'none'
+                }}
+              >
+                <div style={{ padding: '16px 18px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+                  {thesis.dispatchDate ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ background: 'var(--color-bg, #F8FAFC)', padding: 14, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--color-text-secondary)', marginBottom: 8 }}>
+                          📬 Official University Dispatch Details
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px', fontSize: '0.82rem' }}>
+                          <div><strong>Dispatch Date:</strong> {new Date(thesis.dispatchDate).toLocaleDateString()}</div>
+                          <div><strong>Dispatch Mode:</strong> {thesis.dispatchMethod || 'Speed Post'}</div>
+                          <div><strong>Tracking Reference:</strong> {thesis.dispatchTrackingNumber || 'N/A'}</div>
+                          <div><strong>Dispatched To:</strong> {thesis.externalEvaluationSentTo || 'External Examiners'}</div>
+                        </div>
+                      </div>
+
+                      {thesis.externalEvaluationStatus !== 'PENDING' ? (
+                        <div style={{ background: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#ECFDF5' : '#FEF2F2', padding: 14, borderRadius: 8, border: `1px solid ${thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#A7F3D0' : '#FECACA'}` }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                            <strong style={{ color: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#065F46' : '#991B1B', fontSize: '0.85rem' }}>
+                              {thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '✅ External Adjudication: SUCCESSFUL (Pass)' : '❌ External Adjudication: REVISIONS REQUIRED'}
+                            </strong>
+                            <span style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                              Logged: {thesis.externalEvaluationLoggedAt ? new Date(thesis.externalEvaluationLoggedAt).toLocaleString() : 'N/A'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: thesis.externalEvaluationStatus === 'SUCCESSFUL' ? '#047857' : '#B91C1C', fontStyle: 'italic', background: 'rgba(255, 255, 255, 0.6)', padding: 10, borderRadius: 6, marginTop: 6 }}>
+                            "{thesis.externalEvaluationRemarks || 'Examiner reports verified.'}"
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ padding: 12, background: '#EFF6FF', borderLeft: '4px solid #3B82F6', borderRadius: 8, fontSize: '0.82rem', color: '#1E40AF' }}>
+                          ⏳ Your thesis is currently being adjudicated by university external examiners. Once examiners submit their reports, HOD will log the outcome and unlock the Viva-Voce defense session.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.82rem' }}>
+                      {activeStep >= 4 
+                        ? 'Awaiting HOD / Academic Branch to dispatch the bound thesis package to external university examiners.' 
+                        : 'This step unlocks after HOD final sign-off in Step 3.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SUB-MILESTONE 5: Viva-Voce Oral Defense Colloquium ── */}
+        {(() => {
+          const stepNum = 5;
+          const isExpanded = isStepExpanded(stepNum);
+          const isCompleted = activeStep > 5 || thesis.vivaStatus === 'SUCCESSFUL';
+          const isActive = activeStep === 5;
+          const isScheduled = thesis.vivaStatus === 'SCHEDULED';
+          const isUnsuccessful = thesis.vivaStatus === 'UNSUCCESSFUL';
+
+          return (
+            <div 
+              id={`student-substep-${stepNum}`}
+              className="card sub-milestone-accordion-card"
+              style={{
+                padding: 0,
+                borderLeft: `4px solid ${isCompleted ? '#10B981' : isUnsuccessful ? '#EF4444' : isActive ? '#3B82F6' : '#CBD5E1'}`,
+                border: `1px solid ${isActive ? '#93C5FD' : isCompleted ? '#A7F3D0' : 'var(--color-border, #E2E8F0)'}`,
+                background: 'var(--color-surface, #FFFFFF)'
+              }}
+            >
+              <div 
+                className="sub-milestone-accordion-header"
+                onClick={() => toggleStep(stepNum)}
+                style={{
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  background: isActive ? 'rgba(59, 130, 246, 0.05)' : isCompleted ? 'rgba(16, 185, 129, 0.03)' : 'var(--color-bg, #F8FAFC)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: isCompleted ? '#D1FAE5' : isUnsuccessful ? '#FEE2E2' : isActive ? '#DBEAFE' : '#E2E8F0',
+                    color: isCompleted ? '#059669' : isUnsuccessful ? '#991B1B' : isActive ? '#1D4ED8' : '#64748B',
+                    border: `2px solid ${isCompleted ? '#10B981' : isUnsuccessful ? '#EF4444' : isActive ? '#3B82F6' : '#CBD5E1'}`
+                  }}>
+                    {isCompleted ? '✓' : 5}
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text, #0F172A)' }}>
+                    Step 5: Viva-Voce Oral Defense Colloquium
+                  </span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    background: isCompleted ? '#D1FAE5' : isUnsuccessful ? '#FEE2E2' : isScheduled ? '#DBEAFE' : '#F1F5F9',
+                    color: isCompleted ? '#065F46' : isUnsuccessful ? '#991B1B' : isScheduled ? '#1E40AF' : '#64748B'
+                  }}>
+                    {isCompleted ? '✓ Defense Passed' : isUnsuccessful ? '❌ Defense Unsatisfactory' : isScheduled ? '📅 Defense Scheduled' : '🔒 Pending Evaluation'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary, #64748B)', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 600 }}>{isExpanded ? 'Hide' : 'Details'}</span>
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </div>
+
+              <div 
+                className="sub-milestone-accordion-body"
+                style={{
+                  maxHeight: isExpanded ? '2000px' : '0px',
+                  opacity: isExpanded ? 1 : 0,
+                  overflow: 'hidden',
+                  pointerEvents: isExpanded ? 'auto' : 'none'
+                }}
+              >
+                <div style={{ padding: '16px 18px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+                  {thesis.vivaStatus !== 'NOT_SCHEDULED' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px', fontSize: '0.82rem', background: 'var(--color-bg, #F8FAFC)', padding: 14, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
+                        <div><strong>Defense Date:</strong> {thesis.vivaDate ? new Date(thesis.vivaDate).toLocaleDateString() : 'N/A'}</div>
+                        <div><strong>Time:</strong> {thesis.vivaTime || 'N/A'}</div>
+                        <div><strong>Venue:</strong> {thesis.vivaVenue || 'Colloquium Hall'}</div>
+                        <div><strong>Board Committee:</strong> {thesis.vivaPanel || 'DRC Committee & External Examiner'}</div>
+                        <div><strong>Coordinator:</strong> {thesis.vivaCoordinator || 'Department Convenor'}</div>
+                        <div><strong>Virtual / Hybrid Link:</strong> {thesis.vivaMeetingLink ? <a href={thesis.vivaMeetingLink} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', textDecoration: 'underline' }}>Join Viva Meeting</a> : 'Physical Colloquium'}</div>
+                      </div>
+
+                      {thesis.vivaStatus === 'SUCCESSFUL' && (
+                        <div style={{ padding: 14, background: '#ECFDF5', borderLeft: '4px solid #10B981', borderRadius: 8, fontSize: '0.82rem', color: '#065F46' }}>
+                          <div style={{ fontWeight: 800, marginBottom: 4 }}>🎉 Oral Defense Cleared (Satisfactory Performance)</div>
+                          <div><strong>Board Committee Decision:</strong> "{thesis.vivaRemarks || 'Candidate defended the Ph.D. thesis successfully before the examination committee.'}"</div>
+                        </div>
+                      )}
+
+                      {thesis.vivaStatus === 'UNSUCCESSFUL' && (
+                        <div style={{ padding: 14, background: '#FEF2F2', borderLeft: '4px solid #EF4444', borderRadius: 8, fontSize: '0.82rem', color: '#991B1B' }}>
+                          <div style={{ fontWeight: 800, marginBottom: 4 }}>⚠️ Oral Defense Outcome: Unsatisfactory</div>
+                          <div><strong>Board Committee Decision:</strong> "{thesis.vivaRemarks || 'Defense colloquium needs to be re-conducted.'}"</div>
+                        </div>
+                      )}
+
+                      {thesis.vivaStatus === 'SCHEDULED' && (
+                        <div style={{ padding: 12, background: '#EFF6FF', borderLeft: '4px solid #3B82F6', borderRadius: 8, fontSize: '0.82rem', color: '#1E40AF' }}>
+                          📅 <strong>Viva-Voce Colloquium Scheduled:</strong> Please ensure your PowerPoint presentation and thesis defense slides are ready. Arrive at least 15 minutes prior to the scheduled time.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.82rem' }}>
+                      {activeStep >= 5 
+                        ? 'External evaluation completed successfully! Awaiting HOD to schedule the final Viva-Voce defense colloquium.' 
+                        : 'This step unlocks upon successful clearance of external evaluation in Step 4.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SUB-MILESTONE 6: Degree Award & Final Clearance ── */}
+        {(() => {
+          const stepNum = 6;
+          const isExpanded = isStepExpanded(stepNum);
+          const isAwarded = activeStep === 6 || thesis.status === 'AWARDED' || thesis.vivaStatus === 'SUCCESSFUL';
+
+          return (
+            <div 
+              id={`student-substep-${stepNum}`}
+              className="card sub-milestone-accordion-card"
+              style={{
+                padding: 0,
+                borderLeft: `4px solid ${isAwarded ? '#10B981' : '#CBD5E1'}`,
+                border: `1px solid ${isAwarded ? '#A7F3D0' : 'var(--color-border, #E2E8F0)'}`,
+                background: 'var(--color-surface, #FFFFFF)'
+              }}
+            >
+              <div 
+                className="sub-milestone-accordion-header"
+                onClick={() => toggleStep(stepNum)}
+                style={{
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  background: isAwarded ? 'rgba(16, 185, 129, 0.05)' : 'var(--color-bg, #F8FAFC)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: isAwarded ? '#D1FAE5' : '#E2E8F0',
+                    color: isAwarded ? '#059669' : '#64748B',
+                    border: `2px solid ${isAwarded ? '#10B981' : '#CBD5E1'}`
+                  }}>
+                    {isAwarded ? '✓' : 6}
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--color-text, #0F172A)' }}>
+                    Step 6: Degree Award & Final Clearance
+                  </span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    background: isAwarded ? '#D1FAE5' : '#F1F5F9',
+                    color: isAwarded ? '#065F46' : '#64748B'
+                  }}>
+                    {isAwarded ? '🎓 Ph.D. Degree Conferred' : '🔒 Pending Defense'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary, #64748B)', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 600 }}>{isExpanded ? 'Hide' : 'Details'}</span>
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </div>
+
+              <div 
+                className="sub-milestone-accordion-body"
+                style={{
+                  maxHeight: isExpanded ? '2000px' : '0px',
+                  opacity: isExpanded ? 1 : 0,
+                  overflow: 'hidden',
+                  pointerEvents: isExpanded ? 'auto' : 'none'
+                }}
+              >
+                <div style={{ padding: '16px 18px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+                  {isAwarded ? (
+                    <div style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.02) 100%)', padding: 18, borderRadius: 12, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#059669', fontSize: '1rem', fontWeight: 800 }}>
+                        <span>🎓</span> Congratulations! Ph.D. Degree Conferred
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.84rem', color: '#065F46', lineHeight: 1.5 }}>
+                        The candidate has successfully satisfied all statutory academic, coursework, research, and examination requirements prescribed under university Ph.D. regulations. The official degree award notification has been recorded in the academic registry.
+                      </p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px 16px', background: 'rgba(255, 255, 255, 0.7)', padding: 12, borderRadius: 8, fontSize: '0.8rem', color: '#065F46', marginTop: 4 }}>
+                        <div><strong>Thesis Title:</strong> {thesis.title}</div>
+                        <div><strong>Candidate:</strong> {user?.name || thesis.studentId?.name}</div>
+                        <div><strong>Department:</strong> {thesis.department}</div>
+                        <div><strong>Clearance Date:</strong> {thesis.updatedAt ? new Date(thesis.updatedAt).toLocaleDateString() : 'N/A'}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--color-text-secondary, #64748B)', fontSize: '0.82rem' }}>
+                      Official degree award and university notification will be issued upon successful completion of the Viva-Voce oral defense colloquium.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
 
         {/* Chronological Workflow History Logs */}
         <div style={{ marginTop: 20, borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: 20 }}>
@@ -4687,9 +5418,8 @@ const FinalSubmission = ({ thesis, milestones = [], onSubmit, user }) => {
           })()}
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 // ── Submitted (Read-Only) ──
 const SubmittedView = ({ thesis }) => {
@@ -15884,14 +16614,9 @@ const StudentDashboard = () => {
                 if (thesis.status === 'SYNOPSIS_PENDING') return <SynopsisPhase thesis={thesis} milestones={milestones} onSubmit={submitMilestone} />;
                 if (thesis.status === 'ACTIVE_RESEARCH') return <ActiveResearch thesis={thesis} milestones={milestones} onSubmit={submitMilestone} setActiveTab={setActiveTab} />;
                 if (thesis.status === 'PRE_SUBMISSION') return <PreSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} user={user} />;
-                if (['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED'].includes(thesis.status)) {
-                  const finalM = milestones.find(m => m.type === 'FINAL_SUBMISSION');
-                  if (finalM && finalM.status === 'APPROVED') {
-                    return <SubmittedView thesis={thesis} />;
-                  }
+                if (['THESIS_SUBMITTED', 'PENDING_SUPERVISOR', 'PENDING_HOD', 'SUBMITTED', 'AWARDED'].includes(thesis.status)) {
                   return <FinalSubmission thesis={thesis} milestones={milestones} onSubmit={submitMilestone} user={user} />;
                 }
-                if (thesis.status === 'AWARDED') return <SubmittedView thesis={thesis} />;
                 return <div className="card" style={{ padding: 32, color: 'var(--color-text-muted)' }}>No milestones yet.</div>;
               })()
             ) : (

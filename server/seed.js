@@ -8,6 +8,8 @@ const Event = require('./models/Event');
 const Partnership = require('./models/Partnership');
 const CollaborationCall = require('./models/CollaborationCall');
 const DoctoralProject = require('./models/DoctoralProject');
+const FundingAward = require('./models/FundingAward');
+const Thesis = require('./models/Thesis');
 
 const seed = async () => {
   try {
@@ -193,93 +195,498 @@ const seed = async () => {
       console.log('🔬 Seeded HPU-specific research labs.');
     }
 
-    // 4. Seed Funding Opportunities
+    // 4. Seed Official HPU & UGC Funding Schemes (Central University Master Schemes)
     const fundingCount = await FundingOpportunity.countDocuments();
     if (fundingCount === 0) {
       const fundingToSeed = [
         {
-          title: "UGC-NET JRF Fellowship 2026-27",
+          title: "UGC-NET Junior Research Fellowship (JRF / SRF)",
           agency: "University Grants Commission (UGC)",
           amount: "₹37,000 / Month + HRA",
+          monthlyStipend: "₹37,000 / Month",
           duration: "5 Years",
-          scope: "Provides financial assistance to NET JRF qualified doctoral scholars in all streams.",
-          status: "Applications Open",
+          scope: "Central financial assistance for scholars who qualified UGC-NET JRF in Arts, Humanities, Social Sciences, Commerce, Management, Computer Science, and Law (JRF @ ₹37,000/mo for 2 yrs, upgradable to SRF @ ₹42,000/mo for 3 yrs).",
+          status: "Active",
           type: "Fellowship",
           eligibilityDepartments: [],
-          eligibilityCriteria: "UGC-NET JRF qualified, registered full-time Ph.D. scholar.",
-          applicationUrl: "https://scholarships.gov.in",
+          eligibilityCriteria: "UGC-NET JRF qualified, registered full-time Ph.D. scholar at HPU.",
+          applicationUrl: "https://ugcnet.nta.ac.in",
           contactEmail: "ugcjrf@hpu.ac.in",
-          documentsRequired: ["NET JRF Award Letter", "Admission Receipt", "Supervisor Joining Report"],
+          documentsRequired: ["UGC-NET JRF Award Letter", "HPU Ph.D. Admission Order", "Joining Report & Mandate Form", "Monthly Attendance Proforma"],
           fundingBody: "UGC",
           recurrence: "Monthly"
         },
         {
-          title: "CSIR-NET JRF for Sciences",
-          agency: "Council of Scientific & Industrial Research (CSIR)",
-          amount: "₹37,00,000 (Total Pool)",
+          title: "CSIR-UGC NET Junior Research Fellowship (JRF / SRF)",
+          agency: "Council of Scientific & Industrial Research (CSIR-HRDG)",
+          amount: "₹37,000 / Month + HRA",
+          monthlyStipend: "₹37,000 / Month",
           duration: "5 Years",
-          scope: "Fellowship for researchers pursuing science streams (Chemistry, Physics, Biotech).",
-          status: "Applications Open",
+          scope: "Fellowship for research scholars in Chemical Sciences, Earth Sciences, Life Sciences, Mathematical Sciences, and Physical Sciences (JRF @ ₹37,000/mo for 2 yrs, SRF @ ₹42,000/mo for 3 yrs).",
+          status: "Active",
           type: "Fellowship",
-          eligibilityDepartments: ["Department of Chemistry", "Department of Physics", "Department of Bio Sciences", "Department of Bio Technology"],
-          eligibilityCriteria: "CSIR-NET JRF qualified.",
+          eligibilityDepartments: ["Department of Chemistry", "Department of Physics", "Department of Bio Sciences", "Department of Bio Technology", "Department of Mathematics"],
+          eligibilityCriteria: "CSIR-NET JRF qualified in Science & Technology disciplines.",
           applicationUrl: "https://csirhrdg.res.in",
           contactEmail: "csirjrf@hpu.ac.in",
-          documentsRequired: ["CSIR JRF Award Letter", "Annual Progress Report"],
+          documentsRequired: ["CSIR-NET JRF Certificate", "HPU Joining Report", "Bank Mandate Form", "Three-Member Assessment Committee Report for SRF upgrade"],
           fundingBody: "CSIR",
           recurrence: "Monthly"
         },
         {
-          title: "DST-SERB Core Research Grant (CRG)",
-          agency: "Science and Engineering Research Board (SERB), DST",
-          amount: "₹45,00,000",
-          duration: "3 Years",
-          scope: "Funding for core research proposals in all fields of Science and Technology.",
-          status: "Applications Open",
-          type: "Project Grant",
+          title: "National Fellowship for Scheduled Caste Students (NFSC)",
+          agency: "Ministry of Social Justice & Empowerment / UGC",
+          amount: "₹37,000 / Month + HRA",
+          monthlyStipend: "₹37,000 / Month",
+          duration: "5 Years",
+          scope: "Central fellowship scheme providing financial opportunities to Scheduled Caste (SC) candidates to pursue full-time higher education and research leading to Ph.D. degrees in Sciences, Humanities, and Social Sciences.",
+          status: "Active",
+          type: "Fellowship",
           eligibilityDepartments: [],
-          eligibilityCriteria: "Faculty Principal Investigator with full-time Ph.D. scholars.",
-          applicationUrl: "https://serbonline.in",
-          contactEmail: "serb@hpu.ac.in",
-          documentsRequired: ["Detailed Research Proposal", "Budget Endorsement", "PI Bio-Data"],
-          fundingBody: "SERB",
-          recurrence: "Project-based"
+          eligibilityCriteria: "SC Category, enrolled in full-time regular Ph.D. course at HPU, qualified NET/NFSC merit list.",
+          applicationUrl: "https://scholarships.gov.in",
+          contactEmail: "deanstudies@hpu.ac.in",
+          documentsRequired: ["Caste Certificate", "NFSC Selection Letter", "Ph.D. Registration Certificate", "Income Affidavit"],
+          fundingBody: "UGC",
+          recurrence: "Monthly"
         },
         {
-          title: "HIMCOSTE R&D Project Grant",
-          agency: "HP State Council for Science, Technology & Environment",
-          amount: "₹8,00,000",
+          title: "National Fellowship for Higher Education of ST Students (NFST)",
+          agency: "Ministry of Tribal Affairs / UGC",
+          amount: "₹37,000 / Month + HRA",
+          monthlyStipend: "₹37,000 / Month",
+          duration: "5 Years",
+          scope: "Fellowship for Scheduled Tribe (ST) scholars, with special focus on students from Himachal Pradesh notified tribal regions (Kinnaur, Lahaul & Spiti, Pangi, Bharmour).",
+          status: "Active",
+          type: "Fellowship",
+          eligibilityDepartments: [],
+          eligibilityCriteria: "ST Category, enrolled in full-time regular Ph.D. at HPU.",
+          applicationUrl: "https://tribal.nic.in/Scholarships.aspx",
+          contactEmail: "tribalscholarship@hpu.ac.in",
+          documentsRequired: ["Bonafide Tribal Certificate", "NFST Award Letter", "Joining Report", "HPU Fee Receipt"],
+          fundingBody: "UGC",
+          recurrence: "Monthly"
+        },
+        {
+          title: "National Fellowship for Other Backward Classes (NFOBC)",
+          agency: "Ministry of Social Justice & Empowerment / UGC",
+          amount: "₹37,000 / Month + HRA",
+          monthlyStipend: "₹37,000 / Month",
+          duration: "5 Years",
+          scope: "Fellowship opportunity for OBC research scholars pursuing full-time Ph.D. degrees across all recognized academic faculties of Himachal Pradesh University.",
+          status: "Active",
+          type: "Fellowship",
+          eligibilityDepartments: [],
+          eligibilityCriteria: "OBC Category (Non-Creamy Layer), UGC-NET/CSIR-NET qualified.",
+          applicationUrl: "https://scholarships.gov.in",
+          contactEmail: "deanstudies@hpu.ac.in",
+          documentsRequired: ["OBC Non-Creamy Layer Certificate", "NFOBC Award Letter", "Joining Report", "Aadhaar Card"],
+          fundingBody: "UGC",
+          recurrence: "Monthly"
+        },
+        {
+          title: "Savitribai Jyotirao Phule Fellowship for Single Girl Child (SJSGC)",
+          agency: "University Grants Commission (UGC)",
+          amount: "₹37,000 / Month + HRA",
+          monthlyStipend: "₹37,000 / Month",
+          duration: "5 Years",
+          scope: "Dedicated fellowship scheme to promote higher education and research for women scholars who are the only girl child of their family (at par with UGC JRF/SRF rates).",
+          status: "Active",
+          type: "Fellowship",
+          eligibilityDepartments: [],
+          eligibilityCriteria: "Female scholar who is the single girl child in the family, admitted to regular full-time Ph.D.",
+          applicationUrl: "https://frg.ugc.ac.in",
+          contactEmail: "sjsgc@hpu.ac.in",
+          documentsRequired: ["Single Girl Child Affidavit on Stamp Paper", "Family Domicile Certificate", "Ph.D. Enrollment Order"],
+          fundingBody: "UGC",
+          recurrence: "Monthly"
+        },
+        {
+          title: "DST-INSPIRE Fellowship",
+          agency: "Department of Science and Technology (DST)",
+          amount: "₹37,000 / Month + HRA",
+          monthlyStipend: "₹37,000 / Month",
+          duration: "5 Years",
+          scope: "Prestigious fellowship for 1st rank holders in University Post-Graduate examinations in basic and applied sciences or qualified INSPIRE Scholars.",
+          status: "Active",
+          type: "Fellowship",
+          eligibilityDepartments: ["Department of Chemistry", "Department of Physics", "Department of Bio Sciences", "Department of Bio Technology", "Department of Mathematics"],
+          eligibilityCriteria: "1st Rank at University Level in PG Science examination or INSPIRE Scholar with minimum 65% aggregate.",
+          applicationUrl: "https://online-inspire.gov.in",
+          contactEmail: "dstinspire@hpu.ac.in",
+          documentsRequired: ["University 1st Rank Certificate", "PG Degree Transcript", "Research Proposal", "Supervisor Endorsement"],
+          fundingBody: "DST",
+          recurrence: "Monthly"
+        },
+        {
+          title: "ICSSR Doctoral Fellowship",
+          agency: "Indian Council of Social Science Research (ICSSR)",
+          amount: "₹20,000 / Month",
+          monthlyStipend: "₹20,000 / Month",
           duration: "2 Years",
-          scope: "Supports R&D projects with local relevance to Himachal Pradesh (biodiversity, ecology, tech).",
-          status: "Applications Open",
+          scope: "Full-term doctoral fellowship for scholars registered in Social Science disciplines (Economics, Political Science, Sociology, Public Admin, Psychology, Geography) with annual contingency grant.",
+          status: "Active",
+          type: "Fellowship",
+          eligibilityDepartments: ["Department of Economics", "Department of Political Science", "Department of Sociology and Social Work", "Department of Public Administration", "Department of Psychology", "Department of Geography"],
+          eligibilityCriteria: "Confirmed Ph.D. registration in Social Science, NET qualified preferred.",
+          applicationUrl: "https://icssr.org/doctoral-fellowship",
+          contactEmail: "icssr@hpu.ac.in",
+          documentsRequired: ["Detailed Research Synopsis approved by DRC", "ICSSR Application Form", "Supervisor CV", "Joining Report"],
+          fundingBody: "ICSSR",
+          recurrence: "Monthly"
+        },
+        {
+          title: "ICHR Doctoral Fellowship",
+          agency: "Indian Council of Historical Research (ICHR)",
+          amount: "₹17,600 / Month",
+          monthlyStipend: "₹17,600 / Month",
+          duration: "2 Years",
+          scope: "Fellowship for research scholars registered in History and Ancient Indian Archaeology pursuing archival and archaeological studies.",
+          status: "Active",
+          type: "Fellowship",
+          eligibilityDepartments: ["Department of History", "Department of Archaeology (Ancient History & Archaeology)"],
+          eligibilityCriteria: "Ph.D. scholar in History or Archaeology with DRC-approved synopsis.",
+          applicationUrl: "http://ichr.ac.in",
+          contactEmail: "ichrfellowship@hpu.ac.in",
+          documentsRequired: ["ICHR Research Proposal", "DRC Approved Synopsis", "Supervisor Consent Letter"],
+          fundingBody: "ICHR",
+          recurrence: "Monthly"
+        },
+        {
+          title: "HPU Campus Junior Research Fellowship (University JRF)",
+          agency: "Himachal Pradesh University, Summer Hill",
+          amount: "₹10,000 / Month",
+          monthlyStipend: "₹10,000 / Month",
+          duration: "3 Years",
+          scope: "Institutional merit fellowship awarded directly from HPU internal university research provisions to top-ranked department entrance scholars who do not receive any other central or state fellowship.",
+          status: "Active",
+          type: "Fellowship",
+          eligibilityDepartments: [],
+          eligibilityCriteria: "Department entrance test / merit list topper, enrolled full-time, non-recipient of any other stipend.",
+          deadline: new Date('2026-11-15'),
+          applicationUrl: "https://hpuniv.ac.in",
+          contactEmail: "deanstudies@hpu.ac.in",
+          documentsRequired: ["HPU Ph.D. Entrance Merit Proof", "Non-Fellowship Undertaking Affidavit", "Departmental RAC Recommendation"],
+          fundingBody: "University",
+          recurrence: "Monthly"
+        },
+        {
+          title: "HIMCOSTE State R&D Project Grant",
+          agency: "HP State Council for Science, Technology & Environment (HIMCOSTE)",
+          amount: "₹10,000,00 (Project Grant)",
+          monthlyStipend: "N/A (Project Grant)",
+          duration: "3 Years",
+          scope: "State research grant supporting projects on Himachal Pradesh mountain ecology, high-altitude biodiversity, disaster risk reduction, and regional green technologies.",
+          status: "Active",
           type: "Project Grant",
-          eligibilityDepartments: ["Department of Bio Sciences", "Department of Bio Technology", "Department of Environmental Science", "Department of Geography"],
-          eligibilityCriteria: "Research projects addressing HP-specific ecological or developmental problems.",
+          eligibilityDepartments: ["Department of Bio Sciences", "Department of Bio Technology", "Department of Environmental Science", "Department of Geography", "Department of Chemistry", "Department of Physics"],
+          eligibilityCriteria: "Faculty Principal Investigator with full-time Ph.D. scholar co-investigators.",
           applicationUrl: "http://himcoste.hp.gov.in",
           contactEmail: "himcoste@hp.gov.in",
-          documentsRequired: ["HPU Endorsement Form", "Proposal Pitch", "Budget Template"],
+          documentsRequired: ["State Relevance Concept Pitch", "Itemized Budget Breakdown", "PI & Co-PI Endorsement"],
           fundingBody: "HIMCOSTE",
           recurrence: "Project-based"
-        },
-        {
-          title: "HP State Research Fellowship",
-          agency: "Government of Himachal Pradesh",
-          amount: "₹20,000 / Month",
-          duration: "3 Years",
-          scope: "Fellowship for Himachali domicile scholars who do not receive any other financial support.",
-          status: "Applications Open",
-          type: "State Scholarship",
-          eligibilityDepartments: [],
-          eligibilityCriteria: "HP Domicile, Non-JRF registered Ph.D. scholar.",
-          applicationUrl: "https://hp.gov.in/scholarships",
-          contactEmail: "statefellowship@hpu.ac.in",
-          documentsRequired: ["Domicile Certificate", "Non-Fellowship Affidavit", "Bonafide Himachali Proof"],
-          fundingBody: "HP State Govt",
-          recurrence: "Monthly"
         }
       ];
       await FundingOpportunity.insertMany(fundingToSeed);
-      console.log('💰 Seeded HPU-specific funding opportunities.');
+      console.log('💰 Seeded 11 official HPU and UGC funding schemes.');
+    }
+
+    // 4b. Seed Active Fellowship Awards for scholars
+    const awardCount = await FundingAward.countDocuments();
+    if (awardCount === 0) {
+      const students = await User.find({ role: 'STUDENT' }).limit(4);
+      const seededOpps = await FundingOpportunity.find({});
+      if (students.length > 0 && seededOpps.length > 0) {
+        for (let i = 0; i < Math.min(students.length, 4); i++) {
+          const scholar = students[i];
+          const opp = seededOpps[i % seededOpps.length];
+          const thesis = await Thesis.findOne({ scholarId: scholar._id });
+
+          const monthsCount = i === 0 ? 12 : i === 1 ? 6 : i === 2 ? 4 : 3;
+          const monthNames = [
+            'October 2025', 'November 2025', 'December 2025',
+            'January 2026', 'February 2026', 'March 2026',
+            'April 2026', 'May 2026', 'June 2026',
+            'July 2026', 'August 2026', 'September 2026'
+          ];
+          const slicedMonths = monthNames.slice(monthNames.length - monthsCount).reverse();
+          const ledgerEntries = slicedMonths.map((m, mIdx) => ({
+            monthYear: m,
+            amount: 37000,
+            amountFormatted: '₹37,000',
+            status: 'DISBURSED',
+            disbursedAt: new Date(2026, 8 - mIdx, 28),
+            referenceNo: `HPU-FIN-2026-${1000 + i * 100 + mIdx}`,
+            remarks: `Standard monthly fellowship credit for ${m}`
+          }));
+
+          const award = new FundingAward({
+            scholarId: scholar._id,
+            thesisId: thesis ? thesis._id : null,
+            fundingOpportunityId: opp._id,
+            awardTitle: opp.title,
+            monthlyStipend: opp.monthlyStipend || '₹37,000 / Month',
+            amountSanctioned: '₹22,20,000 (5 Years)',
+            amountDisbursed: `₹${(37000 * monthsCount).toLocaleString('en-IN')} (${monthsCount} Months)`,
+            startDate: new Date('2025-08-01'),
+            endDate: new Date('2028-07-31'),
+            status: 'ACTIVE',
+            renewalDate: new Date('2026-07-31'),
+            remarks: 'Enrolled under regular departmental research fellowship quota.',
+            disbursementLedger: ledgerEntries
+          });
+          await award.save();
+          if (thesis) {
+            await Thesis.findByIdAndUpdate(thesis._id, { fundingSource: opp.title });
+          }
+        }
+        console.log(`🏅 Seeded active fellowship awards for ${Math.min(students.length, 4)} scholars.`);
+      }
+    }
+
+    // 4c. Ensure specific funding award & >= 36 months tenure for ayushtest@gmail.com (and supervisor/HOD verification)
+    const ayushScholar = await User.findOne({ username: 'ayushtest@gmail.com' });
+    if (ayushScholar) {
+      // Ensure tenure is >= 36 months so pre-submission unlocks
+      await User.findByIdAndUpdate(ayushScholar._id, { 'profile.admissionDate': '2023-06-01' });
+      await Thesis.findOneAndUpdate({ scholarId: ayushScholar._id }, { startDate: new Date('2023-06-01'), registrationDate: new Date('2023-06-01') });
+
+      const existingAyushAward = await FundingAward.findOne({ scholarId: ayushScholar._id });
+      if (!existingAyushAward) {
+        const ugcOpp = await FundingOpportunity.findOne({ title: /UGC-NET Junior Research Fellowship/i });
+        const ayushThesis = await Thesis.findOne({ scholarId: ayushScholar._id }).populate('supervisorId');
+        if (ugcOpp) {
+          const monthNames = [
+            'October 2025', 'November 2025', 'December 2025',
+            'January 2026', 'February 2026', 'March 2026',
+            'April 2026', 'May 2026', 'June 2026',
+            'July 2026', 'August 2026', 'September 2026'
+          ];
+          const ayushLedger = monthNames.map((m, idx) => ({
+            monthYear: m,
+            amount: 37000,
+            amountFormatted: '₹37,000',
+            status: 'DISBURSED',
+            disbursedAt: new Date(2025, 9 + idx, 10),
+            referenceNo: `UTR-HPU-UGC-2026-SEP-${800 + idx + 1}`,
+            remarks: 'Monthly UGC-NET JRF Stipend Credited via PFMS Bank Transfer',
+            disbursedBy: ayushThesis?.supervisorId?._id || null
+          }));
+
+          await FundingAward.create({
+            scholarId: ayushScholar._id,
+            thesisId: ayushThesis ? ayushThesis._id : null,
+            fundingOpportunityId: ugcOpp._id,
+            awardTitle: ugcOpp.title,
+            monthlyStipend: '₹37,000 / Month',
+            amountSanctioned: '₹22,20,000 (5 Years)',
+            amountDisbursed: '₹4,44,000 (12 Months)',
+            startDate: new Date('2025-10-01'),
+            endDate: new Date('2030-09-30'),
+            status: 'ACTIVE',
+            renewalDate: new Date('2026-10-01'),
+            remarks: 'Statutory UGC-NET Junior Research Fellowship mapped to DNA Profiling doctoral study.',
+            disbursementLedger: ayushLedger
+          });
+          if (ayushThesis) {
+            await Thesis.findByIdAndUpdate(ayushThesis._id, { fundingSource: ugcOpp.title });
+          }
+          console.log('🏅 Seeded dedicated UGC-NET JRF fellowship award & 12-month ledger for ayushtest@gmail.com');
+        }
+      }
+
+      // 4d. Seed Pre-Submission, Final Submission, and Ph.D. Degree Awarded for ayushtest@gmail.com
+      const ayushThesisDoc = await Thesis.findOne({ scholarId: ayushScholar._id });
+      const ayushSupervisor = await User.findOne({ username: 'pradeepkumar@gmail.com' });
+      const ayushHod = await User.findOne({ username: 'mahinderkumar@gmail.com' }) || await User.findOne({ role: 'HOD', department: ayushScholar.department });
+
+      if (ayushThesisDoc && ayushSupervisor && ayushHod) {
+        // Ensure Pre-Submission milestone is APPROVED
+        let preM = await Milestone.findOne({ thesisId: ayushThesisDoc._id, type: 'PRE_SUBMISSION' });
+        if (!preM) {
+          preM = new Milestone({ thesisId: ayushThesisDoc._id, type: 'PRE_SUBMISSION', sequence: 99 });
+        }
+        preM.title = 'Pre-Submission Thesis & Plagiarism Clearance Package';
+        preM.status = 'APPROVED';
+        preM.documentUrl = '/uploads/theses/ayush_presubmission_draft.pdf';
+        preM.plagiarismReportUrl = '/uploads/plagiarism/ayush_turnitin_clearance.pdf';
+        preM.submittedAt = new Date('2026-06-15T10:00:00.000Z');
+        preM.reviewedAt = new Date('2026-06-25T15:30:00.000Z');
+        preM.comments = [
+          {
+            authorId: ayushSupervisor._id,
+            authorName: ayushSupervisor.name,
+            text: 'Verified rough thesis draft and Turnitin similarity index (4%). Plagiarism criteria cleared. Recommended for departmental pre-submission colloquium defense.',
+            createdAt: new Date('2026-06-20T11:30:00.000Z')
+          },
+          {
+            authorId: ayushHod._id,
+            authorName: ayushHod.name,
+            text: 'Endorsed by HOD. Pre-submission seminar colloquium defense presentation approved and cleared.',
+            createdAt: new Date('2026-06-25T15:30:00.000Z')
+          }
+        ];
+        preM.history = [
+          {
+            action: 'SUBMITTED',
+            actorName: ayushScholar.name,
+            actorRole: 'STUDENT',
+            documentUrl: '/uploads/theses/ayush_presubmission_draft.pdf',
+            plagiarismReportUrl: '/uploads/plagiarism/ayush_turnitin_clearance.pdf',
+            remarks: 'Submitted rough thesis draft with Turnitin similarity report (similarity index: 4%).',
+            timestamp: new Date('2026-06-15T10:00:00.000Z')
+          },
+          {
+            action: 'SUPERVISOR_APPROVED',
+            actorName: ayushSupervisor.name,
+            actorRole: 'SUPERVISOR',
+            documentUrl: '/uploads/theses/ayush_presubmission_draft.pdf',
+            plagiarismReportUrl: '/uploads/plagiarism/ayush_turnitin_clearance.pdf',
+            remarks: 'Supervisor digital verification completed. Approved and forwarded to HOD for pre-submission seminar scheduling.',
+            timestamp: new Date('2026-06-20T11:30:00.000Z')
+          },
+          {
+            action: 'HOD_APPROVED',
+            actorName: ayushHod.name,
+            actorRole: 'HOD',
+            documentUrl: '/uploads/theses/ayush_presubmission_draft.pdf',
+            plagiarismReportUrl: '/uploads/plagiarism/ayush_turnitin_clearance.pdf',
+            remarks: 'HOD clearance granted. Pre-submission seminar scheduled and cleared.',
+            timestamp: new Date('2026-06-25T15:30:00.000Z')
+          }
+        ];
+        await preM.save();
+
+        // Pre-Submission Seminar
+        ayushThesisDoc.preSubmissionSeminar = {
+          status: 'CLEARED',
+          requestedAt: new Date('2026-06-15T10:30:00.000Z'),
+          requestRemarks: 'Requesting permission to deliver Pre-Submission Colloquium before the Departmental Research Committee.',
+          scheduledDate: new Date('2026-07-10T10:00:00.000Z'),
+          scheduledTime: '11:00 AM',
+          venue: 'Department Seminar Hall & Smart Classroom',
+          committeeMembers: 'Prof. Mahinder Kumar (HOD & Chairperson), Dr. Pradeep Kumar (Supervisor), Prof. S. K. Gupta (External Expert), DRC Members',
+          remarks: 'Pre-submission presentation was successfully delivered before the DRC panel. The candidate defended research methodology, findings, and publications.',
+          facultyApprovedAt: new Date('2026-06-20T11:30:00.000Z'),
+          facultyApproverId: ayushSupervisor._id,
+          hodApprovedAt: new Date('2026-06-25T15:30:00.000Z'),
+          hodApproverId: ayushHod._id,
+          outcomeRecordedAt: new Date('2026-07-10T13:00:00.000Z'),
+          outcomeRemarks: 'The expert committee examined the rough draft and found the research work comprehensive and satisfactory. The candidate is cleared to prepare the final bound thesis incorporating committee recommendations.'
+        };
+
+        // Ensure Final Submission milestone is APPROVED
+        let finalM = await Milestone.findOne({ thesisId: ayushThesisDoc._id, type: 'FINAL_SUBMISSION' });
+        if (!finalM) {
+          finalM = new Milestone({ thesisId: ayushThesisDoc._id, type: 'FINAL_SUBMISSION', sequence: 100 });
+        }
+        finalM.title = 'Final Complete Bound Thesis Submission Package';
+        finalM.status = 'APPROVED';
+        finalM.documentUrl = '/uploads/theses/ayush_final_bound_thesis.pdf';
+        finalM.plagiarismReportUrl = '/uploads/plagiarism/ayush_final_turnitin_clearance.pdf';
+        finalM.submittedAt = new Date('2026-07-28T11:00:00.000Z');
+        finalM.reviewedAt = new Date('2026-08-05T16:00:00.000Z');
+        finalM.comments = [
+          {
+            authorId: ayushSupervisor._id,
+            authorName: ayushSupervisor.name,
+            text: 'Verified incorporation of all colloquium expert recommendations. Final bound thesis formatted according to university doctoral guidelines. Fully endorsed and signed off.',
+            createdAt: new Date('2026-08-01T14:30:00.000Z')
+          },
+          {
+            authorId: ayushHod._id,
+            authorName: ayushHod.name,
+            text: 'Verified supervisor sign-off and similarity compliance. Cleared for external university examiner evaluation and dispatch.',
+            createdAt: new Date('2026-08-05T16:00:00.000Z')
+          }
+        ];
+        finalM.history = [
+          {
+            action: 'SUBMITTED',
+            actorName: ayushScholar.name,
+            actorRole: 'STUDENT',
+            documentUrl: '/uploads/theses/ayush_final_bound_thesis.pdf',
+            plagiarismReportUrl: '/uploads/plagiarism/ayush_final_turnitin_clearance.pdf',
+            remarks: 'Uploaded final bound thesis incorporating colloquium suggestions with final similarity verification.',
+            timestamp: new Date('2026-07-28T11:00:00.000Z')
+          },
+          {
+            action: 'SUPERVISOR_APPROVED',
+            actorName: ayushSupervisor.name,
+            actorRole: 'SUPERVISOR',
+            documentUrl: '/uploads/theses/ayush_final_bound_thesis.pdf',
+            plagiarismReportUrl: '/uploads/plagiarism/ayush_final_turnitin_clearance.pdf',
+            remarks: 'Supervisor digital verification completed. Approved and endorsed for HOD clearance.',
+            timestamp: new Date('2026-08-01T14:30:00.000Z')
+          },
+          {
+            action: 'HOD_APPROVED',
+            actorName: ayushHod.name,
+            actorRole: 'HOD',
+            documentUrl: '/uploads/theses/ayush_final_bound_thesis.pdf',
+            plagiarismReportUrl: '/uploads/plagiarism/ayush_final_turnitin_clearance.pdf',
+            remarks: 'HOD clearance granted. Approved for external examiner dispatch and adjudication.',
+            timestamp: new Date('2026-08-05T16:00:00.000Z')
+          },
+          {
+            action: 'EXTERNAL_EVALUATION_DISPATCHED',
+            actorName: ayushHod.name,
+            actorRole: 'HOD',
+            remarks: 'Thesis package dispatched to external examiners.\n• Dispatched To: Prof. S. K. Roy (IIT Roorkee), Prof. N. Sharma (JNU New Delhi)\n• Dispatch Method: Speed Post (Registered Airmail)\n• Date Dispatched: 10/08/2026\n• Tracking Reference Code: HPU-EXAM-PHD-2026-9844',
+            timestamp: new Date('2026-08-10T10:00:00.000Z')
+          },
+          {
+            action: 'EXTERNAL_EVALUATION_SUCCESSFUL',
+            actorName: ayushHod.name,
+            actorRole: 'HOD',
+            remarks: 'External evaluation reports successfully logged.\n• Result: PASSED (Clear & Satisfactory)\n• Dispatched To: Prof. S. K. Roy (IIT Roorkee), Prof. N. Sharma (JNU New Delhi)\n• Date Dispatched: 10/08/2026\n• Evaluator Remarks & Feedback: All external examiner reports received with Category-A commendation. Both examiners unconditionally recommended the thesis for the award of the Ph.D. degree subject to viva-voce examination.',
+            timestamp: new Date('2026-08-30T11:30:00.000Z')
+          },
+          {
+            action: 'VIVA_SCHEDULED',
+            actorName: ayushHod.name,
+            actorRole: 'HOD',
+            remarks: 'Viva-Voce scheduled to be conducted.\n• Date: 12/09/2026\n• Time: 11:30 AM\n• Venue: Senate Committee Hall & Google Meet Hybrid\n• Convenor/Coordinator: Prof. Mahinder Kumar\n• Panel Members: Prof. S. K. Roy (External Examiner, IIT Roorkee), Prof. Mahinder Kumar (HOD & Chairperson), Dr. Pradeep Kumar (Supervisor)\n• Meeting Link: https://meet.google.com/phd-ayush-viva',
+            timestamp: new Date('2026-09-02T10:00:00.000Z')
+          },
+          {
+            action: 'VIVA_SUCCESSFUL',
+            actorName: ayushHod.name,
+            actorRole: 'HOD',
+            remarks: 'Viva-Voce outcome recorded.\n• Outcome: PASSED (Clear & Pass)\n• Date Conducted: 12/09/2026\n• Time: 11:30 AM\n• Venue: Senate Committee Hall & Google Meet Hybrid\n• Convenor/Coordinator: Prof. Mahinder Kumar\n• Panel Members: Prof. S. K. Roy (External Examiner, IIT Roorkee), Prof. Mahinder Kumar (HOD & Chairperson), Dr. Pradeep Kumar (Supervisor)\n• Meeting Link: https://meet.google.com/phd-ayush-viva\n• Board Decision Notes: The candidate defended the research thesis before the board with exemplary proficiency and domain mastery. All inquiries from the external examiner and faculty were thoroughly and satisfactorily answered. Unanimously recommended for the Ph.D. degree award.',
+            timestamp: new Date('2026-09-12T13:00:00.000Z')
+          }
+        ];
+        await finalM.save();
+
+        // Update Thesis lifecycle fields
+        ayushThesisDoc.courseworkCompleted = true;
+        ayushThesisDoc.enrollmentVerified = true;
+        ayushThesisDoc.synopsisProvisionallyCleared = true;
+        ayushThesisDoc.dispatchDate = new Date('2026-08-10T10:00:00.000Z');
+        ayushThesisDoc.dispatchMethod = 'Speed Post (Registered Airmail)';
+        ayushThesisDoc.dispatchTrackingNumber = 'HPU-EXAM-PHD-2026-9844';
+        ayushThesisDoc.externalEvaluationSentTo = 'Prof. S. K. Roy (IIT Roorkee), Prof. N. Sharma (JNU New Delhi)';
+        ayushThesisDoc.externalEvaluationStatus = 'SUCCESSFUL';
+        ayushThesisDoc.externalEvaluationLoggedAt = new Date('2026-08-30T11:30:00.000Z');
+        ayushThesisDoc.externalEvaluationLoggedBy = ayushHod._id;
+        ayushThesisDoc.externalEvaluationRemarks = 'All external examiner reports received with Category-A commendation. Both examiners unconditionally recommended the thesis for the award of the Ph.D. degree subject to viva-voce examination.';
+        ayushThesisDoc.vivaDate = new Date('2026-09-12T11:30:00.000Z');
+        ayushThesisDoc.vivaTime = '11:30 AM';
+        ayushThesisDoc.vivaVenue = 'Senate Committee Hall & Google Meet Hybrid';
+        ayushThesisDoc.vivaPanel = 'Prof. S. K. Roy (External Examiner, IIT Roorkee), Prof. Mahinder Kumar (HOD & Chairperson), Dr. Pradeep Kumar (Supervisor)';
+        ayushThesisDoc.vivaCoordinator = 'Prof. Mahinder Kumar';
+        ayushThesisDoc.vivaMeetingLink = 'https://meet.google.com/phd-ayush-viva';
+        ayushThesisDoc.vivaStatus = 'SUCCESSFUL';
+        ayushThesisDoc.vivaRemarks = 'The candidate defended the research thesis before the board with exemplary proficiency and domain mastery. All inquiries from the external examiner and faculty were thoroughly and satisfactorily answered. Unanimously recommended for the Ph.D. degree award.';
+        ayushThesisDoc.status = 'AWARDED';
+        ayushThesisDoc.submittedAt = new Date('2026-08-05T16:00:00.000Z');
+        ayushThesisDoc.awardedAt = new Date('2026-09-15T10:00:00.000Z');
+
+        await ayushThesisDoc.save();
+        console.log('🎓 Seeded Ph.D. Degree Awarded status & lifecycle for ayushtest@gmail.com');
+      }
     }
 
     // 5. Seed Events

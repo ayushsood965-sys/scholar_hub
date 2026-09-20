@@ -8,7 +8,7 @@
     "test:live": "node --test tests/e2e/live_production.test.js",
     "db": "\"C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe\" --dbpath \"C:\\Program Files\\MongoDB\\Server\\8.2\\data\"",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node --watch server.js"
   },
   "keywords": [],
   "author": "",

@@ -9,6 +9,7 @@ import {
 
 const PublicConfigTab = ({ user }) => {
   const toast = useToast();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   const [subTab, setSubTab] = useState('labs');
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -46,14 +47,14 @@ const PublicConfigTab = ({ user }) => {
   });
   
   const [fundingForm, setFundingForm] = useState({ 
-    title: '', agency: '', amount: '', duration: '', scope: '', status: 'Applications Open',
+    title: '', agency: '', amount: '', duration: '', scope: '', status: 'Active',
     type: 'Fellowship', eligibilityDepartments: [], eligibilityCriteria: '', deadline: '', applicationUrl: '',
-    contactEmail: '', documentsRequired: '', fundingBody: 'Other', recurrence: 'One-time'
+    contactEmail: '', documentsRequired: '', fundingBody: 'UGC', customFundingBody: '', recurrence: 'Monthly'
   });
 
   const [fundingAwardForm, setFundingAwardForm] = useState({
     scholarId: '', thesisId: '', fundingOpportunityId: '', awardTitle: '',
-    amountSanctioned: '', amountDisbursed: '', startDate: '', endDate: '',
+    monthlyStipend: '', amountSanctioned: '', amountDisbursed: '', startDate: '', endDate: '',
     status: 'ACTIVE', renewalDate: '', remarks: ''
   });
 
@@ -252,8 +253,14 @@ const PublicConfigTab = ({ user }) => {
     e.preventDefault();
     setActionLoading(true);
     try {
+      const resolvedFundingBody = fundingForm.fundingBody === 'Other' && fundingForm.customFundingBody?.trim()
+        ? fundingForm.customFundingBody.trim()
+        : fundingForm.fundingBody;
+
       const payload = {
         ...fundingForm,
+        fundingBody: resolvedFundingBody,
+        status: fundingForm.status === 'Inactive' ? 'Inactive' : 'Active',
         eligibilityDepartments: typeof fundingForm.eligibilityDepartments === 'string' ? fundingForm.eligibilityDepartments.split(',').map(d => d.trim()).filter(Boolean) : fundingForm.eligibilityDepartments,
         documentsRequired: fundingForm.documentsRequired ? fundingForm.documentsRequired.split(',').map(d => d.trim()).filter(Boolean) : []
       };
@@ -510,13 +517,15 @@ const PublicConfigTab = ({ user }) => {
         establishedYear: item.establishedYear || ''
       });
     } else if (type === 'funding') {
+      const standardBodies = ['UGC', 'CSIR', 'DST', 'DBT', 'SERB', 'ICSSR', 'DRDO', 'HIMCOSTE', 'HP State Govt', 'RUSA', 'Industry', 'University'];
+      const isStandard = standardBodies.includes(item.fundingBody);
       setFundingForm({
         title: item.title,
         agency: item.agency,
         amount: item.amount,
         duration: item.duration,
         scope: item.scope,
-        status: item.status,
+        status: item.status === 'Inactive' ? 'Inactive' : 'Active',
         type: item.type || 'Fellowship',
         eligibilityDepartments: item.eligibilityDepartments || [],
         eligibilityCriteria: item.eligibilityCriteria || '',
@@ -524,8 +533,9 @@ const PublicConfigTab = ({ user }) => {
         applicationUrl: item.applicationUrl || '',
         contactEmail: item.contactEmail || '',
         documentsRequired: item.documentsRequired?.join(', ') || '',
-        fundingBody: item.fundingBody || 'Other',
-        recurrence: item.recurrence || 'One-time'
+        fundingBody: isStandard ? item.fundingBody : 'Other',
+        customFundingBody: isStandard ? '' : (item.fundingBody === 'Other' ? '' : item.fundingBody),
+        recurrence: item.recurrence || 'Monthly'
       });
     } else if (type === 'funding_award') {
       setFundingAwardForm({
@@ -533,6 +543,7 @@ const PublicConfigTab = ({ user }) => {
         thesisId: item.thesisId?._id || item.thesisId || '',
         fundingOpportunityId: item.fundingOpportunityId?._id || item.fundingOpportunityId || '',
         awardTitle: item.awardTitle,
+        monthlyStipend: item.monthlyStipend || (item.fundingOpportunityId?.monthlyStipend || (item.amountSanctioned?.includes('/ Month') ? item.amountSanctioned : '₹37,000 / Month')),
         amountSanctioned: item.amountSanctioned || '',
         amountDisbursed: item.amountDisbursed || '',
         startDate: item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '',
@@ -647,8 +658,6 @@ const PublicConfigTab = ({ user }) => {
         {[
           { key: 'labs', label: 'Research Labs', icon: Users },
           { key: 'inquiries', label: 'Collaboration Inquiries', icon: Mail },
-          { key: 'funding', label: 'Funding & Grants', icon: Coins },
-          { key: 'funding_awards', label: 'Funding Awards', icon: Award },
           { key: 'partnerships', label: 'MoU & Partnerships', icon: Link },
           { key: 'events', label: 'Academic Events', icon: Calendar },
           { key: 'projects', label: 'Doctoral Projects', icon: BookOpen },
@@ -837,15 +846,30 @@ const PublicConfigTab = ({ user }) => {
         {/* Funding opportunities Tab */}
         {subTab === 'funding' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <h3 className="card-title" style={{ margin: 0 }}>Fellowship & Grant Schemes</h3>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>Configure UGC, CSIR, DST-SERB, HIMCOSTE, and state-level funding programs.</p>
+                <h3 className="card-title" style={{ margin: 0 }}>University Master Fellowship & Grant Schemes</h3>
+                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>Central statutory funding schemes (UGC, CSIR, DST, State Fellowships) available to HPU researchers.</p>
               </div>
-              <button onClick={() => openCreateModal('funding')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
-                <Plus size={16} /> Add Funding Scheme
-              </button>
+              {isSuperAdmin ? (
+                <button onClick={() => openCreateModal('funding')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+                  <Plus size={16} /> Add Master Scheme
+                </button>
+              ) : (
+                <span style={{ fontSize: '0.75rem', background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', padding: '4px 10px', borderRadius: '8px', fontWeight: 600 }}>
+                  🏛️ Governed Centrally by Super Admin / Dean of Studies
+                </span>
+              )}
             </div>
+
+            {!isSuperAdmin && (
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>
+                  <strong>Central Master Catalog:</strong> UGC, CSIR, and state fellowship stipends are standardized at the university level. Department HODs can allocate these schemes to enrolled scholars in the <strong>Funding Awards</strong> tab.
+                </p>
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {funding.length === 0 ? (
@@ -854,13 +878,14 @@ const PublicConfigTab = ({ user }) => {
                 funding.map(grant => (
                   <div key={grant._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-bg)' }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <h4 style={{ margin: 0, fontWeight: 700, color: '#1E293B' }}>{grant.title}</h4>
                         <span style={{ fontSize: '0.68rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>{grant.status}</span>
                         <span style={{ fontSize: '0.68rem', background: '#F3F4F6', color: '#374151', padding: '2px 8px', borderRadius: '12px' }}>{grant.type || 'Fellowship'}</span>
+                        <span style={{ fontSize: '0.68rem', background: '#E0F2FE', color: '#0369A1', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Body: {grant.fundingBody}</span>
                       </div>
                       <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>
-                        <strong>Agency:</strong> {grant.agency} | <strong>Body:</strong> {grant.fundingBody || 'Other'} | <strong>Stipend/Amount:</strong> {grant.amount}
+                        <strong>Agency:</strong> {grant.agency} | <strong>Stipend/Amount:</strong> {grant.amount} | <strong>Tenure:</strong> {grant.duration}
                       </p>
                       {grant.deadline && (
                         <p style={{ fontSize: '0.78rem', color: '#EF4444', margin: '2px 0 0' }}>
@@ -868,14 +893,16 @@ const PublicConfigTab = ({ user }) => {
                         </p>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={() => openEditModal('funding', grant)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>
-                        <Edit2 size={15} />
-                      </button>
-                      <button onClick={() => handleFundingDelete(grant._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'var(--color-surface)', color: '#EF4444', cursor: 'pointer' }}>
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
+                    {isSuperAdmin && (
+                      <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+                        <button onClick={() => openEditModal('funding', grant)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', cursor: 'pointer' }} title="Edit Scheme">
+                          <Edit2 size={15} />
+                        </button>
+                        <button onClick={() => handleFundingDelete(grant._id)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #FCA5A5', background: 'var(--color-surface)', color: '#EF4444', cursor: 'pointer' }} title="Delete Scheme">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -915,7 +942,7 @@ const PublicConfigTab = ({ user }) => {
                         }}>{award.status}</span>
                       </div>
                       <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>
-                        <strong>Scholar:</strong> {award.scholarId?.name || 'N/A'} ({award.scholarId?.department}) | <strong>Sanctioned:</strong> {award.amountSanctioned}
+                        <strong>Scholar:</strong> {award.scholarId?.name || 'N/A'} ({award.scholarId?.department}) | <strong>Monthly Stipend:</strong> <span style={{ color: '#166534', fontWeight: 700 }}>{award.monthlyStipend || '₹37,000 / Month'}</span> | <strong>Disbursed:</strong> {award.amountDisbursed || '₹0'} | <strong>Sanctioned:</strong> {award.amountSanctioned || '—'}
                       </p>
                       {award.renewalDate && (
                         <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
@@ -1398,6 +1425,12 @@ const PublicConfigTab = ({ user }) => {
                       <option value="University">University</option>
                       <option value="Other">Other</option>
                     </select>
+                    {fundingForm.fundingBody === 'Other' && (
+                      <div style={{ marginTop: '8px' }}>
+                        <label className="form-label" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 2 }}>Specify Custom Funding Body *</label>
+                        <input type="text" required className="form-input" placeholder="e.g. Tata Trusts, NABARD" value={fundingForm.customFundingBody || ''} onChange={e => setFundingForm({...fundingForm, customFundingBody: e.target.value})} />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -1465,11 +1498,10 @@ const PublicConfigTab = ({ user }) => {
                   </div>
                 </div>
                 <div>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Status</label>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Scheme Status</label>
                   <select className="form-input" value={fundingForm.status} onChange={e => setFundingForm({...fundingForm, status: e.target.value})}>
-                    <option value="Applications Open">Applications Open</option>
-                    <option value="Actively Reviewing">Actively Reviewing</option>
-                    <option value="Call Closed">Call Closed</option>
+                    <option value="Active">Active (Scholars can be mapped)</option>
+                    <option value="Inactive">Inactive / Phased Out</option>
                   </select>
                 </div>
 
@@ -1496,13 +1528,26 @@ const PublicConfigTab = ({ user }) => {
                   <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Funding Scheme Link (Optional)</label>
                   <select className="form-input" value={fundingAwardForm.fundingOpportunityId} onChange={e => {
                     const opt = funding.find(f => f._id === e.target.value);
-                    setFundingAwardForm({
-                      ...fundingAwardForm, 
-                      fundingOpportunityId: e.target.value,
-                      awardTitle: opt ? opt.title : fundingAwardForm.awardTitle
-                    });
+                    if (opt) {
+                      const autoStipend = opt.monthlyStipend || (opt.amount.includes('/ Month') ? opt.amount.split('+')[0].trim() : '₹37,000 / Month');
+                      const autoSanctioned = opt.amount.includes('/ Month') 
+                        ? (opt.duration?.includes('5') ? '₹22,20,000 (5 Years Pool)' : '₹13,32,000 (3 Years Pool)')
+                        : opt.amount;
+                      setFundingAwardForm({
+                        ...fundingAwardForm, 
+                        fundingOpportunityId: e.target.value,
+                        awardTitle: opt.title,
+                        monthlyStipend: autoStipend,
+                        amountSanctioned: autoSanctioned
+                      });
+                    } else {
+                      setFundingAwardForm({
+                        ...fundingAwardForm,
+                        fundingOpportunityId: ''
+                      });
+                    }
                   }}>
-                    <option value="">Select Scheme (sets Title)...</option>
+                    <option value="">Select Scheme (sets Title & Stipend)...</option>
                     {funding.map(f => <option key={f._id} value={f._id}>{f.title} ({f.agency})</option>)}
                   </select>
                 </div>
@@ -1512,13 +1557,64 @@ const PublicConfigTab = ({ user }) => {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Amount Sanctioned</label>
-                    <input type="text" className="form-input" placeholder="e.g. ₹37,000/month" value={fundingAwardForm.amountSanctioned} onChange={e => setFundingAwardForm({...fundingAwardForm, amountSanctioned: e.target.value})} />
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
+                      Monthly Fellowship Stipend (Editable) *
+                    </label>
+                    <input 
+                      type="text" 
+                      required 
+                      className="form-input" 
+                      placeholder="e.g. ₹37,000 / Month" 
+                      value={fundingAwardForm.monthlyStipend} 
+                      onChange={e => setFundingAwardForm({...fundingAwardForm, monthlyStipend: e.target.value})} 
+                    />
                   </div>
                   <div>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>Total Disbursed So Far</label>
-                    <input type="text" className="form-input" placeholder="e.g. ₹6.66 Lakhs" value={fundingAwardForm.amountDisbursed} onChange={e => setFundingAwardForm({...fundingAwardForm, amountDisbursed: e.target.value})} />
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
+                      Total Sanctioned Pool (Editable)
+                    </label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. ₹22,20,000 (5 Years Pool)" 
+                      value={fundingAwardForm.amountSanctioned} 
+                      onChange={e => setFundingAwardForm({...fundingAwardForm, amountSanctioned: e.target.value})} 
+                    />
                   </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', margin: 0 }}>
+                      Total Disbursed So Far (Cumulative)
+                    </label>
+                    {fundingAwardForm.monthlyStipend && fundingAwardForm.startDate && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const start = new Date(fundingAwardForm.startDate);
+                          const now = new Date();
+                          const months = Math.max(1, (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()));
+                          const numStr = fundingAwardForm.monthlyStipend.replace(/[^\d]/g, '');
+                          const rate = parseInt(numStr, 10) || 37000;
+                          const total = months * rate;
+                          setFundingAwardForm({
+                            ...fundingAwardForm,
+                            amountDisbursed: `₹${total.toLocaleString('en-IN')} (${months} Months)`
+                          });
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#166534', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                      >
+                        ⚡ Auto-calculate from dates
+                      </button>
+                    )}
+                  </div>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. ₹4,44,000 (12 Months)" 
+                    value={fundingAwardForm.amountDisbursed} 
+                    onChange={e => setFundingAwardForm({...fundingAwardForm, amountDisbursed: e.target.value})} 
+                  />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
