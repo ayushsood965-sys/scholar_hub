@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScholarHub HPU — Executive Presentation for University Leadership</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-dark: #0d281a;
+      --primary: #133a26;
+      --primary-light: #1b4d33;
+      --accent-gold: #c59b27;
+      --accent-gold-light: #e0b84c;
+      --accent-teal: #0f766e;
+      --accent-mint: #10b981;
+      --bg-slate: #0b1319;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: var(--bg-slate);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    /* Ambient animated background */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        radial-gradient(circle at 10% 20%, rgba(19, 58, 38, 0.7) 0%, transparent 45%),
+        radial-gradient(circle at 90% 80%, rgba(15, 118, 110, 0.4) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(197, 155, 39, 0.12) 0%, transparent 60%);
+      filter: blur(60px);
+      transition: all 0.8s ease;
+    }
+
+    /* Top Control Bar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(13, 40, 26, 0.75);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 100;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      height: 42px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    }
+
+    .brand-info h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    .brand-info p {
+      font-size: 11px;
+      color: var(--accent-gold);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+
+    .nav-btn:hover {
+      background: rgba(197, 155, 39, 0.25);
+      border-color: var(--accent-gold);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .slide-counter {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      padding: 6px 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 20px;
+      border: 1px solid rgba(197, 155, 39, 0.3);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Main Slide Deck Canvas */
+    .deck-container {
+      position: absolute;
+      top: 64px;
+      bottom: 24px;
+      left: 0;
+      right: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .slide {
+      position: absolute;
+      width: 94%;
+      max-width: 1540px;
+      height: 90%;
+      background: rgba(18, 30, 24, 0.82);
+      backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      padding: 38px 46px;
+      box-shadow: var(--shadow-premium);
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.96) translateY(20px);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1) translateY(0);
+      z-index: 20;
+    }
+
+    /* Slide Header */
+    .slide-header {
+      margin-bottom: 24px;
+      flex-shrink: 0;
+    }
+
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--accent-gold);
+      background: rgba(197, 155, 39, 0.12);
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(197, 155, 39, 0.3);
+      margin-bottom: 8px;
+    }
+
+    .slide-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+    }
+
+    .slide-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* 2-Column Standard Content Grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr;
+      gap: 36px;
+      flex: 1;
+      min-height: 0;
+      align-items: center;
+    }
+
+    .text-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .text-column::-webkit-scrollbar {
+      width: 4px;
+    }
+    .text-column::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    .info-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 18px 22px;
+      transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(197, 155, 39, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--accent-gold);
+      margin-bottom: 6px;
+    }
+
+    .card-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .card-text {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bullet-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      color: #e2e8f0;
+      line-height: 1.45;
+    }
+
+    .bullet-icon {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-mint);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      margin-top: 2px;
+      font-weight: bold;
+    }
+
+    /* Media/Screenshot Column */
+    .media-column {
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .screenshot-frame {
+      position: relative;
+      width: 100%;
+      max-height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #000;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+      cursor: zoom-in;
+      transition: all 0.3s ease;
+    }
+
+    .screenshot-frame:hover {
+      border-color: var(--accent-gold);
+      box-shadow: 0 20px 50px rgba(197, 155, 39, 0.25);
+      transform: scale(1.01);
+    }
+
+    .screenshot-img {
+      width: 100%;
+      height: auto;
+      max-height: 480px;
+      object-fit: contain;
+      display: block;
+      background: #000;
+    }
+
+    .screenshot-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+      padding: 12px 18px 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .caption-pill {
+      background: rgba(16, 185, 129, 0.25);
+      color: #6ee7b7;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    /* Multi-Card Grid (For NAAC, 3 Pillars, Tech slides) */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      flex: 1;
+      align-items: stretch;
+    }
+
+    .pillar-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 20px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 14px;
+      transition: all 0.35s ease;
+    }
+
+    .pillar-card:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: var(--accent-gold);
+      transform: translateY(-4px);
+    }
+
+    .pillar-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      line-height: 1;
+    }
+
+    .pillar-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .pillar-sub {
+      font-size: 12.5px;
+      color: var(--accent-mint);
+      font-weight: 600;
+    }
+
+    .pillar-desc {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+
+    /* Title Slide Specifics */
+    .title-slide {
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at center, rgba(19, 58, 38, 0.95) 0%, rgba(10, 24, 16, 0.95) 100%);
+      border: 2px solid rgba(197, 155, 39, 0.4);
+    }
+
+    .title-logo {
+      height: 110px;
+      width: auto;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 10px 25px rgba(0,0,0,0.6));
+    }
+
+    .title-h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+      text-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+
+    .title-h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent-gold);
+      margin-top: 10px;
+    }
+
+    .title-chips {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .title-footer-note {
+      margin-top: 36px;
+      font-size: 13px;
+      color: #94a3b8;
+      max-width: 720px;
+      line-height: 1.6;
+    }
+
+    /* Comparison Table / Box */
+    .compare-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      flex: 1;
+    }
+
+    .compare-box {
+      border-radius: 20px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .compare-box.bad {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    .compare-box.good {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .compare-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+    }
+    .compare-box.bad .compare-title { color: #f87171; }
+    .compare-box.good .compare-title { color: #4ade80; }
+
+    /* Bottom Progress Bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      z-index: 100;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--primary-light), var(--accent-gold));
+      width: 4%;
+      transition: width 0.35s ease;
+    }
+
+    /* Speaker Notes Drawer (Toggled by pressing 'S') */
+    .notes-drawer {
+      position: fixed;
+      bottom: 6px;
+      right: 28px;
+      width: 440px;
+      max-height: 280px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid var(--accent-gold);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+      padding: 18px 22px;
+      z-index: 150;
+      transform: translateY(110%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .notes-drawer.open {
+      transform: translateY(0);
+    }
+
+    .notes-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 6px;
+    }
+
+    .notes-header h4 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--accent-gold);
+    }
+
+    .notes-body {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      overflow-y: auto;
+      max-height: 200px;
+    }
+
+    /* Lightbox Modal */
+    .lightbox-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(16px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      padding: 40px;
+    }
+
+    .lightbox-modal.active {
+      display: flex;
+    }
+
+    .lightbox-img {
+      max-width: 95vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Keyboard help tooltip */
+    .key-hint {
+      position: fixed;
+      bottom: 12px;
+      left: 28px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      z-index: 50;
+      display: flex;
+      gap: 12px;
+    }
+    .key-hint kbd {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-bg" id="ambientBg"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="top-bar">
+    <div class="brand-wrap">
+      <img src="./assets/hpu_logo.png" alt="HPU Crest" class="brand-logo" onerror="this.style.display='none'">
+      <div class="brand-info">
+        <h1>SCHOLARHUB HPU</h1>
+        <p>HIMACHAL PRADESH UNIVERSITY • EXECUTIVE PRESENTATION</p>
+      </div>
+    </div>
+    <div class="nav-controls">
+      <div class="slide-counter" id="slideCounter">1 / 25</div>
+      <button class="nav-btn" onclick="prevSlide()" title="Previous Slide (Left Arrow)">◀ Prev</button>
+      <button class="nav-btn" onclick="nextSlide()" title="Next Slide (Right Arrow, Space)">Next ▶</button>
+      <button class="nav-btn" onclick="toggleNotes()" title="Toggle Speaker Notes (S)">🎙 Notes</button>
+      <button class="nav-btn" onclick="toggleFullScreen()" title="Fullscreen (F)">⛶ Fullscreen</button>
+    </div>
+  </header>
+
+  <!-- Slide Canvas -->
+  <main class="deck-container" id="deckContainer">
+
+    <!-- ================= SLIDE 1: TITLE SLIDE ================= -->
+    <section class="slide title-slide active" data-title="Executive Title Slide" data-notes="Good morning Hon'ble Vice Chancellor Sir, Registrar Sir, Deans, and esteemed university officers. Today we present ScholarHub HPU, a purpose-built, zero-paper academic lifecycle and governance ecosystem designed specifically for Himachal Pradesh University.">
+      <img src="./assets/hpu_logo.png" alt="Himachal Pradesh University" class="title-logo" onerror="this.style.display='none'">
+      <h1 class="title-h1">SCHOLARHUB HPU</h1>
+      <h2 class="title-h2">Unified Ph.D. Research Lifecycle & Academic Governance Ecosystem</h2>
+      <div class="title-chips">
+        <span class="chip">Research Management (ScholarSync)</span>
+        <span class="chip">Biometric Attendance & Leave (ScholarTrack)</span>
+        <span class="chip">Public Research Directory</span>
+        <span class="chip">NAAC A++ Digital Readiness</span>
+      </div>
+      <p class="title-footer-note">
+        Presented to the Hon'ble Vice Chancellor, Registrar, Dean of Studies, and Top Officials<br>
+        <strong>Himachal Pradesh University, Summer Hill, Shimla</strong>
+      </p>
+    </section>
+
+    <!-- ================= SLIDE 2: THE INSTITUTIONAL NEED ================= -->
+    <section class="slide" data-title="Institutional Context" data-notes="Sir, higher education governance across premier universities is facing a major transition. Traditional Ph.D. management relied on physical paper files that take months moving between departments. Meanwhile, UGC regulations demand strict 75% attendance and mandatory RAC reviews. ScholarHub solves this completely.">
+      <div class="slide-header">
+        <span class="slide-badge">Strategic Vision</span>
+        <h2 class="slide-title">Executive Context: Modernizing Ph.D. Governance at HPU</h2>
+        <p class="slide-subtitle">Addressing administrative bottlenecks while accelerating UGC and NAAC institutional excellence</p>
+      </div>
+      <div class="pillars-grid">
+        <div class="pillar-card">
+          <div class="pillar-num">01</div>
+          <h3 class="pillar-title">The Legacy Challenge</h3>
+          <span class="pillar-sub">Paper-Heavy & Fragmented</span>
+          <p class="pillar-desc">
+            • Ph.D. files take weeks to travel between departmental desks and the Dean's office.<br>
+            • Lack of unified digital records for coursework, RAC reviews, and DRC evaluations.<br>
+            • Physical paper registers for scholar attendance prone to proxy marking and disputes.<br>
+            • Difficult, frantic paper collation during NAAC inspections and NIRF ranking submissions.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">02</div>
+          <h3 class="pillar-title">The ScholarHub Vision</h3>
+          <span class="pillar-sub">Zero-Paper Digital Trust</span>
+          <p class="pillar-desc">
+            • Unified cloud monorepo connecting all departments under one official university domain.<br>
+            • Transparent end-to-end doctoral lifecycle from admission to final degree award.<br>
+            • Live biometric & digital attendance linked directly to monthly fellowship releases.<br>
+            • One-click verifiable data extraction for statutory UGC, CAG audit, and NAAC accreditation.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">03</div>
+          <h3 class="pillar-title">Direct Leadership Impact</h3>
+          <span class="pillar-sub">Control, Speed & Prestige</span>
+          <p class="pillar-desc">
+            • Executive dashboard providing the Vice Chancellor real-time visibility across all 30+ departments.<br>
+            • Complete fiscal transparency protecting university administration during government audits.<br>
+            • Drastically enhances HPU's NIRF academic perception and global research collaboration.<br>
+            • Empowers faculty supervisors and research scholars with transparent milestones.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 3: GATEWAY OVERVIEW ================= -->
+    <section class="slide" data-title="The Central Gateway" data-notes="The Gateway at scholarhubhpu.in is the front door of the university's academic systems. Instead of having separate portals that confuse students, this gives a single sign-on landing place with glassmorphic HPU branding.">
+      <div class="slide-header">
+        <span class="slide-badge">Portal 1: Central Gateway</span>
+        <h2 class="slide-title">The Central Gateway: Unified Digital Entrance for HPU</h2>
+        <p class="slide-subtitle">Connecting scholars, faculty, and administrators under one official institutional domain</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">What It Is</div>
+            <h3 class="card-heading">The Single Front Door (scholarhubhpu.in)</h3>
+            <p class="card-text">
+              The gateway acts as the central entrance to HPU's student and faculty services. It welcomes visitors with university heritage visuals and routes authorized users dynamically to their designated academic workspaces.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Why It Was Developed & Benefits</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Eliminates Confusion:</strong> No more scattered URLs. A single remembered domain for all Ph.D. lifecycle and attendance services.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Unified Single Sign-On (SSO):</strong> One set of verified credentials grants access across all portal modules.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Public Academic Research Directory:</strong> Houses the public-facing repository showcasing HPU's scholars and faculty to the world.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Who is it for?</strong> All university stakeholders: Prospective students, Ph.D. scholars, faculty guides, Deans, and external visitors.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/01_gateway_hero.png')">
+            <img src="./assets/01_gateway_hero.png" alt="Gateway Landing Page" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>HPU Central Gateway Landing Interface</span>
+              <span class="caption-pill">LIVE DEPLOYMENT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 4: ACADEMIC DIRECTORY ================= -->
+    <section class="slide" data-title="Academic Research Directory" data-notes="This is the Academic Research Directory. It is open to the public and displays every academic department, approved guides, doctoral scholars, and active research thrusts. This directly impacts HPU's NIRF Perception score and helps win research grants.">
+      <div class="slide-header">
+        <span class="slide-badge">Portal 1: Gateway</span>
+        <h2 class="slide-title">Academic Research Directory: Showcasing HPU's Intellectual Wealth</h2>
+        <p class="slide-subtitle">Global visibility, interdisciplinary collaborations, and elevated NIRF perception</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">What It Is</div>
+            <h3 class="card-heading">Public-Facing Department & Scholar Directory</h3>
+            <p class="card-text">
+              A live, searchable directory accessible to peer institutions, funding bodies, and prospective candidates, categorizing every department from Computer Science and Biotechnology to Law and Humanities.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Strategic University Benefits</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Attracts National & Global Funding:</strong> Agencies like DST, CSIR, ICSSR, and UGC can instantly locate approved labs and research expertise at HPU.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Direct NIRF 'Perception' Boost:</strong> High digital transparency elevates university reputation among academic peers across India.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Interdisciplinary Synergy:</strong> Enables scholars in different faculties to discover joint guides and cross-departmental projects.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Who is it for?</strong> Global researchers, funding bodies, industry partners, prospective scholars, and NAAC assessment teams.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/03_academic_directory.png')">
+            <img src="./assets/03_academic_directory.png" alt="Academic Research Directory" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Public Department Explorer & Scholar Repository</span>
+              <span class="caption-pill">PUBLIC FACING</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 5: SCHOLARSYNC RMS OVERVIEW ================= -->
+    <section class="slide" data-title="ScholarSync Overview" data-notes="Now we come to the Research Management System, ScholarSync. This is the heart of doctoral governance. It maps the candidate through 6 strict stages: Coursework, DRC allocation, Synopsis defense, 6-monthly RAC reviews, Pre-submission, and the final Viva-Voce defense.">
+      <div class="slide-header">
+        <span class="slide-badge">Portal 2: Research Management</span>
+        <h2 class="slide-title">ScholarSync: Complete Ph.D. Lifecycle Tracking Engine</h2>
+        <p class="slide-subtitle">A digital highway from initial candidate registration to convocation degree award</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">What It Is</div>
+            <h3 class="card-heading">End-to-End Ph.D. Lifecycle Tracker (sync.scholarhubhpu.in)</h3>
+            <p class="card-text">
+              A comprehensive system designed strictly in alignment with UGC (Minimum Standards for Award of Ph.D.) Regulations. Every academic milestone is recorded digitally with immutable timestamps.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Why It Was Developed</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Eliminates File Transit Delays:</strong> Replaces manual files that previously took weeks or months to move between offices.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Automated Milestone Progression:</strong> Strict gatekeeping ensures no candidate skips coursework, RAC reviews, or plagiarism checks.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Centralized Doctoral Vault:</strong> All synopses, RAC minutes, journal papers, and dissertations stored securely in the cloud.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Who is it for?</strong> Ph.D. Candidates, Research Guides, DRC/RAC Members, Department HODs, Dean of Studies, and the Vice Chancellor.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/05_sync_phd_lifecycle_workflow.png')">
+            <img src="./assets/05_sync_phd_lifecycle_workflow.png" alt="Ph.D. Lifecycle Workflow" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Interactive Ph.D. Lifecycle Transition Architecture</span>
+              <span class="caption-pill">UGC COMPLIANT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 6: NAAC & NIRF BENEFIT ================= -->
+    <section class="slide" data-title="NAAC & NIRF Data Readiness" data-notes="Hon'ble VC Sir, this is one of the most critical institutional benefits. Preparing for NAAC Criterion 3 currently takes months of panic across departments. ScholarSync extracts all research grants, publications, patents, and Ph.D. completion turnaround times with a single click, completely verified.">
+      <div class="slide-header">
+        <span class="slide-badge">Core Institutional Benefit</span>
+        <h2 class="slide-title">Institutional Impact: Automated NAAC & NIRF Digital Readiness</h2>
+        <p class="slide-subtitle">Instant extraction of verified research metrics for NAAC Criterion 3 without manual paperwork</p>
+      </div>
+      <div class="pillars-grid" style="grid-template-columns: repeat(2, 1fr); gap: 24px;">
+        <div class="pillar-card">
+          <div class="pillar-num" style="font-size: 22px;">NAAC 3.1 & 3.2</div>
+          <h3 class="pillar-title">Research Grants & Innovation Ecosystem</h3>
+          <span class="pillar-sub">Extramural Funding & Patent Repository</span>
+          <p class="pillar-desc">
+            • Catalogues all extramural research grants (DST, DBT, CSIR, ICSSR, UGC) with sanctioned budgets and PIs.<br>
+            • Tracks university research laboratories and intellectual property (patents filed, published, and granted).<br>
+            • Generates instant financial summaries required for NAAC self-study reports (SSR).
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num" style="font-size: 22px;">NAAC 3.4.2</div>
+          <h3 class="pillar-title">Ph.D. Awards per Recognized Guide</h3>
+          <span class="pillar-sub">Audit-Proof Doctoral Completion Records</span>
+          <p class="pillar-desc">
+            • Maintains an indisputable digital record of candidate registration dates, allocated guides, and completion timelines.<br>
+            • Satisfies NAAC peer team requirements with verified thesis approval notifications and viva minutes.<br>
+            • Zero risk of discrepancy between departmental records and central administrative data.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num" style="font-size: 22px;">NAAC 3.4.5 & 3.4.6</div>
+          <h3 class="pillar-title">Scopus & UGC CARE Publications</h3>
+          <span class="pillar-sub">Automated DOI & Indexing Verification</span>
+          <p class="pillar-desc">
+            • Digital validation of scholar research papers with DOI, Scopus indexing, and UGC CARE category checking.<br>
+            • Candidates cannot proceed to pre-submission without fulfilling mandatory publication thresholds.<br>
+            • Direct integration with academic databases (Scopus / OpenAlex) for citation counts.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num" style="font-size: 22px;">NIRF ACCREDITATION</div>
+          <h3 class="pillar-title">One-Click Institutional Data Export</h3>
+          <span class="pillar-sub">Zero Last-Minute Administrative Panic</span>
+          <p class="pillar-desc">
+            • Replaces months of frantic paper collation across 30+ university departments.<br>
+            • Generates pre-formatted NIRF and NAAC tables ready for immediate upload to portal.<br>
+            • Every metric is backed by immutable digital records, eliminating peer review objections.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 7: FEATURE 1: ONBOARDING & ALLOCATION ================= -->
+    <section class="slide" data-title="Candidate Registration & Guide Allotment" data-notes="Stage 1: Every candidate receives a unique 9-digit ScholarHub number. Coursework completion is validated online, and the DRC officially allocates research supervisors while strictly enforcing UGC guide limits.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarSync Feature</span>
+        <h2 class="slide-title">Stage 1: Verified Onboarding & DRC Supervisor Allocation</h2>
+        <p class="slide-subtitle">Unique 9-digit SH number, coursework clearance, and transparent guide allotment</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Formal Enrollment & Guide Allocation</h3>
+            <p class="card-text">
+              Upon admission, each scholar is assigned a unique 9-digit <strong>SH-No.</strong> (ScholarHub ID). This ensures cross-portal synchronization across both research and attendance systems.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Governance Features</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Coursework Clearance:</strong> Scholar uploads coursework results; sequentially endorsed by Supervisor and approved by HOD.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>UGC Guide Quota Enforcement:</strong> Enforces guide limits (Prof: 8, Assoc: 6, Asst: 4) preventing guide overloading.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>DRC Allocation Resolution:</strong> Departmental Research Committee meeting resolutions recorded directly in the portal.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Single-Action Verification:</strong> HOD verifies enrollment and supervisor allotment in one streamlined step.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/08_sync_student_overview.png')">
+            <img src="./assets/08_sync_student_overview.png" alt="Student Profile & Overview" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Doctoral Scholar Academic Profile & Unique SH-No. Console</span>
+              <span class="caption-pill">STAGE 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 8: FEATURE 2: SYNOPSIS & DRC ================= -->
+    <section class="slide" data-title="Research Synopsis Approval" data-notes="Stage 2: Synopsis Approval. The scholar submits their research synopsis. Guide verifies it, and the HOD schedules the formal DRC defense meeting with automated email notices. The DRC outcome is officially locked in the system.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarSync Feature</span>
+        <h2 class="slide-title">Stage 2: Research Synopsis Clearance & Formal DRC Review</h2>
+        <p class="slide-subtitle">Digital submission, formal DRC meeting scheduling, and committee outcome ledger</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Rigorous Research Proposal Defense</h3>
+            <p class="card-text">
+              Ensures that every doctoral research problem is thoroughly vetted and documented by the Departmental Research Committee before active research begins.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Workflow Highlights</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Digital Synopsis Upload:</strong> Scholar uploads research objectives, literature review, and methodology.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Automated DRC Meeting Notices:</strong> HOD inputs date, time, and venue; portal dispatches official email notices to panel members and scholar.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Permanent DRC Ledger:</strong> Records committee outcome (Approved, Provisional Clearance, or Revisions Required) with feedback.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>No Lost Proposals:</strong> Eliminates physical paperwork delays between departments and Dean's office.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/05_sync_phd_lifecycle_workflow.png')">
+            <img src="./assets/05_sync_phd_lifecycle_workflow.png" alt="DRC Meeting Architecture" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>DRC Meeting Scheduling & Synopsis Evaluation Workflow</span>
+              <span class="caption-pill">STAGE 2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 9: FEATURE 3: 6-MONTH RAC MONITORING ================= -->
+    <section class="slide" data-title="6-Month RAC Progress Monitoring" data-notes="Stage 3: 6-Monthly RAC Reviews. Previously, scholars would disappear for years without oversight. ScholarSync enforces mandatory semestral progress uploads. The Research Advisory Committee enters meeting minutes and grades progress, flagging inactive candidacies immediately.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarSync Feature</span>
+        <h2 class="slide-title">Stage 3: Mandatory 6-Month RAC Progress Monitoring</h2>
+        <p class="slide-subtitle">Eliminating dormant candidacies through continuous, verified academic tracking</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Periodic Research Advisory Committee Oversight</h3>
+            <p class="card-text">
+              Under UGC mandates, every Ph.D. scholar must undergo a formal 6-month progress evaluation by their Research Advisory Committee (RAC). ScholarSync digitizes this completely.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Capabilities</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Semestral Progress Uploads:</strong> Scholars submit structured reports detailing experimental results, chapters written, and conferences attended.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>RAC Evaluation & Remarks:</strong> Committee members record meeting minutes, performance ratings, and directional feedback online.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Early Warning Alerts:</strong> Automatically flags lagging or inactive scholars so supervisors can intervene constructively.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Audit-Proof Progress Trail:</strong> Creates an indisputable record proving active, continuous research before thesis submission.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/09_sync_student_milestones_rac.png')">
+            <img src="./assets/09_sync_student_milestones_rac.png" alt="RAC Milestones" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Scholar Milestone Tracker & 6-Month RAC Review Ledger</span>
+              <span class="caption-pill">STAGE 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 10: FEATURE 4: PUBLICATIONS & GRANTS ================= -->
+    <section class="slide" data-title="Publications & Extramural Grants" data-notes="Stage 4: Publications, Patents, and Funding. We have direct DOI and OpenAlex metadata integration. The system catalogues research papers and checks Scopus and UGC CARE status before thesis clearance. We also have an extramural grant tracker showing all sanctioned funds.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarSync Feature</span>
+        <h2 class="slide-title">Stage 4: Research Publications, Patents & Extramural Grants</h2>
+        <p class="slide-subtitle">Validated intellectual property bank and research funding repository</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Capturing HPU's Scholarly Output</h3>
+            <p class="card-text">
+              Maintains an institutional repository of all research publications, conference proceedings, patents, and externally funded projects affiliated with Himachal Pradesh University.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Highlights</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>UGC Publication Gatekeeping:</strong> Automatically verifies mandatory publication thresholds (Scopus / UGC CARE) before pre-submission is unlocked.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Automated DOI & Metadata Fetch:</strong> Instant retrieval of paper title, journal impact factor, citations, and authors via OpenAlex.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Extramural Grants Management:</strong> Tracks sanctioned project funds (DST, DBT, UGC), project PIs, and utilization records.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Patent Registry:</strong> Centralized university record of intellectual property filed or granted.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/06_sync_funding_grants.png')">
+            <img src="./assets/06_sync_funding_grants.png" alt="Extramural Grants Ledger" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>University Research Grants & Extramural Funding Console</span>
+              <span class="caption-pill">STAGE 4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 11: FEATURE 5: PRE-SUBMISSION & PLAGIARISM ================= -->
+    <section class="slide" data-title="Pre-Submission Colloquium" data-notes="Stage 5: Pre-Submission Colloquium & Plagiarism Screening. Scholars must upload Turnitin or Urkund clearance certificates showing under 10% similarity. The HOD schedules the departmental colloquium. Only when cleared does the final bound thesis submission unlock.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarSync Feature</span>
+        <h2 class="slide-title">Stage 5: Pre-Submission Colloquium & Plagiarism Screening</h2>
+        <p class="slide-subtitle">Guaranteed academic integrity before final bound dissertation production</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Strict Pre-Submission Integrity Protocols</h3>
+            <p class="card-text">
+              Ensures that no dissertation is bound or dispatched without formal departmental presentation, rigorous plagiarism screening, and verified supervisor clearance.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Protocols</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Plagiarism Verification:</strong> Digital upload of official Turnitin/Urkund plagiarism similarity report (&lt;10% similarity).</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Pre-Submission Colloquium:</strong> HOD schedules departmental presentation open to faculty and research scholars.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Formal Clearance Recording:</strong> Committee records evaluation outcome ('Cleared' or 'Uncleared with Corrections').</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Binding Thesis Lock:</strong> Final bound thesis upload is locked by code until pre-submission clearance is formally registered.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/07_sync_publications_repository.png')">
+            <img src="./assets/07_sync_publications_repository.png" alt="Publications & Dissertation Vault" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Publications Verification & Pre-Submission Package Repository</span>
+              <span class="caption-pill">STAGE 5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 12: FEATURE 6: FINAL THESIS & VIVA ================= -->
+    <section class="slide" data-title="Final Thesis & Viva-Voce" data-notes="Stage 6: Final Bound Thesis, Examiner Dispatch, and Oral Defense. Supervisor signs off, HOD approves, external examiner dispatch tracking is recorded, examiner evaluation reports are registered, and the final Viva-Voce defense is held. Degree award is officially archived.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarSync Feature</span>
+        <h2 class="slide-title">Stage 6: External Dispatch, Viva-Voce Defense & Degree Award</h2>
+        <p class="slide-subtitle">Complete evaluation tracking to the final conferment of the Ph.D. degree</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Transparent Path to Convocation</h3>
+            <p class="card-text">
+              Eliminates the traditional mystery around thesis evaluation by tracking every step from external examiner dispatch to the final oral defense.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Milestones</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Supervisor & HOD Digital Sign-Off:</strong> Bound thesis verified by guide and departmental chair.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>External Examiner Dispatch Logs:</strong> Tracks confidential examiner dispatch numbers, eliminating 'lost in transit' claims.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Viva-Voce Scheduling:</strong> Positive reports unlock oral defense scheduling with automated committee notices.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Official Degree Conferment:</strong> Successful defense automatically generates degree award recommendation to Academic Council.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/11_sync_faculty_supervisor_dashboard.png')">
+            <img src="./assets/11_sync_faculty_supervisor_dashboard.png" alt="Supervisor Sign-Off Dashboard" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Supervisor Final Thesis Endorsement & Sign-Off Console</span>
+              <span class="caption-pill">STAGE 6</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 13: LEADERSHIP DASHBOARDS ================= -->
+    <section class="slide" data-title="Role-Based Dashboards" data-notes="Here you see our role-based dashboards. On the left is the Faculty Supervisor console showing all assigned scholars and pending reviews. On the right is the HOD and Dean console for scheduling DRC meetings, managing transfers, and tracking all department scholars.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarSync Dashboards</span>
+        <h2 class="slide-title">Role-Based Leadership: Supervisor & HOD Command Centers</h2>
+        <p class="slide-subtitle">Tailored interfaces for faculty supervisors, department chairs, and university deans</p>
+      </div>
+      <div class="content-grid" style="grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/11_sync_faculty_supervisor_dashboard.png')">
+            <img src="./assets/11_sync_faculty_supervisor_dashboard.png" alt="Supervisor Dashboard" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Faculty Supervisor Dashboard: Active Candidates & Pending Reviews</span>
+              <span class="caption-pill">SUPERVISOR</span>
+            </div>
+          </div>
+          <div class="info-card" style="margin-top: 14px; width: 100%;">
+            <div class="card-label">Supervisor Capabilities</div>
+            <p class="card-text">Live candidate roster, pending coursework verifications, 6-month RAC review uploads, thesis draft feedback, and sign-offs.</p>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/12_sync_hod_admin_dashboard.png')">
+            <img src="./assets/12_sync_hod_admin_dashboard.png" alt="HOD Admin Dashboard" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>HOD & Dean Dashboard: DRC Scheduling & Department Oversight</span>
+              <span class="caption-pill">HOD / DEAN</span>
+            </div>
+          </div>
+          <div class="info-card" style="margin-top: 14px; width: 100%;">
+            <div class="card-label">HOD & Dean Capabilities</div>
+            <p class="card-text">Department-wide candidate tracking, DRC meeting scheduling, guide re-allocation / global transfers, and degree award conferment.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 14: SCHOLARTRACK AMS OVERVIEW ================= -->
+    <section class="slide" data-title="ScholarTrack AMS Overview" data-notes="Now we present Portal 3: ScholarTrack, the Attendance Management System. Paper registers in departments are prone to proxy marking and disputes. ScholarTrack provides daily attendance logs, timetable integration, and paperless leave workflows.">
+      <div class="slide-header">
+        <span class="slide-badge">Portal 3: Attendance Management</span>
+        <h2 class="slide-title">ScholarTrack: Integrated Attendance & Leave Engine</h2>
+        <p class="slide-subtitle">Digital attendance, transparent leave balances, and automated UGC 75% rule enforcement</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">What It Is</div>
+            <h3 class="card-heading">Academic Presence & Leave Engine (track.scholarhubhpu.in)</h3>
+            <p class="card-text">
+              An institutional attendance platform connecting students, research scholars, teaching faculty, and department heads. It shares the same central database as ScholarSync for seamless user role resolution.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Why It Was Developed</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Enforces UGC 75% Mandatory Attendance:</strong> Replaces physical registers with verified digital records for exam eligibility.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Fellowship Disbursement Assurance:</strong> Generates certified monthly attendance sheets required for releasing stipends.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Multi-Tier Paperless Leave:</strong> Students apply online; guides recommend; HODs approve with automatic balance updates.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Who is it for?</strong> Ph.D. Scholars, PG Students, Course Instructors, HODs, Dean of Studies, and Finance/Accounts branch.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/13_track_student_overview.png')">
+            <img src="./assets/13_track_student_overview.png" alt="ScholarTrack Student Overview" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>ScholarTrack Student & Scholar Academic Presence Overview</span>
+              <span class="caption-pill">LIVE DEPLOYMENT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 15: FISCAL BENEFIT & STIPENDS ================= -->
+    <section class="slide" data-title="Fiscal Integrity & Stipends" data-notes="Hon'ble VC Sir, this slide is vital for the Finance Officer and Registrar. Government statutory auditors from the CAG and State Accountant General strictly demand verified attendance proof before admitting fellowship expenses. ScholarTrack protects the university with an immutable audit trail.">
+      <div class="slide-header">
+        <span class="slide-badge">Core Institutional Benefit</span>
+        <h2 class="slide-title">University Benefit: Fiscal Integrity & Fellowship Compliance</h2>
+        <p class="slide-subtitle">Audit-proof attendance certification for JRF, SRF, NFSC, and state research fellowships</p>
+      </div>
+      <div class="pillars-grid">
+        <div class="pillar-card">
+          <div class="pillar-num">01</div>
+          <h3 class="pillar-title">CAG & State Audit Protection</h3>
+          <span class="pillar-sub">Statutory Compliance</span>
+          <p class="pillar-desc">
+            Government auditors strictly demand physical attendance logs before admitting fellowship expenditures. ScholarTrack provides immutable, timestamped monthly digital attendance extracts for every disbursed rupee.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">02</div>
+          <h3 class="pillar-title">Zero Ghost Scholars</h3>
+          <span class="pillar-sub">Fellowship Verification</span>
+          <p class="pillar-desc">
+            Prevents unauthorized stipend disbursements to candidates absent without approved leave. Finance office receives certified attendance sheets directly from HOD dashboards, stopping fraudulent claims.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">03</div>
+          <h3 class="pillar-title">Dispute-Free Governance</h3>
+          <span class="pillar-sub">Total Transparency</span>
+          <p class="pillar-desc">
+            Live attendance percentage meters and transparent leave balance ledgers eliminate end-of-semester arguments regarding examination detention, hall ticket denial, and stipend deductions.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 16: FEATURE 1: DAILY LOGS & GAUGES ================= -->
+    <section class="slide" data-title="Daily Attendance & Live Percentages" data-notes="ScholarTrack Feature 1: Live attendance tracking. The student sees an interactive percentage ring. If their attendance drops towards 75%, it turns amber, and below 75% red. Scholars have complete visibility into their presence records.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarTrack Feature</span>
+        <h2 class="slide-title">Feature 1: Daily Attendance Logs & Real-Time Percentage Tracking</h2>
+        <p class="slide-subtitle">Live circular percentage gauges and historical subject-wise attendance logs</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Real-Time Attendance Health at a Glance</h3>
+            <p class="card-text">
+              Replaces manual paper rolls with dynamic digital tracking. Students and scholars can inspect their attendance health at any moment from their laptop or mobile phone.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Highlights</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Visual Percentage Gauge:</strong> Circular progress ring clearly shows current standing against the mandatory 75% cutoff.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Detailed Session Ledger:</strong> Records date, time, subject, marked status (Present, Absent, Duty Leave), and session instructor.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Zero End-of-Term Shocks:</strong> Students know their attendance status on any given day without having to request manual records.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/14_track_student_attendance_logs.png')">
+            <img src="./assets/14_track_student_attendance_logs.png" alt="Student Attendance Logs" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Real-Time Attendance Gauge & Session History Ledger</span>
+              <span class="caption-pill">FEATURE 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 17: FEATURE 2: LEAVE MANAGEMENT ================= -->
+    <section class="slide" data-title="Multi-Tier Leave Management" data-notes="Feature 2: Paperless Leave Management. Scholars apply online for Casual, Duty, or Medical leave, uploading certificates directly. The guide recommends it, HOD grants final approval, and quotas adjust automatically in the database.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarTrack Feature</span>
+        <h2 class="slide-title">Feature 2: Multi-Tier Paperless Leave Management</h2>
+        <p class="slide-subtitle">Transparent leave quotas, supporting document uploads, and multi-tier approval chains</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">End-to-End Digital Leave Administration</h3>
+            <p class="card-text">
+              Eliminates physical leave slips. Provides an auditable digital chain for Casual Leave, Duty Leave (field surveys, conferences), and Medical Leave.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Capabilities</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Digital Document Upload:</strong> Medical certificates or conference invitations attached directly to the application.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Two-Tier Approval Workflow:</strong> Candidate submits -> Supervisor recommends -> HOD grants final approval.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Live Balance Accounting:</strong> Approved leaves automatically deduct from the candidate's quota ledger and adjust attendance logs.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Transactional Email Notifications:</strong> Instant confirmation emails sent to scholar upon approval or rejection with remarks.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/15_track_student_leave_management.png')">
+            <img src="./assets/15_track_student_leave_management.png" alt="Leave Management Console" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Paperless Leave Application & Quota Balance Console</span>
+              <span class="caption-pill">FEATURE 2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 18: FEATURE 3: DEFAULTER ENGINE ================= -->
+    <section class="slide" data-title="Defaulter Risk Engine" data-notes="Feature 3: Defaulter Risk Engine. The system computes attendance across every class and automatically flags students below 75% for HODs and Deans. This provides legally defensible criteria for hall ticket withholding.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarTrack Feature</span>
+        <h2 class="slide-title">Feature 3: Defaulter Risk Engine & Automated Detention Alerts</h2>
+        <p class="slide-subtitle">Algorithmic identification of at-risk candidates (<75%) and legally defensible exam holds</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Feature Overview</div>
+            <h3 class="card-heading">Proactive Academic Standards Enforcement</h3>
+            <p class="card-text">
+              An automated engine constantly scans attendance data across all courses, detecting students in the critical zone (&lt;75% and &lt;65%) well before examinations start.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Governance Benefits</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>HOD & Dean Drill-Down:</strong> Department chairs can review attendance logs, missed lectures, and leave exemptions with one click.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Legally Defensible Examination Holds:</strong> Removes subjective bias; detention lists are backed by immutable mathematical records.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Early Warning Alerts:</strong> Students receive proactive warning notices weeks in advance to recover their attendance.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/17_track_hod_approvals_defaulters.png')">
+            <img src="./assets/17_track_hod_approvals_defaulters.png" alt="Defaulters & Approvals" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Department Defaulter Analytics & Multi-Level Approvals Tab</span>
+              <span class="caption-pill">FEATURE 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 19: CLUBBED FEATURES ================= -->
+    <section class="slide" data-title="Corrections & Policy Masters" data-notes="Here we have clubbed operational features: Attendance corrections for missed punches on official duty, subject-semester mapping, and the institutional master engine where admins configure university holidays and leave policies.">
+      <div class="slide-header">
+        <span class="slide-badge">ScholarTrack Masters</span>
+        <h2 class="slide-title">Operational Controls: Attendance Corrections & Policy Engine</h2>
+        <p class="slide-subtitle">Correction workflows, subject-semester mapping, and institutional holiday policy controls</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Clubbed Administrative Modules</div>
+            <h3 class="card-heading">Fine-Grained Institutional Flexibility</h3>
+            <p class="card-text">
+              Ensures the portal adapts to real-world university operations, special circumstances, and departmental academic calendars.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Capabilities</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Attendance Correction Workflow:</strong> If a student misses punching due to university assignment, they request correction with written justification; approved by faculty & HOD.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Subject-Semester Mapping:</strong> Seamlessly links batches, subjects, faculty teachers, and lecture hours.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Master Holiday & Session Rules:</strong> Central admin sets university holiday calendars, academic session dates, and leave rules.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Audit Logging:</strong> Every punch adjustment is stamped with user ID, IP address, and date for security.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/18_track_admin_console.png')">
+            <img src="./assets/18_track_admin_console.png" alt="Admin Master Console" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Admin Master Configuration & Institutional Policy Rules</span>
+              <span class="caption-pill">ADMIN MASTERS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 20: TECH ARCHITECTURE ================= -->
+    <section class="slide" data-title="Lightweight Architecture" data-notes="Now we highlight the technology. Unlike traditional clunky university ERPs that cost crores and crash constantly, ScholarHub is built on a modern React plus Node.js monorepo with MongoDB. Pages load in under 0.8 seconds even on slow hill-station internet connections.">
+      <div class="slide-header">
+        <span class="slide-badge">Core Technology</span>
+        <h2 class="slide-title">Technology Advantage: Lightweight, High-Speed MERN Monorepo</h2>
+        <p class="slide-subtitle">Engineered for lightning performance, institutional reliability, and zero costly hardware</p>
+      </div>
+      <div class="pillars-grid">
+        <div class="pillar-card">
+          <div class="pillar-num">01</div>
+          <h3 class="pillar-title">Zero ERP Bloatware</h3>
+          <span class="pillar-sub">React (Vite) + Express Architecture</span>
+          <p class="pillar-desc">
+            Built using modern React Single Page Application (SPA) with Vite. Pages load in under 0.8s even on slow internet connections in hilly areas, unlike heavy proprietary ERPs that crash under peak semester loads.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">02</div>
+          <h3 class="pillar-title">Unified Database</h3>
+          <span class="pillar-sub">Durable MongoDB Monorepo</span>
+          <p class="pillar-desc">
+            A single, robust database powers Gateway, ScholarSync, and ScholarTrack. Candidate records, credentials, and 9-digit SH-numbers are shared seamlessly across modules without redundant data entry or desynchronization.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">03</div>
+          <h3 class="pillar-title">Bank-Grade Security</h3>
+          <span class="pillar-sub">JWT Authentication & SSL HTTPS</span>
+          <p class="pillar-desc">
+            Secure JWT session tokens with bcrypt-salted encryption. Strict role-based access control (RBAC) separates scholar, supervisor, and HOD privileges with end-to-end HTTPS SSL on all university subdomains.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 21: PWA MOBILE APPS ================= -->
+    <section class="slide" data-title="PWA Mobile Apps" data-notes="Technology slide 2: Progressive Web Apps (PWA). Faculty and scholars do not need to download heavy apps from app stores. They can install ScholarHub directly to their mobile home screens in 2 seconds. It takes under 2 megabytes and works even on weak 3G or 4G connections.">
+      <div class="slide-header">
+        <span class="slide-badge">Core Technology</span>
+        <h2 class="slide-title">Mobile Accessibility: Progressive Web Apps (PWA) on Any Phone</h2>
+        <p class="slide-subtitle">Installable native experience on Android and iOS without app store friction</p>
+      </div>
+      <div class="content-grid" style="grid-template-columns: 1.1fr 1fr;">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">PWA Mobile Technology</div>
+            <h3 class="card-heading">Zero App Store Installation Friction</h3>
+            <p class="card-text">
+              Both ScholarSync and ScholarTrack are Progressive Web Apps (PWAs). Users tap "Install App" directly in their phone browser to add a native icon to their home screen.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Why It Benefits HPU</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Ultra-Lightweight (&lt;2MB):</strong> Does not consume phone storage. Perfect for students and busy professors.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Optimized for Hilly Mountain Connectivity:</strong> Service workers cache crucial profile and attendance data for offline review during intermittent signals.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Universal Compatibility:</strong> Works seamlessly across Android, iPhone, iPad, tablets, and Windows/Mac laptops.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>No App Store Delays:</strong> University updates deploy instantly to all users without waiting for Apple or Google approval.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column" style="flex-direction: row; gap: 16px; justify-content: center;">
+          <div class="screenshot-frame" style="width: 200px; max-height: 440px;" onclick="openLightbox('./assets/19_mobile_pwa_track.png')">
+            <img src="./assets/19_mobile_pwa_track.png" alt="ScholarTrack Mobile PWA" class="screenshot-img" style="max-height: 440px; object-fit: cover;">
+            <div class="screenshot-caption"><span>ScholarTrack Mobile</span></div>
+          </div>
+          <div class="screenshot-frame" style="width: 200px; max-height: 440px;" onclick="openLightbox('./assets/20_mobile_pwa_sync.png')">
+            <img src="./assets/20_mobile_pwa_sync.png" alt="ScholarSync Mobile PWA" class="screenshot-img" style="max-height: 440px; object-fit: cover;">
+            <div class="screenshot-caption"><span>ScholarSync Mobile</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 22: EMAIL SERVERS ================= -->
+    <section class="slide" data-title="Stalwart SMTP Email Server" data-notes="Technology slide 3: Institutional Stalwart SMTP Mail Server. We host a high-throughput mail server admin@scholarhubhpu.in with durable MongoDB queueing. Over 39 event triggers send instant branded alerts for DRC meetings, RAC reviews, leave approvals, and degree awards.">
+      <div class="slide-header">
+        <span class="slide-badge">Core Technology</span>
+        <h2 class="slide-title">Enterprise Communications: Self-Hosted Stalwart SMTP Server</h2>
+        <p class="slide-subtitle">Dedicated institutional email server, durable queues, and real-time delivery tracking</p>
+      </div>
+      <div class="content-grid">
+        <div class="text-column">
+          <div class="info-card">
+            <div class="card-label">Infrastructure Overview</div>
+            <h3 class="card-heading">Dedicated Institutional Mail Engine (admin@scholarhubhpu.in)</h3>
+            <p class="card-text">
+              ScholarHub operates its own dedicated high-throughput Stalwart SMTP server, completely independent of costly third-party email APIs.
+            </p>
+          </div>
+          <div class="info-card">
+            <div class="card-label">Key Messaging Capabilities</div>
+            <ul class="bullet-list">
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Durable MongoDB Queue:</strong> Outgoing emails are queued via an EmailQueue collection and processed steadily by background workers with retry logic.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Catalog of 39+ Trigger Events:</strong> Automated instant emails for DRC schedules, RAC reminders, leave approvals, supervisor allocations, and degree awards.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Delivery Audit Logs:</strong> Admin dashboard tracks delivery timestamps, recipient logs, and diagnostics for 100% accountability.</li>
+              <li class="bullet-item"><span class="bullet-icon">✓</span> <strong>Branded HPU Templates:</strong> Professional emails styled with university colors and direct action buttons.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="media-column">
+          <div class="screenshot-frame" onclick="openLightbox('./assets/18_track_admin_console.png')">
+            <img src="./assets/18_track_admin_console.png" alt="Email Delivery Logs" class="screenshot-img">
+            <div class="screenshot-caption">
+              <span>Real-Time Email Delivery & Notification Audit Console</span>
+              <span class="caption-pill">SMTP AUDIT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 23: BEFORE VS AFTER ================= -->
+    <section class="slide" data-title="Transformation Summary" data-notes="Here is a clear comparison of HPU before and after ScholarHub. Moving from slow paper transit, missing records, manual attendance registers, and NAAC anxiety to instant digital lifecycle tracking, verified audit trails, and automatic compliance.">
+      <div class="slide-header">
+        <span class="slide-badge">Strategic Summary</span>
+        <h2 class="slide-title">Transformation Summary: Before vs. After ScholarHub at HPU</h2>
+        <p class="slide-subtitle">Clear institutional comparison across administrative efficiency, compliance, and governance</p>
+      </div>
+      <div class="compare-container">
+        <div class="compare-box bad">
+          <h3 class="compare-title">❌ BEFORE SCHOLARHUB (Legacy Operations)</h3>
+          <ul class="bullet-list">
+            <li class="bullet-item"><span class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</span> Ph.D. files take weeks to travel between departmental desks and dean's office.</li>
+            <li class="bullet-item"><span class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</span> Missing research synopses, handwritten RAC reviews, and untracked coursework.</li>
+            <li class="bullet-item"><span class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</span> Paper registers for scholar attendance prone to proxy marking and disputes.</li>
+            <li class="bullet-item"><span class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</span> Stipend disbursements vulnerable to statutory audit objections due to lack of proof.</li>
+            <li class="bullet-item"><span class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</span> Frantic, months-long paper collation before NAAC peer team and NIRF rankings.</li>
+            <li class="bullet-item"><span class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</span> No public visibility into HPU faculty research thrusts and active laboratories.</li>
+          </ul>
+        </div>
+        <div class="compare-box good">
+          <h3 class="compare-title">✅ AFTER SCHOLARHUB (Modern Digital Governance)</h3>
+          <ul class="bullet-list">
+            <li class="bullet-item"><span class="bullet-icon">✓</span> Instant digital lifecycle forwarding with timestamped supervisor & HOD sign-offs.</li>
+            <li class="bullet-item"><span class="bullet-icon">✓</span> Structured digital records for every milestone: DRC, RAC, Turnitin, & Viva-Voce.</li>
+            <li class="bullet-item"><span class="bullet-icon">✓</span> Verified digital/biometric daily attendance with real-time 75% percentage gauge.</li>
+            <li class="bullet-item"><span class="bullet-icon">✓</span> 100% audit-proof fellowship certificates for Accounts & Finance branch.</li>
+            <li class="bullet-item"><span class="bullet-icon">✓</span> One-click NAAC Criterion 3 & NIRF metrics export with verified proof links.</li>
+            <li class="bullet-item"><span class="bullet-icon">✓</span> Prestigious Public Academic Research Directory showcasing HPU globally.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 24: ROADMAP ================= -->
+    <section class="slide" data-title="Pilot & Implementation Roadmap" data-notes="We propose a structured 3-phase pilot rollout. Phase 1: 30-day pilot in 3 leading faculties. Phase 2: University-wide onboarding of scholars and supervisors. Phase 3: Complete paperless research governance integration with the Finance branch.">
+      <div class="slide-header">
+        <span class="slide-badge">Implementation Roadmap</span>
+        <h2 class="slide-title">Institutional Implementation & Phased Rollout Roadmap</h2>
+        <p class="slide-subtitle">A seamless, non-disruptive 3-phase rollout strategy for Himachal Pradesh University</p>
+      </div>
+      <div class="pillars-grid">
+        <div class="pillar-card">
+          <div class="pillar-num">01</div>
+          <h3 class="pillar-title">Phase 1: Pilot Launch</h3>
+          <span class="pillar-sub">Weeks 1 – 4 • 3 Flagship Departments</span>
+          <p class="pillar-desc">
+            • Deploy pilot in 3 leading departments (e.g. Computer Science, Biotechnology, Physics).<br>
+            • Onboard active Ph.D. scholars and faculty guides.<br>
+            • Conduct brief 30-minute orientation workshops for HODs and faculty.<br>
+            • Verify live attendance logging and leave management workflows.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">02</div>
+          <h3 class="pillar-title">Phase 2: Campus Rollout</h3>
+          <span class="pillar-sub">Weeks 5 – 8 • University-Wide Expansion</span>
+          <p class="pillar-desc">
+            • Expand onboarding to Humanities, Social Sciences, Law, and Sciences.<br>
+            • Automatically backfill all existing scholars with unique 9-digit SH numbers.<br>
+            • Configure departmental holiday calendars and subject mappings.<br>
+            • Distribute PWA mobile app install links across student notice boards.
+          </p>
+        </div>
+        <div class="pillar-card">
+          <div class="pillar-num">03</div>
+          <h3 class="pillar-title">Phase 3: Paperless Sync</h3>
+          <span class="pillar-sub">Weeks 9+ • Complete Governance Integration</span>
+          <p class="pillar-desc">
+            • Mandate digital DRC and RAC meeting recording across all departments.<br>
+            • Electronic synchronization with Finance office for monthly stipend release.<br>
+            • Automated NAAC Criterion 3 data compilation for upcoming accreditation.<br>
+            • Complete operational transition to modern paperless research administration.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SLIDE 25: CLOSING & Q&A ================= -->
+    <section class="slide title-slide" data-title="Leadership Adoption & Q&A" data-notes="Thank you Hon'ble Vice Chancellor Sir and university officers. ScholarHub is already deployed live on our cloud servers and tested with actual data. It requires zero hardware investment and is ready for immediate pilot adoption at HPU. We welcome your questions.">
+      <img src="./assets/hpu_logo.png" alt="Himachal Pradesh University" class="title-logo" onerror="this.style.display='none'">
+      <h1 class="title-h1" style="font-size: 38px;">Thank You, Hon'ble Vice Chancellor & University Officers</h1>
+      <h2 class="title-h2">ScholarHub is Ready for Immediate Institutional Pilot at H.P. University</h2>
+      <div class="title-chips" style="max-width: 900px; flex-wrap: wrap; margin-top: 20px;">
+        <span class="chip">✓ Zero Hardware Investment Required</span>
+        <span class="chip">✓ Fully Deployed Live on High-Speed Servers</span>
+        <span class="chip">✓ PWA Mobile Apps for All Faculty & Scholars</span>
+        <span class="chip">✓ 100% UGC, NAAC & Audit Compliant</span>
+      </div>
+      <p class="title-footer-note" style="font-size: 16px; color: var(--accent-gold); font-weight: 700; margin-top: 28px;">
+        Open for Leadership Questions, Feedback & Next Steps
+      </p>
+    </section>
+
+  </main>
+
+  <!-- Bottom Progress Bar -->
+  <footer class="bottom-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </footer>
+
+  <!-- Speaker Notes Drawer -->
+  <aside class="notes-drawer" id="notesDrawer">
+    <div class="notes-header">
+      <h4>🎙️ SPEAKER TALKING POINTS (PRESENTER ONLY)</h4>
+      <button onclick="toggleNotes()" style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer;">✕</button>
+    </div>
+    <div class="notes-body" id="notesBody">
+      Talking points will display here.
+    </div>
+  </aside>
+
+  <!-- Lightbox Modal for Screenshots -->
+  <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox()">
+    <img src="" alt="Enlarged Screenshot" class="lightbox-img" id="lightboxImg">
+  </div>
+
+  <!-- Keyboard Shortcuts Guide -->
+  <div class="key-hint">
+    <span><kbd>→</kbd> / <kbd>Space</kbd> Next</span>
+    <span><kbd>←</kbd> Prev</span>
+    <span><kbd>F</kbd> Fullscreen</span>
+    <span><kbd>S</kbd> Notes</span>
+    <span><kbd>Esc</kbd> Close Zoom</span>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    const slideCounter = document.getElementById('slideCounter');
+    const progressFill = document.getElementById('progressFill');
+    const notesDrawer = document.getElementById('notesDrawer');
+    const notesBody = document.getElementById('notesBody');
+    const lightboxModal = document.getElementById('lightboxModal');
+    const lightboxImg = document.getElementById('lightboxImg');
+
+    function updateSlide(newIndex) {
+      if (newIndex < 0 || newIndex >= totalSlides) return;
+      
+      slides[currentSlide].classList.remove('active');
+      currentSlide = newIndex;
+      slides[currentSlide].classList.add('active');
+
+      // Update counter & progress
+      slideCounter.textContent = `${currentSlide + 1} / ${totalSlides}`;
+      const pct = ((currentSlide + 1) / totalSlides) * 100;
+      progressFill.style.width = `${pct}%`;
+
+      // Update speaker notes
+      const notes = slides[currentSlide].getAttribute('data-notes') || 'No specific notes for this slide.';
+      notesBody.textContent = notes;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        updateSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        updateSlide(currentSlide - 1);
+      }
+    }
+
+    function toggleNotes() {
+      notesDrawer.classList.toggle('open');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      lightboxModal.classList.add('active');
+    }
+
+    function closeLightbox() {
+      lightboxModal.classList.remove('active');
+    }
+
+    // Keyboard Event Listener
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      } else if (e.key === 's' || e.key === 'S') {
+        toggleNotes();
+      } else if (e.key === 'Escape') {
+        closeLightbox();
+        notesDrawer.classList.remove('open');
+      } else if (e.key === 'Home') {
+        updateSlide(0);
+      } else if (e.key === 'End') {
+        updateSlide(totalSlides - 1);
+      }
+    });
+
+    // Initialize first slide notes
+    updateSlide(0);
+  </script>
+</body>
+</html>

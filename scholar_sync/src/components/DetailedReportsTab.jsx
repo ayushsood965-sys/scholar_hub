@@ -73,7 +73,17 @@ const DetailedReportsTab = ({ user }) => {
         resolve(canvas.toDataURL('image/png'));
       };
       img.onerror = () => {
-        resolve(null);
+        const img2 = new Image();
+        img2.src = '/logo.png';
+        img2.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img2.width;
+          canvas.height = img2.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img2, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img2.onerror = () => resolve(null);
       };
     });
   };
@@ -340,6 +350,35 @@ const DetailedReportsTab = ({ user }) => {
           console.error(`Failed to fetch additional documents for thesis ${t._id}:`, docErr);
         }
 
+        // Fetch Funding Awards / Fellowships
+        let fundingAwards = [];
+        try {
+          const fundRes = await axios.get(`${API_URL}/public/dashboard/faculty/funding`, getAuthHeader());
+          const allAwards = fundRes.data || [];
+          const targetScholarId = t.scholarId?._id || t.scholarId;
+          fundingAwards = allAwards.filter(f => {
+            const fScholarId = f.scholarId?._id || f.scholarId;
+            return String(fScholarId) === String(targetScholarId) || String(f.thesisId?._id || f.thesisId) === String(t._id);
+          });
+        } catch (fErr) {
+          try {
+            const adminRes = await axios.get(`${API_URL}/admin-config/funding-awards`, getAuthHeader());
+            const allAwards = adminRes.data || [];
+            const targetScholarId = t.scholarId?._id || t.scholarId;
+            fundingAwards = allAwards.filter(f => {
+              const fScholarId = f.scholarId?._id || f.scholarId;
+              return String(fScholarId) === String(targetScholarId) || String(f.thesisId?._id || f.thesisId) === String(t._id);
+            });
+          } catch (e) {}
+        }
+
+        // Fetch Eligibility Details
+        let eligibility = {};
+        try {
+          const eligRes = await axios.get(`${API_URL}/thesis/${t._id}/eligibility`, getAuthHeader());
+          eligibility = eligRes.data || {};
+        } catch (eligErr) {}
+
         // Filter meetings locally
         const candidateMeetings = allMeetings.filter(m => 
           m.thesisId === t._id || 
@@ -355,7 +394,9 @@ const DetailedReportsTab = ({ user }) => {
           drcMeetings,
           racSessions,
           additionalDocuments,
-          meetings: candidateMeetings
+          meetings: candidateMeetings,
+          fundingAwards,
+          eligibility
         });
       }
 

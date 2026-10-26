@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle2, XCircle, Plus, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, Clock, FileText, CheckCircle, Award } from 'lucide-react';
+import { CheckCircle2, XCircle, Plus, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, Clock, FileText, CheckCircle, Award, Loader, Download } from 'lucide-react';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
+import { generatePremiumPDF } from '../utils/pdfReportGenerator';
 import { API_BASE_URL, API_URL } from '../config';
 import { AuthContext } from '../context/AuthContext';
 import { ThesisContext } from '../context/ThesisContext';
@@ -1304,6 +1306,104 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       setTimeout(() => {
         setProfileLockBusy(false);
       }, 500);
+    }
+  };
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadPdfReport = async () => {
+    setDownloadingPdf(true);
+    toast.info('Compiling complete Ph.D. lifecycle performance dossier...');
+    try {
+      // 1. Fetch meetings for candidate
+      let candidateMeetings = [];
+      try {
+        const endpoint = subRole === 'HOD' || user?.role === 'HOD' || user?.role === 'ADMIN' ? 'dept' : 'faculty';
+        const mRes = await axios.get(`${API}/meetings/${endpoint}`, getAuthHeader());
+        const allM = mRes.data || [];
+        candidateMeetings = allM.filter(m =>
+          m.thesisId === thesis._id ||
+          m.thesisId?._id === thesis._id ||
+          m.scholarId === thesis.scholarId?._id ||
+          m.scholarId?._id === thesis.scholarId?._id
+        );
+      } catch (e) {}
+
+      // 2. Fetch funding awards
+      let fundingAwards = [];
+      try {
+        const fundRes = await axios.get(`${API}/public/dashboard/faculty/funding`, getAuthHeader());
+        const allAwards = fundRes.data || [];
+        const targetScholarId = thesis.scholarId?._id || thesis.scholarId;
+        fundingAwards = allAwards.filter(f => {
+          const fScholarId = f.scholarId?._id || f.scholarId;
+          return String(fScholarId) === String(targetScholarId) || String(f.thesisId?._id || f.thesisId) === String(thesis._id);
+        });
+      } catch (e) {
+        try {
+          const aRes = await axios.get(`${API}/admin-config/funding-awards`, getAuthHeader());
+          const allAwards = aRes.data || [];
+          const targetScholarId = thesis.scholarId?._id || thesis.scholarId;
+          fundingAwards = allAwards.filter(f => {
+            const fScholarId = f.scholarId?._id || f.scholarId;
+            return String(fScholarId) === String(targetScholarId) || String(f.thesisId?._id || f.thesisId) === String(thesis._id);
+          });
+        } catch (err2) {}
+      }
+
+      // 3. Load HPU logo image
+      const loadLogo = () => new Promise((resolve) => {
+        const img = new Image();
+        img.src = '/hpu_logo.png';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => {
+          const img2 = new Image();
+          img2.src = '/logo.png';
+          img2.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img2.width;
+            canvas.height = img2.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img2, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img2.onerror = () => resolve(null);
+        };
+      });
+
+      const logoBase64 = await loadLogo();
+
+      // 4. Assemble Dossier Data
+      const dossierData = {
+        thesis,
+        milestones: milestones || [],
+        publications: publications || [],
+        drcMeetings: drcMeetings || [],
+        racSessions: racReviews || [],
+        additionalDocuments: additionalDocs || [],
+        meetings: candidateMeetings,
+        fundingAwards,
+        session: thesis.scholarId?.profile?.academicSession || '2025-2026'
+      };
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      await generatePremiumPDF(doc, dossierData, logoBase64);
+
+      const scholarName = thesis.scholarId?.name || 'Candidate';
+      doc.save(`Dossier_${scholarName.replace(/\s+/g, '_')}_Lifecycle_Report.pdf`);
+      toast.success('Doctoral Lifecycle PDF Dossier downloaded successfully!');
+    } catch (err) {
+      console.error('PDF Dossier compile error:', err);
+      toast.error('Failed to compile PDF: ' + (err.message || String(err)));
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -3046,8 +3146,33 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
       <StatusPipeline status={thesis.status} />
 
       {/* Quick Actions */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600, background: badge.bg, color: badge.color }}>{badge.text}</span>
+
+        <button
+          type="button"
+          onClick={handleDownloadPdfReport}
+          disabled={downloadingPdf}
+          className="btn-outline"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderColor: '#133A26',
+            color: '#133A26',
+            padding: '4px 14px',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            borderRadius: '12px',
+            background: 'rgba(19, 58, 38, 0.06)',
+            cursor: downloadingPdf ? 'wait' : 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          title="Download Complete Doctoral Lifecycle PDF Dossier"
+        >
+          {downloadingPdf ? <Loader size={13} className="spin-icon" /> : <Download size={13} />}
+          <span>{downloadingPdf ? 'Compiling PDF Dossier...' : '📄 Download Ph.D. Lifecycle Report'}</span>
+        </button>
 
         {!isReadOnly && subRole === 'HOD' && thesis.status === 'ACTIVE_RESEARCH' && (
           <button className="btn-primary" onClick={() => setShowBypassModal(true)} disabled={loading} style={{ padding: '5px 14px', fontSize: '0.82rem', background: '#EA580C' }}>🚀 Advance to Pre-Submission</button>
@@ -5908,7 +6033,33 @@ const UnifiedScholarModal = ({ thesis, milestones, subRole: propSubRole, onClose
                 <span>🔢 {thesis.enrollmentNumber}</span>
               </div>
             </div>
-            <div className="usm-header-actions">
+            <div className="usm-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleDownloadPdfReport}
+                disabled={downloadingPdf}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(135deg, #133A26 0%, #1A5A3B 50%, #2E9E5B 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: downloadingPdf ? 'wait' : 'pointer',
+                  boxShadow: '0 2px 8px rgba(19, 58, 38, 0.25)',
+                  transition: 'all 0.2s ease',
+                  opacity: downloadingPdf ? 0.75 : 1
+                }}
+                title="Download complete Ph.D. lifecycle performance dossier (PDF)"
+              >
+                {downloadingPdf ? <Loader size={14} className="spin-icon" /> : <FileText size={14} />}
+                <span>{downloadingPdf ? 'Compiling PDF...' : '📄 PDF Dossier'}</span>
+              </button>
+
               {!isReadOnly && isSupervisor && !['SUBMITTED', 'AWARDED'].includes(thesis.status) && (
                 <button onClick={() => setShowTransferModal(true)} className="btn-outline" style={{ borderColor: '#F59E0B', color: '#B45309', padding: '5px 10px', fontSize: '0.75rem', fontWeight: 700 }}>Transfer</button>
               )}
