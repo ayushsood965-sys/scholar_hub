@@ -8016,7 +8016,7 @@ const MeetingsTab = ({ thesis }) => {
   );
 };
 
-const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
+const DocumentCard = ({ doc, thesis, onViewModal }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const history = getDocumentVirtualHistory(doc);
   const isReviewed = doc.status === 'REVIEWED';
@@ -8029,24 +8029,24 @@ const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
         background: 'var(--color-surface, #ffffff)',
         border: '1px solid var(--color-border, #E2E8F0)',
         borderRadius: 12,
-        padding: 16,
+        padding: 20,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        gap: 12,
+        gap: 14,
         boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
         transition: 'all 0.2s ease',
         width: '100%',
         boxSizing: 'border-box'
       }}
     >
-      {/* Header: Title & Status Badge */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minWidth: 0, flex: 1 }}>
+      {/* Header: Title, Description, and Status Badge */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minWidth: 280, flex: 1 }}>
           <div style={{
-            width: 34,
-            height: 34,
-            borderRadius: 8,
+            width: 40,
+            height: 40,
+            borderRadius: 10,
             background: isReviewed ? '#ECFDF5' : (isRejected ? '#FEF2F2' : '#EFF6FF'),
             color: isReviewed ? '#059669' : (isRejected ? '#DC2626' : '#2563EB'),
             display: 'flex',
@@ -8054,12 +8054,12 @@ const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
             justifyContent: 'center',
             flexShrink: 0
           }}>
-            <FileText size={18} />
+            <FileText size={20} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h4 style={{
               margin: 0,
-              fontSize: '0.92rem',
+              fontSize: '0.98rem',
               color: 'var(--color-text, #0F172A)',
               fontWeight: 800,
               lineHeight: 1.35,
@@ -8068,52 +8068,102 @@ const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
               {doc.title}
             </h4>
             <p style={{
-              margin: '4px 0 0 0',
-              fontSize: '0.8rem',
+              margin: '6px 0 0 0',
+              fontSize: '0.84rem',
               color: 'var(--color-text-secondary, #64748B)',
-              lineHeight: 1.4,
+              lineHeight: 1.45,
               wordBreak: 'break-word'
             }}>
               {doc.description || 'No description provided.'}
             </p>
           </div>
         </div>
-        <span style={{
-          padding: '3px 10px',
-          borderRadius: 12,
-          fontSize: '0.72rem',
-          fontWeight: 700,
-          background: isReviewed ? '#D1FAE5' : (isRejected ? '#FEE2E2' : '#FEF3C7'),
-          color: isReviewed ? '#065F46' : (isRejected ? '#991B1B' : '#D97706'),
-          flexShrink: 0,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4
-        }}>
-          {isReviewed ? <CheckCircle2 size={12} /> : (isRejected ? <AlertCircle size={12} /> : <Clock size={12} />)}
-          {doc.status}
-        </span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <span style={{
+            padding: '4px 12px',
+            borderRadius: 12,
+            fontSize: '0.74rem',
+            fontWeight: 700,
+            background: isReviewed ? '#D1FAE5' : (isRejected ? '#FEE2E2' : '#FEF3C7'),
+            color: isReviewed ? '#065F46' : (isRejected ? '#991B1B' : '#D97706'),
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5
+          }}>
+            {isReviewed ? <CheckCircle2 size={13} /> : (isRejected ? <AlertCircle size={13} /> : <Clock size={13} />)}
+            {doc.status}
+          </span>
+        </div>
       </div>
 
-      {/* Recipient & Metadata Box */}
+      {/* Recipient & Metadata Box with Action Buttons */}
       <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 12,
         background: 'var(--color-bg, #F8FAFC)',
         border: '1px solid var(--color-border, #E2E8F0)',
         borderRadius: 8,
-        padding: '8px 12px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        fontSize: '0.76rem',
-        color: 'var(--color-text-secondary, #64748B)'
+        padding: '10px 14px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span>📤</span>
-          <span>Forwarded Recipient: <strong>{doc.forwardedTo?.name || 'N/A'}</strong> ({doc.forwardedRole})</span>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--color-text-secondary, #64748B)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>📤</span>
+            <span>Forwarded Recipient: <strong>{doc.forwardedTo?.name || 'N/A'}</strong> ({doc.forwardedRole})</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>📅</span>
+            <span>Submission Date: <strong>{new Date(doc.createdAt).toLocaleDateString()}</strong></span>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span>📅</span>
-          <span>Date: <strong>{new Date(doc.createdAt).toLocaleDateString()}</strong></span>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <a
+            href={`${API_BASE_URL}${doc.documentUrl}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: '#0284C7',
+              textDecoration: 'none',
+              padding: '6px 14px',
+              background: '#F0F9FF',
+              border: '1px solid #BCE4FC',
+              borderRadius: 8,
+              transition: 'background 0.2s'
+            }}
+          >
+            <FileText size={14} /> View File Proof
+          </a>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: isExpanded ? '#4338CA' : 'var(--color-text-secondary, #475569)',
+              background: isExpanded ? '#EEF2FF' : 'var(--color-surface, #ffffff)',
+              border: `1px solid ${isExpanded ? '#C7D2FE' : 'var(--color-border, #E2E8F0)'}`,
+              borderRadius: 8,
+              padding: '6px 14px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <History size={14} />
+            {isExpanded ? 'Hide History Logs' : 'View History Logs'}
+            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
         </div>
       </div>
 
@@ -8122,182 +8172,134 @@ const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
         <div style={{
           background: isReviewed ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
           borderLeft: `3px solid ${isReviewed ? '#059669' : '#DC2626'}`,
-          padding: '8px 12px',
+          padding: '10px 14px',
           borderRadius: '0 8px 8px 0',
-          fontSize: '0.78rem',
+          fontSize: '0.82rem',
           color: 'var(--color-text, #334155)',
-          lineHeight: 1.4
+          lineHeight: 1.45
         }}>
-          <div style={{ fontWeight: 700, fontSize: '0.72rem', color: isReviewed ? '#065F46' : '#991B1B', marginBottom: 2 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.75rem', color: isReviewed ? '#065F46' : '#991B1B', marginBottom: 2 }}>
             Reviewer Remarks ({doc.forwardedRole}):
           </div>
           "{doc.remarks}"
         </div>
       )}
 
-      {/* Action Buttons Row */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-        <a
-          href={`${API_BASE_URL}${doc.documentUrl}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            flex: 1,
-            minWidth: 120,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            color: '#0284C7',
-            textDecoration: 'none',
-            padding: '7px 12px',
-            background: '#F0F9FF',
-            border: '1px solid #BCE4FC',
-            borderRadius: 8,
-            textAlign: 'center',
-            transition: 'background 0.2s'
-          }}
-        >
-          <FileText size={14} /> View File Proof
-        </a>
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          style={{
-            flex: 1,
-            minWidth: 135,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            color: isExpanded ? '#4338CA' : 'var(--color-text-secondary, #475569)',
-            background: isExpanded ? '#EEF2FF' : 'var(--color-bg, #F1F5F9)',
-            border: `1px solid ${isExpanded ? '#C7D2FE' : 'var(--color-border, #E2E8F0)'}`,
-            borderRadius: 8,
-            padding: '7px 12px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <History size={14} />
-          {isExpanded ? 'Hide History Logs' : 'View History Logs'}
-          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-      </div>
-
       {/* Inline Expanded History & Progress Section */}
       {isExpanded && (
         <div style={{
-          marginTop: 6,
-          paddingTop: 12,
+          marginTop: 4,
+          paddingTop: 16,
           borderTop: '1px dashed var(--color-border, #CBD5E1)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12
+          gap: 16
         }}>
           {/* Header & Full View Trigger */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text, #1E293B)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>📊</span> Evaluation Progress & History
+            <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--color-text, #1E293B)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>📊</span> Evaluation Progress & History Trail
             </div>
-            <button
-              type="button"
-              onClick={() => onViewModal(doc)}
-              title="Open wide modal view"
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--color-primary, #6366F1)',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '2px 6px',
-                borderRadius: 4
-              }}
-            >
-              <Maximize2 size={12} /> Full Modal
-            </button>
+            {onViewModal && (
+              <button
+                type="button"
+                onClick={() => onViewModal(doc)}
+                title="Open wide modal view"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-primary, #6366F1)',
+                  fontSize: '0.76rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  borderRadius: 4
+                }}
+              >
+                <Maximize2 size={13} /> Full Modal
+              </button>
+            )}
           </div>
 
-          {/* Mini Stepper Pipeline */}
+          {/* Stepper Pipeline */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr auto 1fr',
             alignItems: 'center',
-            gap: 8,
+            gap: 16,
             background: 'var(--color-bg, #F8FAFC)',
             border: '1px solid var(--color-border, #E2E8F0)',
-            borderRadius: 8,
-            padding: '10px 12px'
+            borderRadius: 10,
+            padding: '14px 20px'
           }}>
             {/* Step 1 */}
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
-                width: 22,
-                height: 22,
+                width: 28,
+                height: 28,
                 borderRadius: '50%',
                 background: '#10B981',
                 color: 'white',
-                fontSize: '0.72rem',
+                fontSize: '0.8rem',
                 fontWeight: 800,
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 3
+                flexShrink: 0
               }}>
                 ✓
               </div>
-              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>Uploaded</div>
-              <div style={{ fontSize: '0.68rem', color: '#64748B' }}>
-                {new Date(doc.createdAt).toLocaleDateString()}
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>Document Uploaded</div>
+                <div style={{ fontSize: '0.74rem', color: '#64748B' }}>
+                  Completed on {new Date(doc.createdAt).toLocaleDateString()}
+                </div>
               </div>
             </div>
 
             {/* Connecting Arrow */}
-            <div style={{ color: isReviewed ? '#10B981' : '#CBD5E1', fontWeight: 800, fontSize: '0.85rem' }}>
+            <div style={{ color: isReviewed ? '#10B981' : '#CBD5E1', fontWeight: 800, fontSize: '1.1rem' }}>
               ➔
             </div>
 
             {/* Step 2 */}
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
-                width: 22,
-                height: 22,
+                width: 28,
+                height: 28,
                 borderRadius: '50%',
                 background: isReviewed ? '#10B981' : (isRejected ? '#EF4444' : '#3B82F6'),
                 color: 'white',
-                fontSize: '0.72rem',
+                fontSize: '0.8rem',
                 fontWeight: 800,
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 3
+                flexShrink: 0
               }}>
                 {isReviewed ? '✓' : (isRejected ? '✗' : '⏳')}
               </div>
-              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>
-                {roleName}
-              </div>
-              <div style={{
-                fontSize: '0.68rem',
-                fontWeight: 600,
-                color: isReviewed ? '#059669' : (isRejected ? '#DC2626' : '#2563EB')
-              }}>
-                {isReviewed ? 'Cleared' : (isRejected ? 'Revision' : 'Awaiting')}
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text, #1E293B)' }}>
+                  {roleName} Verification
+                </div>
+                <div style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  color: isReviewed ? '#059669' : (isRejected ? '#DC2626' : '#2563EB')
+                }}>
+                  {isReviewed ? 'Evaluation marked as cleared and resolved.' : (isRejected ? 'Revisions requested.' : 'Awaiting review from assigned authority.')}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Activity Stream (Clean Chronological Log) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--color-text-secondary, #64748B)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Activity Stream ({history.length})
             </div>
 
@@ -8316,18 +8318,18 @@ const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
                   key={i}
                   style={{
                     position: 'relative',
-                    paddingLeft: 16,
+                    paddingLeft: 20,
                     borderLeft: `2px solid ${i === history.length - 1 ? dotColor : '#CBD5E1'}`,
-                    paddingBottom: i === history.length - 1 ? 0 : 8
+                    paddingBottom: i === history.length - 1 ? 0 : 10
                   }}
                 >
                   {/* Timeline Dot */}
                   <div style={{
                     position: 'absolute',
-                    left: -5,
+                    left: -6,
                     top: 2,
-                    width: 8,
-                    height: 8,
+                    width: 10,
+                    height: 10,
                     borderRadius: '50%',
                     background: dotColor,
                     boxShadow: '0 0 0 2px white'
@@ -8338,23 +8340,23 @@ const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
                     background: 'var(--color-bg, #F8FAFC)',
                     border: '1px solid var(--color-border, #E2E8F0)',
                     borderRadius: 8,
-                    padding: '8px 10px',
-                    fontSize: '0.75rem'
+                    padding: '10px 14px',
+                    fontSize: '0.8rem'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 3 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                       <span style={{ fontWeight: 700, color: 'var(--color-text, #0F172A)' }}>
-                        {h.actorName} <span style={{ fontWeight: 500, color: '#64748B', fontSize: '0.7rem' }}>({h.actorRole})</span>
+                        {h.actorName} <span style={{ fontWeight: 500, color: '#64748B', fontSize: '0.74rem' }}>({h.actorRole})</span>
                       </span>
-                      <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
-                        {new Date(h.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      <span style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                        {new Date(h.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '2px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '4px 0' }}>
                       <span style={{
-                        fontSize: '0.68rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700,
-                        padding: '1px 6px',
+                        padding: '2px 8px',
                         borderRadius: 4,
                         background: badgeBg,
                         color: badgeText
@@ -8364,7 +8366,7 @@ const DocumentCard = ({ doc, thesis, onViewModal, viewMode = 'grid' }) => {
                     </div>
 
                     {h.remarks && (
-                      <div style={{ color: 'var(--color-text-secondary, #475569)', fontStyle: 'italic', fontSize: '0.73rem', marginTop: 4 }}>
+                      <div style={{ color: 'var(--color-text-secondary, #475569)', fontStyle: 'italic', fontSize: '0.78rem', marginTop: 4 }}>
                         "{h.remarks}"
                       </div>
                     )}
@@ -8388,7 +8390,6 @@ const DocumentsTab = ({ thesis }) => {
   const [submitting, setSubmitting] = useState(false);
   const [file, setFile] = useState(null);
   const [form, setForm] = useState({ title: '', description: '', forwardedTo: '', forwardedRole: '' });
-  const [viewMode, setViewMode] = useState('grid');
   const [modalDoc, setModalDoc] = useState(null);
 
   const fetchData = async () => {
@@ -8471,57 +8472,7 @@ const DocumentsTab = ({ thesis }) => {
               Upload and forward miscellaneous academic documents, drafts, or certificates to your Supervisor or HOD.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div style={{
-              display: 'flex',
-              background: 'var(--color-bg, #F1F5F9)',
-              borderRadius: 8,
-              padding: 2,
-              border: '1px solid var(--color-border, #E2E8F0)'
-            }}>
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                title="Grid View"
-                style={{
-                  background: viewMode === 'grid' ? 'var(--color-surface, #ffffff)' : 'transparent',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '6px 10px',
-                  cursor: 'pointer',
-                  color: viewMode === 'grid' ? 'var(--color-primary, #6366F1)' : '#64748B',
-                  boxShadow: viewMode === 'grid' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: '0.78rem',
-                  fontWeight: 600
-                }}
-              >
-                <LayoutGrid size={14} /> Grid
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('list')}
-                title="List View"
-                style={{
-                  background: viewMode === 'list' ? 'var(--color-surface, #ffffff)' : 'transparent',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '6px 10px',
-                  cursor: 'pointer',
-                  color: viewMode === 'list' ? 'var(--color-primary, #6366F1)' : '#64748B',
-                  boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: '0.78rem',
-                  fontWeight: 600
-                }}
-              >
-                <List size={14} /> List
-              </button>
-            </div>
+          <div>
             <button onClick={() => setShowForm(!showForm)} className="btn-primary" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <Plus size={16} /> Upload Document
             </button>
@@ -8637,28 +8588,12 @@ const DocumentsTab = ({ thesis }) => {
             <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem' }}>Upload additional files to supervisor or HOD for reviews.</p>
           </div>
         ) : (
-          <div
-            style={
-              viewMode === 'grid'
-                ? {
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                    gap: 16,
-                    alignItems: 'start'
-                  }
-                : {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 16
-                  }
-            }
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {docs.map((doc) => (
               <DocumentCard
                 key={doc._id}
                 doc={doc}
                 thesis={thesis}
-                viewMode={viewMode}
                 onViewModal={(d) => setModalDoc(d)}
               />
             ))}
